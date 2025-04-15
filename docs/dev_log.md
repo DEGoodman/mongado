@@ -13,23 +13,13 @@ A modern blog application built with Django REST Framework and Vue.js.
   - [x] 1Password integration setup
 
 ## Next Steps
-
-### High Priority
-- [ ] Implement user authentication
-- [ ] Add blog post CRUD operations
 - [ ] Set up category and tag management
 - [ ] Implement search functionality
+- [ ] Review the UI. 
+  - [ ] Dark mode toggle doesn't work, and there is dark mode/lightmode inconsistency
+  - [ ] clean up and improve things in general
 
-### Medium Priority
-- [ ] Add dark mode support
-- [ ] Implement responsive design
-- [ ] Add unit tests
-- [ ] Set up CI/CD pipeline
 
-### Low Priority
-- [ ] Add social sharing features
-- [ ] Implement comment system
-- [ ] Add analytics integration
 
 ## Recent Changes
 
@@ -40,7 +30,6 @@ A modern blog application built with Django REST Framework and Vue.js.
 - Added security headers and HTTPS configuration
 
 ## Technical Debt
-- Need to remove `db.sqlite3` from git history
 - Consider adding more comprehensive logging
 - Add API documentation
 - Consider implementing rate limiting
