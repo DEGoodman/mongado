@@ -112,7 +112,7 @@ export ALLOWED_HOSTS="your-domain.com"
 
 ### CI/CD Integration
 
-See the `dev_notes/1password_setup.md` file for detailed information on integrating 1Password with CI/CD systems.
+See the `docs/1password_setup.md` file for detailed information on integrating 1Password with CI/CD systems.
 
 ## Project Structure
 
@@ -126,6 +126,9 @@ mongado/
 │   │   └── App.vue
 │   └── package.json
 ├── mongado/          # Project settings
+├── docs/             # Project documentation
+│   ├── dev_log.md    # Development progress and planning
+│   └── 1password_setup.md  # Secrets management documentation
 └── README.md
 ```
 
@@ -136,3 +139,16 @@ MIT
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Security Settings
+
+The following security settings are configured with development-friendly defaults in the code:
+
+- SECURE_SSL_REDIRECT=True
+- SESSION_COOKIE_SECURE=True
+- CSRF_COOKIE_SECURE=True
+- SECURE_BROWSER_XSS_FILTER=True
+- SECURE_CONTENT_TYPE_NOSNIFF=True
+- X_FRAME_OPTIONS=DENY
+
+For production, you'll want to set these values in your production environment.
