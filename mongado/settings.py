@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-REPLACE_THIS_WITH_A_PROPER_SECRET_KEY_IN_PRODUCTION'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-REPLACE_THIS_WITH_A_PROPER_SECRET_KEY_IN_PRODUCTION')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
 
 
 # Application definition
@@ -85,6 +89,11 @@ DATABASES = {
     }
 }
 
+# Use DATABASE_URL environment variable if provided (for production)
+if os.environ.get('DATABASE_URL'):
+    import dj_database_url
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -140,9 +149,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vue.js development server
-]
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 

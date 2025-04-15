@@ -129,3 +129,6 @@ $RECYCLE.BIN/
 # ===============
 # Add any project-specific files or directories here
 dev_notes/
+
+# 1Password related
+deploy.sh
