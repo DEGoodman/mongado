@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: mongado-backend-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app
+      # Exclude venv to prevent conflicts
+      - /app/venv
+    environment:
+      - DEBUG=true
+      - OP_MONGADO_SERVICE_ACCOUNT_TOKEN=${OP_MONGADO_SERVICE_ACCOUNT_TOKEN}
+    env_file:
+      - ./backend/.env
+    networks:
+      - mongado-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: mongado-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - ./frontend:/app
+      # Exclude node_modules to prevent conflicts
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - mongado-network
+    restart: unless-stopped
+
+networks:
+  mongado-network:
+    driver: bridge

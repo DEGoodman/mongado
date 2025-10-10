@@ -1,0 +1,6 @@
+# Production dependencies only
+-r requirements-base.txt
+
+# Production monitoring (optional, can be enabled via env vars)
+# sentry-sdk[fastapi]==2.21.0  # Error tracking
+# prometheus-fastapi-instrumentator==7.0.0  # Metrics

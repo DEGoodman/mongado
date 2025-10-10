@@ -1,0 +1,11 @@
+# Core production dependencies
+fastapi==0.115.0
+uvicorn[standard]==0.31.0  # Include standard with performance deps
+pydantic==2.9.2
+pydantic-settings==2.6.1
+python-multipart==0.0.12
+onepassword==0.2.0
+
+# Production optimizations
+uvloop==0.21.0  # Fast event loop
+httptools==0.6.4  # Fast HTTP parsing

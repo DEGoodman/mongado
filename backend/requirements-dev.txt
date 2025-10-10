@@ -1,0 +1,38 @@
+# Development dependencies (includes base + dev tools)
+-r requirements-base.txt
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+pytest-xdist==3.6.1  # Parallel test execution
+pytest-benchmark==5.1.0  # Performance benchmarking
+httpx==0.27.2  # For testing FastAPI
+
+# Type checking
+mypy==1.13.0
+types-requests==2.32.4.20250913
+
+# Linting and formatting
+ruff==0.7.4
+
+# Security
+bandit[toml]==1.8.0
+
+# Code quality
+radon==6.0.1
+
+# Profiling and debugging
+py-spy==0.4.0  # Sampling profiler (no overhead)
+memray==1.15.0  # Memory profiler
+viztracer==0.17.3  # Tracing profiler with GUI
+line-profiler==4.2.0  # Line-by-line profiler
+memory-profiler==0.61.0  # Memory profiler
+icecream==2.1.3  # Better print debugging
+
+# Development tools
+ipython==8.31.0  # Better REPL
+ipdb==0.13.13  # IPython debugger
+rich==13.9.4  # Beautiful terminal output
+watchfiles==1.0.3  # Fast file watching for hot reload
