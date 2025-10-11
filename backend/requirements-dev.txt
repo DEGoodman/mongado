@@ -26,8 +26,8 @@ radon==6.0.1
 # Profiling and debugging
 py-spy==0.4.0  # Sampling profiler (no overhead)
 memray==1.15.0  # Memory profiler
-viztracer==0.17.3  # Tracing profiler with GUI
-line-profiler==4.2.0  # Line-by-line profiler
+viztracer==1.0.4  # Tracing profiler with GUI
+# line-profiler==4.2.0  # Line-by-line profiler (not yet compatible with Python 3.13 on ARM64)
 memory-profiler==0.61.0  # Memory profiler
 icecream==2.1.3  # Better print debugging
 

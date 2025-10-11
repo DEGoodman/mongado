@@ -50,6 +50,6 @@
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4",
     "vitest": "^2.1.8",
-    "why-did-you-render": "^8.0.5"
+    "@welldone-software/why-did-you-render": "^8.0.3"
   }
 }
