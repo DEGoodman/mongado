@@ -132,16 +132,16 @@ npm test src/__tests__/Component.test.tsx
 
 ```bash
 # Development (hot reload enabled)
-docker-compose up
-docker-compose up --build  # Rebuild after dependency changes
+docker compose up
+docker compose up --build  # Rebuild after dependency changes
 
 # Production
-docker-compose -f docker-compose.prod.yml up -d
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml logs -f
 
 # View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
 ## Type System Requirements

@@ -1,219 +1,63 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { logger } from "@/lib/logger";
-
-interface Resource {
-  id: number;
-  title: string;
-  content: string;
-  url?: string;
-  tags: string[];
-  created_at: string;
-}
+import Link from "next/link";
 
 export default function Home() {
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    url: "",
-    tags: "",
-  });
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  useEffect(() => {
-    fetchResources();
-  }, []);
-
-  const fetchResources = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/resources`);
-      const data = await response.json();
-      setResources(data.resources);
-      logger.debug("Fetched resources", { count: data.resources.length });
-    } catch (error) {
-      logger.error("Error fetching resources", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${API_URL}/api/resources`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          url: formData.url || undefined,
-          tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-        }),
-      });
-
-      if (response.ok) {
-        setFormData({ title: "", content: "", url: "", tags: "" });
-        setShowForm(false);
-        fetchResources();
-        logger.info("Resource created successfully");
-      }
-    } catch (error) {
-      logger.error("Error creating resource", error);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await fetch(`${API_URL}/api/resources/${id}`, {
-        method: "DELETE",
-      });
-      fetchResources();
-      logger.info("Resource deleted", { id });
-    } catch (error) {
-      logger.error("Error deleting resource", error);
-    }
-  };
-
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-12">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+              Welcome to Mongado
+            </h1>
+            <p className="text-xl text-gray-600">
+              Your personal knowledge base
+            </p>
+          </div>
+
+          {/* Bio Section */}
+          <div className="prose prose-lg max-w-none mb-8">
+            <p className="text-gray-700 leading-relaxed">
+              Mongado is an intelligent knowledge management system designed to help you capture,
+              organize, and retrieve information effortlessly. Built with modern web technologies
+              and powered by AI, it transforms your notes and articles into an easily searchable
+              knowledge base.
+            </p>
+            <p className="text-gray-700 leading-relaxed">
+              Whether you're collecting technical documentation, research notes, or personal insights,
+              Mongado provides a clean interface for writing in Markdown and an AI-powered search
+              to help you find exactly what you need, when you need it.
+            </p>
+          </div>
+
+          {/* Call to Action */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+            <Link
+              href="/articles"
+              className="px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors text-center shadow-md hover:shadow-lg"
             >
-              {showForm ? "Cancel" : "Add Resource"}
-            </button>
+              View Knowledge Base
+            </Link>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Add Resource Form */}
-        {showForm && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Add New Resource</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-                  Content
-                </label>
-                <textarea
-                  id="content"
-                  required
-                  rows={4}
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
-                  URL (optional)
-                </label>
-                <input
-                  type="url"
-                  id="url"
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
-                  Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  id="tags"
-                  placeholder="e.g. python, tutorial, web"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Create Resource
-              </button>
-            </form>
+          {/* Features */}
+          <div className="grid sm:grid-cols-3 gap-6 mt-12">
+            <div className="text-center">
+              <div className="text-3xl mb-3">📝</div>
+              <h3 className="font-semibold text-gray-900 mb-2">Markdown Support</h3>
+              <p className="text-sm text-gray-600">Write in clean, portable Markdown format</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-3">🔍</div>
+              <h3 className="font-semibold text-gray-900 mb-2">AI-Powered Search</h3>
+              <p className="text-sm text-gray-600">Find content using natural language queries</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-3">🏷️</div>
+              <h3 className="font-semibold text-gray-900 mb-2">Smart Organization</h3>
+              <p className="text-sm text-gray-600">Tag and categorize your knowledge</p>
+            </div>
           </div>
-        )}
-
-        {/* Resources List */}
-        <div className="space-y-6">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Loading...</p>
-            </div>
-          ) : resources.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md">
-              <p className="text-gray-500 mb-2">No resources yet</p>
-              <p className="text-gray-400 text-sm">Click "Add Resource" to create your first entry</p>
-            </div>
-          ) : (
-            resources.map((resource) => (
-              <div key={resource.id} className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-xl font-semibold text-gray-900">{resource.title}</h3>
-                  <button
-                    onClick={() => handleDelete(resource.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-                <p className="text-gray-700 mb-3">{resource.content}</p>
-                {resource.url && (
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm mb-3 block"
-                  >
-                    {resource.url}
-                  </a>
-                )}
-                {resource.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {resource.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
         </div>
       </main>
     </div>

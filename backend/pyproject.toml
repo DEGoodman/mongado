@@ -95,4 +95,10 @@ skip_covered = false
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv"]
-skips = ["B101"]  # assert_used - ok in tests
+skips = [
+    "B101",  # assert_used - ok in tests
+    "B404",  # subprocess import - needed for 1Password CLI
+    "B603",  # subprocess without shell - safe, not using shell=True
+    "B607",  # partial executable path - 'op' is expected to be in PATH
+    "B104",  # bind to all interfaces - intentional for containerized app
+]

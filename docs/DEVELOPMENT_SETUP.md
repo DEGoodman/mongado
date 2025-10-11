@@ -162,7 +162,7 @@ npm run test:all   # Run all checks
 
 ### 4. Docker Development
 ```bash
-docker-compose up  # Both services
+docker compose up  # Both services
 ```
 
 ## Test Examples

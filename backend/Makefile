@@ -35,7 +35,7 @@ format: ## Format code with ruff
 	./venv/bin/ruff check --fix .
 
 typecheck: ## Run mypy type checker
-	./venv/bin/mypy *.py
+	./venv/bin/mypy --explicit-package-bases *.py
 
 security: ## Run bandit security checker
 	./venv/bin/bandit -r . -c pyproject.toml

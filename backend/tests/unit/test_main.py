@@ -1,6 +1,7 @@
 """Unit tests for main API module."""
 
-import pytest
+from io import BytesIO
+
 from fastapi.testclient import TestClient
 
 
@@ -15,12 +16,15 @@ def test_read_root(client: TestClient) -> None:
     assert data["version"] == "0.1.0"
 
 
-def test_get_resources_empty(client: TestClient) -> None:
-    """Test getting resources when database is empty."""
+def test_get_resources_includes_static(client: TestClient) -> None:
+    """Test getting resources includes static articles."""
     response = client.get("/api/resources")
     assert response.status_code == 200
     data = response.json()
-    assert data["resources"] == []
+    # Should include static articles (7 demo articles)
+    assert len(data["resources"]) >= 7
+    # Verify first article is a static demo article
+    assert "[DEMO]" in data["resources"][0]["title"]
 
 
 def test_create_resource(client: TestClient, sample_resource: dict[str, str | list[str]]) -> None:
@@ -32,11 +36,13 @@ def test_create_resource(client: TestClient, sample_resource: dict[str, str | li
     resource = data["resource"]
     assert resource["title"] == sample_resource["title"]
     assert resource["content"] == sample_resource["content"]
-    assert resource["id"] == 1
+    assert resource["id"] > 7  # ID should be after static articles
     assert "created_at" in resource
 
 
-def test_get_resource_by_id(client: TestClient, sample_resource: dict[str, str | list[str]]) -> None:
+def test_get_resource_by_id(
+    client: TestClient, sample_resource: dict[str, str | list[str]]
+) -> None:
     """Test getting a resource by ID."""
     # Create resource first
     create_response = client.post("/api/resources", json=sample_resource)
@@ -98,7 +104,7 @@ def test_create_multiple_resources(client: TestClient) -> None:
 
 
 def test_get_all_resources(client: TestClient) -> None:
-    """Test getting all resources returns all created resources."""
+    """Test getting all resources returns all created resources plus static articles."""
     # Create multiple resources
     for i in range(3):
         client.post(
@@ -110,4 +116,45 @@ def test_get_all_resources(client: TestClient) -> None:
     response = client.get("/api/resources")
     assert response.status_code == 200
     data = response.json()
-    assert len(data["resources"]) == 3
+    assert len(data["resources"]) == 10  # 7 static + 3 user-created
+
+
+def test_upload_image(client: TestClient) -> None:
+    """Test image upload endpoint."""
+    # Create a fake image file
+    image_data = b"fake image data"
+    files = {"file": ("test.jpg", BytesIO(image_data), "image/jpeg")}
+
+    response = client.post("/api/upload-image", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert "url" in data
+    assert "filename" in data
+    assert data["url"].startswith("/uploads/")
+    assert data["filename"].endswith(".jpg")
+
+
+def test_upload_invalid_file_type(client: TestClient) -> None:
+    """Test uploading non-image file is rejected."""
+    file_data = b"not an image"
+    files = {"file": ("test.txt", BytesIO(file_data), "text/plain")}
+
+    response = client.post("/api/upload-image", files=files)
+    assert response.status_code == 400
+    assert "Invalid file type" in response.json()["detail"]
+
+
+def test_create_resource_with_markdown(client: TestClient) -> None:
+    """Test creating a resource with markdown content."""
+    resource = {
+        "title": "Rich Content",
+        "content": "## Heading\n\nSome **bold** text",
+        "content_type": "markdown",
+        "tags": ["test"],
+    }
+
+    response = client.post("/api/resources", json=resource)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["resource"]["content"] == "## Heading\n\nSome **bold** text"
+    assert data["resource"]["content_type"] == "markdown"

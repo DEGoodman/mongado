@@ -8,10 +8,10 @@ import main
 
 @pytest.fixture(autouse=True)
 def clear_resources() -> None:
-    """Clear resources before and after each test."""
-    main.resources_db.clear()
+    """Clear user resources before and after each test (static articles remain)."""
+    main.user_resources_db.clear()
     yield
-    main.resources_db.clear()
+    main.user_resources_db.clear()
 
 
 @pytest.fixture

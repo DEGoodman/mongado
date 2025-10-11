@@ -3,7 +3,7 @@
 import logging
 import os
 import subprocess
-from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -13,10 +13,7 @@ class Settings(BaseSettings):
     """Application settings with 1Password integration support."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="allow"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="allow"
     )
 
     # Application settings
@@ -32,20 +29,30 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
 
     # 1Password settings
-    op_mongado_service_account_token: Optional[str] = None
+    op_mongado_service_account_token: str | None = None
 
     # Database settings (for future use)
-    database_url: Optional[str] = None
+    database_url: str | None = None
+
+    # Static articles configuration
+    static_articles_source: str = "local"  # 'local' or 's3'
+    static_articles_s3_bucket: str | None = None
+    static_articles_s3_prefix: str = "articles/"
+
+    # Ollama settings
+    ollama_host: str = "http://localhost:11434"  # Default Ollama endpoint
+    ollama_model: str = "llama3.2:latest"  # Default model for embeddings and chat
+    ollama_enabled: bool = True  # Enable/disable Ollama features
 
     # API Keys (examples - load from 1Password when needed)
-    openai_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
+    openai_api_key: str | None = None
+    anthropic_api_key: str | None = None
 
 
 class SecretManager:
     """Manage secrets using 1Password CLI or SDK."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = None
         self.use_cli = False
         self._initialize()
@@ -53,23 +60,19 @@ class SecretManager:
     def _check_cli_available(self) -> bool:
         """Check if 1Password CLI is installed and configured."""
         try:
-            result = subprocess.run(
-                ["op", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
+            result = subprocess.run(["op", "--version"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
-    def _initialize(self):
+    def _initialize(self) -> None:
         """Initialize 1Password client (SDK) or CLI."""
         # Try SDK first (for service accounts)
         service_account_token = os.getenv("OP_MONGADO_SERVICE_ACCOUNT_TOKEN")
         if service_account_token:
             try:
                 from onepassword.client import Client
+
                 self.client = Client(service_account_token=service_account_token)
                 logger.info("1Password SDK initialized successfully")
                 return
@@ -88,7 +91,7 @@ class SecretManager:
                 "or set OP_MONGADO_SERVICE_ACCOUNT_TOKEN"
             )
 
-    def get_secret(self, reference: str, default: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, reference: str, default: str | None = None) -> str | None:
         """
         Get a secret from 1Password using a secret reference.
 
@@ -106,7 +109,7 @@ class SecretManager:
         if self.client:
             try:
                 secret = self.client.secrets.resolve(reference)
-                return secret
+                return str(secret) if secret is not None else default
             except Exception as e:
                 logger.error("Failed to retrieve secret via SDK '%s': %s", reference, e)
                 return default
@@ -115,10 +118,7 @@ class SecretManager:
         if self.use_cli:
             try:
                 result = subprocess.run(
-                    ["op", "read", reference],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
+                    ["op", "read", reference], capture_output=True, text=True, timeout=10
                 )
                 if result.returncode == 0:
                     return result.stdout.strip()

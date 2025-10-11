@@ -117,7 +117,7 @@ Frontend will be at: http://localhost:3000
 
 **One command to start both:**
 ```bash
-docker-compose up
+docker compose up
 ```
 
 - Frontend: http://localhost:3000
@@ -126,7 +126,7 @@ docker-compose up
 
 **Stop:**
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## 📋 Next Steps
@@ -134,7 +134,7 @@ docker-compose down
 ### Immediate Tasks
 1. ✅ Install frontend dependencies: `cd frontend && npm install`
 2. ✅ Test local development: Start both backend and frontend
-3. ✅ Test Docker development: `docker-compose up`
+3. ✅ Test Docker development: `docker compose up`
 4. ✅ Verify 1Password secret retrieval with a test secret
 
 ### Development Tasks
@@ -220,8 +220,8 @@ source ~/.zshrc  # Reload if empty
 
 **Docker issues:**
 ```bash
-docker-compose down -v  # Remove containers and volumes
-docker-compose up --build  # Rebuild and start
+docker compose down -v  # Remove containers and volumes
+docker compose up --build  # Rebuild and start
 ```
 
 ## ✅ Verification Commands
@@ -239,7 +239,7 @@ cd backend && ./venv/bin/pip list
 cd backend && source venv/bin/activate && python -c "from config import get_secret_manager; print(get_secret_manager().is_available())"
 
 # Check Docker
-docker-compose config
+docker compose config
 
 # Check environment
 echo $OP_MONGADO_SERVICE_ACCOUNT_TOKEN

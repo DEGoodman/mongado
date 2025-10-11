@@ -29,7 +29,7 @@ A modern web application for managing your personal knowledge base with integrat
 
 2. **Start the application**:
    ```bash
-   docker-compose up
+   docker compose up
    ```
 
 3. **Access the application**:
@@ -95,10 +95,10 @@ Full API documentation available at http://localhost:8000/docs when running.
 
 ```bash
 # Start development environment
-docker-compose up
+docker compose up
 
 # Rebuild after dependency changes
-docker-compose up --build
+docker compose up --build
 
 # Run backend tests
 cd backend && make test
@@ -107,7 +107,7 @@ cd backend && make test
 cd frontend && npm test
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Documentation
@@ -164,10 +164,10 @@ See [docs/SETUP.md](docs/SETUP.md#1password-setup) for detailed instructions.
 
 ```bash
 # Build and run production containers
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # View logs
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
 Production builds use optimized dependencies and multi-stage Docker builds for minimal image sizes (~600MB smaller than dev).

@@ -102,6 +102,12 @@ logs
 *.sqlite
 *.sqlite3
 
+# Uploads
+backend/uploads/
+
+# User-created content (not in source control)
+backend/user_content/
+
 # OS
 .DS_Store
 Thumbs.db

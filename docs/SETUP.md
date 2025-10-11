@@ -54,7 +54,7 @@ You should see: `✓ 1Password SDK initialized successfully`
 
 **With Docker:**
 ```bash
-docker-compose up
+docker compose up
 ```
 
 The token will be automatically passed from your environment to the container.
@@ -88,21 +88,21 @@ az containerapp update \
 
 **Option 1: Pass via command line**
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 # Token is automatically read from your environment
 ```
 
 **Option 2: Set in deployment script**
 ```bash
 export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="ops_your_token_here"
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 **Option 3: Use .env file on server (not recommended for production)**
 ```bash
 # On your production server, create backend/.env
 echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=ops_your_token_here" > backend/.env
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### For CI/CD Pipelines
@@ -159,12 +159,12 @@ variables:
 ⚠ 1Password not configured
 ```
 
-**Solution:** Make sure the token is exported in your current shell before running `docker-compose up`
+**Solution:** Make sure the token is exported in your current shell before running `docker compose up`
 
 ```bash
 echo $OP_MONGADO_SERVICE_ACCOUNT_TOKEN  # Should print your token
 source ~/.zshrc  # If empty, reload shell config
-docker-compose up
+docker compose up
 ```
 
 ## Next Steps

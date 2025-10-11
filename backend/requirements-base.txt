@@ -1,10 +1,13 @@
 # Core production dependencies
-fastapi==0.115.0
-uvicorn[standard]==0.31.0  # Include standard with performance deps
-pydantic==2.9.2
-pydantic-settings==2.6.1
-python-multipart==0.0.12
-onepassword==0.2.0
+fastapi==0.118.3
+uvicorn[standard]==0.37.0  # Include standard with performance deps
+pydantic==2.12.0
+pydantic-settings==2.11.0
+python-multipart==0.0.20
+onepassword==0.4.1
+python-frontmatter==1.1.0  # Parse markdown with YAML frontmatter
+boto3==1.35.90  # AWS S3 client (optional, for production)
+ollama==0.4.4  # Ollama Python client for AI features
 
 # Production optimizations
 uvloop==0.21.0  # Fast event loop
