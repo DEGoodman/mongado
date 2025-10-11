@@ -23,9 +23,10 @@ class OllamaClient:
             try:
                 import ollama
 
+                # Create client with host configuration
+                self.client = ollama.Client(host=self.host)
                 # Test connection
-                ollama.list(host=self.host)
-                self.client = ollama
+                self.client.list()
                 logger.info("Ollama client initialized successfully at %s", self.host)
             except Exception as e:
                 logger.warning("Failed to initialize Ollama client: %s", e)
@@ -51,7 +52,7 @@ class OllamaClient:
             return None
 
         try:
-            response = self.client.embeddings(model=self.model, prompt=text, host=self.host)
+            response = self.client.embeddings(model=self.model, prompt=text)
             return response["embedding"]
         except Exception as e:
             logger.error("Failed to generate embedding: %s", e)
@@ -143,7 +144,7 @@ Question: {question}
 Answer:"""
 
             # Generate response
-            response = self.client.generate(model=self.model, prompt=prompt, host=self.host)
+            response = self.client.generate(model=self.model, prompt=prompt)
             return response["response"]
 
         except Exception as e:
@@ -171,7 +172,7 @@ Answer:"""
 
 Summary:"""
 
-            response = self.client.generate(model=self.model, prompt=prompt, host=self.host)
+            response = self.client.generate(model=self.model, prompt=prompt)
             return response["response"]
 
         except Exception as e:
@@ -193,7 +194,7 @@ Summary:"""
         if len(vec1) != len(vec2):
             return 0.0
 
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
         magnitude1 = sum(a * a for a in vec1) ** 0.5
         magnitude2 = sum(b * b for b in vec2) ** 0.5
 

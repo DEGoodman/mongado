@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -29,11 +29,7 @@ export default function ArticlesPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  useEffect(() => {
-    fetchResources();
-  }, []);
-
-  const fetchResources = async () => {
+  const fetchResources = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/resources`);
       const data = await response.json();
@@ -44,7 +40,11 @@ export default function ArticlesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
