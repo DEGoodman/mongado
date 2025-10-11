@@ -1,5 +1,23 @@
 # TODO - Next Session
 
+## 🚀 Quick Start for Next Session
+
+**Priority:** Frontend AI Integration
+**Start Here:** Create `frontend/src/components/SearchBar.tsx`
+
+**Key Info:**
+- Backend is complete with 3 AI endpoints ready to use
+- All tests passing (12/12)
+- Docker running at http://localhost:3000 (frontend) and http://localhost:8000 (backend)
+- API docs at http://localhost:8000/docs
+
+**API Endpoints Ready:**
+- `POST /api/search` - Semantic search (works without Ollama)
+- `POST /api/ask` - AI Q&A (requires Ollama)
+- `GET /api/articles/{id}/summary` - Article summaries (requires Ollama)
+
+---
+
 ## Current Status (as of 2025-10-11)
 
 ### ✅ Completed
