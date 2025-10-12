@@ -11,7 +11,7 @@ The site features:
 - **Knowledge Base**: Personal knowledge management (moving from Notion/offline notes)
 - **Extensible architecture**: Designed for adding future projects
 
-Currently in early development. Knowledge Base implements basic CRUD operations with in-memory storage (database integration planned).
+The Knowledge Base combines static markdown articles with a Zettelkasten-style note system featuring bidirectional linking, graph visualization, and AI-powered search.
 
 ## Key Patterns
 
@@ -44,10 +44,16 @@ All configuration in `backend/config.py`:
 - Articles: Markdown files with YAML frontmatter (`backend/static/articles/`)
 - Images: WebP format recommended (`backend/static/assets/images/`)
 - Cached at startup, auto-reload on file changes in dev mode
-- See `docs/KNOWLEDGE_BASE.md` for content authoring guide
+- See `docs/knowledge-base/ARTICLES.md` for content authoring guide
 
-**User Data** (in-memory, temporary):
-- Will migrate to database (PostgreSQL/MongoDB)
+**Notes** (Zettelkasten system):
+- Persistent notes: Neo4j graph database (admin only)
+- Ephemeral notes: In-memory with session tracking (visitors)
+- Adjective-noun IDs (e.g., `curious-elephant`, `wise-mountain`)
+- Bidirectional wikilinks: `[[note-id]]` syntax
+- See `docs/knowledge-base/NOTES.md` for complete guide
+
+**Architecture**:
 - Keep pure logic separate from data access
 - Use dependency injection
 - Follow functional core / imperative shell pattern
@@ -178,14 +184,34 @@ In `backend/main.py`:
 - Docs at `/docs` and `/redoc`
 
 **Endpoints:**
+
+*Resources (Articles + Notes):*
 - `GET /` - API status
-- `GET /api/resources` - List all resources (static + user)
-- `POST /api/resources` - Create user resource
+- `GET /api/resources` - List all resources (articles + notes)
+- `POST /api/resources` - Create resource
 - `GET /api/resources/{id}` - Get resource by ID
-- `DELETE /api/resources/{id}` - Delete user resource (static articles read-only)
-- `POST /api/search` - Semantic search with Ollama AI
-- `POST /api/ask` - Q&A with context from articles
-- `GET /api/articles/{id}/summary` - AI-generated summary
+- `DELETE /api/resources/{id}` - Delete resource
+
+*Notes (Zettelkasten):*
+- `GET /api/notes` - List all notes
+- `POST /api/notes` - Create note (auth required for persistent)
+- `GET /api/notes/{note_id}` - Get single note
+- `PUT /api/notes/{note_id}` - Update note
+- `DELETE /api/notes/{note_id}` - Delete note
+- `GET /api/notes/{note_id}/links` - Get outbound links
+- `GET /api/notes/{note_id}/backlinks` - Get inbound links
+- `GET /api/notes/graph` - Get full graph
+- `GET /api/notes/{note_id}/graph` - Get local subgraph
+- `GET /api/notes/generate-id` - Generate adjective-noun ID
+
+*AI Features:*
+- `POST /api/search` - Semantic search (articles + notes)
+- `POST /api/ask` - Q&A with context
+- `POST /api/notes/{note_id}/suggest-links` - AI-suggested related notes
+- `GET /api/notes/{note_id}/summary` - AI-generated note summary
+- `GET /api/articles/{id}/summary` - AI-generated article summary
+
+*Static Assets:*
 - `POST /api/upload-image` - Upload image (temporary storage)
 - `GET /static/assets/*` - Static assets (images, icons, downloads)
 - `GET /static/articles/*` - Raw markdown files
@@ -218,13 +244,22 @@ See existing tests for patterns.
 
 ## Documentation
 
+**General:**
+- `README.md` - Quick start guide
+- `docs/README.md` - Documentation index
 - `docs/SETUP.md` - Installation and 1Password setup
+- `docs/PROJECT_STATUS.md` - Project health and verification
+- `docs/ROADMAP.md` - Future features and TODOs
+
+**Development:**
 - `docs/TESTING.md` - Testing tools and commands
 - `docs/PROFILING.md` - Performance profiling tools
 - `docs/DEPENDENCIES.md` - Dependency structure
-- `docs/KNOWLEDGE_BASE.md` - Content authoring guide (articles & images)
 
-Root `README.md` is a quick start guide.
+**Knowledge Base:**
+- `docs/knowledge-base/README.md` - KB architecture overview
+- `docs/knowledge-base/ARTICLES.md` - Article authoring guide
+- `docs/knowledge-base/NOTES.md` - Zettelkasten note system guide
 
 ## Before Committing
 
@@ -244,12 +279,15 @@ npm run test:all  # typecheck + lint + tests
 2. **Don't use `console.log()`** - Use logger utility
 3. **Type hints required** - Won't pass CI without them
 4. **1Password optional** - Code must work without it
-5. **In-memory storage temporary** - Design for future DB migration
+5. **Test coverage** - All new features need tests
+6. **Documentation** - Update relevant docs when changing features
 
 ## Future Work
 
-- AI-powered search and context retrieval
-- Database persistence (PostgreSQL/MongoDB)
-- Full-text search
-- User authentication
-- Advanced tag filtering
+See `docs/ROADMAP.md` for complete list. High-priority items:
+
+- **Authentication system** - Dev/prod passkeys for admin access
+- **Database migration** - Evaluate PostgreSQL vs continued Neo4j usage
+- **Homepage** - Build out portfolio/professional presence
+- **Knowledge Base enhancements** - Note templates, version history, advanced search
+- **AI improvements** - Auto-tagging, clustering, concept extraction

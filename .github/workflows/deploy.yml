@@ -1,0 +1,168 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual deployment
+
+jobs:
+  # Run CI checks first
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # Deploy to production after CI passes
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: ci  # Only deploy if CI passes
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      - name: Add DigitalOcean host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to DigitalOcean
+        env:
+          DO_HOST: ${{ secrets.DO_HOST }}
+          DO_USER: ${{ secrets.DO_USER }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}
+          ADMIN_PASSKEY: ${{ secrets.ADMIN_PASSKEY }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          ssh $DO_USER@$DO_HOST << 'EOF'
+            set -e
+
+            echo "📦 Deploying Mongado to production..."
+
+            # Navigate to project directory
+            cd /opt/mongado || { echo "Project directory not found"; exit 1; }
+
+            # Pull latest changes
+            echo "🔄 Pulling latest code from main branch..."
+            git fetch origin
+            git reset --hard origin/main
+
+            # Create/update environment file
+            echo "🔐 Setting up environment variables..."
+            cat > backend/.env << 'ENVEOF'
+          DEBUG=false
+          OP_MONGADO_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}
+          ADMIN_PASSKEY=${{ secrets.ADMIN_PASSKEY }}
+          ENVEOF
+
+            # Export environment variables for docker-compose
+            export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+            export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}"
+
+            # Build and restart containers
+            echo "🐳 Building and restarting Docker containers..."
+            docker compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Wait for services to be healthy
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 10
+
+            # Health check
+            echo "🏥 Running health checks..."
+            if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+              echo "✅ Backend is healthy"
+            else
+              echo "❌ Backend health check failed"
+              docker compose -f docker-compose.prod.yml logs backend
+              exit 1
+            fi
+
+            if curl -f http://localhost:3000/ > /dev/null 2>&1; then
+              echo "✅ Frontend is healthy"
+            else
+              echo "❌ Frontend health check failed"
+              docker compose -f docker-compose.prod.yml logs frontend
+              exit 1
+            fi
+
+            # Clean up old images
+            echo "🧹 Cleaning up old Docker images..."
+            docker image prune -f
+
+            echo "✅ Deployment complete!"
+          EOF
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying production deployment..."
+          sleep 5
+
+          # Check backend API
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.mongado.com/ || echo "000")
+          if [ "$BACKEND_STATUS" = "200" ]; then
+            echo "✅ Backend API responding (Status: $BACKEND_STATUS)"
+          else
+            echo "⚠️  Backend API status: $BACKEND_STATUS"
+          fi
+
+          # Check frontend
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://mongado.com/ || echo "000")
+          if [ "$FRONTEND_STATUS" = "200" ]; then
+            echo "✅ Frontend responding (Status: $FRONTEND_STATUS)"
+          else
+            echo "⚠️  Frontend status: $FRONTEND_STATUS"
+          fi
+
+  # Rollback if deployment fails
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      - name: Add DigitalOcean host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rollback deployment
+        env:
+          DO_HOST: ${{ secrets.DO_HOST }}
+          DO_USER: ${{ secrets.DO_USER }}
+        run: |
+          ssh $DO_USER@$DO_HOST << 'EOF'
+            set -e
+
+            echo "⚠️  Deployment failed, attempting rollback..."
+
+            cd /opt/mongado
+
+            # Rollback to previous git commit
+            git reset --hard HEAD~1
+
+            # Restart containers with previous version
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "✅ Rollback complete"
+          EOF

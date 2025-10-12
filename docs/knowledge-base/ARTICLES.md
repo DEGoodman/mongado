@@ -1,11 +1,12 @@
-# Knowledge Base - Content Authoring Guide
+# Articles - Content Authoring Guide
 
-This guide explains how to create and manage content in the Mongado Knowledge Base.
+This guide explains how to create and manage long-form articles in the Mongado Knowledge Base.
 
 ## Overview
 
-The Knowledge Base is optimized for:
-- **Static content**: Markdown files stored in source control
+Articles are static markdown files stored in source control, designed for:
+- **Long-form content**: Curated essays, tutorials, reference guides
+- **Professional polish**: Published, reviewed, well-structured content
 - **Fast rendering**: Intelligent caching with hot-reload in dev
 - **Optimized assets**: WebP images with long-term browser caching
 - **Zero database**: All content loaded from filesystem at startup
@@ -62,6 +63,12 @@ Your markdown content here...
 def hello():
     print("Hello, world!")
 \`\`\`
+
+### Linking to Notes
+
+You can reference Zettelkasten notes using wikilink syntax:
+
+See [[curious-elephant]] for more details on database design.
 ```
 
 ### 2. Frontmatter Fields
@@ -355,6 +362,14 @@ POST /api/ask
 
 AI-powered Q&A using article content as context.
 
+### Generate Summary
+
+```bash
+GET /api/articles/{id}/summary
+```
+
+AI-generated summary of the article (cached).
+
 ## Troubleshooting
 
 ### Articles not loading
@@ -399,6 +414,7 @@ apt install webp   # Linux
 6. **Test locally first**: Run `make run` and verify before committing
 7. **Use consistent IDs**: Sequential integers (1, 2, 3...)
 8. **Tag appropriately**: Makes search and filtering easier
+9. **Link to notes**: Use `[[note-id]]` to reference related atomic notes
 
 ## Example Article Templates
 
@@ -480,18 +496,32 @@ Explanation...
 - [Resource 1](https://example.com)
 ```
 
-## Future Enhancements
+## Cross-Linking with Notes
 
-Potential improvements (not yet implemented):
+Articles can reference Zettelkasten notes using wikilink syntax:
 
-1. **Full-text search**: Integrate with Elasticsearch or Meilisearch
-2. **Database persistence**: Move user-created content to PostgreSQL
-3. **Markdown extensions**: Support for custom components
-4. **Image CDN**: Integrate with Cloudflare Images or Imgix
-5. **Version history**: Track article changes over time
-6. **Related articles**: ML-powered recommendations
-7. **Analytics**: Track popular articles and search queries
+```markdown
+For more atomic thoughts on this topic, see:
+- [[curious-elephant]] - Database design patterns
+- [[wise-mountain]] - Graph algorithms
+- [[swift-river]] - Payment processing
+```
+
+The system will:
+- Render these as clickable links to the note pages
+- Show backlinks from notes that reference this article
+- Include both in semantic search results
+- Display connections in the graph visualization
+
+See [NOTES.md](NOTES.md) for more details on the note system and wikilinks.
+
+## Related Documentation
+
+- **[README.md](README.md)** - Knowledge Base overview and architecture
+- **[NOTES.md](NOTES.md)** - Zettelkasten note system guide
+- **[../SETUP.md](../SETUP.md)** - Environment setup
+- **[../TESTING.md](../TESTING.md)** - Testing tools and commands
 
 ---
 
-For general development questions, see [CLAUDE.md](../CLAUDE.md) and [README.md](../README.md).
+For general development questions, see [CLAUDE.md](../../CLAUDE.md) and the root [README.md](../../README.md).
