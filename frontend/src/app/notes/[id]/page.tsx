@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
+import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
 import {
   getNote,
   updateNote,
@@ -178,8 +179,12 @@ export default function NoteDetailPage() {
   if (!note) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div>
+      {/* Auth status indicator at top */}
+      <AuthStatusIndicator />
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
         <div className="lg:col-span-2">
           {/* Header */}
@@ -398,6 +403,7 @@ export default function NoteDetailPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

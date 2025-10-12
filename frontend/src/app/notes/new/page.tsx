@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import NoteEditor from "@/components/NoteEditor";
+import AuthStatusBanner from "@/components/AuthStatusBanner";
 import { createNote, listNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 
@@ -74,10 +75,12 @@ export default function NewNotePage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Note</h1>
         <p className="text-gray-600">
-          Notes are saved as ephemeral (visible only to you) unless you're logged in as
-          admin
+          Add a new note to your Zettelkasten knowledge base
         </p>
       </div>
+
+      {/* Authentication status banner */}
+      <AuthStatusBanner mode="auto" />
 
       {/* Error message */}
       {error && (
