@@ -8,6 +8,7 @@ onepassword==0.4.1
 python-frontmatter==1.1.0  # Parse markdown with YAML frontmatter
 boto3==1.35.90  # AWS S3 client (optional, for production)
 ollama==0.4.4  # Ollama Python client for AI features
+neo4j==5.27.0  # Neo4j driver for graph database (notes)
 
 # Production optimizations
 uvloop==0.21.0  # Fast event loop

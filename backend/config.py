@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # Database settings (for future use)
     database_url: str | None = None
 
+    # Neo4j settings (for notes graph database)
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = ""  # Load from 1Password or env
+    neo4j_database: str = "neo4j"  # Database name (default: neo4j)
+
     # Static articles configuration
     static_articles_source: str = "local"  # 'local' or 's3'
     static_articles_s3_bucket: str | None = None

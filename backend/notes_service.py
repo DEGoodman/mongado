@@ -7,6 +7,7 @@ from typing import Any
 
 from database import get_database
 from ephemeral_notes import EphemeralNote, get_ephemeral_store
+from neo4j_adapter import get_neo4j_adapter
 from note_id_generator import get_id_generator
 from wikilink_parser import get_wikilink_parser
 
@@ -18,7 +19,8 @@ class NotesService:
 
     def __init__(self):
         """Initialize notes service."""
-        self.db = get_database()
+        self.db = get_database()  # Fallback for when Neo4j unavailable
+        self.neo4j = get_neo4j_adapter()
         self.ephemeral = get_ephemeral_store()
         self.id_generator = get_id_generator()
         self.wikilink_parser = get_wikilink_parser()
@@ -51,31 +53,44 @@ class NotesService:
         note_id = self.id_generator.generate(existing_ids)
 
         if is_admin:
-            # Create persistent note in database
-            self.db.execute(
-                """
-                INSERT INTO notes (id, title, content, author, tags, metadata)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    note_id,
-                    title,
-                    content,
-                    "admin",
-                    json.dumps(tags or []),
-                    json.dumps({"links": links}),
-                ),
-            )
-            self.db.commit()
+            # Create persistent note in Neo4j
+            if self.neo4j.is_available():
+                note = self.neo4j.create_note(
+                    note_id=note_id,
+                    content=content,
+                    title=title,
+                    author="admin",
+                    tags=tags or [],
+                    links=links,
+                )
+                logger.info("Created persistent note in Neo4j: %s", note_id)
+                return note
+            else:
+                # Fallback to SQLite if Neo4j unavailable
+                self.db.execute(
+                    """
+                    INSERT INTO notes (id, title, content, author, tags, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        note_id,
+                        title,
+                        content,
+                        "admin",
+                        json.dumps(tags or []),
+                        json.dumps({"links": links}),
+                    ),
+                )
+                self.db.commit()
 
-            # Create links in database
-            if links:
-                self._create_links(note_id, links)
+                # Create links in database
+                if links:
+                    self._create_links(note_id, links)
 
-            logger.info("Created persistent note: %s", note_id)
+                logger.info("Created persistent note in SQLite (Neo4j unavailable): %s", note_id)
 
-            # Return created note
-            return self.get_note(note_id, is_admin, session_id)
+                # Return created note
+                return self.get_note(note_id, is_admin, session_id)
 
         else:
             # Create ephemeral note in memory
@@ -112,9 +127,15 @@ class NotesService:
             Note dict or None if not found
         """
         # Check persistent notes first
-        note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
-        if note:
-            return self._db_row_to_dict(note)
+        if self.neo4j.is_available():
+            note = self.neo4j.get_note(note_id)
+            if note:
+                return note
+        else:
+            # Fallback to SQLite
+            note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
+            if note:
+                return self._db_row_to_dict(note)
 
         # Check ephemeral notes
         if session_id:
@@ -139,10 +160,15 @@ class NotesService:
         notes = []
 
         # Get persistent notes (visible to everyone)
-        persistent = self.db.fetchall(
-            "SELECT * FROM notes WHERE is_ephemeral = 0 ORDER BY created_at DESC"
-        )
-        notes.extend([self._db_row_to_dict(row) for row in persistent])
+        if self.neo4j.is_available():
+            persistent = self.neo4j.list_notes()
+            notes.extend(persistent)
+        else:
+            # Fallback to SQLite
+            persistent = self.db.fetchall(
+                "SELECT * FROM notes WHERE is_ephemeral = 0 ORDER BY created_at DESC"
+            )
+            notes.extend([self._db_row_to_dict(row) for row in persistent])
 
         # Get ephemeral notes for this session
         if session_id:
@@ -177,38 +203,59 @@ class NotesService:
         links = self.wikilink_parser.extract_links(content)
 
         # Check if persistent note
-        note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
-        if note:
-            # Only admin can update persistent notes
-            if not is_admin:
-                logger.warning(
-                    "Unauthorized attempt to update persistent note: %s", note_id
+        if self.neo4j.is_available():
+            note = self.neo4j.get_note(note_id)
+            if note:
+                # Only admin can update persistent notes
+                if not is_admin:
+                    logger.warning(
+                        "Unauthorized attempt to update persistent note: %s", note_id
+                    )
+                    return None
+
+                updated = self.neo4j.update_note(
+                    note_id=note_id,
+                    content=content,
+                    title=title,
+                    tags=tags,
+                    links=links,
                 )
-                return None
+                logger.info("Updated persistent note in Neo4j: %s", note_id)
+                return updated
+        else:
+            # Fallback to SQLite
+            note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
+            if note:
+                # Only admin can update persistent notes
+                if not is_admin:
+                    logger.warning(
+                        "Unauthorized attempt to update persistent note: %s", note_id
+                    )
+                    return None
 
-            self.db.execute(
-                """
-                UPDATE notes
-                SET content = ?, title = ?, tags = ?, metadata = ?
-                WHERE id = ?
-                """,
-                (
-                    content,
-                    title,
-                    json.dumps(tags or []),
-                    json.dumps({"links": links}),
-                    note_id,
-                ),
-            )
-            self.db.commit()
+                self.db.execute(
+                    """
+                    UPDATE notes
+                    SET content = ?, title = ?, tags = ?, metadata = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        content,
+                        title,
+                        json.dumps(tags or []),
+                        json.dumps({"links": links}),
+                        note_id,
+                    ),
+                )
+                self.db.commit()
 
-            # Update links
-            self._delete_links(note_id)
-            if links:
-                self._create_links(note_id, links)
+                # Update links
+                self._delete_links(note_id)
+                if links:
+                    self._create_links(note_id, links)
 
-            logger.info("Updated persistent note: %s", note_id)
-            return self.get_note(note_id, is_admin, session_id)
+                logger.info("Updated persistent note in SQLite: %s", note_id)
+                return self.get_note(note_id, is_admin, session_id)
 
         # Check ephemeral note
         if session_id:
@@ -238,18 +285,33 @@ class NotesService:
             True if deleted, False if not found/unauthorized
         """
         # Check persistent note
-        note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
-        if note:
-            if not is_admin:
-                logger.warning(
-                    "Unauthorized attempt to delete persistent note: %s", note_id
-                )
-                return False
+        if self.neo4j.is_available():
+            note = self.neo4j.get_note(note_id)
+            if note:
+                if not is_admin:
+                    logger.warning(
+                        "Unauthorized attempt to delete persistent note: %s", note_id
+                    )
+                    return False
 
-            self.db.execute("DELETE FROM notes WHERE id = ?", (note_id,))
-            self.db.commit()
-            logger.info("Deleted persistent note: %s", note_id)
-            return True
+                deleted = self.neo4j.delete_note(note_id)
+                if deleted:
+                    logger.info("Deleted persistent note from Neo4j: %s", note_id)
+                return deleted
+        else:
+            # Fallback to SQLite
+            note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
+            if note:
+                if not is_admin:
+                    logger.warning(
+                        "Unauthorized attempt to delete persistent note: %s", note_id
+                    )
+                    return False
+
+                self.db.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+                self.db.commit()
+                logger.info("Deleted persistent note from SQLite: %s", note_id)
+                return True
 
         # Check ephemeral note
         if session_id:
@@ -269,21 +331,25 @@ class NotesService:
             List of notes with links to this note
         """
         # Query database backlinks
-        backlinks = self.db.fetchall(
-            """
-            SELECT n.* FROM notes n
-            JOIN note_links l ON n.id = l.source_id
-            WHERE l.target_id = ?
-            """,
-            (note_id,),
-        )
+        if self.neo4j.is_available():
+            return self.neo4j.get_backlinks(note_id)
+        else:
+            # Fallback to SQLite
+            backlinks = self.db.fetchall(
+                """
+                SELECT n.* FROM notes n
+                JOIN note_links l ON n.id = l.source_id
+                WHERE l.target_id = ?
+                """,
+                (note_id,),
+            )
 
-        result = [self._db_row_to_dict(row) for row in backlinks]
+            result = [self._db_row_to_dict(row) for row in backlinks]
 
-        # TODO: Also check ephemeral notes for backlinks
-        # (would need to scan all ephemeral notes for links to note_id)
+            # TODO: Also check ephemeral notes for backlinks
+            # (would need to scan all ephemeral notes for links to note_id)
 
-        return result
+            return result
 
     def get_outbound_links(self, note_id: str) -> list[dict[str, Any]]:
         """Get notes this note links to.
@@ -294,21 +360,29 @@ class NotesService:
         Returns:
             List of linked notes
         """
-        links = self.db.fetchall(
-            """
-            SELECT n.* FROM notes n
-            JOIN note_links l ON n.id = l.target_id
-            WHERE l.source_id = ?
-            """,
-            (note_id,),
-        )
+        if self.neo4j.is_available():
+            return self.neo4j.get_outbound_links(note_id)
+        else:
+            # Fallback to SQLite
+            links = self.db.fetchall(
+                """
+                SELECT n.* FROM notes n
+                JOIN note_links l ON n.id = l.target_id
+                WHERE l.source_id = ?
+                """,
+                (note_id,),
+            )
 
-        return [self._db_row_to_dict(row) for row in links]
+            return [self._db_row_to_dict(row) for row in links]
 
     def _get_all_note_ids(self) -> set[str]:
         """Get all existing note IDs (for collision detection)."""
-        persistent = self.db.fetchall("SELECT id FROM notes")
-        persistent_ids = {row["id"] for row in persistent}
+        if self.neo4j.is_available():
+            persistent_ids = self.neo4j.get_all_note_ids()
+        else:
+            # Fallback to SQLite
+            persistent = self.db.fetchall("SELECT id FROM notes")
+            persistent_ids = {row["id"] for row in persistent}
 
         ephemeral_ids = {note.id for note in self.ephemeral.get_all_notes()}
 
