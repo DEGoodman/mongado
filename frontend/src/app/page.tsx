@@ -69,8 +69,8 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             <ProjectTile
               title="Knowledge Base"
-              description="An intelligent knowledge management system with AI-powered search. Capture, organize, and retrieve information effortlessly using Markdown and semantic search."
-              href="/knowledge-base"
+              description="A Zettelkasten-inspired note-taking system with wikilinks, backlinks, and AI assistance. Build your personal knowledge graph with interconnected notes."
+              href="/notes"
               icon="📚"
             />
             <ProjectTile

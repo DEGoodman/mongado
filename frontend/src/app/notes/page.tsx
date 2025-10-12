@@ -67,19 +67,27 @@ export default function NotesPage() {
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Notes</h1>
-          <p className="text-gray-600 mt-1">
-            Your Zettelkasten knowledge base ({notes.length} notes)
-          </p>
-        </div>
+      <div className="mb-8">
         <Link
-          href="/notes/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          href="/"
+          className="text-blue-600 hover:underline text-sm mb-4 inline-block"
         >
-          + New Note
+          ← Home
         </Link>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Notes</h1>
+            <p className="text-gray-600 mt-1">
+              Your Zettelkasten knowledge base ({notes.length} notes)
+            </p>
+          </div>
+          <Link
+            href="/notes/new"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            + New Note
+          </Link>
+        </div>
       </div>
 
       {/* Notes list */}

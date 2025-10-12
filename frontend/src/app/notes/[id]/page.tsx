@@ -198,12 +198,20 @@ export default function NoteDetailPage() {
         <div className="lg:col-span-2">
           {/* Header */}
           <div className="mb-6">
-            <Link
-              href="/notes"
-              className="text-blue-600 hover:underline text-sm mb-4 inline-block"
-            >
-              ← Back to all notes
-            </Link>
+            <div className="flex gap-4 mb-4">
+              <Link
+                href="/"
+                className="text-blue-600 hover:underline text-sm"
+              >
+                ← Home
+              </Link>
+              <Link
+                href="/notes"
+                className="text-blue-600 hover:underline text-sm"
+              >
+                All notes
+              </Link>
+            </div>
 
             <div className="flex items-start justify-between">
               <div className="flex-1">

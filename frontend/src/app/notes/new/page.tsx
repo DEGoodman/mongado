@@ -82,6 +82,14 @@ export default function NewNotePage() {
 
       {/* Header */}
       <div className="mb-6">
+        <div className="flex gap-4 mb-4">
+          <Link href="/" className="text-blue-600 hover:underline text-sm">
+            ← Home
+          </Link>
+          <Link href="/notes" className="text-blue-600 hover:underline text-sm">
+            All notes
+          </Link>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Note</h1>
         <p className="text-gray-600">
           Add a new note to your Zettelkasten knowledge base
