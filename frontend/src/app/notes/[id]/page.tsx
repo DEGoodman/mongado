@@ -323,8 +323,8 @@ export default function NoteDetailPage() {
               )}
 
               {/* Content display with wikilinks highlighted */}
-              <div className="prose max-w-none bg-white border border-gray-200 rounded-lg p-6">
-                <pre className="whitespace-pre-wrap font-sans text-gray-800">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
                   {note.content.split(/(\[\[[a-z0-9-]+\]\])/g).map((part, i) => {
                     const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
                     if (match) {
@@ -340,7 +340,7 @@ export default function NoteDetailPage() {
                     }
                     return <span key={i}>{part}</span>;
                   })}
-                </pre>
+                </div>
               </div>
             </div>
           )}
