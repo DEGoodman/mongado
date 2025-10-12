@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from database import get_database
 from ephemeral_notes import get_ephemeral_store
 from main import app
+from notes_service import get_notes_service
 
 
 @pytest.fixture
@@ -27,6 +28,12 @@ def clean_notes() -> None:
     ephemeral = get_ephemeral_store()
     ephemeral.clear_all()
 
+    # Clear Neo4j notes
+    notes_service = get_notes_service()
+    if notes_service.neo4j and notes_service.neo4j.is_available():
+        # Delete all notes from Neo4j
+        notes_service.neo4j.driver.execute_query("MATCH (n:Note) DETACH DELETE n")
+
     yield
 
     # Cleanup after test
@@ -34,6 +41,10 @@ def clean_notes() -> None:
     db.execute("DELETE FROM note_links")
     db.commit()
     ephemeral.clear_all()
+
+    # Clear Neo4j notes after test
+    if notes_service.neo4j and notes_service.neo4j.is_available():
+        notes_service.neo4j.driver.execute_query("MATCH (n:Note) DETACH DELETE n")
 
 
 class TestCreateNote:

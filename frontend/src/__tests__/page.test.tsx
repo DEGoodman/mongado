@@ -1,42 +1,26 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
 import Home from "../app/page";
 
-// Mock fetch
-global.fetch = vi.fn();
-
 describe("Home Page", () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
+  it("renders the main heading with name", () => {
+    render(<Home />);
+    expect(screen.getByText("D. Erik Goodman")).toBeInTheDocument();
   });
 
-  it("renders the main heading", () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      json: async () => ({ resources: [] }),
-    });
-
+  it("shows engineering leader title", () => {
     render(<Home />);
-    expect(screen.getByText("Knowledge Base")).toBeInTheDocument();
+    expect(screen.getByText("Engineering Leader & Builder")).toBeInTheDocument();
   });
 
-  it("shows empty state when no resources", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      json: async () => ({ resources: [] }),
-    });
-
+  it("shows location", () => {
     render(<Home />);
-
-    await waitFor(() => {
-      expect(screen.getByText("No resources yet")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Birmingham, AL")).toBeInTheDocument();
   });
 
-  it("shows Add Resource button", () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      json: async () => ({ resources: [] }),
-    });
-
+  it("shows GitHub link", () => {
     render(<Home />);
-    expect(screen.getByRole("button", { name: /add resource/i })).toBeInTheDocument();
+    const githubLink = screen.getByRole("link", { name: /github/i });
+    expect(githubLink).toHaveAttribute("href", "https://github.com/DEGoodman");
   });
 });

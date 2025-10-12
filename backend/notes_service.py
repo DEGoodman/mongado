@@ -147,7 +147,7 @@ class NotesService:
         # Check ephemeral notes
         if session_id:
             ephemeral_note = self.ephemeral.get_note(note_id)
-            if ephemeral_note:
+            if ephemeral_note and ephemeral_note.session_id == session_id:
                 return self._ephemeral_to_dict(ephemeral_note)
 
         return None
@@ -266,9 +266,10 @@ class NotesService:
 
         # Check ephemeral note
         if session_id:
-            if self.ephemeral.update_note(note_id, content, links):
-                ephemeral_note = self.ephemeral.get_note(note_id)
-                if ephemeral_note:
+            ephemeral_note = self.ephemeral.get_note(note_id)
+            # Only allow updating if note belongs to this session
+            if ephemeral_note and ephemeral_note.session_id == session_id:
+                if self.ephemeral.update_note(note_id, content, links):
                     if title:
                         ephemeral_note.title = title
                     if tags:
@@ -322,9 +323,12 @@ class NotesService:
 
         # Check ephemeral note
         if session_id:
-            if self.ephemeral.delete_note(note_id):
-                logger.info("Deleted ephemeral note: %s", note_id)
-                return True
+            ephemeral_note = self.ephemeral.get_note(note_id)
+            # Only allow deleting if note belongs to this session
+            if ephemeral_note and ephemeral_note.session_id == session_id:
+                if self.ephemeral.delete_note(note_id):
+                    logger.info("Deleted ephemeral note: %s", note_id)
+                    return True
 
         return False
 
