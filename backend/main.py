@@ -16,6 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from article_loader import load_static_articles
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from logging_config import setup_logging
+from notes_api import router as notes_router
 from ollama_client import get_ollama_client
 
 # Configure logging
@@ -84,6 +85,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # 3. Cache control
 app.add_middleware(CacheControlMiddleware)
+
+# Include routers
+app.include_router(notes_router)
 
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")

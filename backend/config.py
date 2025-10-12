@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
 
+    # Zettelkasten authentication
+    admin_passkey: str = ""  # Admin passkey for creating persistent notes
+
 
 class SecretManager:
     """Manage secrets using 1Password CLI or SDK."""
