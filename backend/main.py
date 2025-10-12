@@ -6,10 +6,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from article_loader import load_static_articles
 from config import SecretManager, Settings, get_secret_manager, get_settings
@@ -35,7 +37,40 @@ app = FastAPI(
 logger.info("Starting %s v%s", settings.app_name, settings.app_version)
 logger.info("1Password integration: %s", "enabled" if secret_manager.is_available() else "disabled")
 
-# Configure CORS
+
+# Cache control middleware for static assets
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    """Add cache control headers for static assets and API responses."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Process request and add appropriate cache headers."""
+        response = await call_next(request)
+
+        # Static assets (images, icons, etc.) - cache for 1 year
+        if request.url.path.startswith("/static/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+
+        # Static markdown articles - cache but revalidate
+        elif request.url.path.startswith("/static/articles/"):
+            response.headers["Cache-Control"] = "public, max-age=3600, must-revalidate"
+
+        # User uploads - cache for 1 day
+        elif request.url.path.startswith("/uploads/"):
+            response.headers["Cache-Control"] = "public, max-age=86400"
+
+        # API responses - no cache by default (can override per endpoint)
+        elif request.url.path.startswith("/api/"):
+            # Allow browser to cache list/read operations for 60 seconds
+            if request.method == "GET":
+                response.headers["Cache-Control"] = "public, max-age=60"
+            else:
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+
+        return response
+
+
+# Configure middleware (order matters!)
+# 1. CORS - must be first
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -44,11 +79,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create uploads directory for images
+# 2. GZip compression for all responses
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# 3. Cache control
+app.add_middleware(CacheControlMiddleware)
+
+# Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# Mount static files for serving uploaded images
+# Static assets directory (checked into source control)
+STATIC_DIR = Path(__file__).parent / "static"
+
+# Mount static files
+# Static assets (images, icons, etc.) - long cache time
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR), html=False), name="static")
+
+# User uploads - shorter cache time
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Static articles (loaded from files/S3, read-only)

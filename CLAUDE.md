@@ -40,7 +40,14 @@ All configuration in `backend/config.py`:
 
 ### Data Storage
 
-In-memory storage in `main.py` (temporary). When adding DB:
+**Static Content** (`backend/static/`):
+- Articles: Markdown files with YAML frontmatter (`backend/static/articles/`)
+- Images: WebP format recommended (`backend/static/assets/images/`)
+- Cached at startup, auto-reload on file changes in dev mode
+- See `docs/KNOWLEDGE_BASE.md` for content authoring guide
+
+**User Data** (in-memory, temporary):
+- Will migrate to database (PostgreSQL/MongoDB)
 - Keep pure logic separate from data access
 - Use dependency injection
 - Follow functional core / imperative shell pattern
@@ -76,6 +83,10 @@ make memory           # Memory profiling
 
 # Single test
 ./venv/bin/pytest tests/unit/test_main.py::test_function_name -v
+
+# Image Optimization
+./venv/bin/python image_optimizer.py input.jpg output.webp 85 1200
+./venv/bin/python image_optimizer.py --batch static/assets/images/
 ```
 
 ### Frontend (Next.js 14 + TypeScript)
@@ -168,10 +179,16 @@ In `backend/main.py`:
 
 **Endpoints:**
 - `GET /` - API status
-- `GET /api/resources` - List resources
-- `POST /api/resources` - Create resource
-- `GET /api/resources/{id}` - Get resource
-- `DELETE /api/resources/{id}` - Delete resource
+- `GET /api/resources` - List all resources (static + user)
+- `POST /api/resources` - Create user resource
+- `GET /api/resources/{id}` - Get resource by ID
+- `DELETE /api/resources/{id}` - Delete user resource (static articles read-only)
+- `POST /api/search` - Semantic search with Ollama AI
+- `POST /api/ask` - Q&A with context from articles
+- `GET /api/articles/{id}/summary` - AI-generated summary
+- `POST /api/upload-image` - Upload image (temporary storage)
+- `GET /static/assets/*` - Static assets (images, icons, downloads)
+- `GET /static/articles/*` - Raw markdown files
 
 **Adding endpoints:**
 1. Define Pydantic models
@@ -205,6 +222,7 @@ See existing tests for patterns.
 - `docs/TESTING.md` - Testing tools and commands
 - `docs/PROFILING.md` - Performance profiling tools
 - `docs/DEPENDENCIES.md` - Dependency structure
+- `docs/KNOWLEDGE_BASE.md` - Content authoring guide (articles & images)
 
 Root `README.md` is a quick start guide.
 

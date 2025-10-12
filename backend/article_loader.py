@@ -1,6 +1,8 @@
 """Load static articles from filesystem or S3."""
 
+import hashlib
 import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -11,9 +13,39 @@ from config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+# Cache for loaded articles - cleared on restart
+_articles_cache: list[dict[str, Any]] | None = None
+_articles_hash: str | None = None
+
+
+def _compute_directory_hash(articles_dir: Path) -> str:
+    """Compute hash of all markdown files in directory for cache invalidation.
+
+    Args:
+        articles_dir: Path to directory containing markdown files
+
+    Returns:
+        SHA256 hash of all file modification times and names
+    """
+    if not articles_dir.exists():
+        return ""
+
+    md_files = sorted(articles_dir.glob("*.md"))
+    hash_content = ""
+
+    for md_file in md_files:
+        # Include filename and modification time
+        stat = md_file.stat()
+        hash_content += f"{md_file.name}:{stat.st_mtime}:"
+
+    return hashlib.sha256(hash_content.encode()).hexdigest()
+
 
 def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
-    """Load articles from local filesystem.
+    """Load articles from local filesystem with intelligent caching.
+
+    Articles are cached in memory and only reloaded if files change.
+    This provides fast response times while allowing hot-reload in development.
 
     Args:
         articles_dir: Path to directory containing markdown files
@@ -21,11 +53,21 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
     Returns:
         List of article dictionaries with metadata and content
     """
-    articles: list[dict[str, Any]] = []
+    global _articles_cache, _articles_hash
 
     if not articles_dir.exists():
         logger.warning("Static articles directory not found: %s", articles_dir)
-        return articles
+        return []
+
+    # Check if cache is valid
+    current_hash = _compute_directory_hash(articles_dir)
+    if _articles_cache is not None and _articles_hash == current_hash:
+        logger.debug("Using cached articles (hash: %s)", current_hash[:8])
+        return _articles_cache
+
+    # Cache miss or invalidation - reload articles
+    logger.info("Loading articles from %s", articles_dir)
+    articles: list[dict[str, Any]] = []
 
     # Load all .md files
     md_files = sorted(articles_dir.glob("*.md"))
@@ -55,6 +97,11 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
             continue
 
     logger.info("Successfully loaded %d articles", len(articles))
+
+    # Update cache
+    _articles_cache = articles
+    _articles_hash = current_hash
+
     return articles
 
 
