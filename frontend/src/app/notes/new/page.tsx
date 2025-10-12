@@ -6,6 +6,8 @@ import NoteEditor from "@/components/NoteEditor";
 import AuthStatusBanner from "@/components/AuthStatusBanner";
 import { createNote, listNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
+import AIPanel from "@/components/AIPanel";
+import AIButton from "@/components/AIButton";
 
 export default function NewNotePage() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function NewNotePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allNotes, setAllNotes] = useState<Note[]>([]);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -71,6 +74,12 @@ export default function NewNotePage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* AI Panel */}
+      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+
+      {/* AI Button */}
+      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Note</h1>

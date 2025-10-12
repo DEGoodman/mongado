@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listNotes, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
+import AIPanel from "@/components/AIPanel";
+import AIButton from "@/components/AIButton";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   useEffect(() => {
     async function fetchNotes() {
@@ -57,6 +60,12 @@ export default function NotesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* AI Panel */}
+      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+
+      {/* AI Button */}
+      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>

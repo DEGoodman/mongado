@@ -5,6 +5,8 @@ import Link from "next/link";
 import { logger } from "@/lib/logger";
 import RichTextEditor from "@/components/RichTextEditor";
 import RichTextDisplay from "@/components/RichTextDisplay";
+import AIPanel from "@/components/AIPanel";
+import AIButton from "@/components/AIButton";
 
 // Note: Page metadata should be exported from a layout.tsx file for this route
 // but since this is a client component, we'll handle it via document.title
@@ -23,6 +25,7 @@ export default function KnowledgeBasePage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -96,6 +99,12 @@ export default function KnowledgeBasePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* AI Panel */}
+      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+
+      {/* AI Button */}
+      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

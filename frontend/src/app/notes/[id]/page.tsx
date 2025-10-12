@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
 import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
+import AIPanel from "@/components/AIPanel";
+import AIButton from "@/components/AIButton";
 import {
   getNote,
   updateNote,
@@ -35,6 +37,7 @@ export default function NoteDetailPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editTags, setEditTags] = useState("");
   const [saving, setSaving] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -180,6 +183,12 @@ export default function NoteDetailPage() {
 
   return (
     <div>
+      {/* AI Panel */}
+      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+
+      {/* AI Button */}
+      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+
       {/* Auth status indicator at top */}
       <AuthStatusIndicator />
 
