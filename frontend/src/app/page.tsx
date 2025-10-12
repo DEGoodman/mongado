@@ -69,8 +69,8 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             <ProjectTile
               title="Knowledge Base"
-              description="A Zettelkasten-inspired note-taking system with wikilinks, backlinks, and AI assistance. Build your personal knowledge graph with interconnected notes."
-              href="/notes"
+              description="Articles and atomic notes in one place. Long-form content alongside a Zettelkasten system with wikilinks, backlinks, and AI-powered search."
+              href="/knowledge-base"
               icon="📚"
             />
             <ProjectTile

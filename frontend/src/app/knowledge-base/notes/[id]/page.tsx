@@ -132,7 +132,7 @@ export default function NoteDetailPage() {
     try {
       await deleteNote(noteId);
       logger.info("Note deleted successfully", { id: noteId });
-      router.push("/notes");
+      router.push("/knowledge-base/notes");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete note";
       setError(message);
@@ -169,7 +169,7 @@ export default function NoteDetailPage() {
           <h2 className="text-red-800 font-semibold mb-2">Error</h2>
           <p className="text-red-600">{error}</p>
           <Link
-            href="/notes"
+            href="/knowledge-base/notes"
             className="mt-4 inline-block text-blue-600 hover:underline"
           >
             ← Back to notes
@@ -200,13 +200,13 @@ export default function NoteDetailPage() {
           <div className="mb-6">
             <div className="flex gap-4 mb-4">
               <Link
-                href="/"
+                href="/knowledge-base"
                 className="text-blue-600 hover:underline text-sm"
               >
-                ← Home
+                ← Knowledge Base
               </Link>
               <Link
-                href="/notes"
+                href="/knowledge-base/notes"
                 className="text-blue-600 hover:underline text-sm"
               >
                 All notes
@@ -302,7 +302,7 @@ export default function NoteDetailPage() {
                   content={editContent}
                   onChange={setEditContent}
                   allNotes={allNotes}
-                  onNoteClick={(id) => window.open(`/notes/${id}`, "_blank")}
+                  onNoteClick={(id) => window.open(`/knowledge-base/notes/${id}`, "_blank")}
                 />
               </div>
 
@@ -348,7 +348,7 @@ export default function NoteDetailPage() {
                       return (
                         <Link
                           key={i}
-                          href={`/notes/${match[1]}`}
+                          href={`/knowledge-base/notes/${match[1]}`}
                           className="text-blue-600 hover:underline font-mono bg-blue-50 px-1 rounded"
                         >
                           {part}
@@ -375,7 +375,7 @@ export default function NoteDetailPage() {
                 {outboundLinks.map((link) => (
                   <Link
                     key={link.id}
-                    href={`/notes/${link.id}`}
+                    href={`/knowledge-base/notes/${link.id}`}
                     className="block p-2 hover:bg-gray-50 rounded"
                   >
                     <code className="text-sm text-blue-600">{link.id}</code>
@@ -398,7 +398,7 @@ export default function NoteDetailPage() {
                 {backlinks.map((backlink) => (
                   <Link
                     key={backlink.id}
-                    href={`/notes/${backlink.id}`}
+                    href={`/knowledge-base/notes/${backlink.id}`}
                     className="block p-2 hover:bg-gray-50 rounded"
                   >
                     <code className="text-sm text-blue-600">{backlink.id}</code>

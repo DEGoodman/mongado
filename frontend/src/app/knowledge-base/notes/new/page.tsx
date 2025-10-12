@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
 import AuthStatusBanner from "@/components/AuthStatusBanner";
 import { createNote, listNotes, Note } from "@/lib/api/notes";
@@ -55,7 +56,7 @@ export default function NewNotePage() {
       });
 
       logger.info("Note created successfully", { id: note.id });
-      router.push(`/notes/${note.id}`);
+      router.push(`/knowledge-base/notes/${note.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create note";
       setError(message);
@@ -69,7 +70,7 @@ export default function NewNotePage() {
     if (content.trim() && !confirm("Discard unsaved changes?")) {
       return;
     }
-    router.push("/notes");
+    router.push("/knowledge-base/notes");
   };
 
   return (
@@ -83,10 +84,10 @@ export default function NewNotePage() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex gap-4 mb-4">
-          <Link href="/" className="text-blue-600 hover:underline text-sm">
-            ← Home
+          <Link href="/knowledge-base" className="text-blue-600 hover:underline text-sm">
+            ← Knowledge Base
           </Link>
-          <Link href="/notes" className="text-blue-600 hover:underline text-sm">
+          <Link href="/knowledge-base/notes" className="text-blue-600 hover:underline text-sm">
             All notes
           </Link>
         </div>
@@ -152,7 +153,7 @@ export default function NewNotePage() {
             allNotes={allNotes}
             onNoteClick={(noteId) => {
               // Open note in new tab
-              window.open(`/notes/${noteId}`, "_blank");
+              window.open(`/knowledge-base/notes/${noteId}`, "_blank");
             }}
           />
         </div>

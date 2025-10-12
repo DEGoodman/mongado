@@ -69,10 +69,10 @@ export default function NotesPage() {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href="/"
+          href="/knowledge-base"
           className="text-blue-600 hover:underline text-sm mb-4 inline-block"
         >
-          ← Home
+          ← Knowledge Base
         </Link>
         <div className="flex justify-between items-center">
           <div>
@@ -82,7 +82,7 @@ export default function NotesPage() {
             </p>
           </div>
           <Link
-            href="/notes/new"
+            href="/knowledge-base/notes/new"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             + New Note
@@ -112,7 +112,7 @@ export default function NotesPage() {
           </p>
           <div className="mt-6">
             <Link
-              href="/notes/new"
+              href="/knowledge-base/notes/new"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
               Create Note
@@ -124,7 +124,7 @@ export default function NotesPage() {
           {notes.map((note) => (
             <Link
               key={note.id}
-              href={`/notes/${note.id}`}
+              href={`/knowledge-base/notes/${note.id}`}
               className="block bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition"
             >
               <div className="flex items-start justify-between">
