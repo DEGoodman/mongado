@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def verify_admin(authorization: str = Header(None)) -> bool:
+def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
     """Verify admin passkey from Authorization header.
 
     Expects: "Bearer your-secret-passkey"
@@ -61,7 +61,7 @@ def verify_admin(authorization: str = Header(None)) -> bool:
     return True
 
 
-def get_session_id(x_session_id: str = Header(None)) -> str | None:
+def get_session_id(x_session_id: Annotated[str | None, Header()] = None) -> str | None:
     """Extract session ID from custom header.
 
     This is used to track ephemeral notes for anonymous visitors.
