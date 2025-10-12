@@ -1,4 +1,5 @@
 import ProjectTile from "@/components/ProjectTile";
+import { siteConfig } from "@/lib/site-config";
 
 export default function Home() {
   return (
@@ -9,30 +10,27 @@ export default function Home() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-4">
-              D. Erik Goodman
+              {siteConfig.author.fullTitle}
             </h1>
             <p className="text-xl text-gray-600 mb-2">
-              Engineering Leader & Builder
+              {siteConfig.author.title}
             </p>
             <p className="text-md text-gray-500">
-              Birmingham, AL
+              {siteConfig.author.location}
             </p>
           </div>
 
           {/* Bio */}
           <div className="prose prose-lg max-w-none mb-8">
             <p className="text-gray-700 leading-relaxed text-center max-w-3xl mx-auto">
-              Engineering leader with deep expertise in mission-critical SaaS product, infrastructure, and billing systems.
-              I combine technical depth across multiple technology stacks with strategic business acumen to build engineering
-              cultures that consistently deliver measurable results. U.S. Air Force veteran turned engineering manager with a
-              passion for building reliable systems and developing engineering talent.
+              {siteConfig.author.bio}
             </p>
           </div>
 
           {/* Social Links */}
           <div className="flex flex-wrap gap-4 justify-center mt-8">
             <a
-              href="https://github.com/DEGoodman"
+              href={siteConfig.links.github}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors shadow-md hover:shadow-lg"
@@ -43,7 +41,7 @@ export default function Home() {
               GitHub
             </a>
             <a
-              href="https://linkedin.com/in/degoodman"
+              href={siteConfig.links.linkedin}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
@@ -54,7 +52,7 @@ export default function Home() {
               LinkedIn
             </a>
             <a
-              href="mailto:erik@mongado.com"
+              href={siteConfig.links.email}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors shadow-md hover:shadow-lg"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,26 +60,6 @@ export default function Home() {
               </svg>
               Email
             </a>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 pt-8 border-t border-gray-200">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">5+</div>
-              <div className="text-sm text-gray-600">Years Leading Teams</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">1Password</div>
-              <div className="text-sm text-gray-600">Engineering Manager</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">37</div>
-              <div className="text-sm text-gray-600">Public Repos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">USAF</div>
-              <div className="text-sm text-gray-600">Veteran</div>
-            </div>
           </div>
         </div>
 
@@ -119,7 +97,7 @@ export default function Home() {
         {/* Footer note */}
         <div className="text-center text-gray-500 text-sm mt-12">
           <p>Built with Next.js, FastAPI, and Python ☕</p>
-          <p className="mt-2 text-xs">© 2025 D. Erik Goodman • Birmingham, AL</p>
+          <p className="mt-2 text-xs">© 2025 {siteConfig.author.name} • {siteConfig.author.location}</p>
         </div>
       </main>
     </div>

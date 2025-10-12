@@ -1,4 +1,4 @@
-"""Knowledge Base API - Main application module."""
+"""Mongado API - Personal website backend with Knowledge Base and future features."""
 
 import logging
 import uuid

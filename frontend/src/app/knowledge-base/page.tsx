@@ -6,6 +6,9 @@ import { logger } from "@/lib/logger";
 import RichTextEditor from "@/components/RichTextEditor";
 import RichTextDisplay from "@/components/RichTextDisplay";
 
+// Note: Page metadata should be exported from a layout.tsx file for this route
+// but since this is a client component, we'll handle it via document.title
+
 interface Resource {
   id: number;
   title: string;
@@ -43,6 +46,7 @@ export default function KnowledgeBasePage() {
   }, [API_URL]);
 
   useEffect(() => {
+    document.title = "Knowledge Base | Mongado";
     fetchResources();
   }, [fetchResources]);
 

@@ -1,74 +1,41 @@
 # Documentation Index
 
-Welcome to the Mongado Knowledge Base documentation!
+Documentation for the Mongado Knowledge Base project.
 
-## Getting Started
+## Quick Start
 
 - **[Quick Start](../README.md)** - Get up and running in minutes
-- **[Setup Guide](SETUP.md)** - Detailed installation and 1Password configuration
-- **[Development Setup](DEVELOPMENT_SETUP.md)** - Complete development environment overview
 
-## Development Guides
+## Guides
 
-- **[Testing](TESTING.md)** - Testing strategy, tools, and best practices
-- **[Logging](LOGGING.md)** - Logging best practices for backend and frontend
-- **[Profiling](PROFILING.md)** - Performance profiling and optimization
-- **[Dependencies](DEPENDENCIES.md)** - Dependency management strategy
+- **[SETUP.md](SETUP.md)** - Installation and 1Password configuration
+- **[TESTING.md](TESTING.md)** - Testing tools and commands
+- **[PROFILING.md](PROFILING.md)** - Performance profiling tools
+- **[DEPENDENCIES.md](DEPENDENCIES.md)** - Dependency structure
 
-## Reference
+## Quick Reference
 
-- **[Project Status](PROJECT_STATUS.md)** - Current project status and verification
-
-## Quick Links
-
-### Backend (Python/FastAPI)
+### Backend Commands
 
 ```bash
 cd backend
-make test          # Run tests
-make lint          # Lint code
-make format        # Format code
-make typecheck     # Type check
-make ci            # Full CI pipeline
+make test       # Run tests
+make ci         # Full CI pipeline
+make profile    # Profile performance
 ```
 
-See [TESTING.md](TESTING.md) for more backend commands.
+See [TESTING.md](TESTING.md) for more.
 
-### Frontend (Next.js/React)
+### Frontend Commands
 
 ```bash
 cd frontend
-npm test           # Run tests
-npm run lint       # Lint code
-npm run format     # Format code
-npm run type-check # Type check
-npm run test:all   # Full test suite
+npm test        # Run tests
+npm run test:all  # Full test suite
+npm run build:analyze  # Bundle analysis
 ```
 
-See [TESTING.md](TESTING.md) for more frontend commands.
-
-## Documentation Organization
-
-```
-docs/
-├── README.md              # This file
-├── SETUP.md              # Setup and configuration
-├── TESTING.md            # Testing guide
-├── LOGGING.md            # Logging guide
-├── PROFILING.md          # Performance guide
-├── DEPENDENCIES.md       # Dependency management
-├── DEVELOPMENT_SETUP.md  # Dev environment overview
-└── PROJECT_STATUS.md     # Project status
-```
-
-## Contributing
-
-When adding new documentation:
-
-1. Place it in the `docs/` directory
-2. Update this README with a link
-3. Use relative links for cross-references
-4. Keep the main README.md as a quick start guide
+See [TESTING.md](TESTING.md) for more.
 
 ## External Resources
 

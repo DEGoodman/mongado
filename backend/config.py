@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     # Application settings
-    app_name: str = "Knowledge Base API"
+    app_name: str = "Mongado API"
     app_version: str = "0.1.0"
     debug: bool = False
 

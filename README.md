@@ -1,55 +1,39 @@
-# Mongado Knowledge Base
+# Mongado
 
-A modern web application for managing your personal knowledge base with integrated AI capabilities. Built with Python (FastAPI) backend and Next.js frontend.
+Personal website of D. Erik Goodman. Built with Python (FastAPI) backend and Next.js frontend.
+
+> **Mongado** is an anagram of "Goodman"
 
 ## Features
 
-- 📚 Create, view, and manage knowledge resources
-- 🏷️ Tag resources for easy organization
-- 🔗 Store links alongside your notes
-- 🎨 Clean, responsive UI with Tailwind CSS
-- 🔐 Secure credential management with 1Password
-- 🐳 Docker containerization for dev and production
+- **Personal Homepage**: Portfolio and professional presence
+- **Knowledge Base**: Personal knowledge management system (moving from Notion and offline notes)
+- **Extensible**: Designed for easy addition of future projects
 
 ## Quick Start
 
-### Prerequisites
+### Docker (Recommended)
 
-- Docker Desktop or Docker Engine
-- Docker Compose v2.0+
-- (Optional) 1Password CLI for credential management
+```bash
+git clone <repository-url>
+cd mongado
+docker compose up
+```
 
-### Run with Docker (Recommended)
+- Homepage: http://localhost:3000
+- Knowledge Base: http://localhost:3000/knowledge-base
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd mongado
-   ```
-
-2. **Start the application**:
-   ```bash
-   docker compose up
-   ```
-
-3. **Access the application**:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
-
-That's it! The application is now running with hot reload enabled.
-
-### Manual Setup (without Docker)
-
-If you prefer to run without Docker:
+### Manual Setup
 
 **Backend:**
 ```bash
 cd backend
 python3.13 -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source venv/bin/activate
 pip install -r requirements-dev.txt
-python main.py
+make run
 ```
 
 **Frontend:**
@@ -59,131 +43,107 @@ npm install
 npm run dev
 ```
 
-See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions.
-
 ## Project Structure
 
 ```
 mongado/
 ├── backend/              # Python FastAPI backend
 │   ├── main.py          # API endpoints
-│   ├── config.py        # Configuration & 1Password
-│   ├── logging_config.py # Logging setup
+│   ├── config.py        # Configuration & secrets
 │   ├── tests/           # Test suite
-│   └── scripts/         # Profiling & benchmarking
+│   └── Makefile         # Dev commands
 ├── frontend/            # Next.js React frontend
 │   └── src/
-│       ├── app/         # Pages and layouts
-│       └── lib/         # Utilities (logger, etc.)
-├── docs/                # Documentation
-└── docker-compose.yml   # Development orchestration
+│       ├── app/         # Pages (homepage, knowledge-base, etc.)
+│       ├── components/  # Reusable components
+│       └── lib/         # Utilities
+└── docs/                # Documentation
 ```
 
-## API Endpoints
-
-- `GET /` - API information
-- `GET /api/resources` - Get all resources
-- `POST /api/resources` - Create a new resource
-- `GET /api/resources/{id}` - Get a specific resource
-- `DELETE /api/resources/{id}` - Delete a resource
-
-Full API documentation available at http://localhost:8000/docs when running.
-
-## Development
-
-### Common Commands
-
-```bash
-# Start development environment
-docker compose up
-
-# Rebuild after dependency changes
-docker compose up --build
-
-# Run backend tests
-cd backend && make test
-
-# Run frontend tests
-cd frontend && npm test
-
-# View logs
-docker compose logs -f
-```
-
-### Documentation
-
-- **[Setup Guide](docs/SETUP.md)** - Detailed installation and configuration
-- **[Testing](docs/TESTING.md)** - Testing strategy and tools
-- **[Logging](docs/LOGGING.md)** - Logging best practices
-- **[Profiling](docs/PROFILING.md)** - Performance profiling and optimization
-- **[Dependencies](docs/DEPENDENCIES.md)** - Dependency management strategy
-- **[Development Setup](docs/DEVELOPMENT_SETUP.md)** - Complete development environment
-
-### Technology Stack
+## Common Commands
 
 **Backend:**
-- Python 3.13
-- FastAPI
-- Pydantic v2
-- pytest (testing)
-- mypy (type checking)
-- ruff (linting)
+```bash
+cd backend
+make test       # Run tests
+make ci         # Full CI pipeline (lint, typecheck, security, tests)
+make profile    # Profile performance
+```
 
 **Frontend:**
-- Next.js 14
-- React 18
-- TypeScript
-- Tailwind CSS
-- Vitest (testing)
-- Playwright (E2E testing)
+```bash
+cd frontend
+npm test        # Run tests
+npm run test:all  # Full test suite (typecheck, lint, tests)
+npm run build:analyze  # Analyze bundle size
+```
+
+**Docker:**
+```bash
+docker compose up --build  # Rebuild after dependency changes
+docker compose logs -f backend  # View logs
+```
+
+## Technology Stack
+
+**Backend:**
+- Python 3.13, FastAPI, Pydantic v2
+- pytest, mypy, ruff
+
+**Frontend:**
+- Next.js 14, React 18, TypeScript
+- Tailwind CSS, Vitest, Playwright
 
 **DevOps:**
-- Docker & Docker Compose
-- 1Password (secrets management)
-- GitHub Actions (CI/CD)
+- Docker, 1Password (optional secrets management)
 
-## 1Password Integration (Optional)
+## Adding New Projects
 
-This project supports 1Password for secure credential management. This is especially useful when developing in the open to avoid committing secrets to GitHub.
+The site uses centralized configuration for easy extensibility:
 
-**Quick Setup:**
-```bash
-# Install 1Password CLI
-brew install 1password-cli  # macOS
+1. **Update site config** (`frontend/src/lib/site-config.ts`):
+   - Add any new site-wide data or links
 
-# Sign in
-op account add
+2. **Create new route** (e.g., `frontend/src/app/[project-name]/page.tsx`):
+   ```tsx
+   export default function ProjectPage() {
+     return <div>Your project here</div>;
+   }
+   ```
 
-# Set token (for service accounts)
-export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="your-token"
-```
+3. **Add to homepage** (`frontend/src/app/page.tsx`):
+   ```tsx
+   <ProjectTile
+     title="Project Name"
+     description="Project description"
+     href="/project-name"
+     icon="🚀"
+   />
+   ```
 
-See [docs/SETUP.md](docs/SETUP.md#1password-setup) for detailed instructions.
+4. **Add backend endpoints** (if needed) in `backend/main.py`
 
-## Production Deployment
+All existing infrastructure (components, styling, config) is reusable. The `ProjectTile` component and `siteConfig` follow DRY principles.
 
-```bash
-# Build and run production containers
-docker compose -f docker-compose.prod.yml up -d
+## Documentation
 
-# View logs
-docker compose -f docker-compose.prod.yml logs -f
-```
+- [SETUP.md](docs/SETUP.md) - Installation and 1Password setup
+- [TESTING.md](docs/TESTING.md) - Testing strategy and tools
+- [PROFILING.md](docs/PROFILING.md) - Performance profiling
+- [DEPENDENCIES.md](docs/DEPENDENCIES.md) - Dependency management
 
-Production builds use optimized dependencies and multi-stage Docker builds for minimal image sizes (~600MB smaller than dev).
+## Roadmap
 
-## Contributing
+### Knowledge Base
+- AI-powered search and context retrieval
+- Database persistence (PostgreSQL/MongoDB)
+- Full-text search
+- Advanced tag filtering
 
-This is a personal project, but suggestions and improvements are welcome! Please check the documentation in the `docs/` directory for development guidelines.
-
-## Future Enhancements
-
-- 🤖 AI-powered search and context retrieval
-- 💾 Database persistence (PostgreSQL/MongoDB)
-- 🔍 Full-text search
-- 👤 User authentication
-- 📱 Mobile-responsive improvements
-- 🏷️ Advanced tag filtering
+### Future Projects
+- Additional portfolio projects
+- Blog/articles section
+- Integration with other services
 
 ## License
 
