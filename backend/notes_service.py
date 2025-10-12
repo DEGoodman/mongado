@@ -7,7 +7,8 @@ from typing import Any
 
 from database import get_database
 from ephemeral_notes import EphemeralNote, get_ephemeral_store
-from neo4j_adapter import get_neo4j_adapter
+# Temporarily disabled until Neo4j connection timeout fixed
+# from neo4j_adapter import get_neo4j_adapter
 from note_id_generator import get_id_generator
 from wikilink_parser import get_wikilink_parser
 
@@ -20,7 +21,12 @@ class NotesService:
     def __init__(self):
         """Initialize notes service."""
         self.db = get_database()  # Fallback for when Neo4j unavailable
-        self.neo4j = get_neo4j_adapter()
+
+        # Neo4j temporarily disabled - using SQLite only
+        # TODO: Fix Neo4j connection timeout issue
+        self.neo4j = None
+        logger.info("Using SQLite for persistent notes (Neo4j disabled)")
+
         self.ephemeral = get_ephemeral_store()
         self.id_generator = get_id_generator()
         self.wikilink_parser = get_wikilink_parser()
@@ -54,7 +60,7 @@ class NotesService:
 
         if is_admin:
             # Create persistent note in Neo4j
-            if self.neo4j.is_available():
+            if self.neo4j and self.neo4j.is_available():
                 note = self.neo4j.create_note(
                     note_id=note_id,
                     content=content,
@@ -127,7 +133,7 @@ class NotesService:
             Note dict or None if not found
         """
         # Check persistent notes first
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             note = self.neo4j.get_note(note_id)
             if note:
                 return note
@@ -160,7 +166,7 @@ class NotesService:
         notes = []
 
         # Get persistent notes (visible to everyone)
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             persistent = self.neo4j.list_notes()
             notes.extend(persistent)
         else:
@@ -203,7 +209,7 @@ class NotesService:
         links = self.wikilink_parser.extract_links(content)
 
         # Check if persistent note
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             note = self.neo4j.get_note(note_id)
             if note:
                 # Only admin can update persistent notes
@@ -285,7 +291,7 @@ class NotesService:
             True if deleted, False if not found/unauthorized
         """
         # Check persistent note
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             note = self.neo4j.get_note(note_id)
             if note:
                 if not is_admin:
@@ -331,7 +337,7 @@ class NotesService:
             List of notes with links to this note
         """
         # Query database backlinks
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             return self.neo4j.get_backlinks(note_id)
         else:
             # Fallback to SQLite
@@ -360,7 +366,7 @@ class NotesService:
         Returns:
             List of linked notes
         """
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             return self.neo4j.get_outbound_links(note_id)
         else:
             # Fallback to SQLite
@@ -377,7 +383,7 @@ class NotesService:
 
     def _get_all_note_ids(self) -> set[str]:
         """Get all existing note IDs (for collision detection)."""
-        if self.neo4j.is_available():
+        if self.neo4j and self.neo4j.is_available():
             persistent_ids = self.neo4j.get_all_note_ids()
         else:
             # Fallback to SQLite

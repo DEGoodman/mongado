@@ -31,11 +31,14 @@ class Neo4jAdapter:
     def _connect(self) -> None:
         """Establish connection to Neo4j."""
         try:
+            # Set connection timeout to 0.5 seconds to avoid blocking startup
             self.driver = GraphDatabase.driver(
                 self.uri,
                 auth=(self.user, self.password),
+                connection_timeout=0.5,
+                max_connection_lifetime=3600,
             )
-            # Test connection
+            # Test connection with short timeout
             with self.driver.session(database=self.database) as session:
                 result = session.run("RETURN 1 AS test")
                 result.single()
@@ -50,7 +53,7 @@ class Neo4jAdapter:
             )
             self._available = False
         except Exception as e:
-            logger.error("Failed to connect to Neo4j: %s", e)
+            logger.warning("Failed to connect to Neo4j: %s - using SQLite fallback", e)
             self._available = False
 
     def _initialize_schema(self) -> None:
