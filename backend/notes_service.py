@@ -7,8 +7,7 @@ from typing import Any
 
 from database import get_database
 from ephemeral_notes import EphemeralNote, get_ephemeral_store
-# Temporarily disabled until Neo4j connection timeout fixed
-# from neo4j_adapter import get_neo4j_adapter
+from neo4j_adapter import get_neo4j_adapter
 from note_id_generator import get_id_generator
 from wikilink_parser import get_wikilink_parser
 
@@ -22,10 +21,12 @@ class NotesService:
         """Initialize notes service."""
         self.db = get_database()  # Fallback for when Neo4j unavailable
 
-        # Neo4j temporarily disabled - using SQLite only
-        # TODO: Fix Neo4j connection timeout issue
-        self.neo4j = None
-        logger.info("Using SQLite for persistent notes (Neo4j disabled)")
+        # Try to initialize Neo4j adapter
+        self.neo4j = get_neo4j_adapter()
+        if self.neo4j.is_available():
+            logger.info("Using Neo4j for persistent notes")
+        else:
+            logger.info("Using SQLite for persistent notes (Neo4j unavailable)")
 
         self.ephemeral = get_ephemeral_store()
         self.id_generator = get_id_generator()
