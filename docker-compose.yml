@@ -1,6 +1,6 @@
 services:
   neo4j:
-    image: neo4j:5.27.0
+    image: neo4j:latest
     container_name: mongado-neo4j
     ports:
       - "7474:7474"  # HTTP (browser interface)

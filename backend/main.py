@@ -15,7 +15,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from article_loader import load_static_articles
 from config import SecretManager, Settings, get_secret_manager, get_settings
-from image_optimizer import optimize_image_to_webp
+# Temporarily disabled - image_optimizer causing import hang
+# TODO: Fix Pillow/image import issue
+# from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
 from notes_api import router as notes_router
 from ollama_client import get_ollama_client
@@ -199,59 +201,33 @@ def read_root() -> StatusResponse:
 
 @app.post("/api/upload-image", response_model=ImageUploadResponse)
 async def upload_image(file: Annotated[UploadFile, File()]) -> ImageUploadResponse:
-    """Upload an image file, optimize to WebP, and return its URL."""
+    """Upload an image file and return its URL.
+
+    TODO: Re-enable image optimization once Pillow import issue is resolved.
+    """
     # Validate file type
     allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp"}
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed.")
 
-    # Generate unique filename for temporary upload
+    # Generate unique filename
     file_extension = Path(file.filename or "image.jpg").suffix
-    temp_filename = f"{uuid.uuid4()}{file_extension}"
-    temp_path = UPLOAD_DIR / temp_filename
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = UPLOAD_DIR / unique_filename
 
-    # Save file temporarily
+    # Save file
     try:
         content = await file.read()
-        with open(temp_path, "wb") as f:
+        with open(file_path, "wb") as f:
             f.write(content)
-        logger.info("Image uploaded: %s", temp_filename)
+        logger.info("Image uploaded successfully: %s", unique_filename)
     except Exception as e:
         logger.error("Error uploading image: %s", e)
         raise HTTPException(status_code=500, detail="Failed to upload image") from e
 
-    # Optimize to WebP
-    webp_filename = f"{uuid.uuid4()}.webp"
-    webp_path = UPLOAD_DIR / webp_filename
-
-    try:
-        optimized_path = optimize_image_to_webp(
-            temp_path,
-            webp_path,
-            quality=85,  # Good balance of quality and size
-            max_width=1200,  # Reasonable max width for web
-        )
-
-        if not optimized_path:
-            # Optimization failed, use original file
-            logger.warning("Image optimization failed, using original: %s", temp_filename)
-            image_url = f"/uploads/{temp_filename}"
-            return ImageUploadResponse(url=image_url, filename=temp_filename)
-
-        # Delete temporary original file after successful optimization
-        temp_path.unlink()
-        logger.info("Image optimized to WebP: %s -> %s", temp_filename, webp_filename)
-
-        # Return WebP URL
-        image_url = f"/uploads/{webp_filename}"
-        return ImageUploadResponse(url=image_url, filename=webp_filename)
-
-    except Exception as e:
-        # If optimization fails, clean up temp file and use original
-        logger.error("Error optimizing image: %s", e)
-        logger.warning("Using original file: %s", temp_filename)
-        image_url = f"/uploads/{temp_filename}"
-        return ImageUploadResponse(url=image_url, filename=temp_filename)
+    # Return URL
+    image_url = f"/uploads/{unique_filename}"
+    return ImageUploadResponse(url=image_url, filename=unique_filename)
 
 
 @app.get("/api/resources", response_model=ResourceListResponse)
