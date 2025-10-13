@@ -1,6 +1,7 @@
 """FastAPI endpoints for Zettelkasten notes."""
 
 import logging
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -8,7 +9,7 @@ from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from auth import SessionID, get_session_id, verify_admin
+from auth import SessionID, get_session_id
 from config import get_settings
 from notes_service import get_notes_service
 
@@ -20,8 +21,8 @@ router = APIRouter(prefix="/api/notes", tags=["notes"])
 # Get service
 notes_service = get_notes_service()
 
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Rate limiter - disabled in tests
+limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "1")
 
 
 # Pydantic models

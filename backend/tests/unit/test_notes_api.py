@@ -1,7 +1,12 @@
 """Unit tests for notes API endpoints."""
 
+import os
+
 import pytest
 from fastapi.testclient import TestClient
+
+# Set testing mode before importing app modules
+os.environ["TESTING"] = "1"
 
 from database import get_database
 from ephemeral_notes import get_ephemeral_store
