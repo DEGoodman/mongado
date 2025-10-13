@@ -28,6 +28,10 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 # Production stage
 FROM base as production
 
+# Install curl for healthchecks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
@@ -37,8 +41,9 @@ COPY requirements-prod.txt requirements-base.txt ./
 RUN pip install --no-cache-dir -r requirements-prod.txt && \
     pip list  # Show installed packages for debugging
 
-# Copy only necessary application code (no tests, scripts, etc.)
-COPY --chown=appuser:appuser main.py config.py __init__.py ./
+# Copy application code (exclude tests and dev files)
+COPY --chown=appuser:appuser *.py ./
+COPY --chown=appuser:appuser static ./static
 
 # Switch to non-root user
 USER appuser
@@ -46,9 +51,9 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check using curl (installed above)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/')"
+    CMD curl -f http://localhost:8000/ || exit 1
 
 # Run with production settings (uvloop, httptools from uvicorn[standard])
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop", "--http", "httptools"]
