@@ -12,6 +12,17 @@ WORKDIR /app
 # Development stage
 FROM base as development
 
+# Install 1Password CLI
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl gnupg && \
+    curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+    gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" | \
+    tee /etc/apt/sources.list.d/1password.list && \
+    apt-get update && \
+    apt-get install -y 1password-cli && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install ALL dependencies (dev tools included)
 COPY requirements-dev.txt requirements-base.txt ./
 RUN pip install -r requirements-dev.txt
@@ -28,8 +39,15 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 # Production stage
 FROM base as production
 
-# Install curl for healthchecks
-RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+# Install curl for healthchecks and 1Password CLI
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl gnupg && \
+    curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+    gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" | \
+    tee /etc/apt/sources.list.d/1password.list && \
+    apt-get update && \
+    apt-get install -y 1password-cli && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

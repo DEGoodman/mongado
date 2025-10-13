@@ -3,10 +3,13 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from auth import SessionID, get_session_id, verify_admin
+from config import get_settings
 from notes_service import get_notes_service
 
 logger = logging.getLogger(__name__)
@@ -16,6 +19,9 @@ router = APIRouter(prefix="/api/notes", tags=["notes"])
 
 # Get service
 notes_service = get_notes_service()
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 
 # Pydantic models
@@ -63,24 +69,39 @@ class BacklinksResponse(BaseModel):
     count: int
 
 
+# Helper function to try admin auth without raising
+def try_verify_admin(authorization: str | None = Header(None)) -> bool:
+    """Try to verify admin token without raising exceptions."""
+    if not authorization:
+        return False
+
+    if not authorization.startswith("Bearer "):
+        return False
+
+    token = authorization.replace("Bearer ", "").strip()
+    expected_token = get_settings().admin_token
+
+    if not expected_token or token != expected_token:
+        return False
+
+    logger.info("Admin authenticated successfully")
+    return True
+
+
 # Endpoints
 @router.post("", response_model=dict[str, Any], status_code=201)
+@limiter.limit("10/minute")  # 10 note creations per minute per IP
 async def create_note(
+    request: Request,
     note: NoteCreate,
     session_id: SessionID = Depends(get_session_id),
-    is_admin: bool = Depends(lambda: False),  # Default: not admin
+    is_admin: bool = Depends(try_verify_admin),
 ) -> dict[str, Any]:
     """Create a new note.
 
-    - Admin (with valid passkey): Creates persistent note
+    - Admin (with valid token): Creates persistent note
     - Visitor (with session ID): Creates ephemeral note
     """
-    # Try admin auth (don't raise error if missing)
-    try:
-        is_admin = verify_admin()
-    except HTTPException:
-        is_admin = False
-
     if not is_admin and not session_id:
         raise HTTPException(
             status_code=400,
@@ -101,17 +122,12 @@ async def create_note(
 @router.get("", response_model=NotesListResponse)
 async def list_notes(
     session_id: SessionID = Depends(get_session_id),
+    is_admin: bool = Depends(try_verify_admin),
 ) -> NotesListResponse:
     """List all accessible notes.
 
     Returns persistent notes + ephemeral notes for current session.
     """
-    # Try admin auth
-    try:
-        is_admin = verify_admin()
-    except HTTPException:
-        is_admin = False
-
     notes = notes_service.list_notes(is_admin=is_admin, session_id=session_id)
 
     return NotesListResponse(notes=notes, count=len(notes))
@@ -121,14 +137,9 @@ async def list_notes(
 async def get_note(
     note_id: str,
     session_id: SessionID = Depends(get_session_id),
+    is_admin: bool = Depends(try_verify_admin),
 ) -> dict[str, Any]:
     """Get a specific note by ID."""
-    # Try admin auth
-    try:
-        is_admin = verify_admin()
-    except HTTPException:
-        is_admin = False
-
     note = notes_service.get_note(note_id, is_admin=is_admin, session_id=session_id)
 
     if not note:
@@ -142,18 +153,13 @@ async def update_note(
     note_id: str,
     note_update: NoteUpdate,
     session_id: SessionID = Depends(get_session_id),
+    is_admin: bool = Depends(try_verify_admin),
 ) -> dict[str, Any]:
     """Update a note.
 
     - Admin can update persistent notes
     - Visitors can update their own ephemeral notes
     """
-    # Try admin auth
-    try:
-        is_admin = verify_admin()
-    except HTTPException:
-        is_admin = False
-
     updated = notes_service.update_note(
         note_id=note_id,
         content=note_update.content,
@@ -176,18 +182,13 @@ async def update_note(
 async def delete_note(
     note_id: str,
     session_id: SessionID = Depends(get_session_id),
+    is_admin: bool = Depends(try_verify_admin),
 ) -> dict[str, str]:
     """Delete a note.
 
     - Admin can delete persistent notes
     - Visitors can delete their own ephemeral notes
     """
-    # Try admin auth
-    try:
-        is_admin = verify_admin()
-    except HTTPException:
-        is_admin = False
-
     deleted = notes_service.delete_note(
         note_id=note_id, is_admin=is_admin, session_id=session_id
     )

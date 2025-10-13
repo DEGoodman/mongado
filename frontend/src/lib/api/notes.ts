@@ -3,6 +3,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { getAuthHeaders as getBaseAuthHeaders } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -47,32 +48,11 @@ export interface OutboundLinksResponse {
 }
 
 /**
- * Get or create session ID for anonymous users
+ * Get headers with authentication and session ID
+ * This now uses the shared getAuthHeaders which includes Authorization header
  */
-function getSessionId(): string {
-  if (typeof window === "undefined") return "";
-
-  let sessionId = localStorage.getItem("notes_session_id");
-  if (!sessionId) {
-    sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem("notes_session_id", sessionId);
-  }
-  return sessionId;
-}
-
-/**
- * Create default headers with session ID
- */
-function getHeaders(includeContentType = true): HeadersInit {
-  const headers: HeadersInit = {
-    "X-Session-ID": getSessionId(),
-  };
-
-  if (includeContentType) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  return headers;
+function getHeaders(): HeadersInit {
+  return getBaseAuthHeaders();
 }
 
 /**
@@ -101,7 +81,7 @@ export async function createNote(request: CreateNoteRequest): Promise<Note> {
  */
 export async function listNotes(): Promise<NotesListResponse> {
   const response = await fetch(`${API_URL}/api/notes`, {
-    headers: getHeaders(false),
+    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -119,7 +99,7 @@ export async function listNotes(): Promise<NotesListResponse> {
  */
 export async function getNote(noteId: string): Promise<Note> {
   const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
-    headers: getHeaders(false),
+    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -162,7 +142,7 @@ export async function updateNote(noteId: string, request: UpdateNoteRequest): Pr
 export async function deleteNote(noteId: string): Promise<void> {
   const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
     method: "DELETE",
-    headers: getHeaders(false),
+    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -179,7 +159,7 @@ export async function deleteNote(noteId: string): Promise<void> {
  */
 export async function getBacklinks(noteId: string): Promise<BacklinksResponse> {
   const response = await fetch(`${API_URL}/api/notes/${noteId}/backlinks`, {
-    headers: getHeaders(false),
+    headers: getHeaders(),
   });
 
   if (!response.ok) {
@@ -197,7 +177,7 @@ export async function getBacklinks(noteId: string): Promise<BacklinksResponse> {
  */
 export async function getOutboundLinks(noteId: string): Promise<OutboundLinksResponse> {
   const response = await fetch(`${API_URL}/api/notes/${noteId}/links`, {
-    headers: getHeaders(false),
+    headers: getHeaders(),
   });
 
   if (!response.ok) {

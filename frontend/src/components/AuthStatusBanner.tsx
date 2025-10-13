@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { clearAdminToken } from "@/lib/api/client";
 
 interface AuthStatusBannerProps {
   /**
@@ -12,24 +15,28 @@ interface AuthStatusBannerProps {
 export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const router = useRouter();
+
+  const checkAuth = () => {
+    try {
+      const adminToken = localStorage.getItem("admin_token");
+      setIsAuthenticated(!!adminToken);
+    } catch (err) {
+      setIsAuthenticated(false);
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
   useEffect(() => {
-    // Check authentication status
-    // For now, we check if there's an admin passkey in localStorage
-    // TODO: Replace with actual auth check against backend
-    const checkAuth = async () => {
-      try {
-        const adminPasskey = localStorage.getItem("admin_passkey");
-        setIsAuthenticated(!!adminPasskey);
-      } catch (err) {
-        setIsAuthenticated(false);
-      } finally {
-        setIsChecking(false);
-      }
-    };
-
     checkAuth();
   }, []);
+
+  const handleLogout = () => {
+    clearAdminToken();
+    setIsAuthenticated(false);
+    router.push("/knowledge-base/notes");
+  };
 
   if (isChecking) {
     return null; // Don't show anything while checking
@@ -54,6 +61,12 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
               Your notes will be saved persistently to the database
             </p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="ml-3 rounded-md bg-green-100 px-3 py-1 text-xs font-medium text-green-800 hover:bg-green-200"
+          >
+            Logout
+          </button>
         </div>
       </div>
     );
@@ -91,7 +104,10 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
             </ul>
             <div className="mt-3 border-t border-yellow-200 pt-3">
               <p className="text-xs text-yellow-700">
-                <strong>To save notes permanently:</strong> Contact the admin for an access passkey
+                <strong>To save notes permanently:</strong>{" "}
+                <Link href="/login" className="font-medium underline hover:text-yellow-900">
+                  Login with admin token
+                </Link>
               </p>
             </div>
           </div>
@@ -113,8 +129,8 @@ export function AuthStatusIndicator() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const adminPasskey = localStorage.getItem("admin_passkey");
-        setIsAuthenticated(!!adminPasskey);
+        const adminToken = localStorage.getItem("admin_token");
+        setIsAuthenticated(!!adminToken);
       } catch (err) {
         setIsAuthenticated(false);
       } finally {

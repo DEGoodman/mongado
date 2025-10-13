@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
 
     # Zettelkasten authentication
-    admin_passkey: str = ""  # Admin passkey for creating persistent notes
+    admin_token: str = ""  # Admin bearer token for creating persistent notes
 
 
 class SecretManager:
@@ -64,6 +64,8 @@ class SecretManager:
     def __init__(self) -> None:
         self.client = None
         self.use_cli = False
+        self._service_account_token = os.getenv("OP_MONGADO_SERVICE_ACCOUNT_TOKEN")
+        self._sdk_init_attempted = False
         self._initialize()
 
     def _check_cli_available(self) -> bool:
@@ -75,23 +77,21 @@ class SecretManager:
             return False
 
     def _initialize(self) -> None:
-        """Initialize 1Password client (SDK) or CLI."""
-        # Try SDK first (for service accounts)
-        service_account_token = os.getenv("OP_MONGADO_SERVICE_ACCOUNT_TOKEN")
-        if service_account_token:
-            try:
-                from onepassword.client import Client
-
-                self.client = Client(service_account_token=service_account_token)
-                logger.info("1Password SDK initialized successfully")
-                return
-            except ImportError:
-                logger.warning("1Password SDK not installed, trying CLI...")
-            except Exception as e:
-                logger.warning("Failed to initialize 1Password SDK: %s", e)
-
-        # Try CLI (for personal accounts)
-        if self._check_cli_available():
+        """Initialize 1Password using CLI with service account token or user account."""
+        # For now, always use CLI since SDK async initialization is complex
+        # CLI supports both service account tokens and user accounts
+        if self._service_account_token:
+            # Service account token is set - CLI will use it via env var
+            if self._check_cli_available():
+                self.use_cli = True
+                logger.info("1Password CLI available (will use service account token)")
+            else:
+                logger.warning(
+                    "1Password service account token set but 'op' CLI not installed. "
+                    "Install from: https://developer.1password.com/docs/cli/get-started/"
+                )
+        elif self._check_cli_available():
+            # No service account token, but CLI is available for user accounts
             self.use_cli = True
             logger.info("1Password CLI detected and available")
         else:
@@ -114,16 +114,7 @@ class SecretManager:
         Example:
             secret = secret_manager.get_secret("op://dev/api-keys/openai")
         """
-        # Try SDK client
-        if self.client:
-            try:
-                secret = self.client.secrets.resolve(reference)
-                return str(secret) if secret is not None else default
-            except Exception as e:
-                logger.error("Failed to retrieve secret via SDK '%s': %s", reference, e)
-                return default
-
-        # Try CLI
+        # Use CLI (supports both service account tokens via env var and user accounts)
         if self.use_cli:
             try:
                 result = subprocess.run(

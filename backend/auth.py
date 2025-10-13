@@ -12,12 +12,12 @@ settings = get_settings()
 
 
 def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
-    """Verify admin passkey from Authorization header.
+    """Verify admin token from Authorization header.
 
-    Expects: "Bearer your-secret-passkey"
+    Expects: "Bearer your-secret-token"
 
-    This is a simple passkey-based auth for a single admin user.
-    The passkey is stored in the environment (.env or 1Password).
+    This is a simple bearer token auth for a single admin user.
+    The token is stored in the environment (.env or 1Password).
 
     Args:
         authorization: Authorization header value
@@ -26,36 +26,36 @@ def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
         True if authenticated
 
     Raises:
-        HTTPException: 401 if no auth header, 403 if invalid passkey
+        HTTPException: 401 if no auth header, 403 if invalid token
     """
     if not authorization:
         logger.warning("Missing Authorization header")
         raise HTTPException(
             status_code=401,
-            detail="Authorization required. Include 'Authorization: Bearer <passkey>' header.",
+            detail="Authorization required. Include 'Authorization: Bearer <token>' header.",
         )
 
     if not authorization.startswith("Bearer "):
         logger.warning("Invalid Authorization format: %s", authorization[:20])
         raise HTTPException(
-            status_code=401, detail="Invalid authorization format. Use 'Bearer <passkey>'."
+            status_code=401, detail="Invalid authorization format. Use 'Bearer <token>'."
         )
 
-    passkey = authorization.replace("Bearer ", "").strip()
+    token = authorization.replace("Bearer ", "").strip()
 
-    # Get expected passkey from settings
-    expected_passkey = settings.admin_passkey
+    # Get expected token from settings
+    expected_token = settings.admin_token
 
-    if not expected_passkey:
-        logger.error("ADMIN_PASSKEY not configured in environment")
+    if not expected_token:
+        logger.error("ADMIN_TOKEN not configured in environment")
         raise HTTPException(
             status_code=500,
-            detail="Server configuration error: admin passkey not set.",
+            detail="Server configuration error: admin token not set.",
         )
 
-    if passkey != expected_passkey:
-        logger.warning("Invalid passkey attempt")
-        raise HTTPException(status_code=403, detail="Invalid passkey.")
+    if token != expected_token:
+        logger.warning("Invalid token attempt")
+        raise HTTPException(status_code=403, detail="Invalid token.")
 
     logger.debug("Admin authenticated successfully")
     return True
