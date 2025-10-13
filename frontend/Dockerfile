@@ -56,8 +56,11 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy built application
+# Copy public directory (may be empty, but must exist)
 COPY --from=builder /app/public ./public
+# Copy Next.js standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Copy static files
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Switch to non-root user
