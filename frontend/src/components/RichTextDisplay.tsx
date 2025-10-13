@@ -9,7 +9,7 @@ interface RichTextDisplayProps {
 
 export default function RichTextDisplay({ markdown }: RichTextDisplayProps) {
   return (
-    <div className="prose prose-sm sm:prose lg:prose-lg max-w-none">
+    <div className="prose prose-sm max-w-none sm:prose lg:prose-lg">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
     </div>
   );

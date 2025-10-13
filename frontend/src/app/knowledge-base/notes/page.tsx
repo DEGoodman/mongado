@@ -36,10 +36,10 @@ export default function NotesPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+          <div className="mb-8 h-8 w-1/4 rounded bg-gray-200"></div>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              <div key={i} className="h-20 rounded bg-gray-200"></div>
             ))}
           </div>
         </div>
@@ -50,8 +50,8 @@ export default function NotesPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-red-800 font-semibold mb-2">Error</h2>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <h2 className="mb-2 font-semibold text-red-800">Error</h2>
           <p className="text-red-600">{error}</p>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-8">
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
@@ -70,20 +70,20 @@ export default function NotesPage() {
       <div className="mb-8">
         <Link
           href="/knowledge-base"
-          className="text-blue-600 hover:underline text-sm mb-4 inline-block"
+          className="mb-4 inline-block text-sm text-blue-600 hover:underline"
         >
           ← Knowledge Base
         </Link>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Notes</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="mt-1 text-gray-600">
               Your Zettelkasten knowledge base ({notes.length} notes)
             </p>
           </div>
           <Link
             href="/knowledge-base/notes/new"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
           >
             + New Note
           </Link>
@@ -92,7 +92,7 @@ export default function NotesPage() {
 
       {/* Notes list */}
       {notes.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-12 text-center">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
             fill="none"
@@ -107,13 +107,11 @@ export default function NotesPage() {
             />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No notes yet</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Get started by creating your first note
-          </p>
+          <p className="mt-1 text-sm text-gray-500">Get started by creating your first note</p>
           <div className="mt-6">
             <Link
               href="/knowledge-base/notes/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
             >
               Create Note
             </Link>
@@ -125,32 +123,28 @@ export default function NotesPage() {
             <Link
               key={note.id}
               href={`/knowledge-base/notes/${note.id}`}
-              className="block bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition"
+              className="block rounded-lg border border-gray-200 bg-white p-4 transition hover:border-blue-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   {/* Note ID and title */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <code className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                  <div className="mb-1 flex items-center gap-2">
+                    <code className="rounded bg-blue-50 px-2 py-0.5 font-mono text-sm text-blue-600">
                       {note.id}
                     </code>
                     {note.is_ephemeral && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                      <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">
                         ephemeral
                       </span>
                     )}
                   </div>
 
                   {note.title && (
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {note.title}
-                    </h3>
+                    <h3 className="mb-1 text-lg font-semibold text-gray-900">{note.title}</h3>
                   )}
 
                   {/* Content preview */}
-                  <p className="text-gray-600 text-sm line-clamp-2 mb-2">
-                    {note.content}
-                  </p>
+                  <p className="mb-2 line-clamp-2 text-sm text-gray-600">{note.content}</p>
 
                   {/* Metadata */}
                   <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -159,10 +153,7 @@ export default function NotesPage() {
                     {note.tags.length > 0 && (
                       <span className="flex gap-1">
                         {note.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-gray-100 px-2 py-0.5 rounded"
-                          >
+                          <span key={tag} className="rounded bg-gray-100 px-2 py-0.5">
                             {tag}
                           </span>
                         ))}
@@ -178,7 +169,7 @@ export default function NotesPage() {
 
                 {/* Arrow icon */}
                 <svg
-                  className="w-5 h-5 text-gray-400"
+                  className="h-5 w-5 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

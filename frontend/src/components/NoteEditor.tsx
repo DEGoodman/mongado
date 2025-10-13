@@ -32,8 +32,7 @@ export default function NoteEditor({
     ? allNotes.filter(
         (note) =>
           note.id.toLowerCase().includes(autocompleteQuery.toLowerCase()) ||
-          (note.title &&
-            note.title.toLowerCase().includes(autocompleteQuery.toLowerCase()))
+          (note.title && note.title.toLowerCase().includes(autocompleteQuery.toLowerCase()))
       )
     : allNotes;
 
@@ -73,8 +72,7 @@ export default function NoteEditor({
     },
     editorProps: {
       attributes: {
-        class:
-          "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-[300px] px-4 py-3",
+        class: "prose prose-sm sm:prose lg:prose-lg focus:outline-none min-h-[300px] px-4 py-3",
       },
       handleDOMEvents: {
         keydown: (view, event) => {
@@ -82,9 +80,7 @@ export default function NoteEditor({
 
           if (event.key === "ArrowDown") {
             event.preventDefault();
-            setSelectedIndex((prev) =>
-              prev < filteredNotes.length - 1 ? prev + 1 : prev
-            );
+            setSelectedIndex((prev) => (prev < filteredNotes.length - 1 ? prev + 1 : prev));
             return true;
           }
 
@@ -183,14 +179,14 @@ export default function NoteEditor({
 
   return (
     <div className="relative">
-      <div className="border border-gray-300 rounded-md overflow-hidden bg-white">
+      <div className="overflow-hidden rounded-md border border-gray-300 bg-white">
         {/* Toolbar */}
-        <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-b border-gray-300">
+        <div className="flex flex-wrap gap-1 border-b border-gray-300 bg-gray-50 p-2">
           {/* Text formatting */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("bold") ? "bg-gray-300 font-bold" : ""
             }`}
           >
@@ -199,7 +195,7 @@ export default function NoteEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("italic") ? "bg-gray-300 italic" : ""
             }`}
           >
@@ -208,20 +204,20 @@ export default function NoteEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleCode().run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("code") ? "bg-gray-300 font-mono" : ""
             }`}
           >
             Code
           </button>
 
-          <div className="w-px h-6 bg-gray-300 mx-1" />
+          <div className="mx-1 h-6 w-px bg-gray-300" />
 
           {/* Headings */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("heading", { level: 1 }) ? "bg-gray-300 font-bold" : ""
             }`}
           >
@@ -230,7 +226,7 @@ export default function NoteEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("heading", { level: 2 }) ? "bg-gray-300 font-bold" : ""
             }`}
           >
@@ -239,20 +235,20 @@ export default function NoteEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("heading", { level: 3 }) ? "bg-gray-300 font-bold" : ""
             }`}
           >
             H3
           </button>
 
-          <div className="w-px h-6 bg-gray-300 mx-1" />
+          <div className="mx-1 h-6 w-px bg-gray-300" />
 
           {/* Lists */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("bulletList") ? "bg-gray-300" : ""
             }`}
           >
@@ -261,14 +257,14 @@ export default function NoteEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`px-3 py-1 text-sm rounded hover:bg-gray-200 ${
+            className={`rounded px-3 py-1 text-sm hover:bg-gray-200 ${
               editor.isActive("orderedList") ? "bg-gray-300" : ""
             }`}
           >
             1. List
           </button>
 
-          <div className="w-px h-6 bg-gray-300 mx-1" />
+          <div className="mx-1 h-6 w-px bg-gray-300" />
 
           {/* Wikilink button */}
           <button
@@ -279,7 +275,7 @@ export default function NoteEditor({
                 editor.chain().focus().insertContent(`[[${noteId}]]`).run();
               }
             }}
-            className="px-3 py-1 text-sm rounded hover:bg-gray-200 bg-blue-50"
+            className="rounded bg-blue-50 px-3 py-1 text-sm hover:bg-gray-200"
           >
             [[Link]]
           </button>
@@ -292,7 +288,7 @@ export default function NoteEditor({
           {/* Autocomplete dropdown */}
           {showAutocomplete && filteredNotes.length > 0 && (
             <div
-              className="absolute z-50 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+              className="absolute z-50 max-h-60 overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
               style={{
                 top: `${autocompletePosition.top}px`,
                 left: `${autocompletePosition.left}px`,
@@ -304,14 +300,12 @@ export default function NoteEditor({
                   key={note.id}
                   type="button"
                   onClick={() => insertWikilink(note.id)}
-                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                  className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${
                     index === selectedIndex ? "bg-blue-50" : ""
                   }`}
                 >
                   <div className="font-mono text-sm text-gray-600">{note.id}</div>
-                  {note.title && (
-                    <div className="text-sm text-gray-800">{note.title}</div>
-                  )}
+                  {note.title && <div className="text-sm text-gray-800">{note.title}</div>}
                 </button>
               ))}
             </div>
@@ -321,8 +315,8 @@ export default function NoteEditor({
 
       {/* Help text */}
       <div className="mt-2 text-xs text-gray-500">
-        Type <code className="bg-gray-100 px-1 rounded">[[</code> to link to other
-        notes. Use arrow keys and Enter to select from autocomplete.
+        Type <code className="rounded bg-gray-100 px-1">[[</code> to link to other notes. Use arrow
+        keys and Enter to select from autocomplete.
       </div>
     </div>
   );

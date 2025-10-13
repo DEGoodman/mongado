@@ -56,7 +56,7 @@ class Logger {
 class ContextLogger {
   constructor(
     private context: string,
-    private logger: Logger,
+    private logger: Logger
   ) {}
 
   debug(message: string, ...args: unknown[]): void {

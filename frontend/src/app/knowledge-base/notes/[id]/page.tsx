@@ -121,11 +121,7 @@ export default function NoteDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this note? This action cannot be undone."
-      )
-    ) {
+    if (!confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
       return;
     }
 
@@ -154,9 +150,9 @@ export default function NoteDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded mb-4"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="mb-4 h-8 w-1/3 rounded bg-gray-200"></div>
+          <div className="mb-4 h-64 rounded bg-gray-200"></div>
+          <div className="h-32 rounded bg-gray-200"></div>
         </div>
       </div>
     );
@@ -165,8 +161,8 @@ export default function NoteDetailPage() {
   if (error && !note) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-red-800 font-semibold mb-2">Error</h2>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <h2 className="mb-2 font-semibold text-red-800">Error</h2>
           <p className="text-red-600">{error}</p>
           <Link
             href="/knowledge-base/notes"
@@ -192,235 +188,225 @@ export default function NoteDetailPage() {
       {/* Auth status indicator at top */}
       <AuthStatusIndicator />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex gap-4 mb-4">
-              <Link
-                href="/knowledge-base"
-                className="text-blue-600 hover:underline text-sm"
-              >
-                ← Knowledge Base
-              </Link>
-              <Link
-                href="/knowledge-base/notes"
-                className="text-blue-600 hover:underline text-sm"
-              >
-                All notes
-              </Link>
-            </div>
-
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <code className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    {note.id}
-                  </code>
-                  {note.is_ephemeral && (
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      ephemeral
-                    </span>
-                  )}
-                </div>
-
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {note.title || "Untitled Note"}
-                </h1>
-
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span>{formatNoteDate(note.created_at)}</span>
-                  <span>by {note.author}</span>
-                  {note.updated_at !== note.created_at && (
-                    <span>edited {formatNoteDate(note.updated_at)}</span>
-                  )}
-                </div>
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Main content */}
+          <div className="lg:col-span-2">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="mb-4 flex gap-4">
+                <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
+                  ← Knowledge Base
+                </Link>
+                <Link
+                  href="/knowledge-base/notes"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  All notes
+                </Link>
               </div>
 
-              {/* Actions */}
-              {!isEditing && (
-                <div className="flex gap-2">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <code className="rounded bg-blue-50 px-2 py-1 font-mono text-sm text-blue-600">
+                      {note.id}
+                    </code>
+                    {note.is_ephemeral && (
+                      <span className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
+                        ephemeral
+                      </span>
+                    )}
+                  </div>
+
+                  <h1 className="mb-2 text-3xl font-bold text-gray-900">
+                    {note.title || "Untitled Note"}
+                  </h1>
+
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span>{formatNoteDate(note.created_at)}</span>
+                    <span>by {note.author}</span>
+                    {note.updated_at !== note.created_at && (
+                      <span>edited {formatNoteDate(note.updated_at)}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {!isEditing && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                <p className="text-red-600">{error}</p>
+              </div>
+            )}
+
+            {/* Content */}
+            {isEditing ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Title (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Tags (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editTags}
+                    onChange={(e) => setEditTags(e.target.value)}
+                    placeholder="Comma-separated tags"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Content *</label>
+                  <NoteEditor
+                    content={editContent}
+                    onChange={setEditContent}
+                    allNotes={allNotes}
+                    onNoteClick={(id) => window.open(`/knowledge-base/notes/${id}`, "_blank")}
+                  />
+                </div>
+
+                <div className="flex gap-3">
                   <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                    onClick={handleSave}
+                    disabled={saving || !editContent.trim()}
+                    className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
                   >
-                    Edit
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                   <button
-                    onClick={handleDelete}
-                    className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                    className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
                   >
-                    Delete
+                    Cancel
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div>
+                {/* Tags */}
+                {note.tags.length > 0 && (
+                  <div className="mb-4 flex gap-2">
+                    {note.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Content display with wikilinks highlighted */}
+                <div className="rounded-lg border border-gray-200 bg-white p-6">
+                  <div className="whitespace-pre-wrap font-sans leading-relaxed text-gray-800">
+                    {note.content.split(/(\[\[[a-z0-9-]+\]\])/g).map((part, i) => {
+                      const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
+                      if (match) {
+                        return (
+                          <Link
+                            key={i}
+                            href={`/knowledge-base/notes/${match[1]}`}
+                            className="rounded bg-blue-50 px-1 font-mono text-blue-600 hover:underline"
+                          >
+                            {part}
+                          </Link>
+                        );
+                      }
+                      return <span key={i}>{part}</span>;
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Error message */}
-          {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-600">{error}</p>
-            </div>
-          )}
-
-          {/* Content */}
-          {isEditing ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title (optional)
-                </label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tags (optional)
-                </label>
-                <input
-                  type="text"
-                  value={editTags}
-                  onChange={(e) => setEditTags(e.target.value)}
-                  placeholder="Comma-separated tags"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Content *
-                </label>
-                <NoteEditor
-                  content={editContent}
-                  onChange={setEditContent}
-                  allNotes={allNotes}
-                  onNoteClick={(id) => window.open(`/knowledge-base/notes/${id}`, "_blank")}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleSave}
-                  disabled={saving || !editContent.trim()}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={saving}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              {/* Tags */}
-              {note.tags.length > 0 && (
-                <div className="flex gap-2 mb-4">
-                  {note.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+          {/* Sidebar - Links and Backlinks */}
+          <div className="space-y-6">
+            {/* Outbound Links */}
+            {outboundLinks.length > 0 && (
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Links ({outboundLinks.length})</h3>
+                <div className="space-y-2">
+                  {outboundLinks.map((link) => (
+                    <Link
+                      key={link.id}
+                      href={`/knowledge-base/notes/${link.id}`}
+                      className="block rounded p-2 hover:bg-gray-50"
                     >
-                      {tag}
-                    </span>
+                      <code className="text-sm text-blue-600">{link.id}</code>
+                      {link.title && <div className="text-sm text-gray-700">{link.title}</div>}
+                    </Link>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Content display with wikilinks highlighted */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
-                  {note.content.split(/(\[\[[a-z0-9-]+\]\])/g).map((part, i) => {
-                    const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
-                    if (match) {
-                      return (
-                        <Link
-                          key={i}
-                          href={`/knowledge-base/notes/${match[1]}`}
-                          className="text-blue-600 hover:underline font-mono bg-blue-50 px-1 rounded"
-                        >
-                          {part}
-                        </Link>
-                      );
-                    }
-                    return <span key={i}>{part}</span>;
-                  })}
+            {/* Backlinks */}
+            {backlinks.length > 0 && (
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 font-semibold text-gray-900">Backlinks ({backlinks.length})</h3>
+                <div className="space-y-2">
+                  {backlinks.map((backlink) => (
+                    <Link
+                      key={backlink.id}
+                      href={`/knowledge-base/notes/${backlink.id}`}
+                      className="block rounded p-2 hover:bg-gray-50"
+                    >
+                      <code className="text-sm text-blue-600">{backlink.id}</code>
+                      {backlink.title && (
+                        <div className="text-sm text-gray-700">{backlink.title}</div>
+                      )}
+                    </Link>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Sidebar - Links and Backlinks */}
-        <div className="space-y-6">
-          {/* Outbound Links */}
-          {outboundLinks.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                Links ({outboundLinks.length})
-              </h3>
-              <div className="space-y-2">
-                {outboundLinks.map((link) => (
-                  <Link
-                    key={link.id}
-                    href={`/knowledge-base/notes/${link.id}`}
-                    className="block p-2 hover:bg-gray-50 rounded"
-                  >
-                    <code className="text-sm text-blue-600">{link.id}</code>
-                    {link.title && (
-                      <div className="text-sm text-gray-700">{link.title}</div>
-                    )}
-                  </Link>
-                ))}
+            {/* No links message */}
+            {outboundLinks.length === 0 && backlinks.length === 0 && (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                <p className="text-sm text-gray-600">
+                  No links yet. Use <code className="rounded bg-gray-200 px-1">[[note-id]]</code> to
+                  connect notes
+                </p>
               </div>
-            </div>
-          )}
-
-          {/* Backlinks */}
-          {backlinks.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                Backlinks ({backlinks.length})
-              </h3>
-              <div className="space-y-2">
-                {backlinks.map((backlink) => (
-                  <Link
-                    key={backlink.id}
-                    href={`/knowledge-base/notes/${backlink.id}`}
-                    className="block p-2 hover:bg-gray-50 rounded"
-                  >
-                    <code className="text-sm text-blue-600">{backlink.id}</code>
-                    {backlink.title && (
-                      <div className="text-sm text-gray-700">{backlink.title}</div>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* No links message */}
-          {outboundLinks.length === 0 && backlinks.length === 0 && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-gray-600">
-                No links yet. Use <code className="bg-gray-200 px-1 rounded">[[note-id]]</code> to connect notes
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

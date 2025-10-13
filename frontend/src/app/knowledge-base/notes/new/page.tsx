@@ -74,7 +74,7 @@ export default function NewNotePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-8">
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
@@ -83,18 +83,16 @@ export default function NewNotePage() {
 
       {/* Header */}
       <div className="mb-6">
-        <div className="flex gap-4 mb-4">
-          <Link href="/knowledge-base" className="text-blue-600 hover:underline text-sm">
+        <div className="mb-4 flex gap-4">
+          <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
             ← Knowledge Base
           </Link>
-          <Link href="/knowledge-base/notes" className="text-blue-600 hover:underline text-sm">
+          <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
             All notes
           </Link>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Note</h1>
-        <p className="text-gray-600">
-          Add a new note to your Zettelkasten knowledge base
-        </p>
+        <h1 className="mb-2 text-3xl font-bold text-gray-900">Create New Note</h1>
+        <p className="text-gray-600">Add a new note to your Zettelkasten knowledge base</p>
       </div>
 
       {/* Authentication status banner */}
@@ -102,7 +100,7 @@ export default function NewNotePage() {
 
       {/* Error message */}
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="text-red-600">{error}</p>
         </div>
       )}
@@ -111,10 +109,7 @@ export default function NewNotePage() {
       <div className="space-y-4">
         {/* Title (optional) */}
         <div>
-          <label
-            htmlFor="title"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
             Title (optional)
           </label>
           <input
@@ -123,13 +118,13 @@ export default function NewNotePage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Give your note a title..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Tags (optional) */}
         <div>
-          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="tags" className="mb-1 block text-sm font-medium text-gray-700">
             Tags (optional)
           </label>
           <input
@@ -138,15 +133,13 @@ export default function NewNotePage() {
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="Comma-separated tags (e.g., idea, research, todo)"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Content */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Content *
-          </label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Content *</label>
           <NoteEditor
             content={content}
             onChange={setContent}
@@ -163,14 +156,14 @@ export default function NewNotePage() {
           <button
             onClick={handleSave}
             disabled={saving || !content.trim()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="rounded-lg bg-blue-600 px-6 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Note"}
           </button>
           <button
             onClick={handleCancel}
             disabled={saving}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition"
+            className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>

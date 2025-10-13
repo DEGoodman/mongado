@@ -39,13 +39,9 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
 
   if (displayMode === "success" && isAuthenticated) {
     return (
-      <div className="bg-green-50 border-l-4 border-green-500 p-3 mb-4">
+      <div className="mb-4 border-l-4 border-green-500 bg-green-50 p-3">
         <div className="flex items-center">
-          <svg
-            className="w-5 h-5 text-green-500 mr-3"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
+          <svg className="mr-3 h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -54,7 +50,7 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
           </svg>
           <div className="flex-1">
             <p className="text-sm font-medium text-green-800">Authenticated</p>
-            <p className="text-xs text-green-700 mt-0.5">
+            <p className="mt-0.5 text-xs text-green-700">
               Your notes will be saved persistently to the database
             </p>
           </div>
@@ -65,10 +61,10 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
 
   if (displayMode === "warning" && !isAuthenticated) {
     return (
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+      <div className="mb-4 border-l-4 border-yellow-400 bg-yellow-50 p-4">
         <div className="flex items-start">
           <svg
-            className="w-5 h-5 text-yellow-400 mr-3 mt-0.5"
+            className="mr-3 mt-0.5 h-5 w-5 text-yellow-400"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -79,27 +75,23 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
             />
           </svg>
           <div className="flex-1">
-            <p className="text-sm font-medium text-yellow-800">
-              You are not authenticated
+            <p className="text-sm font-medium text-yellow-800">You are not authenticated</p>
+            <p className="mt-1 text-xs text-yellow-700">
+              <strong>Your notes are ephemeral</strong> - they will only be visible in this browser
+              session and will be lost when you close the tab or after 24 hours of inactivity.
             </p>
-            <p className="text-xs text-yellow-700 mt-1">
-              <strong>Your notes are ephemeral</strong> - they will only be visible in this
-              browser session and will be lost when you close the tab or after 24 hours of
-              inactivity.
-            </p>
-            <p className="text-xs text-yellow-700 mt-2">
+            <p className="mt-2 text-xs text-yellow-700">
               <strong>What this means:</strong>
             </p>
-            <ul className="text-xs text-yellow-700 mt-1 ml-4 list-disc space-y-0.5">
+            <ul className="ml-4 mt-1 list-disc space-y-0.5 text-xs text-yellow-700">
               <li>Notes are stored in memory only (not in the database)</li>
               <li>Other users won't see your ephemeral notes</li>
               <li>You can still link notes together with [[wikilinks]]</li>
               <li>Session persists across page refreshes in the same browser</li>
             </ul>
-            <div className="mt-3 pt-3 border-t border-yellow-200">
+            <div className="mt-3 border-t border-yellow-200 pt-3">
               <p className="text-xs text-yellow-700">
-                <strong>To save notes permanently:</strong> Contact the admin for an access
-                passkey
+                <strong>To save notes permanently:</strong> Contact the admin for an access passkey
               </p>
             </div>
           </div>
@@ -139,20 +131,14 @@ export function AuthStatusIndicator() {
 
   return (
     <div
-      className={`text-xs py-1 px-3 text-center ${
-        isAuthenticated
-          ? "bg-green-500 text-white"
-          : "bg-yellow-100 text-yellow-800"
+      className={`px-3 py-1 text-center text-xs ${
+        isAuthenticated ? "bg-green-500 text-white" : "bg-yellow-100 text-yellow-800"
       }`}
     >
       {isAuthenticated ? (
-        <span>
-          ✓ Authenticated - Notes will be saved permanently
-        </span>
+        <span>✓ Authenticated - Notes will be saved permanently</span>
       ) : (
-        <span>
-          ⚠ Not authenticated - Ephemeral notes only (session-based)
-        </span>
+        <span>⚠ Not authenticated - Ephemeral notes only (session-based)</span>
       )}
     </div>
   );

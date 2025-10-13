@@ -98,6 +98,7 @@ skip_covered = false
 exclude_dirs = ["tests", "venv", ".venv"]
 skips = [
     "B101",  # assert_used - ok in tests
+    "B311",  # random - used for friendly note IDs, not security/crypto
     "B404",  # subprocess import - needed for 1Password CLI
     "B603",  # subprocess without shell - safe, not using shell=True
     "B607",  # partial executable path - 'op' is expected to be in PATH

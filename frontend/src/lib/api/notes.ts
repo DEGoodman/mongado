@@ -138,10 +138,7 @@ export async function getNote(noteId: string): Promise<Note> {
 /**
  * Update a note
  */
-export async function updateNote(
-  noteId: string,
-  request: UpdateNoteRequest
-): Promise<Note> {
+export async function updateNote(noteId: string, request: UpdateNoteRequest): Promise<Note> {
   const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
     method: "PUT",
     headers: getHeaders(),
@@ -226,9 +223,7 @@ export function extractWikilinks(content: string): string[] {
  * Format date for display
  */
 export function formatNoteDate(timestamp: number | string): string {
-  const date = typeof timestamp === "number"
-    ? new Date(timestamp * 1000)
-    : new Date(timestamp);
+  const date = typeof timestamp === "number" ? new Date(timestamp * 1000) : new Date(timestamp);
 
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
