@@ -75,10 +75,10 @@ export default function Home() {
               icon="📚"
             />
             <ProjectTile
-              title="tagbar"
-              description="Instagram hashtag scraper and photo analyzer built with Python. Extract insights and analyze trends from social media content."
-              href="https://github.com/DEGoodman/tagbar"
-              icon="📊"
+              title="Bad Server"
+              description="A misbehaving server to test how your programming skills cope with unreliable environments."
+              href="https://github.com/DEGoodman/bad-server"
+              icon="🤖"
             />
             <ProjectTile
               title="EVA"
@@ -87,10 +87,10 @@ export default function Home() {
               icon="🎵"
             />
             <ProjectTile
-              title="burritoMe"
-              description="iOS app for when you need a burrito, like now. Built with Swift to help you find the perfect burrito nearby."
-              href="https://github.com/DEGoodman/burritoMe"
-              icon="🌯"
+              title="Tagbar"
+              description="Instagram hashtag scraper and photo analyzer built with Python. Extract insights and analyze trends from social media content."
+              href="https://github.com/DEGoodman/tagbar"
+              icon="📊"
             />
           </div>
         </div>
