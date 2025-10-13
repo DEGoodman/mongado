@@ -36,7 +36,7 @@ export default function KnowledgeBasePage() {
             <input
               type="text"
               placeholder="Search articles and notes..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button className="rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700">
               Search

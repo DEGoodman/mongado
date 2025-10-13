@@ -332,7 +332,7 @@ export default function NoteDetailPage() {
 
                 {/* Content display with wikilinks highlighted */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6">
-                  <div className="font-sans leading-relaxed whitespace-pre-wrap text-gray-800">
+                  <div className="whitespace-pre-wrap font-sans leading-relaxed text-gray-800">
                     {note.content.split(/(\[\[[a-z0-9-]+\]\])/g).map((part, i) => {
                       const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
                       if (match) {

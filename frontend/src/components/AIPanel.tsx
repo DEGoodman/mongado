@@ -130,7 +130,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-0 right-0 z-50 flex h-screen w-96 flex-col border-l border-gray-200 bg-white shadow-lg">
+    <div className="fixed right-0 top-0 z-50 flex h-screen w-96 flex-col border-l border-gray-200 bg-white shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
         <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                 message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
               }`}
             >
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <p className="whitespace-pre-wrap text-sm">{message.content}</p>
 
               {/* Sources */}
               {message.sources && message.sources.length > 0 && (
@@ -249,7 +249,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={mode === "ask" ? "Ask a question..." : "Search knowledge base..."}
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
           <button

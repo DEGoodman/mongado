@@ -77,7 +77,7 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
       <div className="mb-4 border-l-4 border-yellow-400 bg-yellow-50 p-4">
         <div className="flex items-start">
           <svg
-            className="mt-0.5 mr-3 h-5 w-5 text-yellow-400"
+            className="mr-3 mt-0.5 h-5 w-5 text-yellow-400"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -96,7 +96,7 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
             <p className="mt-2 text-xs text-yellow-700">
               <strong>What this means:</strong>
             </p>
-            <ul className="mt-1 ml-4 list-disc space-y-0.5 text-xs text-yellow-700">
+            <ul className="ml-4 mt-1 list-disc space-y-0.5 text-xs text-yellow-700">
               <li>Notes are stored in memory only (not in the database)</li>
               <li>Other users won't see your ephemeral notes</li>
               <li>You can still link notes together with [[wikilinks]]</li>
