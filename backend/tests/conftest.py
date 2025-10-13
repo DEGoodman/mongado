@@ -1,5 +1,10 @@
 """Pytest configuration and fixtures."""
 
+import os
+
+# Set TESTING environment variable BEFORE any imports
+os.environ["TESTING"] = "1"
+
 import pytest
 from fastapi.testclient import TestClient
 
