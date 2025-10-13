@@ -20,10 +20,7 @@ class Database:
         Args:
             db_path: Path to SQLite database file. Defaults to mongado.db in backend/
         """
-        if db_path is None:
-            db_path = Path(__file__).parent / "mongado.db"
-        else:
-            db_path = Path(db_path)
+        db_path = Path(__file__).parent / "mongado.db" if db_path is None else Path(db_path)
 
         self.db_path = db_path
         self.schema_path = Path(__file__).parent / "db_schema.sql"

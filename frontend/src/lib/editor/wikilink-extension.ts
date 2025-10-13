@@ -162,10 +162,10 @@ export function createWikilinkAutocomplete(options: AutocompleteOptions) {
         return {
           active: false,
           query: "",
-          range: null,
+          range: null as { from: number; to: number } | null,
         };
       },
-      apply(tr, value) {
+      apply(tr, value, oldState, newState) {
         // Check if we're typing [[
         const { selection } = tr;
         const { $from } = selection;
@@ -186,14 +186,14 @@ export function createWikilinkAutocomplete(options: AutocompleteOptions) {
         return {
           active: false,
           query: "",
-          range: null,
+          range: null as { from: number; to: number } | null,
         };
       },
     },
     props: {
       handleKeyDown(view, event) {
         const state = this.getState(view.state);
-        if (!state.active) return false;
+        if (!state || !state.active) return false;
 
         // Handle autocomplete navigation
         if (event.key === "ArrowDown" || event.key === "ArrowUp") {

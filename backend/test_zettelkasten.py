@@ -7,8 +7,8 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from database import Database, get_database
-from note_id_generator import NoteIDGenerator, get_id_generator
+from database import Database
+from note_id_generator import get_id_generator
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

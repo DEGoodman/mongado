@@ -1,7 +1,7 @@
 """FastAPI endpoints for Zettelkasten notes."""
 
 import logging
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel

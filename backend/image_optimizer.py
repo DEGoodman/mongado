@@ -50,10 +50,7 @@ def optimize_image_to_webp(
         return None
 
     # Default output path
-    if output_path is None:
-        output_path = input_path.with_suffix(".webp")
-    else:
-        output_path = Path(output_path)
+    output_path = input_path.with_suffix(".webp") if output_path is None else Path(output_path)
 
     # Try Pillow first (preferred)
     if is_pillow_available():

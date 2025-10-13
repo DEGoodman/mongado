@@ -268,14 +268,17 @@ class NotesService:
         if session_id:
             ephemeral_note = self.ephemeral.get_note(note_id)
             # Only allow updating if note belongs to this session
-            if ephemeral_note and ephemeral_note.session_id == session_id:
-                if self.ephemeral.update_note(note_id, content, links):
-                    if title:
-                        ephemeral_note.title = title
-                    if tags:
-                        ephemeral_note.tags = tags
-                    logger.info("Updated ephemeral note: %s", note_id)
-                    return self._ephemeral_to_dict(ephemeral_note)
+            if (
+                ephemeral_note
+                and ephemeral_note.session_id == session_id
+                and self.ephemeral.update_note(note_id, content, links)
+            ):
+                if title:
+                    ephemeral_note.title = title
+                if tags:
+                    ephemeral_note.tags = tags
+                logger.info("Updated ephemeral note: %s", note_id)
+                return self._ephemeral_to_dict(ephemeral_note)
 
         return None
 
@@ -325,10 +328,13 @@ class NotesService:
         if session_id:
             ephemeral_note = self.ephemeral.get_note(note_id)
             # Only allow deleting if note belongs to this session
-            if ephemeral_note and ephemeral_note.session_id == session_id:
-                if self.ephemeral.delete_note(note_id):
-                    logger.info("Deleted ephemeral note: %s", note_id)
-                    return True
+            if (
+                ephemeral_note
+                and ephemeral_note.session_id == session_id
+                and self.ephemeral.delete_note(note_id)
+            ):
+                logger.info("Deleted ephemeral note: %s", note_id)
+                return True
 
         return False
 
@@ -407,7 +413,7 @@ class NotesService:
                     "INSERT INTO note_links (source_id, target_id) VALUES (?, ?)",
                     (source_id, target_id),
                 )
-            except Exception as e:
+            except Exception:
                 # Ignore duplicate link errors
                 logger.debug("Link already exists: %s -> %s", source_id, target_id)
 

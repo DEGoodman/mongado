@@ -26,6 +26,7 @@ lint.select = [
 # Ignore specific rules
 lint.ignore = [
     "E501",  # line too long (handled by formatter)
+    "B008",  # function call in argument defaults - FastAPI dependency injection pattern
 ]
 
 # Exclude directories
