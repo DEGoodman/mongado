@@ -43,6 +43,13 @@ npm install
 npm run dev
 ```
 
+**Git Hooks (Optional but Recommended):**
+```bash
+./setup-hooks.sh
+```
+
+This enables pre-push hooks that run fast quality checks (linting, type checking, formatting) before pushing code. Prevents CI failures and keeps the feedback loop tight.
+
 ## Project Structure
 
 ```
