@@ -85,7 +85,7 @@ export default function ArticlesPage() {
         </div>
 
         {/* Articles List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {isLoading ? (
             <div className="py-12 text-center">
               <p className="text-gray-500">Loading articles...</p>
@@ -105,50 +105,58 @@ export default function ArticlesPage() {
               )}
             </div>
           ) : (
-            filteredResources.map((resource) => (
-              <div key={resource.id} className="rounded-lg bg-white p-6 shadow-md">
-                <div className="mb-3">
-                  <h3 className="mb-2 text-2xl font-semibold text-gray-900">{resource.title}</h3>
-                  <div className="text-sm text-gray-500">
-                    {new Date(resource.created_at).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+            filteredResources.map((resource) => {
+              // Extract first paragraph or first 200 chars as preview
+              const preview = resource.content
+                .split("\n\n")[0]
+                .replace(/[#*`[\]]/g, "")
+                .substring(0, 200);
+              const needsTruncation = resource.content.length > 200;
+
+              return (
+                <Link
+                  key={resource.id}
+                  href={`/knowledge-base/articles/${resource.id}`}
+                  className="block rounded-lg bg-white p-6 shadow-md transition hover:shadow-lg"
+                >
+                  <div className="mb-3">
+                    <h3 className="mb-2 text-2xl font-semibold text-gray-900 hover:text-blue-600">
+                      {resource.title}
+                    </h3>
+                    <div className="text-sm text-gray-500">
+                      {new Date(resource.created_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                {resource.content_type === "markdown" || resource.content_type === undefined ? (
-                  <MarkdownWithWikilinks content={resource.content} />
-                ) : (
-                  <p className="mb-3 text-gray-700">{resource.content}</p>
-                )}
+                  {/* Preview */}
+                  <p className="mb-3 text-gray-700">
+                    {preview}
+                    {needsTruncation && "..."}
+                  </p>
 
-                {resource.url && (
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-3 block text-sm text-blue-600 hover:underline"
-                  >
-                    {resource.url}
-                  </a>
-                )}
+                  {/* Tags */}
+                  {resource.tags.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {resource.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-                {resource.tags.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {resource.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
+                  {/* Read more indicator */}
+                  <div className="mt-4 text-sm font-medium text-blue-600">Read more →</div>
+                </Link>
+              );
+            })
           )}
         </div>
       </main>
