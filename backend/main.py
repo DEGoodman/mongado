@@ -48,6 +48,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Log startup information
 logger.info("Starting %s v%s", settings.app_name, settings.app_version)
 logger.info("1Password integration: %s", "enabled" if secret_manager.is_available() else "disabled")
+logger.info("CORS allowed origins: %s", settings.cors_origins_list)
 
 
 # Cache control middleware for static assets
@@ -85,7 +86,7 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
 # 1. CORS - must be first
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

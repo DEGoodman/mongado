@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # CORS settings
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: str = "http://localhost:3000"  # Comma-separated list of allowed origins
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS origins from comma-separated string."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     # 1Password settings
     op_mongado_service_account_token: str | None = None
