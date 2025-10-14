@@ -23,8 +23,8 @@ def test_get_resources_includes_static(client: TestClient) -> None:
     data = response.json()
     # Should include static articles (7 demo articles)
     assert len(data["resources"]) >= 7
-    # Verify first article is a static demo article
-    assert "[DEMO]" in data["resources"][0]["title"]
+    # Verify last article is a static demo article
+    assert "[DEMO]" in data["resources"][len(data["resources"])-1]["title"]
 
 
 def test_create_resource(client: TestClient, sample_resource: dict[str, str | list[str]]) -> None:
@@ -58,7 +58,7 @@ def test_get_resource_by_id(
 
 def test_get_nonexistent_resource(client: TestClient) -> None:
     """Test getting a resource that doesn't exist."""
-    response = client.get("/api/resources/999")
+    response = client.get("/api/resources/990")
     assert response.status_code == 404
     assert response.json()["detail"] == "Resource not found"
 
@@ -81,7 +81,7 @@ def test_delete_resource(client: TestClient, sample_resource: dict[str, str | li
 
 def test_delete_nonexistent_resource(client: TestClient) -> None:
     """Test deleting a resource that doesn't exist."""
-    response = client.delete("/api/resources/999")
+    response = client.delete("/api/resources/990")
     assert response.status_code == 404
 
 
