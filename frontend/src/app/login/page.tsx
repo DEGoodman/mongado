@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setAdminToken } from "@/lib/api/client";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function LoginPage() {
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -21,7 +23,7 @@ export default function LoginPage() {
 
       // Test the token by making an authenticated request to create a note
       // This endpoint requires auth, so it will validate our token
-      const response = await fetch("http://localhost:8000/api/notes", {
+      const response = await fetch(`${API_URL}/api/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,7 +39,7 @@ export default function LoginPage() {
         // Token is valid, delete the test note
         const testNote = await response.json();
 
-        await fetch(`http://localhost:8000/api/notes/${testNote.id}`, {
+        await fetch(`${API_URL}/api/notes/${testNote.id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
