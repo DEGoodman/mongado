@@ -33,6 +33,7 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}
           ADMIN_PASSKEY: ${{ secrets.ADMIN_PASSKEY }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
         run: |
           ssh $DO_USER@$DO_HOST << 'EOF'
             set -e
@@ -51,8 +52,9 @@ jobs:
             echo "🔐 Setting up environment variables..."
             cat > backend/.env << 'ENVEOF'
           DEBUG=false
+          CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
           OP_MONGADO_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}
-          ADMIN_PASSKEY=${{ secrets.ADMIN_PASSKEY }}
+          ADMIN_TOKEN=${{ secrets.ADMIN_PASSKEY }}
           ENVEOF
 
             # Export environment variables for docker-compose
