@@ -158,8 +158,8 @@ export default function NotesGraphPage() {
 
       // Update positions and apply damping
       nodes.forEach((node) => {
-        node.vx = node.vx! * 0.85;
-        node.vy = node.vy! * 0.85;
+        node.vx = node.vx! * 0.92; // Increased from 0.85 for slower movement
+        node.vy = node.vy! * 0.92;
         node.x = node.x! + node.vx!;
         node.y = node.y! + node.vy!;
 
@@ -186,7 +186,7 @@ export default function NotesGraphPage() {
       nodes.forEach((node) => {
         const isSelected = selectedNode?.id === node.id;
         const isHovered = hoveredNode === node.id;
-        const radius = isSelected || isHovered ? 8 : 6;
+        const radius = isSelected || isHovered ? 10 : 8; // Increased from 8/6 for easier clicking
 
         // Node circle
         ctx.beginPath();
@@ -230,7 +230,7 @@ export default function NotesGraphPage() {
     const clickedNode = graphData.nodes.find((node) => {
       const dx = x - node.x!;
       const dy = y - node.y!;
-      return Math.sqrt(dx * dx + dy * dy) < 10;
+      return Math.sqrt(dx * dx + dy * dy) < 12; // Increased from 10 to match larger nodes
     });
 
     setSelectedNode(clickedNode || null);
@@ -248,7 +248,7 @@ export default function NotesGraphPage() {
     const hoveredNode = graphData.nodes.find((node) => {
       const dx = x - node.x!;
       const dy = y - node.y!;
-      return Math.sqrt(dx * dx + dy * dy) < 10;
+      return Math.sqrt(dx * dx + dy * dy) < 12; // Increased from 10 to match larger nodes
     });
 
     setHoveredNode(hoveredNode?.id || null);
