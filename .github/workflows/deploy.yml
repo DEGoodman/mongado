@@ -64,12 +64,10 @@ jobs:
 
             # Create/update environment file
             echo "🔐 Setting up environment variables..."
-            cat > backend/.env <<INNEREOF
-DEBUG=false
-CORS_ORIGINS=\$CORS_ORIGINS
-OP_MONGADO_SERVICE_ACCOUNT_TOKEN=\$OP_SERVICE_ACCOUNT_TOKEN
-ADMIN_TOKEN=\$ADMIN_PASSKEY
-INNEREOF
+            echo "DEBUG=false" > backend/.env
+            echo "CORS_ORIGINS=$CORS_ORIGINS" >> backend/.env
+            echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN" >> backend/.env
+            echo "ADMIN_TOKEN=$ADMIN_PASSKEY" >> backend/.env
 
             # Export environment variables for docker-compose
             export NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL"
