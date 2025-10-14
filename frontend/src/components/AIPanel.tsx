@@ -51,13 +51,20 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
 
     try {
       // Unified Ask mode - hybrid KB + general knowledge
+      // Note: AI requests can take 30-60 seconds on small servers
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+
       const response = await fetch(`${API_URL}/api/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: userMessage.content,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Request failed: ${response.statusText}`);
@@ -75,13 +82,23 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       setMessages((prev) => [...prev, assistantMessage]);
       logger.info("Question answered", { question: userMessage.content });
     } catch (err) {
+      let errorContent = "Failed to process request. Make sure Ollama is running.";
+
+      if (err instanceof Error) {
+        if (err.name === "AbortError") {
+          errorContent =
+            "Request timed out after 90 seconds. The AI model may be overloaded or the server may need more resources.";
+        } else if (err.message.includes("Failed to fetch")) {
+          errorContent = "Network error: Could not connect to the API server.";
+        } else {
+          errorContent = `Error: ${err.message}`;
+        }
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          err instanceof Error
-            ? `Error: ${err.message}`
-            : "Failed to process request. Make sure Ollama is running.",
+        content: errorContent,
       };
       setMessages((prev) => [...prev, errorMessage]);
       logger.error("AI request failed", err);
