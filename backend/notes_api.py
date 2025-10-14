@@ -217,3 +217,49 @@ async def get_outbound_links(note_id: str) -> dict[str, Any]:
     links = notes_service.get_outbound_links(note_id)
 
     return {"links": links, "count": len(links)}
+
+
+@router.get("/graph/data", response_model=dict[str, Any])
+async def get_graph_data(
+    session_id: SessionID = Depends(get_session_id),
+    is_admin: bool = Depends(try_verify_admin),
+) -> dict[str, Any]:
+    """Get full graph data (all nodes and edges) for visualization.
+
+    Returns:
+    - nodes: List of all accessible notes
+    - edges: List of all links between notes
+    """
+    # Get all accessible notes
+    notes = notes_service.list_notes(is_admin=is_admin, session_id=session_id)
+
+    # Build nodes list
+    nodes = [
+        {
+            "id": note["id"],
+            "title": note.get("title") or note["id"],
+            "author": note["author"],
+            "is_ephemeral": note["is_ephemeral"],
+            "tags": note.get("tags", []),
+        }
+        for note in notes
+    ]
+
+    # Build edges list from all notes' links
+    edges = []
+    for note in notes:
+        source_id = note["id"]
+        for target_id in note.get("links", []):
+            edges.append({
+                "source": source_id,
+                "target": target_id,
+            })
+
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "count": {
+            "nodes": len(nodes),
+            "edges": len(edges),
+        }
+    }
