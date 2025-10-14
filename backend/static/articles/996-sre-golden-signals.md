@@ -1,5 +1,5 @@
 ---
-id: 4
+id: 996
 title: "[DEMO] SRE Golden Signals: The Four Key Metrics"
 url: "https://sre.google/sre-book/monitoring-distributed-systems/"
 tags: ["sre", "monitoring", "observability", "golden-signals", "demo"]

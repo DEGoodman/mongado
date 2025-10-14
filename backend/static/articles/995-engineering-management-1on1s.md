@@ -1,5 +1,5 @@
 ---
-id: 3
+id: 995
 title: "[DEMO] Engineering Management: 1-on-1s Best Practices"
 tags: ["management", "1-on-1s", "leadership", "team", "demo"]
 created_at: "2025-01-20T09:15:00"
