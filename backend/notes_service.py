@@ -66,7 +66,7 @@ class NotesService:
                     note_id=note_id,
                     content=content,
                     title=title,
-                    author="admin",
+                    author="Erik",
                     tags=tags or [],
                     links=links,
                 )
@@ -83,7 +83,7 @@ class NotesService:
                         note_id,
                         title,
                         content,
-                        "admin",
+                        "Erik",
                         json.dumps(tags or []),
                         json.dumps({"links": links}),
                     ),

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
-import RichTextDisplay from "@/components/RichTextDisplay";
+import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 
@@ -119,9 +119,7 @@ export default function ArticlesPage() {
                 </div>
 
                 {resource.content_type === "markdown" || resource.content_type === undefined ? (
-                  <div className="prose prose-blue max-w-none">
-                    <RichTextDisplay markdown={resource.content} />
-                  </div>
+                  <MarkdownWithWikilinks content={resource.content} />
                 ) : (
                   <p className="mb-3 text-gray-700">{resource.content}</p>
                 )}

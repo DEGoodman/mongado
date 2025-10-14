@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
+import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
@@ -330,25 +331,9 @@ export default function NoteDetailPage() {
                   </div>
                 )}
 
-                {/* Content display with wikilinks highlighted */}
+                {/* Content display with markdown and wikilinks */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6">
-                  <div className="whitespace-pre-wrap font-sans leading-relaxed text-gray-800">
-                    {note.content.split(/(\[\[[a-z0-9-]+\]\])/g).map((part, i) => {
-                      const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
-                      if (match) {
-                        return (
-                          <Link
-                            key={i}
-                            href={`/knowledge-base/notes/${match[1]}`}
-                            className="rounded bg-blue-50 px-1 font-mono text-blue-600 hover:underline"
-                          >
-                            {part}
-                          </Link>
-                        );
-                      }
-                      return <span key={i}>{part}</span>;
-                    })}
-                  </div>
+                  <MarkdownWithWikilinks content={note.content} />
                 </div>
               </div>
             )}
