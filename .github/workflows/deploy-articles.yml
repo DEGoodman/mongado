@@ -1,0 +1,89 @@
+name: Deploy Articles Only
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/static/articles/**'
+      - 'backend/static/assets/**'
+  workflow_dispatch:  # Allow manual deployment
+
+jobs:
+  deploy-static:
+    name: Deploy Static Content
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      - name: Add DigitalOcean host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy static files
+        env:
+          DO_HOST: ${{ secrets.DO_HOST }}
+          DO_USER: ${{ secrets.DO_USER }}
+        run: |
+          ssh $DO_USER@$DO_HOST << 'EOF'
+            set -e
+
+            echo "📄 Deploying static content only..."
+
+            # Navigate to project directory
+            cd /opt/mongado || { echo "Project directory not found"; exit 1; }
+
+            # Pull latest changes
+            echo "🔄 Pulling latest static files from main branch..."
+            git fetch origin
+            git reset --hard origin/main
+
+            # Restart only the backend to pick up new articles
+            echo "🔄 Restarting backend to reload articles..."
+            docker restart mongado-backend-prod
+
+            # Wait for backend to be healthy
+            echo "⏳ Waiting for backend to be healthy..."
+            sleep 5
+
+            # Health check
+            if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+              echo "✅ Backend is healthy - static content deployed successfully"
+            else
+              echo "❌ Backend health check failed"
+              docker logs --tail 50 mongado-backend-prod
+              exit 1
+            fi
+
+            echo "✅ Static content deployment complete!"
+          EOF
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Static content deployed successfully!"
+          else
+            echo "❌ Static content deployment failed!"
+          fi
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying static content deployment..."
+          sleep 3
+
+          # Check backend API
+          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.mongado.com/ || echo "000")
+          if [ "$BACKEND_STATUS" = "200" ]; then
+            echo "✅ Backend API responding (Status: $BACKEND_STATUS)"
+          else
+            echo "⚠️  Backend API status: $BACKEND_STATUS"
+          fi

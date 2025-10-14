@@ -3,6 +3,11 @@ name: Deploy to DigitalOcean
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'backend/static/articles/**'
+      - 'backend/static/assets/**'
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:  # Allow manual deployment
 
 jobs:
