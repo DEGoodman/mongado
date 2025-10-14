@@ -63,6 +63,7 @@ RUN pip install --no-cache-dir -r requirements-prod.txt && \
 COPY --chown=appuser:appuser *.py ./
 COPY --chown=appuser:appuser *.sql ./
 COPY --chown=appuser:appuser static ./static
+COPY --chown=appuser:appuser data ./data
 
 # Switch to non-root user
 USER appuser
