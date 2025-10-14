@@ -36,8 +36,21 @@ jobs:
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
           NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
         run: |
-          ssh $DO_USER@$DO_HOST << 'EOF'
+          # Pass secrets to remote server via SSH command arguments
+          ssh $DO_USER@$DO_HOST "bash -s" \
+            "$CORS_ORIGINS" \
+            "$OP_SERVICE_ACCOUNT_TOKEN" \
+            "$ADMIN_PASSKEY" \
+            "$NEXT_PUBLIC_API_URL" \
+            "$NEO4J_PASSWORD" << 'EOF'
             set -e
+
+            # Receive arguments
+            CORS_ORIGINS="$1"
+            OP_SERVICE_ACCOUNT_TOKEN="$2"
+            ADMIN_PASSKEY="$3"
+            NEXT_PUBLIC_API_URL="$4"
+            NEO4J_PASSWORD="$5"
 
             echo "📦 Deploying Mongado to production..."
 
@@ -51,18 +64,18 @@ jobs:
 
             # Create/update environment file
             echo "🔐 Setting up environment variables..."
-            cat > backend/.env << 'ENVEOF'
-          DEBUG=false
-          CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
-          OP_MONGADO_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}
-          ADMIN_TOKEN=${{ secrets.ADMIN_PASSKEY }}
-          ENVEOF
+            cat > backend/.env << ENVEOF
+DEBUG=false
+CORS_ORIGINS=$CORS_ORIGINS
+OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN
+ADMIN_TOKEN=$ADMIN_PASSKEY
+ENVEOF
 
             # Export environment variables for docker-compose
-            export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
-            export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}"
-            export NEO4J_PASSWORD="${{ secrets.NEO4J_PASSWORD }}"
-            export NEO4J_AUTH="neo4j/${{ secrets.NEO4J_PASSWORD }}"
+            export NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL"
+            export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="$OP_SERVICE_ACCOUNT_TOKEN"
+            export NEO4J_PASSWORD="$NEO4J_PASSWORD"
+            export NEO4J_AUTH="neo4j/$NEO4J_PASSWORD"
 
             # Build and restart containers
             echo "🐳 Building and restarting Docker containers..."
