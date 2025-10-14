@@ -75,9 +75,9 @@ jobs:
             export NEO4J_PASSWORD="$NEO4J_PASSWORD"
             export NEO4J_AUTH="neo4j/$NEO4J_PASSWORD"
 
-            # Build and restart containers
+            # Build and restart containers (without --no-cache to reduce resource usage)
             echo "🐳 Building and restarting Docker containers..."
-            docker compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml build
             docker compose -f docker-compose.prod.yml up -d
 
             # Wait for services to be healthy
