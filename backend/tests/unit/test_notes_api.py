@@ -157,7 +157,7 @@ class TestListNotes:
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 1
-        assert data["notes"][0]["author"] == "admin"
+        assert data["notes"][0]["author"] == "Erik"
 
 
 class TestGetNote:
