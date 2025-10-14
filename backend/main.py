@@ -334,10 +334,11 @@ def semantic_search(request: SearchRequest) -> SearchResponse:
 @app.post("/api/ask", response_model=QuestionResponse)
 def ask_question(request: QuestionRequest) -> QuestionResponse:
     """
-    Answer a question based on the knowledge base using Ollama.
+    Answer a question using Ollama with hybrid KB + general knowledge.
 
-    First performs semantic search to find relevant articles,
-    then uses those as context to answer the question.
+    First performs semantic search to find relevant articles/notes,
+    then uses those as context. Can answer from general knowledge if KB
+    doesn't have the answer.
     """
     if not ollama_client.is_available():
         raise HTTPException(
@@ -349,8 +350,10 @@ def ask_question(request: QuestionRequest) -> QuestionResponse:
     all_resources = static_articles + user_resources_db
     relevant_docs = ollama_client.semantic_search(request.question, all_resources, top_k=5)
 
-    # Generate answer
-    answer = ollama_client.ask_question(request.question, relevant_docs)
+    # Generate answer with hybrid mode (KB + general knowledge)
+    answer = ollama_client.ask_question(
+        request.question, relevant_docs, allow_general_knowledge=True
+    )
 
     if not answer:
         raise HTTPException(

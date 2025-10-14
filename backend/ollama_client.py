@@ -1,5 +1,6 @@
 """Ollama integration for AI-powered features."""
 
+import hashlib
 import logging
 from typing import Any
 
@@ -19,6 +20,10 @@ class OllamaClient:
         self.model = settings.ollama_model
         self.client = None
 
+        # Embedding cache: {content_hash: embedding_vector}
+        # This prevents regenerating embeddings for the same content
+        self.embedding_cache: dict[str, list[float]] = {}
+
         if self.enabled:
             try:
                 import ollama
@@ -37,12 +42,17 @@ class OllamaClient:
         """Check if Ollama is available and enabled."""
         return self.enabled and self.client is not None
 
-    def generate_embedding(self, text: str) -> list[float] | None:
+    def _get_content_hash(self, text: str) -> str:
+        """Generate a hash of content for cache key."""
+        return hashlib.sha256(text.encode()).hexdigest()
+
+    def generate_embedding(self, text: str, use_cache: bool = True) -> list[float] | None:
         """
         Generate embeddings for a given text using Ollama.
 
         Args:
             text: The text to generate embeddings for
+            use_cache: Whether to use cached embeddings (default True)
 
         Returns:
             List of floats representing the embedding, or None if unavailable
@@ -51,9 +61,24 @@ class OllamaClient:
             logger.debug("Ollama not available, skipping embedding generation")
             return None
 
+        # Check cache first
+        if use_cache:
+            content_hash = self._get_content_hash(text)
+            if content_hash in self.embedding_cache:
+                logger.debug("Using cached embedding for content")
+                return self.embedding_cache[content_hash]
+
         try:
             response = self.client.embeddings(model=self.model, prompt=text)
-            return response["embedding"]
+            embedding = response["embedding"]
+
+            # Cache the result
+            if use_cache:
+                content_hash = self._get_content_hash(text)
+                self.embedding_cache[content_hash] = embedding
+                logger.debug("Cached embedding (total cached: %d)", len(self.embedding_cache))
+
+            return embedding
         except Exception as e:
             logger.error("Failed to generate embedding: %s", e)
             return None
@@ -83,15 +108,15 @@ class OllamaClient:
 
         try:
             # Generate embedding for query
-            query_embedding = self.generate_embedding(query)
+            query_embedding = self.generate_embedding(query, use_cache=False)  # Don't cache queries
             if not query_embedding:
                 return []
 
-            # Generate embeddings for all documents (in production, cache these)
+            # Generate embeddings for all documents (WITH CACHING - major performance win!)
             scored_docs = []
             for doc in documents:
                 content = doc.get("content", "")
-                doc_embedding = self.generate_embedding(content)
+                doc_embedding = self.generate_embedding(content, use_cache=True)
                 if doc_embedding:
                     # Calculate cosine similarity
                     similarity = self._cosine_similarity(query_embedding, doc_embedding)
@@ -106,14 +131,19 @@ class OllamaClient:
             return []
 
     def ask_question(
-        self, question: str, context_documents: list[dict[str, Any]]
+        self,
+        question: str,
+        context_documents: list[dict[str, Any]],
+        allow_general_knowledge: bool = True
     ) -> str | None:
         """
-        Answer a question based on the provided context documents.
+        Answer a question based on context documents and/or general knowledge.
 
         Args:
             question: The question to answer
             context_documents: List of relevant documents to use as context
+            allow_general_knowledge: If True, allows answering from general knowledge
+                                    when KB doesn't have the answer
 
         Returns:
             The answer as a string, or None if unavailable
@@ -130,11 +160,29 @@ class OllamaClient:
                 content = doc.get("content", "")
                 context_parts.append(f"### {title}\n{content}\n")
 
-            context = "\n".join(context_parts)
+            context = "\n".join(context_parts) if context_parts else "No relevant documents found."
 
-            # Create prompt
-            prompt = f"""Based on the following knowledge base articles, please answer the question.
-If the answer is not in the provided articles, say "I don't have enough information to answer that question."
+            # Create smart hybrid prompt
+            if allow_general_knowledge:
+                prompt = f"""You are a helpful AI assistant with access to a knowledge base.
+
+Knowledge Base Articles:
+{context}
+
+Question: {question}
+
+Instructions:
+1. First check if the knowledge base articles contain relevant information
+2. If the KB has the answer, cite it and use that information
+3. If the KB doesn't have enough info, you may answer from your general knowledge
+4. Be clear about whether you're using KB articles or general knowledge
+5. If you can't answer confidently, say so
+
+Answer:"""
+            else:
+                # KB-only mode (stricter)
+                prompt = f"""Based on the following knowledge base articles, please answer the question.
+If the answer is not in the provided articles, say "I don't have enough information in the knowledge base to answer that question."
 
 Knowledge Base:
 {context}
@@ -178,6 +226,18 @@ Summary:"""
         except Exception as e:
             logger.error("Failed to summarize article: %s", e)
             return None
+
+    def clear_cache(self) -> int:
+        """
+        Clear the embedding cache.
+
+        Returns:
+            Number of cached embeddings that were cleared
+        """
+        count = len(self.embedding_cache)
+        self.embedding_cache.clear()
+        logger.info("Cleared %d cached embeddings", count)
+        return count
 
     @staticmethod
     def _cosine_similarity(vec1: list[float], vec2: list[float]) -> float:

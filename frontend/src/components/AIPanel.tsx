@@ -25,7 +25,6 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"search" | "ask">("ask");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -51,62 +50,30 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
     setLoading(true);
 
     try {
-      if (mode === "search") {
-        // Semantic search mode
-        const response = await fetch(`${API_URL}/api/search`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: userMessage.content,
-            top_k: 5,
-          }),
-        });
+      // Unified Ask mode - hybrid KB + general knowledge
+      const response = await fetch(`${API_URL}/api/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: userMessage.content,
+        }),
+      });
 
-        if (!response.ok) {
-          throw new Error(`Search failed: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const results = data.results || [];
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content:
-            results.length > 0
-              ? `Found ${results.length} relevant documents:`
-              : "No results found for your search.",
-          sources: results,
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-        logger.info("Search completed", { query: userMessage.content, count: results.length });
-      } else {
-        // Q&A mode
-        const response = await fetch(`${API_URL}/api/ask`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: userMessage.content,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Q&A failed: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: data.answer,
-          sources: data.sources || [],
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-        logger.info("Question answered", { question: userMessage.content });
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.statusText}`);
       }
+
+      const data = await response.json();
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.answer,
+        sources: data.sources || [],
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      logger.info("Question answered", { question: userMessage.content });
     } catch (err) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -133,31 +100,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
     <div className="fixed right-0 top-0 z-50 flex h-screen w-96 flex-col border-l border-gray-200 bg-white shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
-          <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-            <button
-              onClick={() => setMode("ask")}
-              className={`rounded px-2 py-1 text-xs ${
-                mode === "ask"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Q&A
-            </button>
-            <button
-              onClick={() => setMode("search")}
-              className={`rounded px-2 py-1 text-xs ${
-                mode === "search"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Search
-            </button>
-          </div>
-        </div>
+        <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
         <button
           onClick={onClose}
           className="text-gray-400 transition hover:text-gray-600"
@@ -178,10 +121,9 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {messages.length === 0 && (
           <div className="mt-8 text-center text-gray-500">
-            <p className="text-sm">
-              {mode === "ask"
-                ? "Ask questions about your knowledge base"
-                : "Search for relevant documents"}
+            <p className="text-sm">Ask me anything!</p>
+            <p className="mt-2 text-xs">
+              I can answer questions from your knowledge base or use general knowledge when needed.
             </p>
           </div>
         )}
@@ -248,7 +190,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={mode === "ask" ? "Ask a question..." : "Search knowledge base..."}
+            placeholder="Ask a question..."
             className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
