@@ -62,14 +62,22 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
-            # Create/update environment file
+            # Create/update environment files
             echo "🔐 Setting up environment variables..."
+
+            # Backend .env file
             echo "DEBUG=false" > backend/.env
             echo "CORS_ORIGINS=$CORS_ORIGINS" >> backend/.env
             echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN" >> backend/.env
             echo "ADMIN_TOKEN=$ADMIN_PASSKEY" >> backend/.env
 
-            # Export environment variables for docker-compose
+            # Root .env file for docker-compose (so env vars persist across manual runs)
+            echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env
+            echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN" >> .env
+            echo "NEO4J_PASSWORD=$NEO4J_PASSWORD" >> .env
+            echo "NEO4J_AUTH=neo4j/$NEO4J_PASSWORD" >> .env
+
+            # Export environment variables for docker-compose (for this session)
             export NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL"
             export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="$OP_SERVICE_ACCOUNT_TOKEN"
             export NEO4J_PASSWORD="$NEO4J_PASSWORD"
@@ -84,9 +92,9 @@ jobs:
             echo "⏳ Waiting for services to be healthy..."
             sleep 10
 
-            # Pull Ollama model if not already present
+            # Pull Ollama model if not already present (use 1B model for 4GB RAM server)
             echo "🤖 Setting up Ollama model..."
-            docker exec mongado-ollama-prod ollama pull llama3.2:latest || echo "⚠️  Failed to pull Ollama model, will retry on next deployment"
+            docker exec mongado-ollama-prod ollama pull llama3.2:1b || echo "⚠️  Failed to pull Ollama model, will retry on next deployment"
 
             # Health check
             echo "🏥 Running health checks..."
