@@ -34,6 +34,7 @@ jobs:
           ADMIN_PASSKEY: ${{ secrets.ADMIN_PASSKEY }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
         run: |
           ssh $DO_USER@$DO_HOST << 'EOF'
             set -e
@@ -60,6 +61,8 @@ jobs:
             # Export environment variables for docker-compose
             export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
             export OP_MONGADO_SERVICE_ACCOUNT_TOKEN="${{ secrets.OP_MONGADO_SERVICE_ACCOUNT_TOKEN }}"
+            export NEO4J_PASSWORD="${{ secrets.NEO4J_PASSWORD }}"
+            export NEO4J_AUTH="neo4j/${{ secrets.NEO4J_PASSWORD }}"
 
             # Build and restart containers
             echo "🐳 Building and restarting Docker containers..."
@@ -69,6 +72,10 @@ jobs:
             # Wait for services to be healthy
             echo "⏳ Waiting for services to be healthy..."
             sleep 10
+
+            # Pull Ollama model if not already present
+            echo "🤖 Setting up Ollama model..."
+            docker exec mongado-ollama-prod ollama pull llama3.2:latest || echo "⚠️  Failed to pull Ollama model, will retry on next deployment"
 
             # Health check
             echo "🏥 Running health checks..."
