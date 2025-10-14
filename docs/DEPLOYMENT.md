@@ -92,14 +92,41 @@ Go to your GitHub repo: `github.com/degoodman/mongado` → Settings → Secrets 
 
 Add these secrets:
 
-| Secret Name | Description | Example Value |
-|------------|-------------|---------------|
-| `DO_SSH_PRIVATE_KEY` | SSH private key for droplet access | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| `DO_HOST` | Droplet IP address | `164.90.xxx.xxx` |
-| `DO_USER` | SSH user (usually `root`) | `root` |
-| `OP_MONGADO_SERVICE_ACCOUNT_TOKEN` | 1Password service account token | `ops_xxx...` |
-| `ADMIN_PASSKEY` | Admin authentication passkey | `your-secret-passkey-here` |
-| `NEXT_PUBLIC_API_URL` | Production API URL | `https://api.mongado.com` |
+| Secret Name | Description | Example Value | How to Generate |
+|------------|-------------|---------------|-----------------|
+| `DO_SSH_PRIVATE_KEY` | SSH private key for droplet access | `-----BEGIN OPENSSH PRIVATE KEY-----...` | `cat ~/.ssh/id_rsa` or generate new keypair |
+| `DO_HOST` | Droplet IP address | `164.90.xxx.xxx` | DigitalOcean dashboard |
+| `DO_USER` | SSH user (usually `root`) | `root` | Default: `root` |
+| `OP_MONGADO_SERVICE_ACCOUNT_TOKEN` | 1Password service account token | `ops_xxx...` | 1Password → Developer → Service Accounts |
+| `ADMIN_PASSKEY` | Admin authentication passkey | `your-secret-passkey-here` | `openssl rand -base64 32` |
+| `NEXT_PUBLIC_API_URL` | Production API URL | `https://api.mongado.com` | Your API domain |
+
+### Environment Variables Reference
+
+#### Required Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `CORS_ORIGINS` | **Yes** | `http://localhost:3000` | Comma-separated list of allowed frontend origins |
+| `NEXT_PUBLIC_API_URL` | **Yes** | `http://localhost:8000` | Backend API URL (must be set at build time) |
+| `ADMIN_TOKEN` | **Yes** | - | Bearer token for admin authentication |
+
+#### Optional Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `OP_MONGADO_SERVICE_ACCOUNT_TOKEN` | No | - | 1Password service account token |
+| `NEO4J_URI` | No | `bolt://localhost:7687` | Neo4j connection string |
+| `NEO4J_USER` | No | `neo4j` | Neo4j username |
+| `NEO4J_PASSWORD` | No | - | Neo4j password |
+| `OLLAMA_HOST` | No | `http://localhost:11434` | Ollama API endpoint |
+| `OLLAMA_ENABLED` | No | `true` | Enable/disable AI features |
+| `DEBUG` | No | `false` | Enable debug mode (set to `false` in production) |
+
+**Important Notes**:
+- `NEXT_PUBLIC_API_URL` must be set at **build time**, not runtime. If you change this value, you must rebuild the frontend container.
+- `CORS_ORIGINS` must include all domains that will access your API (both `mongado.com` and `www.mongado.com`)
+- Use strong random tokens for `ADMIN_TOKEN` (64+ characters): `openssl rand -base64 64`
 
 **To get your SSH private key**:
 ```bash
@@ -469,7 +496,74 @@ chmod +x /opt/mongado/scripts/backup-neo4j.sh
 (crontab -l 2>/dev/null; echo "0 2 * * * /opt/mongado/scripts/backup-neo4j.sh") | crontab -
 ```
 
-## Troubleshooting
+## Common Production Issues & Troubleshooting
+
+### "Failed to fetch" or "Failed to connect to server"
+
+**Symptoms:**
+- AI Assistant returns "Error: Failed to fetch"
+- Notes page doesn't load
+- Login fails with "Failed to connect to server"
+
+**Causes & Solutions:**
+
+1. **CORS Misconfiguration** (Most Common)
+   - **Problem**: Backend `CORS_ORIGINS` doesn't include your frontend domain
+   - **Solution**: Update backend `.env` with your actual domain(s):
+     ```bash
+     CORS_ORIGINS=https://mongado.com,https://www.mongado.com
+     ```
+   - **Verify**: Check backend logs on startup. Should show:
+     ```
+     CORS allowed origins: ['https://mongado.com', 'https://www.mongado.com']
+     ```
+
+2. **Wrong API URL in Frontend**
+   - **Problem**: Frontend is trying to connect to `localhost` instead of your API domain
+   - **Solution**: Set `NEXT_PUBLIC_API_URL` before building:
+     ```bash
+     NEXT_PUBLIC_API_URL=https://api.mongado.com npm run build
+     ```
+   - **Verify**: Check browser DevTools Network tab. API requests should go to your production domain, not `localhost:8000`
+
+3. **Backend Not Running**
+   - **Problem**: Backend container crashed or didn't start
+   - **Solution**: Check logs: `docker compose -f docker-compose.prod.yml logs -f backend`
+   - **Common causes**: Missing environment variables, Neo4j connection failed
+
+4. **Network Isolation**
+   - **Problem**: Frontend can't reach backend (different networks, firewall, etc.)
+   - **Solution**: Verify containers are on same Docker network, firewall rules allow traffic
+
+### Debugging Steps
+
+1. **Check backend logs**:
+   ```bash
+   ssh root@<YOUR_DROPLET_IP>
+   cd /opt/mongado
+   docker compose -f docker-compose.prod.yml logs backend
+   # Look for startup message showing CORS origins
+   ```
+
+2. **Check frontend is using correct API URL**:
+   - Open browser DevTools → Network tab
+   - Try an API action (e.g., open Notes page)
+   - Check the request URL - should be your production domain, not localhost
+
+3. **Test backend directly**:
+   ```bash
+   curl https://api.mongado.com/
+   # Should return: {"message":"Mongado API","version":"0.1.0",...}
+   ```
+
+4. **Check CORS headers**:
+   ```bash
+   curl -H "Origin: https://mongado.com" \
+        -H "Access-Control-Request-Method: POST" \
+        -X OPTIONS \
+        https://api.mongado.com/api/notes
+   # Should include: Access-Control-Allow-Origin: https://mongado.com
+   ```
 
 ### Deployment Fails
 
@@ -489,6 +583,7 @@ chmod +x /opt/mongado/scripts/backup-neo4j.sh
    - Insufficient disk space: `df -h`
    - Docker not running: `systemctl status docker`
    - Port conflicts: `netstat -tulpn`
+   - CORS misconfiguration (see above)
 
 ### DNS Not Working
 

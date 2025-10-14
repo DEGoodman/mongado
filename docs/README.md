@@ -9,17 +9,26 @@ Documentation for the Mongado project - personal website and Knowledge Base.
 
 ## Project Documentation
 
-### General
+### Current Status & Planning
 
-- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Current project status and setup verification
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - ⭐ Single source of truth for project status (Oct 2025)
 - **[ROADMAP.md](ROADMAP.md)** - Future features, improvements, and TODOs
-- **[DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md)** - Detailed development environment setup
+
+### Deployment & Operations
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Complete production deployment guide (DigitalOcean)
+- **[DISASTER_RECOVERY.md](DISASTER_RECOVERY.md)** - Recovery procedures and backups
 
 ### Development Guides
 
+- **[SETUP.md](SETUP.md)** - 1Password service account setup
 - **[TESTING.md](TESTING.md)** - Testing tools and commands
 - **[PROFILING.md](PROFILING.md)** - Performance profiling tools
 - **[DEPENDENCIES.md](DEPENDENCIES.md)** - Dependency structure and management
+
+### Archived Documentation
+
+- **[archive/](archive/)** - Historical documentation (outdated but kept for reference)
 
 ### Knowledge Base
 
@@ -60,16 +69,22 @@ See [TESTING.md](TESTING.md) for complete command reference.
 ```
 docs/
 ├── README.md                    # This file - documentation index
-├── SETUP.md                     # Environment setup and configuration
-├── PROJECT_STATUS.md           # Project health and verification
-├── ROADMAP.md                  # Future plans and TODOs
-├── TESTING.md                  # Testing guide
-├── PROFILING.md                # Performance profiling
-├── DEPENDENCIES.md             # Dependency management
-└── knowledge-base/             # Knowledge Base documentation
-    ├── README.md               # KB architecture overview
-    ├── ARTICLES.md             # Article authoring guide
-    └── NOTES.md                # Notes/Zettelkasten guide
+├── CURRENT_STATUS.md            # ⭐ Current project status (single source of truth)
+├── ROADMAP.md                   # Future plans and TODOs
+├── DEPLOYMENT.md                # Production deployment guide
+├── DISASTER_RECOVERY.md         # Recovery procedures
+├── SETUP.md                     # 1Password setup
+├── TESTING.md                   # Testing guide
+├── PROFILING.md                 # Performance profiling
+├── DEPENDENCIES.md              # Dependency management
+├── archive/                     # Historical/outdated documentation
+│   ├── PROJECT_STATUS.md        # Old status doc (Oct 2024)
+│   ├── DEVELOPMENT_SETUP.md     # Old setup doc (Oct 2024)
+│   └── DNS_SETUP.md             # DNS setup (completed)
+└── knowledge-base/              # Knowledge Base documentation
+    ├── README.md                # KB architecture overview
+    ├── ARTICLES.md              # Article authoring guide
+    └── NOTES.md                 # Notes/Zettelkasten guide
 ```
 
 ## External Resources

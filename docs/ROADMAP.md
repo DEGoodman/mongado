@@ -35,48 +35,28 @@ This document tracks planned features, improvements, and technical debt for the 
 
 ## High Priority
 
-### Production Deployment (Immediate)
+### ✅ Production Deployment (COMPLETED - Oct 2025)
 
-**Goal**: Deploy Mongado to DigitalOcean at mongado.com
+**Status**: ✅ Live at https://mongado.com
 
-**Status**: 🚧 Ready to deploy - documentation and automation complete
+**Completed**:
+- ✅ Created DigitalOcean droplet (Premium AMD 2vCPU / 4GB RAM)
+- ✅ Configured DNS records on Hover.com
+  - ✅ A record for `@` (root domain)
+  - ✅ A record for `www`
+  - ✅ A record for `api`
+  - ✅ Fastmail MX records preserved
+- ✅ Set up GitHub Secrets in repository
+- ✅ Configured Nginx reverse proxy
+- ✅ Set up SSL certificates with Let's Encrypt
+- ✅ GitHub Actions auto-deployment on push to `main`
+- ✅ Fast article deployment workflow (~10s)
+- ✅ Frontend accessible at https://mongado.com
+- ✅ Backend API at https://api.mongado.com
+- ✅ SSL certificates valid and auto-renewing
+- ✅ Email still working via Fastmail
 
-**Tasks**:
-- [ ] Create DigitalOcean droplet (Ubuntu 22.04, $12-24/month)
-- [ ] Configure DNS records on Hover.com (see DNS_SETUP.md)
-  - [ ] Add A record for `@` (root domain)
-  - [ ] Add A record for `www`
-  - [ ] Add A record for `api`
-  - [ ] Verify Fastmail MX records remain intact
-- [ ] Set up GitHub Secrets in repository
-  - [ ] `DO_SSH_PRIVATE_KEY` - SSH private key
-  - [ ] `DO_HOST` - Droplet IP address
-  - [ ] `DO_USER` - SSH user (root)
-  - [ ] `OP_MONGADO_SERVICE_ACCOUNT_TOKEN` - 1Password token
-  - [ ] `ADMIN_PASSKEY` - Admin authentication passkey
-  - [ ] `NEXT_PUBLIC_API_URL` - Production API URL
-- [ ] SSH into droplet and run initial setup
-  - [ ] Install Docker and Docker Compose
-  - [ ] Install Nginx
-  - [ ] Clone repository to `/opt/mongado`
-  - [ ] Configure Nginx reverse proxy
-- [ ] Set up SSL certificates with Let's Encrypt
-- [ ] Trigger first deployment via GitHub Actions
-- [ ] Verify deployment:
-  - [ ] Frontend accessible at https://mongado.com
-  - [ ] Backend API at https://api.mongado.com
-  - [ ] SSL certificates valid
-  - [ ] Email still working via Fastmail
-
-**Documentation**:
-- See `docs/DEPLOYMENT.md` for complete deployment guide
-- See `docs/DNS_SETUP.md` for DNS configuration (preserving Fastmail)
-- See `docs/PRODUCTION_ENV.md` for environment variable setup
-
-**Automation**:
-- GitHub Actions workflow: `.github/workflows/deploy.yml`
-- Auto-deploys on push to `main` branch
-- Includes health checks and automatic rollback on failure
+**Documentation**: See `docs/DEPLOYMENT.md` for complete deployment guide
 
 ### Authentication System (Q1 2025)
 
@@ -302,7 +282,7 @@ See `docs/knowledge-base/NOTES.md` for current auth implementation details.
 - ✅ Basic FastAPI backend
 - ✅ Next.js frontend scaffold
 
-### Q1 2025
+### Q1-Q4 2025
 - ✅ Knowledge Base architecture
 - ✅ Static article system with markdown
 - ✅ Image optimization pipeline
@@ -310,11 +290,17 @@ See `docs/knowledge-base/NOTES.md` for current auth implementation details.
 - ✅ Neo4j integration for persistent notes
 - ✅ Wikilink parsing and bidirectional links
 - ✅ Ollama AI integration
-- ✅ Graph visualization
+- ✅ Graph visualization (frontend)
 - ✅ Documentation reorganization
 - ✅ CI/CD pipeline with GitHub Actions
 - ✅ Production deployment automation (DigitalOcean)
 - ✅ DNS configuration guide (preserving Fastmail email)
+- ✅ **Production deployment completed - Live at mongado.com**
+- ✅ Fast article deployment workflow
+- ✅ AI embedding cache for performance
+- ✅ CodeMirror markdown editor (replaced TipTap)
+- ✅ Article preview cards with detail view
+- ✅ Basic admin authentication (Bearer token)
 
 ## Contribution Guidelines
 
@@ -335,4 +321,4 @@ For questions or suggestions about the roadmap:
 
 ---
 
-Last updated: 2025-10-12
+Last updated: 2025-10-14

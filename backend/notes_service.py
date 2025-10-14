@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class NotesService:
     """Service for managing Zettelkasten notes (persistent + ephemeral)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize notes service."""
         self.db = get_database()  # Fallback for when Neo4j unavailable
 
@@ -96,8 +96,11 @@ class NotesService:
 
                 logger.info("Created persistent note in SQLite (Neo4j unavailable): %s", note_id)
 
-                # Return created note
-                return self.get_note(note_id, is_admin, session_id)
+                # Return created note (must exist since we just created it)
+                retrieved_note: dict[str, Any] | None = self.get_note(note_id, is_admin, session_id)
+                if retrieved_note is None:
+                    raise RuntimeError(f"Failed to retrieve note {note_id} immediately after creation")
+                return retrieved_note
 
         else:
             # Create ephemeral note in memory

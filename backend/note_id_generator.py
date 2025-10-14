@@ -14,7 +14,7 @@ class NoteIDGenerator:
     # Pattern for valid note IDs
     ID_PATTERN = re.compile(r"^[a-z]+-[a-z]+(-\d+)?$")
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize generator with word lists."""
         self.adjectives = self._load_words("adjectives.txt")
         self.nouns = self._load_words("nouns.txt")

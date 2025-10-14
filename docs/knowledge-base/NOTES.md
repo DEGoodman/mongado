@@ -259,7 +259,7 @@ class WikilinkParser:
 
 ## API Endpoints
 
-### Notes CRUD
+### ✅ Available Now - Notes CRUD
 
 ```bash
 # List all notes (persistent + ephemeral for current session)
@@ -283,7 +283,7 @@ PUT /api/notes/{note_id}
 DELETE /api/notes/{note_id}
 ```
 
-### Links & Backlinks
+### ✅ Available Now - Links & Backlinks
 
 ```bash
 # Get outbound links from a note
@@ -291,81 +291,62 @@ GET /api/notes/{note_id}/links
 
 # Get inbound links (backlinks) to a note
 GET /api/notes/{note_id}/backlinks
-
-# Manually add a link
-POST /api/notes/{note_id}/links
-{
-  "target_id": "wise-mountain"
-}
-
-# Remove a link
-DELETE /api/notes/{note_id}/links/{target_id}
 ```
 
-### Graph Endpoints
+**Note**: Links are automatically extracted from note content using `[[note-id]]` syntax. There's no need to manually add or remove links via API - just update the note content.
 
-```bash
-# Get full graph (all nodes and edges)
-GET /api/notes/graph
-
-# Get local subgraph around a note (depth=2)
-GET /api/notes/{note_id}/graph
-```
-
-### ID Generation
-
-```bash
-# Get a random adjective-noun ID
-GET /api/notes/generate-id
-# Returns: {"id": "curious-elephant"}
-```
-
-### Search & AI
+### ✅ Available Now - Search & AI
 
 ```bash
 # Semantic search across notes and articles
-POST /api/notes/search
+POST /api/search
 {
   "query": "database design",
   "top_k": 5
 }
 
-# AI-suggested related notes
-POST /api/notes/{note_id}/suggest-links
-# Returns: [
-#   {
-#     "noteId": "wise-mountain",
-#     "title": "Graph Database Basics",
-#     "reason": "Discusses database design for relationships",
-#     "similarity": 0.87
-#   }
-# ]
+# AI Q&A with context from knowledge base
+POST /api/ask
+{
+  "query": "How do I design a database for relationships?",
+  "mode": "kb"
+}
 
-# AI-generated summary
-GET /api/notes/{note_id}/summary
+# AI-generated article summary
+GET /api/articles/{article_id}/summary
 ```
 
-### Admin Controls
+### 🚧 Planned Features
+
+The following endpoints are documented for future implementation:
 
 ```bash
-# Authenticate with passkey
+# Get a random adjective-noun ID (currently auto-generated on note creation)
+GET /api/notes/generate-id
+
+# Get full graph (all nodes and edges)
+GET /api/notes/graph
+
+# Get local subgraph around a note (depth=2)
+GET /api/notes/{note_id}/graph
+
+# AI-suggested related notes
+POST /api/notes/{note_id}/suggest-links
+
+# AI-generated note summary (currently only available for articles)
+GET /api/notes/{note_id}/summary
+
+# Authenticate with passkey (currently uses Authorization header)
 POST /api/admin/auth
-{
-  "passkey": "your-secret-passkey"
-}
 
 # Clear all ephemeral notes
 DELETE /api/admin/ephemeral
 
 # Get system statistics
 GET /api/admin/stats
-# Returns: {
-#   "ephemeral_count": 42,
-#   "ephemeral_memory_mb": 12.5,
-#   "persistent_count": 156,
-#   "active_sessions": 3
-# }
 ```
+
+**Note**: These features are planned but not yet implemented. See `docs/ROADMAP.md` for implementation timeline.
 
 ## Creating Notes
 
@@ -458,37 +439,25 @@ POST /api/search
 # - Link to full content
 ```
 
-### Link Suggestions
+### 🚧 Link Suggestions (Planned)
 
-Get AI-powered suggestions for related notes:
+AI-powered suggestions for related notes will be available via:
 
 ```bash
-POST /api/notes/curious-elephant/suggest-links
-
-# Returns:
-[
-  {
-    "noteId": "wise-mountain",
-    "title": "Graph Database Basics",
-    "reason": "Both discuss database design patterns",
-    "similarity": 0.87
-  },
-  {
-    "noteId": "swift-river",
-    "title": "Payment Processing",
-    "reason": "Shares database architecture concepts",
-    "similarity": 0.72
-  }
-]
+POST /api/notes/{note_id}/suggest-links
 ```
 
-### Auto-Summaries
+This feature is planned but not yet implemented.
 
-Each note gets an AI-generated summary:
-- Created automatically when note is saved
-- Displayed as tooltip on hover in graph
-- Helps understand what a note is about without opening it
-- Cached in note metadata
+### 🚧 Auto-Summaries (Planned)
+
+AI-generated summaries for notes are planned:
+- Will be created automatically when note is saved
+- Will be displayed as tooltip on hover in graph
+- Will help understand what a note is about without opening it
+- Will be cached in note metadata
+
+**Current Status**: Article summaries are available via `GET /api/articles/{id}/summary`, but note summaries are not yet implemented.
 
 ## UI/UX Guidelines
 
@@ -610,17 +579,19 @@ Auto-eviction strategy:
 2. If still over limit, remove oldest notes
 3. Log evictions for monitoring
 
-Admin controls:
+🚧 **Admin controls (Planned)**:
 ```bash
-# View stats
+# View stats (not yet implemented)
 GET /api/admin/stats
 
-# Clear all ephemeral notes
+# Clear all ephemeral notes (not yet implemented)
 DELETE /api/admin/ephemeral
 
-# Clear specific session
+# Clear specific session (not yet implemented)
 DELETE /api/admin/ephemeral/{session_id}
 ```
+
+**Current Status**: Admin authentication is done via Bearer token in the `Authorization` header.
 
 ## Testing
 
@@ -730,8 +701,10 @@ test('filters graph by author')
 
 ### Graph not rendering
 
+**Note**: Graph visualization endpoints are planned but not yet implemented.
+
 1. Check browser console for JavaScript errors
-2. Verify graph endpoint returns data: `GET /api/notes/graph`
+2. Verify you're using the correct graph visualization component
 3. Test with smaller dataset first
 4. Clear browser cache and reload
 
@@ -744,8 +717,10 @@ test('filters graph by author')
 
 ### Ephemeral notes disappearing
 
+**Note**: Admin stats endpoint is not yet implemented.
+
 1. Check session cookie is set and valid
-2. Verify memory limits not exceeded: `GET /api/admin/stats`
+2. Check backend logs for memory limit warnings
 3. Review auto-eviction logs
 4. Test with persistent note instead (requires auth)
 
