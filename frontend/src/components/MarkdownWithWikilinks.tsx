@@ -13,7 +13,7 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
   if (!content) {
     return (
       <div className="prose prose-sm max-w-none sm:prose lg:prose-lg">
-        <p className="text-gray-500 italic">No content</p>
+        <p className="italic text-gray-500">No content</p>
       </div>
     );
   }
