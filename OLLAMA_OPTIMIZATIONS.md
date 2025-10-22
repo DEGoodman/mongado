@@ -97,15 +97,50 @@ useEffect(() => {
 
 ---
 
+### 5. Search Fallback (Already Implemented) ✅
+
+**Existing Feature:** `/api/search` automatically falls back to text search when Ollama unavailable
+
+**Impact:**
+- **Ollama available:** Semantic search using embeddings
+- **Ollama unavailable:** Case-insensitive substring matching (instant)
+- **User experience:** Search always works, no errors
+
+**Implementation:**
+- Built into `ollama_client.py` `semantic_search()` method (lines 101-108)
+- Falls back gracefully when `is_available()` returns False
+- Q&A endpoint (`/api/ask`) returns 503 error if Ollama unavailable (intentional)
+
+---
+
 ## Performance Comparison
 
-| Scenario | Before | After | Improvement |
-|----------|--------|-------|-------------|
-| **First Q&A (cold start)** | 60-90s | ~40s | 33-55% faster |
-| **Subsequent Q&A** | 60s | ~20-30s | 50-67% faster |
-| **With warmup** | 60s | ~20-30s | 50-67% faster |
-| **Memory usage** | ~2.5GB | ~1.5GB | 40% reduction |
-| **Model download size** | 2.0GB | 1.3GB | 35% smaller |
+### CPU-Only (Development/Personal Use)
+
+| Scenario | Before (3.2B) | After (1B) | Improvement |
+|----------|---------------|------------|-------------|
+| **Runner startup (cold)** | 17-29s | 13-21s | ~30% faster |
+| **Q&A inference** | 60-90s | 60-180s | Similar* |
+| **Memory usage** | ~2.5GB | ~1.6GB | 36% reduction |
+| **KV cache** | 128MB | 64MB | 50% reduction |
+| **Model download** | 2.0GB | 1.3GB | 35% smaller |
+
+*Note: CPU inference is inherently slow for Q&A workloads (1-3 minutes per request). The 1B model reduces memory usage and startup time but inference speed remains limited by CPU processing power.
+
+### Realistic Expectations for Production
+
+**CPU-only inference is NOT recommended for user-facing Q&A features.** Response times of 1-3+ minutes create poor UX. Instead:
+
+✅ **Recommended for production:**
+- Use Ollama Q&A only in admin-only or background workflows
+- Limit Q&A to in-app chat popup (user opts in, expects delay)
+- Use fallback text search for regular article/note search (instant)
+
+⚠️ **Alternative approaches for better performance:**
+- **GPU acceleration** (10-100x speedup → 1-5 second responses)
+- **External AI API** (OpenAI, Anthropic → sub-second responses)
+- **Response caching** (instant for repeated questions)
+- **Disable Ollama Q&A** and rely on text search only
 
 ---
 
