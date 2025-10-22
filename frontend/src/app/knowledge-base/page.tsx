@@ -108,6 +108,18 @@ export default function KnowledgeBasePage() {
             <div>
               Use AI-powered search to find relevant content across both articles and notes.
             </div>
+            <div className="md:col-span-2">
+              <strong>API Access:</strong> Programmatic access available via the{" "}
+              <a
+                href="https://api.mongado.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-blue-600"
+              >
+                interactive API documentation
+              </a>{" "}
+              for scripting, backups, and bulk operations.
+            </div>
           </div>
         </div>
       </main>

@@ -21,6 +21,7 @@ Documentation for the Mongado project - personal website and Knowledge Base.
 
 ### Development Guides
 
+- **[API.md](API.md)** - Interactive API documentation (Swagger/OpenAPI)
 - **[SETUP.md](SETUP.md)** - 1Password service account setup
 - **[TESTING.md](TESTING.md)** - Testing tools and commands
 - **[PROFILING.md](PROFILING.md)** - Performance profiling tools
@@ -73,6 +74,7 @@ docs/
 ├── ROADMAP.md                   # Future plans and TODOs
 ├── DEPLOYMENT.md                # Production deployment guide
 ├── DISASTER_RECOVERY.md         # Recovery procedures
+├── API.md                       # API documentation (Swagger/OpenAPI)
 ├── SETUP.md                     # 1Password setup
 ├── TESTING.md                   # Testing guide
 ├── PROFILING.md                 # Performance profiling

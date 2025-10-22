@@ -5,10 +5,19 @@ import remarkGfm from "remark-gfm";
 import Link from "next/link";
 
 interface MarkdownWithWikilinksProps {
-  content: string;
+  content: string | null | undefined;
 }
 
 export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinksProps) {
+  // Handle null/undefined content
+  if (!content) {
+    return (
+      <div className="prose prose-sm max-w-none sm:prose lg:prose-lg">
+        <p className="text-gray-500 italic">No content</p>
+      </div>
+    );
+  }
+
   // Split content by wikilinks and render each part
   const parts = content.split(/(\[\[[a-z0-9-]+\]\])/g);
 

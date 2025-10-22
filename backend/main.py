@@ -9,6 +9,8 @@ from typing import Annotated, Any
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.openapi.models import SecurityScheme
+from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -39,11 +41,68 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
+    description="""
+## Mongado API - Personal Knowledge Base
+
+This API provides endpoints for managing a personal knowledge base with:
+- **Static Articles**: Read-only markdown articles
+- **Notes**: Zettelkasten-style notes with wikilinks and bidirectional linking
+- **AI Features**: Semantic search and Q&A powered by Ollama
+
+### Authentication
+
+Some endpoints require admin authentication:
+- Use the **Authorize** button (🔓) to add your Bearer token
+- Format: `Bearer your-admin-token-here`
+- Admin-only features: Create/update/delete persistent notes
+
+### Session Management
+
+For anonymous users (no Bearer token):
+- Include `X-Session-ID` header to create ephemeral notes
+- Ephemeral notes are session-specific and temporary
+""",
+    swagger_ui_parameters={
+        "defaultModelsExpandDepth": -1,  # Hide schemas by default
+        "persistAuthorization": True,  # Remember auth token
+    },
 )
 
 # Add rate limiter to app state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Customize OpenAPI schema to add security definitions
+def custom_openapi():
+    """Customize OpenAPI schema with security definitions."""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    # Add security scheme for Bearer token
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Enter your admin token (without 'Bearer ' prefix)",
+        }
+    }
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 # Log startup information
 logger.info("Starting %s v%s", settings.app_name, settings.app_version)

@@ -27,11 +27,31 @@ limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "
 
 # Pydantic models
 class NoteCreate(BaseModel):
-    """Request model for creating a note."""
+    """Request model for creating a note.
+
+    Examples:
+        {
+            "title": "My First Note",
+            "content": "This is a note with a [[wikilink]] to another note.",
+            "tags": ["pkm", "learning"]
+        }
+    """
 
     title: str | None = None
     content: str
     tags: list[str] = []
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "title": "Zettelkasten Method",
+                    "content": "Personal knowledge management system based on interconnected atomic notes.\n\nKey principles:\n- One idea per note\n- Link liberally with [[wikilinks]]\n- Emerge structure organically",
+                    "tags": ["pkm", "methodology"]
+                }
+            ]
+        }
+    }
 
 
 class NoteUpdate(BaseModel):
@@ -90,7 +110,25 @@ def try_verify_admin(authorization: str | None = Header(None)) -> bool:
 
 
 # Endpoints
-@router.post("", response_model=dict[str, Any], status_code=201)
+@router.post(
+    "",
+    response_model=dict[str, Any],
+    status_code=201,
+    summary="Create a new note",
+    description="""
+Create a new note in the knowledge base.
+
+**Authentication:**
+- **Admin** (with Bearer token): Creates persistent note stored in Neo4j
+- **Visitor** (with X-Session-ID header): Creates ephemeral note (session-specific)
+
+**Wikilinks:**
+Use double brackets to link to other notes: `[[note-id]]`
+Links are automatically parsed and stored as graph relationships.
+
+**Rate Limit:** 10 notes per minute per IP address
+""",
+)
 @limiter.limit("10/minute")  # 10 note creations per minute per IP
 async def create_note(
     request: Request,
@@ -98,11 +136,7 @@ async def create_note(
     session_id: SessionID = Depends(get_session_id),
     is_admin: bool = Depends(try_verify_admin),
 ) -> dict[str, Any]:
-    """Create a new note.
-
-    - Admin (with valid token): Creates persistent note
-    - Visitor (with session ID): Creates ephemeral note
-    """
+    """Create a new note."""
     if not is_admin and not session_id:
         raise HTTPException(
             status_code=400,
