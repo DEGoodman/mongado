@@ -52,8 +52,9 @@ class Settings(BaseSettings):
 
     # Ollama settings
     ollama_host: str = "http://localhost:11434"  # Default Ollama endpoint
-    ollama_model: str = "llama3.2:latest"  # Default model for embeddings and chat
+    ollama_model: str = "llama3.2:1b"  # Default model for embeddings and chat (1B for performance)
     ollama_enabled: bool = True  # Enable/disable Ollama features
+    ollama_num_ctx: int = 2048  # Context window size (reduce from default 4096 to save memory)
 
     # API Keys (examples - load from 1Password when needed)
     openai_api_key: str | None = None

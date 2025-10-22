@@ -255,6 +255,13 @@ class SummaryResponse(BaseModel):
     summary: str
 
 
+class WarmupResponse(BaseModel):
+    """Response model for Ollama warmup."""
+
+    success: bool
+    message: str
+
+
 @app.get("/", response_model=StatusResponse)
 def read_root() -> StatusResponse:
     """Get API status and information."""
@@ -418,6 +425,36 @@ def ask_question(request: QuestionRequest) -> QuestionResponse:
         )
 
     return QuestionResponse(answer=answer, sources=relevant_docs)
+
+
+@app.post("/api/ollama/warmup", response_model=WarmupResponse)
+def warmup_ollama() -> WarmupResponse:
+    """
+    Warm up the Ollama model by starting the llama runner.
+
+    This endpoint takes ~15-20 seconds to complete, but makes subsequent
+    AI requests much faster. Call this when the user opens the Q&A panel
+    or knowledge base page.
+
+    **Optimization:** Pre-load the model before users need it.
+    """
+    if not ollama_client.is_available():
+        return WarmupResponse(
+            success=False,
+            message="Ollama is not available or not configured."
+        )
+
+    success = ollama_client.warmup()
+    if success:
+        return WarmupResponse(
+            success=True,
+            message="Ollama model warmed up successfully. Subsequent requests will be faster."
+        )
+    else:
+        return WarmupResponse(
+            success=False,
+            message="Failed to warm up Ollama model. Check logs for details."
+        )
 
 
 @app.get("/api/articles/{resource_id}/summary", response_model=SummaryResponse)

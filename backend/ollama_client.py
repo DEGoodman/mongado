@@ -18,6 +18,7 @@ class OllamaClient:
         self.enabled = settings.ollama_enabled
         self.host = settings.ollama_host
         self.model = settings.ollama_model
+        self.num_ctx = settings.ollama_num_ctx
         self.client = None
 
         # Embedding cache: {content_hash: embedding_vector}
@@ -191,8 +192,12 @@ Question: {question}
 
 Answer:"""
 
-            # Generate response
-            response = self.client.generate(model=self.model, prompt=prompt)
+            # Generate response with reduced context window for performance
+            response = self.client.generate(
+                model=self.model,
+                prompt=prompt,
+                options={"num_ctx": self.num_ctx}
+            )
             return response["response"]
 
         except Exception as e:
@@ -220,12 +225,45 @@ Answer:"""
 
 Summary:"""
 
-            response = self.client.generate(model=self.model, prompt=prompt)
+            response = self.client.generate(
+                model=self.model,
+                prompt=prompt,
+                options={"num_ctx": self.num_ctx}
+            )
             return response["response"]
 
         except Exception as e:
             logger.error("Failed to summarize article: %s", e)
             return None
+
+    def warmup(self) -> bool:
+        """
+        Warm up the Ollama model by sending a small test request.
+
+        This forces the llama runner to start (takes ~17 seconds) so that
+        subsequent requests are faster. Call this when the user opens the
+        Q&A panel or on app startup.
+
+        Returns:
+            True if warmup succeeded, False otherwise
+        """
+        if not self.is_available():
+            logger.debug("Ollama not available, skipping warmup")
+            return False
+
+        try:
+            logger.info("Warming up Ollama model (this takes ~15-20 seconds)...")
+            # Send a minimal prompt to start the runner
+            self.client.generate(
+                model=self.model,
+                prompt="Hi",
+                options={"num_predict": 1}  # Only generate 1 token
+            )
+            logger.info("Ollama model warmed up and ready")
+            return True
+        except Exception as e:
+            logger.error("Failed to warm up Ollama model: %s", e)
+            return False
 
     def clear_cache(self) -> int:
         """
