@@ -253,11 +253,14 @@ Summary:"""
 
         try:
             logger.info("Warming up Ollama model (this takes ~15-20 seconds)...")
-            # Send a minimal prompt to start the runner
+            # Send a minimal prompt to start the runner with our context window setting
             self.client.generate(
                 model=self.model,
                 prompt="Hi",
-                options={"num_predict": 1}  # Only generate 1 token
+                options={
+                    "num_predict": 1,  # Only generate 1 token
+                    "num_ctx": self.num_ctx  # Set context window for runner initialization
+                }
             )
             logger.info("Ollama model warmed up and ready")
             return True

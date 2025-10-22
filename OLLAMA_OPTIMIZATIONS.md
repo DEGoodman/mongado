@@ -51,9 +51,10 @@
 - **User experience:** Call warmup when user opens Q&A panel
 
 **Implementation:**
-- Added `warmup()` method to `OllamaClient` (ollama_client.py:230)
+- Added `warmup()` method to `OllamaClient` (ollama_client.py:239)
 - New API endpoint: `POST /api/ollama/warmup`
-- Sends minimal prompt to start llama runner (17 seconds)
+- Sends minimal prompt with `num_ctx=2048` to start llama runner with optimized settings
+- Startup time varies (15-30 seconds) based on system load and context window allocation
 
 **Usage:**
 ```bash
