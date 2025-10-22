@@ -223,10 +223,11 @@ class ImageUploadResponse(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    """Request model for semantic search."""
+    """Request model for search."""
 
     query: str
     top_k: int = 5
+    semantic: bool = False  # Use AI semantic search (slower, opt-in)
 
 
 class SearchResponse(BaseModel):
@@ -380,18 +381,46 @@ def delete_resource(resource_id: int) -> dict[str, str]:
 
 
 @app.post("/api/search", response_model=SearchResponse)
-def semantic_search(request: SearchRequest) -> SearchResponse:
+def search_resources(request: SearchRequest) -> SearchResponse:
     """
-    Perform semantic search across all resources using Ollama.
+    Search across all resources (articles + notes).
 
-    If Ollama is not available, falls back to basic text search.
+    **Default:** Fast text search (instant, searches title + content)
+    **Semantic mode:** AI-powered semantic search via Ollama (slower, opt-in)
+
+    Set semantic=true to use AI embeddings for semantic search. This is slower
+    (requires Ollama) but can find conceptually related content even without
+    exact keyword matches.
+
+    The default text search is instant and works even when Ollama is unavailable
+    or slow, making it ideal for the main search UI.
     """
-    if not ollama_client.is_available():
-        logger.warning("Ollama not available, performing basic text search")
-
     all_resources = static_articles + user_resources_db
-    results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
 
+    # Default: Fast text search (instant)
+    if not request.semantic:
+        logger.debug("Using fast text search")
+        query_lower = request.query.lower()
+        results = [
+            doc for doc in all_resources
+            if query_lower in doc.get("content", "").lower()
+            or query_lower in doc.get("title", "").lower()
+        ]
+        return SearchResponse(results=results[:request.top_k], count=len(results[:request.top_k]))
+
+    # Semantic mode: Use Ollama for AI-powered search (opt-in)
+    logger.debug("Using semantic search via Ollama")
+    if not ollama_client.is_available():
+        logger.warning("Ollama not available, falling back to text search")
+        query_lower = request.query.lower()
+        results = [
+            doc for doc in all_resources
+            if query_lower in doc.get("content", "").lower()
+            or query_lower in doc.get("title", "").lower()
+        ]
+        return SearchResponse(results=results[:request.top_k], count=len(results[:request.top_k]))
+
+    results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
     return SearchResponse(results=results, count=len(results))
 
 
