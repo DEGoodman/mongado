@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from rapidfuzz import fuzz
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -230,10 +231,20 @@ class SearchRequest(BaseModel):
     semantic: bool = False  # Use AI semantic search (slower, opt-in)
 
 
-class SearchResponse(BaseModel):
-    """Response model for semantic search."""
+class SearchResult(BaseModel):
+    """A single search result with normalized fields."""
 
-    results: list[dict[str, Any]]
+    id: int | str
+    type: str  # "article" or "note"
+    title: str
+    content: str
+    score: float  # 1.0 for text search, cosine similarity for semantic
+
+
+class SearchResponse(BaseModel):
+    """Response model for search (both text and semantic)."""
+
+    results: list[SearchResult]
     count: int
 
 
@@ -380,47 +391,106 @@ def delete_resource(resource_id: int) -> dict[str, str]:
     return {"message": "Resource deleted"}
 
 
+def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> bool:
+    """
+    Check if query fuzzy matches the text.
+
+    - Queries < 3 chars: exact substring match only (for terms like "SRE")
+    - Queries >= 3 chars: fuzzy match with 80% threshold (handles typos)
+
+    Args:
+        query: Search query (lowercase)
+        text: Text to search in (lowercase)
+        threshold: Minimum similarity score (0-100)
+
+    Returns:
+        True if query matches text (exact or fuzzy)
+    """
+    # Short queries: require exact match (prevents false positives)
+    if len(query) < 3:
+        return query in text
+
+    # Exact match (fastest path)
+    if query in text:
+        return True
+
+    # Fuzzy match: check if query is similar to any word in text
+    # Only match against words of similar length to avoid false positives
+    words = text.split()
+    for word in words:
+        # Only fuzzy match words that are within 2 chars of query length
+        if abs(len(word) - len(query)) <= 2 and fuzz.ratio(query, word) >= threshold:
+            return True
+
+    return False
+
+
+def _normalize_search_result(doc: dict[str, Any], score: float = 1.0) -> SearchResult:
+    """Normalize a resource document into a consistent SearchResult."""
+    # Determine if this is an article or note
+    is_note = "note_id" in doc
+    resource_type = "note" if is_note else "article"
+    resource_id = doc.get("note_id") if is_note else doc.get("id")
+
+    return SearchResult(
+        id=resource_id,
+        type=resource_type,
+        title=doc.get("title", "Untitled"),
+        content=doc.get("content", ""),
+        score=score
+    )
+
+
 @app.post("/api/search", response_model=SearchResponse)
 def search_resources(request: SearchRequest) -> SearchResponse:
     """
     Search across all resources (articles + notes).
 
-    **Default:** Fast text search (instant, searches title + content)
-    **Semantic mode:** AI-powered semantic search via Ollama (slower, opt-in)
+    **Default:** Fast text search with fuzzy matching (instant)
+    - Queries < 3 chars: exact match only (e.g., "SRE")
+    - Queries >= 3 chars: fuzzy match with 80% threshold (handles typos like "biling" → "billing")
 
-    Set semantic=true to use AI embeddings for semantic search. This is slower
-    (requires Ollama) but can find conceptually related content even without
-    exact keyword matches.
+    **Semantic mode:** AI-powered semantic search via Ollama (slower, opt-in)
+    - Set semantic=true to use AI embeddings for semantic search
+    - Finds conceptually related content even without keyword matches
+    - Takes 15-30+ seconds depending on corpus size
 
     The default text search is instant and works even when Ollama is unavailable
     or slow, making it ideal for the main search UI.
     """
     all_resources = static_articles + user_resources_db
 
-    # Default: Fast text search (instant)
+    # Default: Fast text search with fuzzy matching
     if not request.semantic:
-        logger.debug("Using fast text search")
+        logger.debug("Using fast text search with fuzzy matching")
         query_lower = request.query.lower()
-        results = [
+        matching_docs = [
             doc for doc in all_resources
-            if query_lower in doc.get("content", "").lower()
-            or query_lower in doc.get("title", "").lower()
+            if _fuzzy_match_text(query_lower, doc.get("content", "").lower())
+            or _fuzzy_match_text(query_lower, doc.get("title", "").lower())
         ]
-        return SearchResponse(results=results[:request.top_k], count=len(results[:request.top_k]))
+        results = [_normalize_search_result(doc, score=1.0) for doc in matching_docs[:request.top_k]]
+        return SearchResponse(results=results, count=len(results))
 
     # Semantic mode: Use Ollama for AI-powered search (opt-in)
     logger.debug("Using semantic search via Ollama")
     if not ollama_client.is_available():
-        logger.warning("Ollama not available, falling back to text search")
+        logger.warning("Ollama not available, falling back to text search with fuzzy matching")
         query_lower = request.query.lower()
-        results = [
+        matching_docs = [
             doc for doc in all_resources
-            if query_lower in doc.get("content", "").lower()
-            or query_lower in doc.get("title", "").lower()
+            if _fuzzy_match_text(query_lower, doc.get("content", "").lower())
+            or _fuzzy_match_text(query_lower, doc.get("title", "").lower())
         ]
-        return SearchResponse(results=results[:request.top_k], count=len(results[:request.top_k]))
+        results = [_normalize_search_result(doc, score=1.0) for doc in matching_docs[:request.top_k]]
+        return SearchResponse(results=results, count=len(results))
 
-    results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
+    # Semantic search returns docs with scores
+    semantic_results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
+    results = [
+        _normalize_search_result(doc, score=doc.get("score", 0.0))
+        for doc in semantic_results
+    ]
     return SearchResponse(results=results, count=len(results))
 
 
