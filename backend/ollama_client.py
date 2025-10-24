@@ -1,10 +1,10 @@
 """Ollama integration for AI-powered features."""
 
-import hashlib
 import logging
 from typing import Any
 
 from config import get_settings
+from utils import calculate_content_hash
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -45,7 +45,7 @@ class OllamaClient:
 
     def _get_content_hash(self, text: str) -> str:
         """Generate a hash of content for cache key."""
-        return hashlib.sha256(text.encode()).hexdigest()
+        return calculate_content_hash(text)
 
     def generate_embedding(self, text: str, use_cache: bool = True) -> list[float] | None:
         """

@@ -13,27 +13,16 @@ Usage:
     sync_embeddings_on_startup(articles, ollama_client, neo4j_adapter)
 """
 
-import hashlib
 import logging
 import time
 from typing import Any
+
+from utils import calculate_content_hash
 
 logger = logging.getLogger(__name__)
 
 # Embedding version - increment when model or logic changes
 EMBEDDING_VERSION = 1
-
-
-def calculate_content_hash(content: str) -> str:
-    """Calculate SHA256 hash of content.
-
-    Args:
-        content: Text content
-
-    Returns:
-        Hex digest of SHA256 hash
-    """
-    return hashlib.sha256(content.encode()).hexdigest()
 
 
 def sync_articles_to_neo4j(
