@@ -2,6 +2,40 @@
 
 Guidance for Claude Code when working with this repository.
 
+## Work Tracking
+
+**IMPORTANT**: All project work is tracked via [GitHub Issues](https://github.com/DEGoodman/mongado/issues).
+
+**Never create TODO files**. Instead:
+1. Create issues: `gh issue create --label "feature,status: todo"`
+2. Track progress with status labels: `idea` → `todo` → `in-progress` → `done`
+3. Reference issues in commits: `feat: add feature (fixes #123)`
+4. Close issues when work is complete
+
+See `CONTRIBUTING.md` for complete workflow.
+
+### When to Create Issues
+
+Create GitHub issues proactively for:
+- New features or enhancements
+- Bug fixes
+- Article ideas
+- Infrastructure improvements
+- Documentation updates
+- Technical debt
+
+**Examples**:
+```bash
+# Feature request
+gh issue create --title "Feature: Add note templates" --label "feature,status: todo"
+
+# Article idea
+gh issue create --title "Article: SRE Incident Response" --label "article-idea,sre,status: idea"
+
+# Bug report
+gh issue create --title "Bug: Search returns duplicates" --label "bug,status: todo"
+```
+
 ## Project Overview
 
 Mongado is the personal website of D. Erik Goodman (Mongado = anagram of Goodman). Built with Python FastAPI backend and Next.js frontend.

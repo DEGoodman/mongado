@@ -1,5 +1,10 @@
 # Mongado Roadmap
 
+> **Note**: This document is kept for reference and historical context.
+> **All active work is now tracked via [GitHub Issues](https://github.com/DEGoodman/mongado/issues)**.
+>
+> See `CONTRIBUTING.md` for how to create and manage issues.
+
 This document tracks planned features, improvements, and technical debt for the Mongado project.
 
 ## Current Status
