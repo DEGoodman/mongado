@@ -3,6 +3,8 @@
 import asyncio
 import logging
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -40,7 +42,65 @@ neo4j_adapter = get_neo4j_adapter()
 # Create rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+# Static articles (loaded from files/S3, read-only)
+static_articles: list[dict[str, Any]] = []
+
+# User-created resources (in-memory for now, will be DB later)
+user_resources_db: list[dict[str, Any]] = []
+
+# Readiness state (becomes True after embedding sync completes)
+_embedding_sync_ready: bool = False
+_embedding_sync_task: asyncio.Task[None] | None = None
+
+
+async def _sync_embeddings_background() -> None:
+    """Run embedding sync in background during startup."""
+    global _embedding_sync_ready
+
+    try:
+        # Run the sync in a thread pool (it's blocking I/O)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            sync_embeddings_on_startup,
+            static_articles,
+            ollama_client,
+            neo4j_adapter
+        )
+        _embedding_sync_ready = True
+        logger.info("Background embedding sync completed - app is fully ready")
+    except Exception as e:
+        logger.error("Background embedding sync failed: %s", e)
+        # Don't set ready flag, but app is still healthy
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Lifespan context manager for startup and shutdown events."""
+    global static_articles, _embedding_sync_task
+
+    # Startup
+    logger.info("Starting %s v%s", settings.app_name, settings.app_version)
+    logger.info("1Password integration: %s", "enabled" if secret_manager.is_available() else "disabled")
+    logger.info("CORS allowed origins: %s", settings.cors_origins_list)
+
+    # Load static articles (fast)
+    static_articles = load_static_articles()
+    logger.info("Loaded %d static articles", len(static_articles))
+
+    # Start embedding sync in background (non-blocking)
+    logger.info("Starting background embedding sync...")
+    _embedding_sync_task = asyncio.create_task(_sync_embeddings_background())
+
+    # App is healthy immediately (embedding sync runs in background)
+
+    yield
+
+    # Shutdown (nothing to do currently)
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
@@ -107,11 +167,6 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Log startup information
-logger.info("Starting %s v%s", settings.app_name, settings.app_version)
-logger.info("1Password integration: %s", "enabled" if secret_manager.is_available() else "disabled")
-logger.info("CORS allowed origins: %s", settings.cors_origins_list)
-
 
 # Cache control middleware for static assets
 class CacheControlMiddleware(BaseHTTPMiddleware):
@@ -176,53 +231,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR), html=False), name="s
 
 # User uploads - shorter cache time
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
-# Static articles (loaded from files/S3, read-only)
-static_articles: list[dict[str, Any]] = []
-
-# User-created resources (in-memory for now, will be DB later)
-user_resources_db: list[dict[str, Any]] = []
-
-# Readiness state (becomes True after embedding sync completes)
-_embedding_sync_ready: bool = False
-_embedding_sync_task: asyncio.Task[None] | None = None
-
-
-async def _sync_embeddings_background() -> None:
-    """Run embedding sync in background during startup."""
-    global _embedding_sync_ready
-
-    try:
-        # Run the sync in a thread pool (it's blocking I/O)
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(
-            None,
-            sync_embeddings_on_startup,
-            static_articles,
-            ollama_client,
-            neo4j_adapter
-        )
-        _embedding_sync_ready = True
-        logger.info("Background embedding sync completed - app is fully ready")
-    except Exception as e:
-        logger.error("Background embedding sync failed: %s", e)
-        # Don't set ready flag, but app is still healthy
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize app on startup."""
-    global static_articles, _embedding_sync_task
-
-    # Load static articles (fast)
-    static_articles = load_static_articles()
-    logger.info("Loaded %d static articles", len(static_articles))
-
-    # Start embedding sync in background (non-blocking)
-    logger.info("Starting background embedding sync...")
-    _embedding_sync_task = asyncio.create_task(_sync_embeddings_background())
-
-    # App is healthy immediately (embedding sync runs in background)
 
 
 class Resource(BaseModel):

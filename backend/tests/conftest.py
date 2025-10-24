@@ -20,9 +20,10 @@ def clear_resources() -> None:
 
 
 @pytest.fixture
-def client() -> TestClient:
-    """Get test client for API testing."""
-    return TestClient(main.app)
+def client():
+    """Get test client for API testing with lifespan context."""
+    with TestClient(main.app) as client:
+        yield client
 
 
 @pytest.fixture
