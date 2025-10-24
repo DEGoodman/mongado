@@ -62,6 +62,7 @@ class Neo4jAdapter:
             return
 
         with self.driver.session(database=self.database) as session:
+            # ===== NOTE SCHEMA =====
             # Unique constraint on Note.id
             session.run(
                 """
@@ -86,7 +87,32 @@ class Neo4jAdapter:
                 """
             )
 
-            logger.info("Neo4j schema initialized")
+            # ===== ARTICLE SCHEMA =====
+            # Unique constraint on Article.id
+            session.run(
+                """
+                CREATE CONSTRAINT article_id_unique IF NOT EXISTS
+                FOR (a:Article) REQUIRE a.id IS UNIQUE
+                """
+            )
+
+            # Index on Article.content_hash for change detection
+            session.run(
+                """
+                CREATE INDEX article_content_hash IF NOT EXISTS
+                FOR (a:Article) ON (a.content_hash)
+                """
+            )
+
+            # Index on Article.updated_at for sorting
+            session.run(
+                """
+                CREATE INDEX article_updated_at IF NOT EXISTS
+                FOR (a:Article) ON (a.updated_at)
+                """
+            )
+
+            logger.info("Neo4j schema initialized (Notes + Articles + embeddings support)")
 
     def is_available(self) -> bool:
         """Check if Neo4j is available."""
@@ -382,6 +408,19 @@ class Neo4jAdapter:
             result = session.run("MATCH (n:Note) RETURN n.id AS id")
             return {record["id"] for record in result}
 
+    def get_all_notes(self) -> list[dict[str, Any]]:
+        """Get all notes.
+
+        Returns:
+            List of note dicts
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run("MATCH (n:Note) RETURN n ORDER BY n.created_at DESC")
+            return [self._node_to_dict(record["n"]) for record in result]
+
     def _create_links(self, session: Session, source_id: str, target_ids: list[str]) -> None:
         """Create LINKS_TO relationships.
 
@@ -418,24 +457,258 @@ class Neo4jAdapter:
         )
 
     def _node_to_dict(self, node: Any) -> dict[str, Any]:
-        """Convert Neo4j node to dict.
+        """Convert Neo4j node to dict (works for both Note and Article nodes).
+
+        This method intelligently handles both Note and Article nodes by checking
+        which fields are present, following DRY principles.
 
         Args:
-            node: Neo4j node
+            node: Neo4j node (Note or Article)
 
         Returns:
-            Dict representation
+            Dict representation including all available fields
         """
-        return {
+        result = {
             "id": node["id"],
             "title": node.get("title", ""),
-            "content": node["content"],
-            "author": node.get("author", "admin"),
-            "is_ephemeral": node.get("is_ephemeral", False),
-            "tags": node.get("tags", []),
-            "created_at": node["created_at"],
-            "updated_at": node.get("updated_at", node["created_at"]),
+            "content": node.get("content", ""),
+            "created_at": node.get("created_at", 0.0),
+            "updated_at": node.get("updated_at", node.get("created_at", 0.0)),
         }
+
+        # Note-specific fields (only present in Note nodes)
+        if "author" in node:
+            result["author"] = node["author"]
+        if "is_ephemeral" in node:
+            result["is_ephemeral"] = node["is_ephemeral"]
+        if "tags" in node:
+            result["tags"] = node["tags"]
+
+        # Embedding-related fields (present in both Notes and Articles)
+        if "content_hash" in node:
+            result["content_hash"] = node["content_hash"]
+        if "embedding" in node:
+            result["embedding"] = node["embedding"]
+        if "embedding_model" in node:
+            result["embedding_model"] = node["embedding_model"]
+        if "embedding_version" in node:
+            result["embedding_version"] = node["embedding_version"]
+
+        return result
+
+    # ===== ARTICLE METHODS =====
+
+    def upsert_article(
+        self,
+        article_id: str,
+        title: str,
+        content: str,
+        content_hash: str,
+        created_at: float,
+        updated_at: float,
+    ) -> dict[str, Any]:
+        """Create or update an article in Neo4j.
+
+        Args:
+            article_id: Unique article ID (slug)
+            title: Article title
+            content: Full markdown content
+            content_hash: SHA256 hash of content
+            created_at: Unix timestamp
+            updated_at: Unix timestamp
+
+        Returns:
+            Article dict with id, title, content, etc.
+        """
+        if not self._available or not self.driver:
+            raise RuntimeError("Neo4j not available")
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MERGE (a:Article {id: $id})
+                SET a.title = $title,
+                    a.content = $content,
+                    a.content_hash = $content_hash,
+                    a.created_at = $created_at,
+                    a.updated_at = $updated_at
+                RETURN a
+                """,
+                id=article_id,
+                title=title,
+                content=content,
+                content_hash=content_hash,
+                created_at=created_at,
+                updated_at=updated_at,
+            )
+            node = result.single()["a"]
+            return self._node_to_dict(node)
+
+    def get_article(self, article_id: str) -> dict[str, Any] | None:
+        """Get an article by ID.
+
+        Args:
+            article_id: Article ID
+
+        Returns:
+            Article dict or None if not found
+        """
+        if not self._available or not self.driver:
+            return None
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (a:Article {id: $id})
+                RETURN a
+                """,
+                id=article_id,
+            )
+            record = result.single()
+            if not record:
+                return None
+            return self._node_to_dict(record["a"])
+
+    def get_all_articles(self) -> list[dict[str, Any]]:
+        """Get all articles.
+
+        Returns:
+            List of article dicts
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run("MATCH (a:Article) RETURN a ORDER BY a.created_at DESC")
+            return [self._node_to_dict(record["a"]) for record in result]
+
+    # ===== EMBEDDING METHODS =====
+
+    def store_embedding(
+        self,
+        node_type: str,  # "Article" or "Note"
+        node_id: str,
+        embedding: list[float],
+        model: str,
+        version: int,
+    ) -> bool:
+        """Store embedding for an article or note.
+
+        Args:
+            node_type: "Article" or "Note"
+            node_id: ID of the article or note
+            embedding: Embedding vector (768 dimensions)
+            model: Model name (e.g., "nomic-embed-text")
+            version: Embedding version for cache invalidation
+
+        Returns:
+            True if successful
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                f"""
+                MATCH (n:{node_type} {{id: $id}})
+                SET n.embedding = $embedding,
+                    n.embedding_model = $model,
+                    n.embedding_version = $version
+                """,
+                id=node_id,
+                embedding=embedding,
+                model=model,
+                version=version,
+            )
+            return True
+
+    def get_embedding(
+        self, node_type: str, node_id: str
+    ) -> dict[str, Any] | None:
+        """Get embedding for an article or note.
+
+        Args:
+            node_type: "Article" or "Note"
+            node_id: ID of the article or note
+
+        Returns:
+            Dict with embedding, model, version or None if not found
+        """
+        if not self._available or not self.driver:
+            return None
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                f"""
+                MATCH (n:{node_type} {{id: $id}})
+                RETURN n.embedding as embedding,
+                       n.embedding_model as model,
+                       n.embedding_version as version,
+                       n.content_hash as content_hash
+                """,
+                id=node_id,
+            )
+            record = result.single()
+            if not record or not record["embedding"]:
+                return None
+
+            return {
+                "embedding": record["embedding"],
+                "model": record["model"],
+                "version": record["version"],
+                "content_hash": record["content_hash"],
+            }
+
+    def get_all_embeddings(
+        self, node_type: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Get all embeddings for articles and/or notes.
+
+        Args:
+            node_type: Optional filter for "Article" or "Note" (None = both)
+
+        Returns:
+            List of dicts with id, type, embedding, model, version
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            if node_type:
+                query = f"""
+                    MATCH (n:{node_type})
+                    WHERE n.embedding IS NOT NULL
+                    RETURN n.id as id,
+                           '{node_type}' as type,
+                           n.embedding as embedding,
+                           n.embedding_model as model,
+                           n.embedding_version as version
+                """
+            else:
+                query = """
+                    MATCH (n)
+                    WHERE (n:Article OR n:Note) AND n.embedding IS NOT NULL
+                    RETURN n.id as id,
+                           labels(n)[0] as type,
+                           n.embedding as embedding,
+                           n.embedding_model as model,
+                           n.embedding_version as version
+                """
+
+            result = session.run(query)
+            return [
+                {
+                    "id": record["id"],
+                    "type": record["type"],
+                    "embedding": record["embedding"],
+                    "model": record["model"],
+                    "version": record["version"],
+                }
+                for record in result
+            ]
+
+    # ===== HELPER METHODS =====
+    # (Removed _article_node_to_dict - now using unified _node_to_dict for both Notes and Articles)
 
 
 # Global instance

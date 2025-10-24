@@ -19,8 +19,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from article_loader import load_static_articles
 from config import SecretManager, Settings, get_secret_manager, get_settings
+from embedding_sync import sync_embeddings_on_startup
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
+from neo4j_adapter import get_neo4j_adapter
 from notes_api import router as notes_router
 from ollama_client import get_ollama_client
 
@@ -28,10 +30,11 @@ from ollama_client import get_ollama_client
 setup_logging(level="INFO")
 logger = logging.getLogger(__name__)
 
-# Load settings
+# Load settings and initialize services
 settings: Settings = get_settings()
 secret_manager: SecretManager = get_secret_manager()
 ollama_client = get_ollama_client()
+neo4j_adapter = get_neo4j_adapter()
 
 # Create rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -182,6 +185,9 @@ user_resources_db: list[dict[str, Any]] = []
 # Load static articles on startup
 static_articles = load_static_articles()
 logger.info("Loaded %d static articles", len(static_articles))
+
+# Sync articles to Neo4j and generate embeddings
+sync_embeddings_on_startup(static_articles, ollama_client, neo4j_adapter)
 
 
 class Resource(BaseModel):
@@ -458,6 +464,10 @@ def search_resources(request: SearchRequest) -> SearchResponse:
     The default text search is instant and works even when Ollama is unavailable
     or slow, making it ideal for the main search UI.
     """
+    import time
+    start_time = time.time()
+
+    logger.info("Search request received: query=%s, semantic=%s, limit=%s", request.query, request.semantic, request.top_k)
     all_resources = static_articles + user_resources_db
 
     # Default: Fast text search with fuzzy matching
@@ -470,10 +480,14 @@ def search_resources(request: SearchRequest) -> SearchResponse:
             or _fuzzy_match_text(query_lower, doc.get("title", "").lower())
         ]
         results = [_normalize_search_result(doc, score=1.0) for doc in matching_docs[:request.top_k]]
+        duration = time.time() - start_time
+        logger.info("Text search complete: %d results in %.2fs", len(results), duration)
         return SearchResponse(results=results, count=len(results))
 
     # Semantic mode: Use Ollama for AI-powered search (opt-in)
-    logger.debug("Using semantic search via Ollama")
+    logger.info("Using semantic search via Ollama (corpus size: %d)", len(all_resources))
+
+    # Check if Ollama is available
     if not ollama_client.is_available():
         logger.warning("Ollama not available, falling back to text search with fuzzy matching")
         query_lower = request.query.lower()
@@ -483,14 +497,66 @@ def search_resources(request: SearchRequest) -> SearchResponse:
             or _fuzzy_match_text(query_lower, doc.get("title", "").lower())
         ]
         results = [_normalize_search_result(doc, score=1.0) for doc in matching_docs[:request.top_k]]
+        duration = time.time() - start_time
+        logger.info("Fallback text search complete: %d results in %.2fs", len(results), duration)
         return SearchResponse(results=results, count=len(results))
 
-    # Semantic search returns docs with scores
+    # Try to use fast semantic search with precomputed embeddings from Neo4j
+    if neo4j_adapter.is_available():
+        logger.info("Using fast semantic search with precomputed embeddings from Neo4j")
+
+        # Fetch precomputed embeddings for articles and notes
+        embeddings_data = neo4j_adapter.get_all_embeddings()
+        logger.info("Fetched %d precomputed embeddings from Neo4j", len(embeddings_data))
+
+        if embeddings_data:
+            # Build documents with embeddings
+            # Need to merge embedding data with full document content
+            documents_with_embeddings = []
+
+            for emb_data in embeddings_data:
+                doc_id = emb_data["id"]
+                doc_type = emb_data["type"]
+
+                # Find the full document from all_resources
+                full_doc = next(
+                    (doc for doc in all_resources
+                     if (doc_type == "Article" and str(doc.get("id")) == doc_id) or
+                        (doc_type == "Note" and doc.get("note_id") == doc_id)),
+                    None
+                )
+
+                if full_doc:
+                    # Combine full document with its embedding
+                    doc_with_embedding = {**full_doc, "embedding": emb_data["embedding"]}
+                    documents_with_embeddings.append(doc_with_embedding)
+
+            logger.info("Matched %d documents with embeddings", len(documents_with_embeddings))
+
+            # Perform fast semantic search
+            semantic_results = ollama_client.semantic_search_with_precomputed_embeddings(
+                request.query, documents_with_embeddings, request.top_k
+            )
+
+            results = [
+                _normalize_search_result(doc, score=doc.get("score", 0.0))
+                for doc in semantic_results
+            ]
+            duration = time.time() - start_time
+            logger.info("Fast semantic search complete: %d results in %.2fs", len(results), duration)
+            return SearchResponse(results=results, count=len(results))
+        else:
+            logger.warning("No precomputed embeddings found, falling back to on-demand generation")
+
+    # Fallback: Generate embeddings on-demand (slow but works without Neo4j)
+    logger.info("Using on-demand embedding generation (slower)")
     semantic_results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
     results = [
         _normalize_search_result(doc, score=doc.get("score", 0.0))
         for doc in semantic_results
     ]
+    duration = time.time() - start_time
+    logger.info("Semantic search complete: %d results in %.2fs", len(results), duration)
     return SearchResponse(results=results, count=len(results))
 
 

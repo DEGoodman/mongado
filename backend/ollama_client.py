@@ -70,7 +70,11 @@ class OllamaClient:
                 return self.embedding_cache[content_hash]
 
         try:
-            response = self.client.embeddings(model=self.model, prompt=text)
+            response = self.client.embeddings(
+                model=self.model,
+                prompt=text,
+                options={"num_ctx": self.num_ctx}  # Use consistent context size
+            )
             embedding = response["embedding"]
 
             # Cache the result
@@ -83,6 +87,74 @@ class OllamaClient:
         except Exception as e:
             logger.error("Failed to generate embedding: %s", e)
             return None
+
+    def semantic_search_with_precomputed_embeddings(
+        self,
+        query: str,
+        documents_with_embeddings: list[dict[str, Any]],
+        top_k: int = 5
+    ) -> list[dict[str, Any]]:
+        """
+        Perform semantic search using pre-computed embeddings (FAST!).
+
+        This method expects documents to already have their embeddings computed
+        and stored in Neo4j. Only generates the query embedding (~5-10s).
+
+        Args:
+            query: The search query
+            documents_with_embeddings: List of dicts with 'id', 'embedding', and other fields
+            top_k: Number of top results to return
+
+        Returns:
+            List of documents sorted by similarity with 'score' field added
+        """
+        if not self.is_available():
+            logger.debug("Ollama not available, cannot perform semantic search")
+            return []
+
+        try:
+            logger.info("Starting semantic search with precomputed embeddings: query='%s', corpus_size=%d",
+                       query, len(documents_with_embeddings))
+
+            # Generate embedding for query only
+            logger.info("Generating embedding for query...")
+            query_embedding = self.generate_embedding(query, use_cache=False)
+            if not query_embedding:
+                logger.warning("Failed to generate query embedding")
+                return []
+            logger.info("Query embedding generated successfully")
+
+            # Calculate similarities using precomputed embeddings
+            logger.info("Computing similarities with %d precomputed embeddings...", len(documents_with_embeddings))
+            scored_docs = []
+
+            for doc in documents_with_embeddings:
+                doc_embedding = doc.get("embedding")
+                if not doc_embedding:
+                    logger.warning("Document %s missing embedding, skipping", doc.get("id", "unknown"))
+                    continue
+
+                # Calculate cosine similarity
+                similarity = self._cosine_similarity(query_embedding, doc_embedding)
+                # Add score to document
+                doc_with_score = {**doc, "score": similarity}
+                scored_docs.append((similarity, doc_with_score))
+
+            # Sort by similarity (highest first) and return top_k
+            scored_docs.sort(key=lambda x: x[0], reverse=True)
+            results = [doc for _, doc in scored_docs[:top_k]]
+
+            logger.info("Semantic search complete: returning %d results", len(results))
+            if results:
+                logger.info("Top result: '%s' (score: %.3f)",
+                           results[0].get("title", "Untitled"),
+                           results[0].get("score", 0.0))
+
+            return results
+
+        except Exception as e:
+            logger.error("Semantic search failed: %s", e)
+            return []
 
     def semantic_search(
         self, query: str, documents: list[dict[str, Any]], top_k: int = 5
@@ -108,24 +180,54 @@ class OllamaClient:
             return results[:top_k]
 
         try:
+            logger.info("Starting semantic search: query='%s', corpus_size=%d", query, len(documents))
+
             # Generate embedding for query
+            logger.info("Generating embedding for query...")
             query_embedding = self.generate_embedding(query, use_cache=False)  # Don't cache queries
             if not query_embedding:
+                logger.warning("Failed to generate query embedding")
                 return []
+            logger.info("Query embedding generated successfully")
 
             # Generate embeddings for all documents (WITH CACHING - major performance win!)
+            logger.info("Generating embeddings for %d documents...", len(documents))
             scored_docs = []
-            for doc in documents:
+            embeddings_generated = 0
+            embeddings_cached = 0
+
+            for idx, doc in enumerate(documents, 1):
                 content = doc.get("content", "")
+                content_hash = self._get_content_hash(content)
+                was_cached = content_hash in self.embedding_cache
+
                 doc_embedding = self.generate_embedding(content, use_cache=True)
+
+                if was_cached:
+                    embeddings_cached += 1
+                else:
+                    embeddings_generated += 1
+                    logger.info("  [%d/%d] Generated embedding for: %s", idx, len(documents), doc.get("title", "Untitled")[:50])
+
                 if doc_embedding:
                     # Calculate cosine similarity
                     similarity = self._cosine_similarity(query_embedding, doc_embedding)
                     scored_docs.append((similarity, doc))
 
+            logger.info("Embeddings complete: %d generated, %d cached, %d total",
+                       embeddings_generated, embeddings_cached, len(documents))
+
             # Sort by similarity (highest first) and return top_k
             scored_docs.sort(key=lambda x: x[0], reverse=True)
-            return [doc for _, doc in scored_docs[:top_k]]
+            results = [doc for _, doc in scored_docs[:top_k]]
+
+            logger.info("Semantic search complete: returning %d results", len(results))
+            if results:
+                logger.info("Top result: '%s' (score: %.3f)",
+                           results[0].get("title", "Untitled"),
+                           scored_docs[0][0])
+
+            return results
 
         except Exception as e:
             logger.error("Semantic search failed: %s", e)

@@ -6,9 +6,11 @@ import time
 from typing import Any
 
 from database import get_database
+from embedding_sync import calculate_content_hash, EMBEDDING_VERSION
 from ephemeral_notes import EphemeralNote, get_ephemeral_store
 from neo4j_adapter import get_neo4j_adapter
 from note_id_generator import get_id_generator
+from ollama_client import get_ollama_client
 from wikilink_parser import get_wikilink_parser
 
 logger = logging.getLogger(__name__)
@@ -31,6 +33,7 @@ class NotesService:
         self.ephemeral = get_ephemeral_store()
         self.id_generator = get_id_generator()
         self.wikilink_parser = get_wikilink_parser()
+        self.ollama = get_ollama_client()  # For real-time embedding generation
 
     def create_note(
         self,
@@ -71,6 +74,10 @@ class NotesService:
                     links=links,
                 )
                 logger.info("Created persistent note in Neo4j: %s", note_id)
+
+                # Generate and store embedding for immediate semantic search availability
+                self._generate_and_store_embedding(note_id, content)
+
                 return note
             else:
                 # Fallback to SQLite if Neo4j unavailable
@@ -231,6 +238,10 @@ class NotesService:
                     links=links,
                 )
                 logger.info("Updated persistent note in Neo4j: %s", note_id)
+
+                # Regenerate embedding after update for accurate semantic search
+                self._generate_and_store_embedding(note_id, content)
+
                 return updated
         else:
             # Fallback to SQLite
@@ -407,6 +418,44 @@ class NotesService:
         ephemeral_ids = {note.id for note in self.ephemeral.get_all_notes()}
 
         return persistent_ids | ephemeral_ids
+
+    def _generate_and_store_embedding(self, note_id: str, content: str) -> None:
+        """Generate and store embedding for a note in Neo4j.
+
+        This is called automatically when creating or updating notes to ensure
+        embeddings are immediately available for semantic search.
+
+        Args:
+            note_id: Note ID
+            content: Note content to generate embedding from
+        """
+        # Only generate if both Neo4j and Ollama are available
+        if not (self.neo4j and self.neo4j.is_available()):
+            logger.debug("Skipping embedding generation for %s (Neo4j unavailable)", note_id)
+            return
+
+        if not self.ollama.is_available():
+            logger.debug("Skipping embedding generation for %s (Ollama unavailable)", note_id)
+            return
+
+        try:
+            logger.debug("Generating embedding for note: %s", note_id)
+            embedding = self.ollama.generate_embedding(content, use_cache=True)
+
+            if embedding:
+                self.neo4j.store_embedding(
+                    "Note",
+                    note_id,
+                    embedding,
+                    self.ollama.model,
+                    EMBEDDING_VERSION
+                )
+                logger.info("Generated and stored embedding for note: %s", note_id)
+            else:
+                logger.warning("Failed to generate embedding for note: %s", note_id)
+        except Exception as e:
+            # Don't fail note creation/update if embedding generation fails
+            logger.error("Error generating embedding for note %s: %s", note_id, e)
 
     def _create_links(self, source_id: str, target_ids: list[str]) -> None:
         """Create links in database."""

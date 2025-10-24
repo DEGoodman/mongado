@@ -291,3 +291,4 @@ See `docs/ROADMAP.md` for complete list. High-priority items:
 - **Homepage** - Build out portfolio/professional presence
 - **Knowledge Base enhancements** - Note templates, version history, advanced search
 - **AI improvements** - Auto-tagging, clustering, concept extraction
+- each time you need to restart or stop or start a service in this project, use "docker compose" rather than manually running them

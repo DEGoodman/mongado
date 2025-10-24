@@ -91,6 +91,8 @@ docker compose up --build  # Rebuild after dependency changes
 docker compose logs -f backend  # View logs
 ```
 
+> **⚠️ First Startup Note:** The backend generates and stores embeddings for all articles and notes on startup. This takes ~2-5 minutes the first time or after deleting containers/volumes. Subsequent startups are fast (~5-10 seconds) because embeddings are cached in Neo4j. You'll see progress logs like `[3/12] Generating embedding for article...` during this process.
+
 ## Technology Stack
 
 **Backend:**

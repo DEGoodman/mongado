@@ -25,6 +25,7 @@ export default function KnowledgeBasePage() {
   const [useSemanticSearch, setUseSemanticSearch] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const warmupStartedRef = useRef(false);
 
   const performSearch = async (query: string, semantic: boolean) => {
     if (!query.trim()) {
@@ -112,6 +113,12 @@ export default function KnowledgeBasePage() {
 
   // Warm up Ollama on page load for faster semantic search
   useEffect(() => {
+    // Prevent duplicate warmups in React Strict Mode (dev only)
+    if (warmupStartedRef.current) {
+      return;
+    }
+    warmupStartedRef.current = true;
+
     const warmupOllama = async () => {
       try {
         logger.info("Starting Ollama warmup");
@@ -131,6 +138,7 @@ export default function KnowledgeBasePage() {
       }
     };
 
+    // Fire and forget - don't block page load
     warmupOllama();
   }, []);
 
