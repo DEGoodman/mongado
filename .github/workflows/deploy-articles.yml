@@ -50,18 +50,28 @@ jobs:
             echo "🔄 Restarting backend to reload articles..."
             docker restart mongado-backend-prod
 
-            # Wait for backend to be healthy
+            # Wait for backend to be healthy (with retries)
             echo "⏳ Waiting for backend to be healthy..."
-            sleep 5
+            MAX_RETRIES=30
+            RETRY_INTERVAL=2
+            RETRY_COUNT=0
 
-            # Health check
-            if curl -f http://localhost:8000/ > /dev/null 2>&1; then
-              echo "✅ Backend is healthy - static content deployed successfully"
-            else
-              echo "❌ Backend health check failed"
-              docker logs --tail 50 mongado-backend-prod
-              exit 1
-            fi
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+                echo "✅ Backend is healthy after $((RETRY_COUNT * RETRY_INTERVAL)) seconds"
+                break
+              fi
+
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in ${RETRY_INTERVAL}s..."
+                sleep $RETRY_INTERVAL
+              else
+                echo "❌ Backend health check failed after $((MAX_RETRIES * RETRY_INTERVAL)) seconds"
+                docker logs --tail 50 mongado-backend-prod
+                exit 1
+              fi
+            done
 
             echo "✅ Static content deployment complete!"
           EOF
