@@ -22,12 +22,10 @@ export default function KnowledgeBasePage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [useSemanticSearch, setUseSemanticSearch] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const warmupStartedRef = useRef(false);
 
-  const performSearch = async (query: string, semantic: boolean) => {
+  const performSearch = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       setSearchError(null);
@@ -45,7 +43,7 @@ export default function KnowledgeBasePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: query.trim(),
-          semantic: semantic,
+          semantic: false, // Always use fast text search
           limit: 10,
         }),
       });
@@ -56,9 +54,8 @@ export default function KnowledgeBasePage() {
 
       const data = await response.json();
       setSearchResults(data.results || []);
-      logger.info("Search completed", {
+      logger.info("Text search completed", {
         query: query,
-        semantic: semantic,
         resultCount: data.results?.length || 0,
       });
     } catch (err) {
@@ -78,7 +75,7 @@ export default function KnowledgeBasePage() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim() || isSearching) return;
-    await performSearch(searchQuery, useSemanticSearch);
+    await performSearch(searchQuery);
   };
 
   const clearSearch = () => {
@@ -88,18 +85,15 @@ export default function KnowledgeBasePage() {
     setHasSearched(false);
   };
 
-  // Live search: Auto-search as user types (for fast text search only)
+  // Live search: Auto-search as user types
   useEffect(() => {
-    // Only do live search for text mode (semantic is too slow)
-    if (useSemanticSearch) return;
-
     // Debounce: wait 300ms after user stops typing
     const timeoutId = setTimeout(() => {
       const trimmedQuery = searchQuery.trim();
 
       // Only trigger search if query is 3+ characters
       if (trimmedQuery.length >= 3) {
-        performSearch(searchQuery, false);
+        performSearch(searchQuery);
       } else if (trimmedQuery.length === 0) {
         // Clear results when search is empty
         setSearchResults([]);
@@ -109,38 +103,7 @@ export default function KnowledgeBasePage() {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, useSemanticSearch]);
-
-  // Warm up Ollama on page load for faster semantic search
-  useEffect(() => {
-    // Prevent duplicate warmups in React Strict Mode (dev only)
-    if (warmupStartedRef.current) {
-      return;
-    }
-    warmupStartedRef.current = true;
-
-    const warmupOllama = async () => {
-      try {
-        logger.info("Starting Ollama warmup");
-        const response = await fetch(`${API_URL}/api/ollama/warmup`, {
-          method: "POST",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          logger.info("Ollama warmup completed", { duration: data.duration_seconds });
-        } else {
-          logger.warn("Ollama warmup failed", { status: response.status });
-        }
-      } catch (err) {
-        // Silently fail - warmup is optional optimization
-        logger.debug("Ollama warmup error (non-critical)", err);
-      }
-    };
-
-    // Fire and forget - don't block page load
-    warmupOllama();
-  }, []);
+  }, [searchQuery]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -177,39 +140,20 @@ export default function KnowledgeBasePage() {
                 className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus
               />
-              <button
-                type="submit"
-                disabled={isSearching || !searchQuery.trim()}
-                className="rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSearching ? "Searching..." : useSemanticSearch ? "Search" : "Search"}
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={useSemanticSearch}
-                  onChange={(e) => setUseSemanticSearch(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <span>Use AI semantic search (slower, finds conceptually related content)</span>
-              </label>
               {searchResults.length > 0 && (
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="rounded-lg border border-gray-300 px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
                 >
-                  Clear results
+                  Clear
                 </button>
               )}
             </div>
           </form>
           <p className="mt-2 text-sm text-gray-500">
-            {useSemanticSearch
-              ? "AI semantic search enabled - click Search button to execute"
-              : "Live search enabled - results appear as you type (minimum 3 characters)"}
+            Live search enabled - results appear as you type (minimum 3 characters). For AI-powered
+            semantic search, use the AI Assistant.
           </p>
 
           {/* Search Error */}
@@ -241,11 +185,6 @@ export default function KnowledgeBasePage() {
                       <span className="text-xs font-medium text-gray-500">
                         {result.type === "article" ? "📚 Article" : "🔗 Note"}
                       </span>
-                      {useSemanticSearch && (
-                        <span className="text-xs text-gray-400">
-                          Score: {result.score.toFixed(3)}
-                        </span>
-                      )}
                     </div>
                     <h4 className="mb-2 font-semibold text-gray-900">{result.title}</h4>
                     <p className="line-clamp-2 text-sm text-gray-600">
@@ -326,7 +265,8 @@ export default function KnowledgeBasePage() {
               Both systems support cross-linking - reference notes from articles and vice versa.
             </div>
             <div>
-              Use AI-powered search to find relevant content across both articles and notes.
+              Use the AI Assistant for conversational Q&amp;A and semantic search across your
+              knowledge base.
             </div>
             <div className="md:col-span-2">
               <strong>API Access:</strong> Programmatic access available via the{" "}
