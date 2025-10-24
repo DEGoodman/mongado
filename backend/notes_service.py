@@ -11,7 +11,6 @@ from ephemeral_notes import EphemeralNote, get_ephemeral_store
 from neo4j_adapter import get_neo4j_adapter
 from note_id_generator import get_id_generator
 from ollama_client import get_ollama_client
-from utils import calculate_content_hash
 from wikilink_parser import get_wikilink_parser
 
 logger = logging.getLogger(__name__)
