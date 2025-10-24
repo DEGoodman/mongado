@@ -464,9 +464,26 @@ async def upload_image(file: Annotated[UploadFile, File()]) -> ImageUploadRespon
 
 @app.get("/api/resources", response_model=ResourceListResponse)
 def get_resources() -> ResourceListResponse:
-    """Get all resources (static articles + user-created)."""
+    """Get all resources (static articles + user-created), ordered by created_at descending."""
+    from dateutil import parser
+
     all_resources = static_articles + user_resources_db
-    return ResourceListResponse(resources=all_resources)
+
+    # Sort by created_at descending (newest first)
+    # Handle both string and datetime types
+    def get_sort_key(resource: dict[str, Any]) -> datetime:
+        created = resource.get("created_at")
+        if not created:
+            return datetime.min
+        if isinstance(created, str):
+            try:
+                return parser.parse(created)
+            except Exception:
+                return datetime.min
+        return created
+
+    sorted_resources = sorted(all_resources, key=get_sort_key, reverse=True)
+    return ResourceListResponse(resources=sorted_resources)
 
 
 @app.post("/api/resources", response_model=ResourceResponse, status_code=201)

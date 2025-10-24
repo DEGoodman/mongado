@@ -165,14 +165,14 @@ class NotesService:
     def list_notes(
         self, is_admin: bool = False, session_id: str | None = None
     ) -> list[dict[str, Any]]:
-        """List all accessible notes.
+        """List all accessible notes, ordered by created_at descending.
 
         Args:
             is_admin: True if admin user
             session_id: Session ID for ephemeral notes
 
         Returns:
-            List of note dicts (persistent + ephemeral for session)
+            List of note dicts (persistent + ephemeral for session), newest first
         """
         notes = []
 
@@ -192,7 +192,15 @@ class NotesService:
             ephemeral = self.ephemeral.get_session_notes(session_id)
             notes.extend([self._ephemeral_to_dict(note) for note in ephemeral])
 
-        return notes
+        # Sort all notes by created_at descending (newest first)
+        # This ensures ephemeral notes are properly interleaved with persistent notes
+        sorted_notes = sorted(
+            notes,
+            key=lambda n: n.get("created_at") or 0,
+            reverse=True
+        )
+
+        return sorted_notes
 
     def update_note(
         self,
