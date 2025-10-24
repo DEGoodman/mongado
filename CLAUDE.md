@@ -2,9 +2,44 @@
 
 Guidance for Claude Code when working with this repository.
 
-## Work Tracking
+## Critical Project Conventions
 
-**IMPORTANT**: All project work is tracked via [GitHub Issues](https://github.com/DEGoodman/mongado/issues).
+### 1. Use Docker Compose for Everything
+
+**ALWAYS use `docker compose` commands. NEVER interact with services or virtual environments directly.**
+
+This project runs entirely in Docker. All interactions with services must go through Docker Compose:
+
+**❌ WRONG - Do NOT do this**:
+```bash
+./venv/bin/pytest tests/              # Direct venv access
+python -m pytest tests/               # Direct Python
+npm test                              # Direct npm
+curl http://localhost:8000/           # Assumes local services
+backend/venv/bin/python script.py     # Direct script execution
+```
+
+**✅ CORRECT - Always do this**:
+```bash
+docker compose exec backend pytest tests/              # Run tests in container
+docker compose exec backend python script.py          # Run scripts in container
+docker compose exec frontend npm test                 # Run frontend tests in container
+docker compose logs backend                           # View logs
+docker compose restart backend                        # Restart services
+docker compose up -d --build                          # Rebuild containers
+```
+
+**Why this matters**:
+- Ensures consistent environment (dependencies, Python version, etc.)
+- Matches production deployment
+- Avoids "works on my machine" issues
+- Proper service networking and isolation
+
+**When you need to run ANY command**, ask yourself: "Should this run in a container?" The answer is almost always YES.
+
+### 2. Work Tracking
+
+**All project work is tracked via [GitHub Issues](https://github.com/DEGoodman/mongado/issues).**
 
 **Never create TODO files**. Instead:
 1. Create issues: `gh issue create --label "feature,status: todo"`
@@ -94,79 +129,84 @@ All configuration in `backend/config.py`:
 
 ## Common Commands
 
-### Backend (Python 3.13)
+**REMEMBER**: Always use `docker compose exec` to run commands in containers!
+
+### Docker (Primary Interface)
 
 ```bash
-cd backend
+# Start/Stop Services
+docker compose up -d              # Start all services (detached)
+docker compose down               # Stop all services
+docker compose restart backend    # Restart specific service
+docker compose up -d --build      # Rebuild and start
 
-# Development
-make run              # Start dev server
-make install          # Install dev dependencies
+# View Logs
+docker compose logs -f backend    # Follow backend logs
+docker compose logs frontend      # View frontend logs
+docker compose logs               # All services
 
-# Testing
-make test             # Run all tests
-make test-unit        # Unit tests only
-make test-cov         # Tests with coverage
-
-# Code Quality
-make lint             # Ruff linter
-make format           # Auto-format
-make typecheck        # Mypy type checking
-make check            # lint + typecheck + security
-make ci               # Full CI pipeline
-
-# Profiling & Performance
-make profile          # py-spy profiler
-make profile-viz      # VizTracer (interactive)
-make benchmark        # API benchmarks
-make memory           # Memory profiling
-
-# Single test
-./venv/bin/pytest tests/unit/test_main.py::test_function_name -v
-
-# Image Optimization
-./venv/bin/python image_optimizer.py input.jpg output.webp 85 1200
-./venv/bin/python image_optimizer.py --batch static/assets/images/
-```
-
-### Frontend (Next.js 14 + TypeScript)
-
-```bash
-cd frontend
-
-# Development
-npm run dev           # Start dev server
-npm install           # Install dependencies
-
-# Testing
-npm test              # Unit tests (Vitest)
-npm run test:ui       # Tests with UI
-npm run test:e2e      # E2E tests (Playwright)
-npm run test:all      # Full suite
-
-# Code Quality
-npm run lint          # ESLint
-npm run lint:fix      # ESLint with auto-fix
-npm run type-check    # TypeScript
-
-# Build
-npm run build         # Production build
-npm run build:analyze # Bundle size analysis
-
-# Single test
-npm test src/__tests__/Component.test.tsx
-```
-
-### Docker
-
-```bash
-# Development
-docker compose up
-docker compose up --build  # Rebuild after deps
+# Execute Commands in Containers
+docker compose exec backend bash                    # Shell into backend
+docker compose exec frontend sh                     # Shell into frontend
+docker compose exec backend python manage.py        # Run Python script
+docker compose exec frontend npm run build          # Run npm command
 
 # Production
-docker compose -f docker-compose.prod.yml up -d
-docker compose logs -f backend
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml logs -f backend
+```
+
+### Backend (Python 3.13) - via Docker
+
+**Run ALL backend commands through docker compose**:
+
+```bash
+# Testing
+docker compose exec backend pytest tests/                           # All tests
+docker compose exec backend pytest tests/unit/                      # Unit tests
+docker compose exec backend pytest tests/ --cov                     # With coverage
+docker compose exec backend pytest tests/unit/test_main.py::test_function_name -v  # Single test
+
+# Code Quality
+docker compose exec backend ruff check .                            # Lint
+docker compose exec backend ruff format .                           # Format
+docker compose exec backend mypy main.py                            # Type check
+
+# Other Commands
+docker compose exec backend python image_optimizer.py input.jpg output.webp 85 1200
+docker compose exec backend python -m backend.script_name           # Run script
+```
+
+**Make commands** (if you're already in the backend directory and need quick reference):
+```bash
+# These internally use docker compose exec
+make test             # docker compose exec backend pytest tests/
+make lint             # docker compose exec backend ruff check .
+make format           # docker compose exec backend ruff format .
+```
+
+### Frontend (Next.js 14 + TypeScript) - via Docker
+
+**Run ALL frontend commands through docker compose**:
+
+```bash
+# Testing
+docker compose exec frontend npm test                    # Unit tests
+docker compose exec frontend npm run test:ui             # Tests with UI
+docker compose exec frontend npm run test:e2e            # E2E tests
+docker compose exec frontend npm run test:all            # Full suite
+
+# Code Quality
+docker compose exec frontend npm run lint                # ESLint
+docker compose exec frontend npm run lint:fix            # ESLint with auto-fix
+docker compose exec frontend npm run type-check          # TypeScript
+
+# Build
+docker compose exec frontend npm run build               # Production build
+docker compose exec frontend npm run build:analyze       # Bundle analysis
+
+# Dependencies
+docker compose exec frontend npm install package-name    # Install new package
 ```
 
 ## Type System
