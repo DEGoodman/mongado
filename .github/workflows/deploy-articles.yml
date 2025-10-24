@@ -57,7 +57,7 @@ jobs:
             RETRY_COUNT=0
 
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+              if curl -f http://localhost:8000/health > /dev/null 2>&1; then
                 echo "✅ Backend is healthy after $((RETRY_COUNT * RETRY_INTERVAL)) seconds"
                 break
               fi

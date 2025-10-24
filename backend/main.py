@@ -1,5 +1,6 @@
 """Mongado API - Personal website backend with Knowledge Base and future features."""
 
+import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -182,12 +183,46 @@ static_articles: list[dict[str, Any]] = []
 # User-created resources (in-memory for now, will be DB later)
 user_resources_db: list[dict[str, Any]] = []
 
-# Load static articles on startup
-static_articles = load_static_articles()
-logger.info("Loaded %d static articles", len(static_articles))
+# Readiness state (becomes True after embedding sync completes)
+_embedding_sync_ready: bool = False
+_embedding_sync_task: asyncio.Task[None] | None = None
 
-# Sync articles to Neo4j and generate embeddings
-sync_embeddings_on_startup(static_articles, ollama_client, neo4j_adapter)
+
+async def _sync_embeddings_background() -> None:
+    """Run embedding sync in background during startup."""
+    global _embedding_sync_ready
+
+    try:
+        # Run the sync in a thread pool (it's blocking I/O)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            sync_embeddings_on_startup,
+            static_articles,
+            ollama_client,
+            neo4j_adapter
+        )
+        _embedding_sync_ready = True
+        logger.info("Background embedding sync completed - app is fully ready")
+    except Exception as e:
+        logger.error("Background embedding sync failed: %s", e)
+        # Don't set ready flag, but app is still healthy
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize app on startup."""
+    global static_articles, _embedding_sync_task
+
+    # Load static articles (fast)
+    static_articles = load_static_articles()
+    logger.info("Loaded %d static articles", len(static_articles))
+
+    # Start embedding sync in background (non-blocking)
+    logger.info("Starting background embedding sync...")
+    _embedding_sync_task = asyncio.create_task(_sync_embeddings_background())
+
+    # App is healthy immediately (embedding sync runs in background)
 
 
 class Resource(BaseModel):
@@ -220,6 +255,21 @@ class StatusResponse(BaseModel):
     message: str
     version: str
     onepassword_enabled: bool  # Changed from "1password_enabled" for valid Python identifier
+
+
+class HealthResponse(BaseModel):
+    """Response model for health check endpoint."""
+
+    status: str  # "healthy"
+    version: str
+
+
+class ReadyResponse(BaseModel):
+    """Response model for readiness check endpoint."""
+
+    ready: bool
+    embedding_sync_complete: bool
+    message: str
 
 
 class ImageUploadResponse(BaseModel):
@@ -287,6 +337,48 @@ def read_root() -> StatusResponse:
         message=settings.app_name,
         version=settings.app_version,
         onepassword_enabled=secret_manager.is_available(),
+    )
+
+
+@app.get("/health", response_model=HealthResponse)
+def health_check() -> HealthResponse:
+    """
+    Liveness probe - checks if the application is alive and can serve requests.
+
+    This endpoint returns 200 immediately after the app starts, even if
+    background tasks (like embedding sync) are still running.
+
+    Use this for:
+    - Kubernetes liveness probes
+    - Load balancer health checks
+    - Deployment verification
+    """
+    return HealthResponse(
+        status="healthy",
+        version=settings.app_version,
+    )
+
+
+@app.get("/ready", response_model=ReadyResponse)
+def readiness_check() -> ReadyResponse:
+    """
+    Readiness probe - checks if the application is fully ready to handle traffic.
+
+    This endpoint returns ready=True only after all background initialization
+    tasks (like embedding sync) have completed.
+
+    Use this for:
+    - Kubernetes readiness probes
+    - Waiting for full initialization before sending traffic
+    - Monitoring background task completion
+
+    Note: The app is still healthy and functional even if ready=False.
+    Embedding sync runs in the background and search will work with cached embeddings.
+    """
+    return ReadyResponse(
+        ready=_embedding_sync_ready,
+        embedding_sync_complete=_embedding_sync_ready,
+        message="App is fully ready" if _embedding_sync_ready else "App is healthy, embedding sync in progress",
     )
 
 
