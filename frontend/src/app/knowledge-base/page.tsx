@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import { logger } from "@/lib/logger";
@@ -24,6 +24,7 @@ export default function KnowledgeBasePage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [useSemanticSearch, setUseSemanticSearch] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const performSearch = async (query: string, semantic: boolean) => {
     if (!query.trim()) {
@@ -65,6 +66,11 @@ export default function KnowledgeBasePage() {
       logger.error("Search failed", err);
     } finally {
       setIsSearching(false);
+      // Restore focus to search input after React completes rendering
+      // Use setTimeout to defer until after the render cycle
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
     }
   };
 
@@ -155,12 +161,13 @@ export default function KnowledgeBasePage() {
           <form onSubmit={handleSearch} className="space-y-4">
             <div className="flex gap-2">
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search articles and notes..."
                 className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isSearching}
+                autoFocus
               />
               <button
                 type="submit"
