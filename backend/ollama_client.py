@@ -17,7 +17,10 @@ class OllamaClient:
         """Initialize Ollama client."""
         self.enabled = settings.ollama_enabled
         self.host = settings.ollama_host
-        self.model = settings.ollama_model
+        # Use separate models for embeddings (fast) vs chat (quality)
+        self.embed_model = settings.ollama_embed_model
+        self.chat_model = settings.ollama_chat_model
+        self.model = settings.ollama_chat_model  # Backwards compatibility
         self.num_ctx = settings.ollama_num_ctx
         self.client = None
 
@@ -71,7 +74,7 @@ class OllamaClient:
 
         try:
             response = self.client.embeddings(
-                model=self.model,
+                model=self.embed_model,  # Use dedicated embedding model
                 prompt=text,
                 options={"num_ctx": self.num_ctx}  # Use consistent context size
             )
@@ -296,7 +299,7 @@ Answer:"""
 
             # Generate response with reduced context window for performance
             response = self.client.generate(
-                model=self.model,
+                model=self.chat_model,  # Use chat model for Q&A
                 prompt=prompt,
                 options={"num_ctx": self.num_ctx}
             )
@@ -328,7 +331,7 @@ Answer:"""
 Summary:"""
 
             response = self.client.generate(
-                model=self.model,
+                model=self.chat_model,  # Use chat model for summarization
                 prompt=prompt,
                 options={"num_ctx": self.num_ctx}
             )
@@ -354,10 +357,10 @@ Summary:"""
             return False
 
         try:
-            logger.info("Warming up Ollama model (this takes ~15-20 seconds)...")
+            logger.info("Warming up Ollama chat model (this takes ~15-20 seconds)...")
             # Send a minimal prompt to start the runner with our context window setting
             self.client.generate(
-                model=self.model,
+                model=self.chat_model,  # Warm up chat model
                 prompt="Hi",
                 options={
                     "num_predict": 1,  # Only generate 1 token
