@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     ollama_enabled: bool = True  # Enable/disable Ollama features
     ollama_num_ctx: int = 2048  # Context window size (reduce from default 4096 to save memory)
 
+    # Embedding sync settings
+    sync_embeddings_on_startup: bool = False  # Set to True to sync embeddings on app startup
+
     # API Keys (examples - load from 1Password when needed)
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None

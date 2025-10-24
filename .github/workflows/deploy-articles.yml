@@ -46,8 +46,22 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
+            # Set environment variable to enable embedding sync on startup for this deployment
+            echo "⚙️  Configuring backend to sync embeddings on startup..."
+            cd backend
+            if [ ! -f .env.prod ]; then
+              touch .env.prod
+            fi
+            # Add or update SYNC_EMBEDDINGS_ON_STARTUP in .env.prod
+            if grep -q "^SYNC_EMBEDDINGS_ON_STARTUP=" .env.prod; then
+              sed -i 's/^SYNC_EMBEDDINGS_ON_STARTUP=.*/SYNC_EMBEDDINGS_ON_STARTUP=true/' .env.prod
+            else
+              echo "SYNC_EMBEDDINGS_ON_STARTUP=true" >> .env.prod
+            fi
+            cd ..
+
             # Restart only the backend to pick up new articles
-            echo "🔄 Restarting backend to reload articles..."
+            echo "🔄 Restarting backend to reload articles and sync embeddings..."
             docker restart mongado-backend-prod
 
             # Wait for backend to be healthy (with retries)
@@ -72,6 +86,33 @@ jobs:
                 exit 1
               fi
             done
+
+            # Wait for embeddings to complete (check /ready endpoint)
+            echo "⏳ Waiting for embedding sync to complete..."
+            READY_RETRIES=60  # Up to 2 minutes for embeddings
+            READY_COUNT=0
+
+            while [ $READY_COUNT -lt $READY_RETRIES ]; do
+              READY_STATUS=$(curl -s http://localhost:8000/ready | grep -o '"ready":[^,}]*' | cut -d':' -f2)
+              if [ "$READY_STATUS" = "true" ]; then
+                echo "✅ Embedding sync complete"
+                break
+              fi
+
+              READY_COUNT=$((READY_COUNT + 1))
+              if [ $READY_COUNT -lt $READY_RETRIES ]; then
+                sleep 2
+              else
+                echo "⚠️  Embedding sync did not complete within timeout (will continue in background)"
+              fi
+            done
+
+            # Reset SYNC_EMBEDDINGS_ON_STARTUP to false for normal operations
+            echo "⚙️  Resetting SYNC_EMBEDDINGS_ON_STARTUP to false..."
+            cd /opt/mongado/backend
+            if grep -q "^SYNC_EMBEDDINGS_ON_STARTUP=" .env.prod; then
+              sed -i 's/^SYNC_EMBEDDINGS_ON_STARTUP=.*/SYNC_EMBEDDINGS_ON_STARTUP=false/' .env.prod
+            fi
 
             echo "✅ Static content deployment complete!"
           EOF

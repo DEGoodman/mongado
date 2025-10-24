@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +21,7 @@ from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from article_loader import load_static_articles
+from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from embedding_sync import sync_embeddings_on_startup
 from image_optimizer import optimize_image_to_webp
@@ -77,7 +78,7 @@ async def _sync_embeddings_background() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan context manager for startup and shutdown events."""
-    global static_articles, _embedding_sync_task
+    global static_articles, _embedding_sync_task, _embedding_sync_ready
 
     # Startup
     logger.info("Starting %s v%s", settings.app_name, settings.app_version)
@@ -88,11 +89,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     static_articles = load_static_articles()
     logger.info("Loaded %d static articles", len(static_articles))
 
-    # Start embedding sync in background (non-blocking)
-    logger.info("Starting background embedding sync...")
-    _embedding_sync_task = asyncio.create_task(_sync_embeddings_background())
+    # Conditionally start embedding sync in background (non-blocking)
+    if settings.sync_embeddings_on_startup:
+        logger.info("Starting background embedding sync (SYNC_EMBEDDINGS_ON_STARTUP=true)...")
+        _embedding_sync_task = asyncio.create_task(_sync_embeddings_background())
+    else:
+        logger.info("Skipping embedding sync on startup (SYNC_EMBEDDINGS_ON_STARTUP=false)")
+        logger.info("Embeddings will be synced via: POST /api/admin/sync-embeddings")
+        # Mark as ready immediately since we're not syncing
+        _embedding_sync_ready = True
 
-    # App is healthy immediately (embedding sync runs in background)
+    # App is healthy immediately (embedding sync runs in background if enabled)
 
     yield
 
@@ -336,6 +343,14 @@ class WarmupResponse(BaseModel):
 
     success: bool
     message: str
+
+
+class EmbeddingSyncResponse(BaseModel):
+    """Response model for embedding sync trigger."""
+
+    success: bool
+    message: str
+    stats: dict[str, int] | None = None
 
 
 @app.get("/", response_model=StatusResponse)
@@ -751,6 +766,70 @@ def get_article_summary(resource_id: int) -> SummaryResponse:
         )
 
     return SummaryResponse(summary=summary)
+
+
+@app.post("/api/admin/sync-embeddings", response_model=EmbeddingSyncResponse)
+def trigger_embedding_sync(_admin: Annotated[bool, Depends(verify_admin)]) -> EmbeddingSyncResponse:
+    """
+    Manually trigger embedding sync for all articles and notes (admin only).
+
+    This endpoint allows admins to sync embeddings on-demand without restarting
+    the application. Useful for:
+    - Deploying new articles without setting SYNC_EMBEDDINGS_ON_STARTUP
+    - Regenerating embeddings after model changes
+    - Manual recovery if sync failed during startup
+
+    Requires authentication via Bearer token in Authorization header.
+    """
+    if not neo4j_adapter.is_available():
+        return EmbeddingSyncResponse(
+            success=False,
+            message="Neo4j not available - cannot sync embeddings",
+            stats=None
+        )
+
+    if not ollama_client.is_available():
+        return EmbeddingSyncResponse(
+            success=False,
+            message="Ollama not available - cannot generate embeddings",
+            stats=None
+        )
+
+    logger.info("Admin triggered manual embedding sync")
+
+    try:
+        # Import here to avoid circular dependency
+        from embedding_sync import sync_articles_to_neo4j, sync_embeddings
+
+        # Sync articles to Neo4j first
+        created, updated = sync_articles_to_neo4j(static_articles, neo4j_adapter)
+        logger.info("Articles synced: %d created, %d updated", created, updated)
+
+        # Generate embeddings for anything that needs it
+        stats = sync_embeddings(neo4j_adapter, ollama_client)
+
+        message = (
+            f"Sync complete: {stats['articles_processed']} articles, "
+            f"{stats['notes_processed']} notes processed. "
+            f"{stats['embeddings_generated']} embeddings generated, "
+            f"{stats['embeddings_cached']} cached."
+        )
+
+        logger.info("Manual embedding sync complete: %s", message)
+
+        return EmbeddingSyncResponse(
+            success=True,
+            message=message,
+            stats=stats
+        )
+
+    except Exception as e:
+        logger.error("Manual embedding sync failed: %s", e)
+        return EmbeddingSyncResponse(
+            success=False,
+            message=f"Sync failed: {str(e)}",
+            stats=None
+        )
 
 
 if __name__ == "__main__":
