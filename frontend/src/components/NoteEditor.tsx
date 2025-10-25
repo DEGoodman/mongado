@@ -152,11 +152,12 @@ export default function NoteEditor({
         {/* Autocomplete dropdown */}
         {showAutocomplete && filteredNotes.length > 0 && (
           <div
-            className="fixed z-50 max-h-60 overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
+            className="fixed z-50 max-h-60 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-xl"
             style={{
               top: `${autocompletePosition.top}px`,
               left: `${autocompletePosition.left}px`,
-              minWidth: "250px",
+              width: "320px",
+              maxWidth: "calc(100vw - 2rem)",
             }}
           >
             {filteredNotes.slice(0, 10).map((note, index) => (
@@ -164,22 +165,27 @@ export default function NoteEditor({
                 key={note.id}
                 type="button"
                 onClick={() => insertWikilink(note.id)}
-                className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${
+                className={`w-full border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-blue-50 ${
                   index === selectedIndex ? "bg-blue-50" : ""
                 }`}
               >
-                <div className="font-mono text-sm text-gray-600">{note.id}</div>
-                {note.title && <div className="text-sm text-gray-800">{note.title}</div>}
+                <div className="mb-1 font-mono text-xs text-blue-600">{note.id}</div>
+                {note.title && (
+                  <div className="mb-1 text-sm font-medium text-gray-900">{note.title}</div>
+                )}
                 {note.tags && note.tags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {note.tags.map((tag) => (
+                  <div className="flex flex-wrap gap-1">
+                    {note.tags.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600"
+                        className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
                       >
                         {tag}
                       </span>
                     ))}
+                    {note.tags.length > 3 && (
+                      <span className="text-xs text-gray-400">+{note.tags.length - 3}</span>
+                    )}
                   </div>
                 )}
               </button>

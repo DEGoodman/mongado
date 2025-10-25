@@ -22,7 +22,22 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
   const parts = content.split(/(\[\[[a-z0-9-]+\]\])/g);
 
   return (
-    <div className="prose prose-sm max-w-none sm:prose lg:prose-lg">
+    <div className="prose prose-sm max-w-none overflow-x-auto sm:prose lg:prose-lg">
+      <style jsx global>{`
+        /* Fix table overflow in all browsers */
+        .prose table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        /* Ensure tables don't break container */
+        .prose th,
+        .prose td {
+          white-space: normal;
+          word-break: break-word;
+        }
+      `}</style>
       {parts.map((part, i) => {
         const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
         if (match) {
