@@ -96,6 +96,28 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
         .prose pre {
           margin-top: 1rem;
           margin-bottom: 1rem;
+          padding: 1rem;
+          background-color: #1f2937;
+          border-radius: 0.5rem;
+          overflow-x: auto;
+        }
+
+        .prose pre code {
+          background-color: transparent;
+          color: #e5e7eb;
+          padding: 0;
+          font-size: 0.875rem;
+          line-height: 1.7;
+        }
+
+        /* Inline code (not in pre blocks) */
+        .prose :not(pre) > code {
+          background-color: #f3f4f6;
+          color: #1f2937;
+          padding: 0.125rem 0.375rem;
+          border-radius: 0.25rem;
+          font-size: 0.875em;
+          font-weight: 500;
         }
       `}</style>
       {parts.map((part, i) => {
