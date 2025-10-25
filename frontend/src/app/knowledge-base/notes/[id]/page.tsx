@@ -42,6 +42,7 @@ export default function NoteDetailPage() {
   const [editTags, setEditTags] = useState("");
   const [saving, setSaving] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -83,9 +84,20 @@ export default function NoteDetailPage() {
     fetchData();
   }, [noteId]);
 
-  const handleSave = async () => {
+  // Check if content has wikilinks
+  const hasWikilinks = (text: string): boolean => {
+    return /\[\[[a-z0-9-]+\]\]/i.test(text);
+  };
+
+  const handleSave = async (forceSave = false) => {
     if (!editContent.trim()) {
       setError("Content cannot be empty");
+      return;
+    }
+
+    // Check for zero wikilinks and show warning (unless forcing save)
+    if (!forceSave && !hasWikilinks(editContent)) {
+      setShowZeroLinksWarning(true);
       return;
     }
 
@@ -122,6 +134,16 @@ export default function NoteDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveAnyway = async () => {
+    setShowZeroLinksWarning(false);
+    await handleSave(true);
+  };
+
+  const handleGetAISuggestions = () => {
+    setShowZeroLinksWarning(false);
+    setAiPanelOpen(true);
   };
 
   const handleDelete = async () => {
@@ -434,6 +456,40 @@ export default function NoteDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Zero Links Warning Modal */}
+      {showZeroLinksWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-gray-900">💡 No connections found</h3>
+            <p className="mb-4 text-gray-700">
+              This note has no connections to other notes. Zettelkasten works best when ideas link
+              together.
+            </p>
+            <p className="mb-4 text-sm text-gray-600">Consider:</p>
+            <ul className="mb-6 list-inside list-disc space-y-1 text-sm text-gray-600">
+              <li>What concepts does this relate to?</li>
+              <li>What led to this idea?</li>
+              <li>Where might you apply this?</li>
+            </ul>
+            <div className="flex gap-3">
+              <button
+                onClick={handleGetAISuggestions}
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+              >
+                Get AI Link Suggestions
+              </button>
+              <button
+                onClick={handleSaveAnyway}
+                disabled={saving}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Save Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

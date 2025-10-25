@@ -170,6 +170,18 @@ export default function NoteEditor({
               >
                 <div className="font-mono text-sm text-gray-600">{note.id}</div>
                 {note.title && <div className="text-sm text-gray-800">{note.title}</div>}
+                {note.tags && note.tags.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {note.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </button>
             ))}
           </div>
