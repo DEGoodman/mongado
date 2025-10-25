@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import { logger } from "@/lib/logger";
+import { useSettings } from "@/hooks/useSettings";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -17,6 +18,7 @@ interface SearchResult {
 }
 
 export default function KnowledgeBasePage() {
+  const { settings, updateSettings } = useSettings();
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -126,6 +128,38 @@ export default function KnowledgeBasePage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Settings Section */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">⚙️ Settings</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <label htmlFor="ai-toggle" className="font-medium text-gray-900">
+                AI Suggestions
+              </label>
+              <p className="text-sm text-gray-600">
+                Get AI-powered suggestions for tags, links, and concepts while working with notes
+              </p>
+            </div>
+            <button
+              id="ai-toggle"
+              role="switch"
+              aria-checked={settings.aiSuggestionsEnabled}
+              onClick={() =>
+                updateSettings({ aiSuggestionsEnabled: !settings.aiSuggestionsEnabled })
+              }
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                settings.aiSuggestionsEnabled ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  settings.aiSuggestionsEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
         {/* Search Section */}
         <div className="mb-8 rounded-lg bg-white p-8 shadow-md">
           <h2 className="mb-4 text-xl font-semibold text-gray-900">🔍 Search Everything</h2>
