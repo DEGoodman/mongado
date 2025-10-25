@@ -20,7 +20,11 @@ export default function NewNotePage() {
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ content: string; title?: string; tags: string[] } | null>(null);
+  const [pendingNote, setPendingNote] = useState<{
+    content: string;
+    title?: string;
+    tags: string[];
+  } | null>(null);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -41,7 +45,7 @@ export default function NewNotePage() {
     return /\[\[[a-z0-9-]+\]\]/i.test(text);
   };
 
-  const handleSave = async (forceS ave = false) => {
+  const handleSave = async (forceSave = false) => {
     if (!content.trim()) {
       setError("Content cannot be empty");
       return;
@@ -53,7 +57,7 @@ export default function NewNotePage() {
       .filter((t) => t);
 
     // Check for zero wikilinks and show warning (unless forcing save)
-    if (!forceS ave && !hasWikilinks(content)) {
+    if (!forceSave && !hasWikilinks(content)) {
       setPendingNote({
         content,
         title: title.trim() || undefined,
@@ -182,7 +186,7 @@ export default function NewNotePage() {
         {/* Actions */}
         <div className="flex gap-3 pt-4">
           <button
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={saving || !content.trim()}
             className="rounded-lg bg-blue-600 px-6 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >

@@ -351,7 +351,7 @@ export default function NoteDetailPage() {
 
                   <div className="flex gap-3">
                     <button
-                      onClick={handleSave}
+                      onClick={() => handleSave()}
                       disabled={saving || !editContent.trim()}
                       className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
                     >
