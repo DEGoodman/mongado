@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import SettingsDropdown from "@/components/SettingsDropdown";
 import { logger } from "@/lib/logger";
-import { useSettings } from "@/hooks/useSettings";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -18,7 +18,6 @@ interface SearchResult {
 }
 
 export default function KnowledgeBasePage() {
-  const { settings, updateSettings } = useSettings();
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -118,80 +117,19 @@ export default function KnowledgeBasePage() {
       {/* Header */}
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
-              ← Home
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
+                ← Home
+              </Link>
+              <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
+            </div>
+            <SettingsDropdown />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Settings Section */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">⚙️ Settings</h2>
-          <div>
-            <label className="mb-3 block font-medium text-gray-900">AI Suggestions Mode</label>
-            <div className="space-y-3">
-              {/* Off Option */}
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50">
-                <input
-                  type="radio"
-                  name="ai-mode"
-                  value="off"
-                  checked={settings.aiMode === "off"}
-                  onChange={() => updateSettings({ aiMode: "off" })}
-                  className="mt-1 h-4 w-4 text-blue-600"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">Off</div>
-                  <div className="text-sm text-gray-600">
-                    No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.
-                  </div>
-                </div>
-              </label>
-
-              {/* On-demand Option */}
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50">
-                <input
-                  type="radio"
-                  name="ai-mode"
-                  value="on-demand"
-                  checked={settings.aiMode === "on-demand"}
-                  onChange={() => updateSettings({ aiMode: "on-demand" })}
-                  className="mt-1 h-4 w-4 text-blue-600"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">On-demand</div>
-                  <div className="text-sm text-gray-600">
-                    Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach with
-                    no overhead while writing.
-                  </div>
-                </div>
-              </label>
-
-              {/* Real-time Option */}
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50">
-                <input
-                  type="radio"
-                  name="ai-mode"
-                  value="real-time"
-                  checked={settings.aiMode === "real-time"}
-                  onChange={() => updateSettings({ aiMode: "real-time" })}
-                  className="mt-1 h-4 w-4 text-blue-600"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">Real-time</div>
-                  <div className="text-sm text-gray-600">
-                    Auto-update suggestions as you type. Most helpful, but may impact performance.
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-
         {/* Search Section */}
         <div className="mb-8 rounded-lg bg-white p-8 shadow-md">
           <h2 className="mb-4 text-xl font-semibold text-gray-900">🔍 Search Everything</h2>
