@@ -413,6 +413,7 @@ export default function NoteDetailPage() {
                     <AISuggestionsPanel
                       noteId={noteId}
                       mode={settings.aiMode}
+                      content={editContent}
                       onAddTag={handleAddTag}
                       onInsertLink={handleInsertLink}
                     />

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { logger } from "@/lib/logger";
 import type { AiMode } from "@/lib/settings";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const DEBOUNCE_MS = 1000; // 1 second debounce for real-time mode
 
 interface TagSuggestion {
   tag: string;
@@ -22,6 +23,7 @@ interface LinkSuggestion {
 interface AISuggestionsPanelProps {
   noteId: string;
   mode: AiMode;
+  content?: string; // Current note content for real-time suggestions
   onAddTag: (tag: string) => void;
   onInsertLink: (noteId: string) => void;
 }
@@ -29,6 +31,7 @@ interface AISuggestionsPanelProps {
 export default function AISuggestionsPanel({
   noteId,
   mode,
+  content,
   onAddTag,
   onInsertLink,
 }: AISuggestionsPanelProps) {
@@ -36,8 +39,9 @@ export default function AISuggestionsPanel({
   const [linkSuggestions, setLinkSuggestions] = useState<LinkSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -69,7 +73,34 @@ export default function AISuggestionsPanel({
     } finally {
       setLoading(false);
     }
-  };
+  }, [noteId]);
+
+  // Real-time mode: auto-fetch suggestions when content changes (debounced)
+  useEffect(() => {
+    if (mode !== "real-time" || !content) {
+      return;
+    }
+
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timer to fetch suggestions after debounce period
+    debounceTimer.current = setTimeout(() => {
+      // Only fetch if content is non-empty
+      if (content.trim().length > 10) {
+        fetchSuggestions();
+      }
+    }, DEBOUNCE_MS);
+
+    // Cleanup timer on unmount or when dependencies change
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [mode, content, fetchSuggestions]); // Include fetchSuggestions in dependencies
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -85,9 +116,12 @@ export default function AISuggestionsPanel({
           </button>
         )}
         {mode === "real-time" && (
-          <span className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-800">
-            Real-time mode
-          </span>
+          <div className="flex items-center gap-2">
+            {loading && <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>}
+            <span className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-800">
+              Real-time
+            </span>
+          </div>
         )}
       </div>
 
