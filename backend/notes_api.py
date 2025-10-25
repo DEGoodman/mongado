@@ -105,6 +105,22 @@ class TagSuggestionsResponse(BaseModel):
     count: int
 
 
+class LinkSuggestion(BaseModel):
+    """A single link suggestion."""
+
+    note_id: str
+    title: str
+    confidence: float
+    reason: str
+
+
+class LinkSuggestionsResponse(BaseModel):
+    """Response model for link suggestions."""
+
+    suggestions: list[LinkSuggestion]
+    count: int
+
+
 # Helper function to try admin auth without raising
 def try_verify_admin(authorization: str | None = Header(None)) -> bool:
     """Try to verify admin token without raising exceptions."""
@@ -446,3 +462,157 @@ JSON:"""
     except Exception as e:
         logger.error("Error generating tag suggestions: %s", e)
         return TagSuggestionsResponse(suggestions=[], count=0)
+
+
+@router.post("/{note_id}/suggest-links", response_model=LinkSuggestionsResponse)
+async def suggest_links(note_id: str) -> LinkSuggestionsResponse:
+    """Suggest related notes that should be linked via wikilinks.
+
+    Analyzes note content and suggests other notes that are conceptually related.
+    Returns suggestions with confidence scores and reasoning.
+
+    Returns empty suggestions if Ollama is unavailable or note not found.
+    """
+    import json
+
+    from ollama_client import get_ollama_client
+
+    ollama = get_ollama_client()
+
+    # Get the current note
+    note = notes_service.get_note(note_id, is_admin=True)
+    if not note:
+        raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
+
+    # If Ollama unavailable, return empty suggestions
+    if not ollama.is_available():
+        logger.warning("Ollama not available for link suggestions")
+        return LinkSuggestionsResponse(suggestions=[], count=0)
+
+    # Get all other notes (exclude current note and its existing links)
+    all_notes = notes_service.list_notes(is_admin=True)
+    existing_links = set(note.get("links", []))
+    existing_links.add(note_id)  # Don't suggest linking to self
+
+    candidate_notes = [
+        n for n in all_notes
+        if n["id"] not in existing_links and n.get("content")  # Must have content
+    ]
+
+    if not candidate_notes:
+        logger.info("No candidate notes for link suggestions")
+        return LinkSuggestionsResponse(suggestions=[], count=0)
+
+    # Build prompt for LLM
+    current_title = note.get("title", note_id)
+    current_content = note.get("content", "")
+
+    # Format candidate notes for the prompt (limit to first 50 to avoid token limits)
+    candidates_text = "\n\n".join([
+        f"ID: {n['id']}\nTitle: {n.get('title', 'Untitled')}\nContent: {n.get('content', '')[:200]}..."
+        for n in candidate_notes[:50]
+    ])
+
+    prompt = f"""You are analyzing a note to suggest related notes that should be linked.
+
+Current Note:
+Title: {current_title}
+Content:
+{current_content[:500]}
+
+Candidate Notes to Link:
+{candidates_text}
+
+Suggest 3-5 notes that are most related to the current note. Focus on:
+- Directly related concepts or prerequisites
+- Practical applications or examples
+- Contrasting viewpoints
+- Building blocks or dependencies
+
+For each suggestion, provide:
+- note_id: The ID of the note to link to
+- confidence: Float 0-1 indicating relevance
+- reason: Brief explanation of why they should be linked
+
+Return ONLY a JSON array of suggestions.
+Example: [{{"note_id": "psychological-safety", "confidence": 0.85, "reason": "Both discuss team culture"}}]
+
+JSON:"""
+
+    try:
+        # Use qwen2.5:1.5b for structured output
+        response_data = ollama.client.generate(
+            model="qwen2.5:1.5b",
+            prompt=prompt,
+            options={"num_ctx": 8192}  # Larger context for multiple notes
+        )
+
+        response = response_data.get("response", "")
+        if not response:
+            logger.error("Empty response from Ollama for link suggestions")
+            return LinkSuggestionsResponse(suggestions=[], count=0)
+
+        # Parse JSON response (same defensive parsing as suggest-tags)
+        response = response.strip()
+        if response.startswith("```json"):
+            response = response[7:]
+        if response.startswith("```"):
+            response = response[3:]
+        if response.endswith("```"):
+            response = response[:-3]
+        response = response.strip()
+
+        # Try to parse as array first
+        try:
+            suggestions_data = json.loads(response)
+            if isinstance(suggestions_data, dict):
+                suggestions_data = [suggestions_data]
+            elif not isinstance(suggestions_data, list):
+                logger.error("Unexpected response format from LLM: %s", type(suggestions_data))
+                return LinkSuggestionsResponse(suggestions=[], count=0)
+        except json.JSONDecodeError:
+            # Try line-by-line parsing
+            suggestions_data = []
+            for line in response.split('\n'):
+                line = line.strip()
+                if line and line.startswith('{'):
+                    try:
+                        obj = json.loads(line)
+                        suggestions_data.append(obj)
+                    except json.JSONDecodeError:
+                        continue
+
+            if not suggestions_data:
+                logger.error("Could not parse any JSON from response")
+                logger.error("Full response was: %s", response[:500])
+                return LinkSuggestionsResponse(suggestions=[], count=0)
+
+        # Convert to LinkSuggestion models and add titles
+        suggestions = []
+        note_map = {n["id"]: n for n in candidate_notes}
+
+        for s in suggestions_data:
+            note_id_suggestion = s.get("note_id")
+            if note_id_suggestion and note_id_suggestion in note_map:
+                suggestions.append(
+                    LinkSuggestion(
+                        note_id=note_id_suggestion,
+                        title=note_map[note_id_suggestion].get("title", "Untitled"),
+                        confidence=s.get("confidence", 0.5),
+                        reason=s.get("reason", "")
+                    )
+                )
+
+        # Limit to top 5 suggestions
+        suggestions = suggestions[:5]
+
+        logger.info("Generated %d link suggestions for note %s", len(suggestions), note_id)
+        return LinkSuggestionsResponse(suggestions=suggestions, count=len(suggestions))
+
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse JSON from Ollama response: %s", e)
+        logger.error("Full response was: %s", response[:500])
+        return LinkSuggestionsResponse(suggestions=[], count=0)
+    except Exception as e:
+        logger.error("Error generating link suggestions: %s", e)
+        return LinkSuggestionsResponse(suggestions=[], count=0)
