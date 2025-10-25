@@ -28,6 +28,9 @@ export default function NewNotePage() {
   } | null>(null);
   const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
   const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
+  const [showAtomicityWarning, setShowAtomicityWarning] = useState(false);
+  const [atomicityIssues, setAtomicityIssues] = useState<string[]>([]);
+  const [showFirstPersonReminder, setShowFirstPersonReminder] = useState(true);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -46,6 +49,30 @@ export default function NewNotePage() {
   // Check if content has wikilinks
   const hasWikilinks = (text: string): boolean => {
     return /\[\[[a-z0-9-]+\]\]/i.test(text);
+  };
+
+  // Check if note appears non-atomic (covers multiple topics)
+  const checkAtomicity = (text: string): string[] => {
+    const issues: string[] = [];
+
+    // Count top-level bullet points (lines starting with - or *)
+    const bulletPoints = text.split("\n").filter((line) => /^[-*]\s/.test(line.trim()));
+    if (bulletPoints.length > 5) {
+      issues.push(`${bulletPoints.length} bullet points - might cover multiple concepts`);
+    }
+
+    // Count H2/H3 headings (## or ###)
+    const headings = text.split("\n").filter((line) => /^#{2,3}\s/.test(line.trim()));
+    if (headings.length > 3) {
+      issues.push(`${headings.length} section headings - consider splitting by topic`);
+    }
+
+    // Check for "and" in title suggesting multiple topics
+    if (title && (title.includes(" and ") || title.includes(" & "))) {
+      issues.push('Title contains "and" - might be combining multiple ideas');
+    }
+
+    return issues;
   };
 
   const handleSave = async (forceSave = false) => {
@@ -81,10 +108,17 @@ export default function NewNotePage() {
       });
 
       logger.info("Note created successfully", { id: note.id });
-
-      // Show AI suggestions modal instead of immediately redirecting
       setSavedNoteId(note.id);
-      setShowPostSaveSuggestions(true);
+
+      // Check atomicity and show warning if issues detected
+      const issues = checkAtomicity(content);
+      if (issues.length > 0) {
+        setAtomicityIssues(issues);
+        setShowAtomicityWarning(true);
+      } else {
+        // Show AI suggestions modal instead of immediately redirecting
+        setShowPostSaveSuggestions(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create note";
       setError(message);
@@ -134,6 +168,16 @@ export default function NewNotePage() {
     }
   };
 
+  const handleContinueToSuggestions = () => {
+    setShowAtomicityWarning(false);
+    setShowPostSaveSuggestions(true);
+  };
+
+  const handleKeepAsIs = () => {
+    setShowAtomicityWarning(false);
+    setShowPostSaveSuggestions(true);
+  };
+
   const handleCancel = () => {
     if (content.trim() && !confirm("Discard unsaved changes?")) {
       return;
@@ -166,6 +210,44 @@ export default function NewNotePage() {
       {/* Authentication status banner */}
       <AuthStatusBanner mode="auto" />
 
+      {/* First-Person Voice Reminder */}
+      {showFirstPersonReminder && (
+        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h4 className="mb-1 text-sm font-semibold text-blue-900">
+                💭 Zettelkasten Tip: Write in first person
+              </h4>
+              <p className="mb-2 text-sm text-blue-800">
+                Capture YOUR understanding, not objective facts. This makes notes more memorable and
+                personal.
+              </p>
+              <div className="text-xs text-blue-700">
+                <span className="font-medium">❌ Avoid:</span> &quot;DORA metrics measure deployment
+                performance&quot;
+                <br />
+                <span className="font-medium">✓ Better:</span> &quot;I use DORA metrics to identify
+                bottlenecks in my team&apos;s pipeline&quot;
+              </div>
+            </div>
+            <button
+              onClick={() => setShowFirstPersonReminder(false)}
+              className="ml-4 text-blue-400 hover:text-blue-600"
+              aria-label="Dismiss"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Error message */}
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
@@ -185,9 +267,13 @@ export default function NewNotePage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Give your note a title..."
+            placeholder="What's the ONE idea this note captures?"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
+            &quot;Team Culture Concepts&quot;
+          </p>
         </div>
 
         {/* Tags (optional) */}
@@ -207,16 +293,46 @@ export default function NewNotePage() {
 
         {/* Content */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Content *</label>
+          <div className="mb-2 flex items-start justify-between">
+            <label className="block text-sm font-medium text-gray-700">Content *</label>
+            <div className="text-right text-xs text-gray-500">
+              <span
+                className={
+                  content.length >= 300 && content.length <= 500 ? "font-medium text-green-600" : ""
+                }
+              >
+                {content.length} chars
+              </span>
+              {content.length > 0 && content.length < 300 && (
+                <span className="ml-2 text-gray-400">• Brief - good for atomic notes</span>
+              )}
+              {content.length >= 300 && content.length <= 500 && (
+                <span className="ml-2 text-green-600">• ✓ Good length for atomic note</span>
+              )}
+              {content.length > 500 && content.length <= 1000 && (
+                <span className="ml-2 text-yellow-600">• Getting long - single idea?</span>
+              )}
+              {content.length > 1000 && (
+                <span className="ml-2 text-orange-600">
+                  • Consider splitting into multiple notes
+                </span>
+              )}
+            </div>
+          </div>
           <NoteEditor
             content={content}
             onChange={setContent}
             allNotes={allNotes}
+            placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
             onNoteClick={(noteId) => {
               // Open note in new tab
               window.open(`/knowledge-base/notes/${noteId}`, "_blank");
             }}
           />
+          <p className="mt-2 text-xs text-gray-500">
+            💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
+            concepts, consider creating separate notes.
+          </p>
         </div>
 
         {/* Actions */}
@@ -237,6 +353,51 @@ export default function NewNotePage() {
           </button>
         </div>
       </div>
+
+      {/* Atomicity Warning Modal */}
+      {showAtomicityWarning && atomicityIssues.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-gray-900">
+              📋 Note might cover multiple topics
+            </h3>
+            <p className="mb-4 text-gray-700">
+              This note shows signs of covering more than one concept:
+            </p>
+            <ul className="mb-6 list-inside list-disc space-y-1 text-sm text-gray-700">
+              {atomicityIssues.map((issue, index) => (
+                <li key={index}>{issue}</li>
+              ))}
+            </ul>
+            <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-gray-700">
+              <p className="font-medium">💡 Zettelkasten tip:</p>
+              <p className="mt-1">
+                Atomic notes (one idea each) are easier to link and reuse. Consider splitting this
+                into separate notes.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleKeepAsIs}
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+              >
+                Keep As-Is
+              </button>
+              <button
+                onClick={() => {
+                  setShowAtomicityWarning(false);
+                  if (savedNoteId) {
+                    router.push(`/knowledge-base/notes/${savedNoteId}`);
+                  }
+                }}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50"
+              >
+                Edit Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Zero Links Warning Modal */}
       {showZeroLinksWarning && (
