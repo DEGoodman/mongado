@@ -20,24 +20,41 @@ _articles_hash: str | None = None
 def _compute_directory_hash(articles_dir: Path) -> str:
     """Compute hash of all markdown files in directory for cache invalidation.
 
+    Includes file count, names, and modification times to detect:
+    - New files added
+    - Existing files modified
+    - Files removed
+
     Args:
         articles_dir: Path to directory containing markdown files
 
     Returns:
-        SHA256 hash of all file modification times and names
+        SHA256 hash of all file metadata
     """
     if not articles_dir.exists():
         return ""
 
     md_files = sorted(articles_dir.glob("*.md"))
-    hash_content = ""
+
+    # Start with file count to ensure new/deleted files trigger invalidation
+    hash_content = f"count:{len(md_files)}:"
 
     for md_file in md_files:
-        # Include filename and modification time
+        # Include filename, modification time, and file size
         stat = md_file.stat()
-        hash_content += f"{md_file.name}:{stat.st_mtime}:"
+        hash_content += f"{md_file.name}:{stat.st_mtime}:{stat.st_size}:"
 
-    return hashlib.sha256(hash_content.encode()).hexdigest()
+    hash_result = hashlib.sha256(hash_content.encode()).hexdigest()
+
+    # Log hash computation for debugging (only first 8 chars to avoid log spam)
+    logger.debug(
+        "Computed directory hash: %s (files: %d, input length: %d)",
+        hash_result[:8],
+        len(md_files),
+        len(hash_content),
+    )
+
+    return hash_result
 
 
 def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
@@ -60,9 +77,23 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
 
     # Check if cache is valid
     current_hash = _compute_directory_hash(articles_dir)
-    if _articles_cache is not None and _articles_hash == current_hash:
-        logger.debug("Using cached articles (hash: %s)", current_hash[:8])
-        return _articles_cache
+
+    if _articles_cache is not None:
+        if _articles_hash == current_hash:
+            logger.debug(
+                "✓ Cache HIT: Using cached articles (hash: %s, count: %d)",
+                current_hash[:8],
+                len(_articles_cache),
+            )
+            return _articles_cache
+        else:
+            logger.info(
+                "✗ Cache MISS: Hash changed from %s to %s - reloading articles",
+                _articles_hash[:8] if _articles_hash else "None",
+                current_hash[:8],
+            )
+    else:
+        logger.info("✗ Cache MISS: No cached articles - initial load")
 
     # Cache miss or invalidation - reload articles
     logger.info("Loading articles from %s", articles_dir)
