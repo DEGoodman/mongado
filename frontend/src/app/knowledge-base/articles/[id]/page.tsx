@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
+import ArticleTableOfContents from "@/components/ArticleTableOfContents";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
@@ -143,39 +144,51 @@ export default function ArticleDetailPage() {
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <article className="rounded-lg bg-white p-8 shadow-md">
-          {article.content_type === "markdown" || article.content_type === undefined ? (
-            <MarkdownWithWikilinks content={article.content} />
-          ) : (
-            <div className="prose prose-sm max-w-none sm:prose lg:prose-lg">
-              <p className="text-gray-700">{article.content}</p>
-            </div>
-          )}
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+          {/* Main Article Content */}
+          <div className="lg:col-span-3">
+            <article className="rounded-lg bg-white p-8 shadow-md">
+              {article.content_type === "markdown" || article.content_type === undefined ? (
+                <MarkdownWithWikilinks content={article.content} />
+              ) : (
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-gray-700">{article.content}</p>
+                </div>
+              )}
 
-          {article.url && (
-            <div className="mt-8 border-t pt-6">
-              <h3 className="mb-2 text-sm font-semibold text-gray-700">External Link</h3>
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+              {article.url && (
+                <div className="mt-8 border-t pt-6">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-700">External Link</h3>
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {article.url}
+                  </a>
+                </div>
+              )}
+            </article>
+
+            {/* Back to articles */}
+            <div className="mt-8">
+              <Link
+                href="/knowledge-base/articles"
+                className="inline-flex items-center text-blue-600 hover:text-blue-800"
               >
-                {article.url}
-              </a>
+                ← Back to all articles
+              </Link>
             </div>
-          )}
-        </article>
+          </div>
 
-        {/* Back to articles */}
-        <div className="mt-8">
-          <Link
-            href="/knowledge-base/articles"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-          >
-            ← Back to all articles
-          </Link>
+          {/* Table of Contents Sidebar */}
+          <div className="lg:col-span-1">
+            {(article.content_type === "markdown" || article.content_type === undefined) && (
+              <ArticleTableOfContents content={article.content} />
+            )}
+          </div>
         </div>
       </main>
     </div>
