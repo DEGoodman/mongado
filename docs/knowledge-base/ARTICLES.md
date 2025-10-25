@@ -29,7 +29,38 @@ backend/static/
 
 ## Creating Articles
 
-### 1. Article Format
+### 1. Quick Start Template
+
+**Copy this stub to create a new article:**
+
+```markdown
+---
+id: 999
+title: "Your Article Title Here"
+tags: ["tag1", "tag2", "tag3"]
+created_at: "2025-01-15T10:00:00"
+---
+
+## Your Article Title Here
+
+Your content here...
+```
+
+**Required fields:**
+- `id` - Unique integer (check existing articles, use next available number)
+- `title` - Article title in quotes
+- `created_at` - ISO 8601 timestamp format: `"YYYY-MM-DDTHH:MM:SS"`
+
+**Optional fields:**
+- `tags` - Array of tags for categorization
+- `url` - Reference URL for source material
+- `description` - Brief summary (used for metadata/SEO)
+- `category` - Category slug (e.g., "knowledge-management")
+- `published` - Boolean, defaults to true
+
+**IMPORTANT:** Use `created_at` (not `date`) - this is the field the article loader expects!
+
+### 2. Full Article Format Example
 
 Articles use Markdown with YAML frontmatter metadata:
 
@@ -37,6 +68,7 @@ Articles use Markdown with YAML frontmatter metadata:
 ---
 id: 1
 title: "Understanding SaaS Billing Models"
+description: "A comprehensive guide to subscription pricing strategies"
 url: "https://stripe.com/billing"
 tags: ["saas", "billing", "pricing"]
 created_at: "2025-01-15T10:00:00"
@@ -71,15 +103,23 @@ You can reference Zettelkasten notes using wikilink syntax:
 See [[curious-elephant]] for more details on database design.
 ```
 
-### 2. Frontmatter Fields
+### 3. Frontmatter Field Reference
 
-- **id** (required): Unique integer identifier
-- **title** (required): Article title
-- **url** (optional): Reference URL for source material
-- **tags** (optional): List of tags for categorization
-- **created_at** (optional): ISO 8601 timestamp
+**Required:**
+- `id` (integer): Unique identifier - use next sequential number
+- `title` (string): Article title in quotes
 
-### 3. File Naming Convention
+**Recommended:**
+- `created_at` (string): Timestamp in ISO 8601 format `"YYYY-MM-DDTHH:MM:SS"`
+- `tags` (array): List of tags like `["tag1", "tag2"]`
+
+**Optional:**
+- `url` (string): Reference URL for source material
+- `description` (string): Brief summary for metadata/SEO
+- `category` (string): Category slug
+- `published` (boolean): Defaults to true if omitted
+
+### 4. File Naming Convention
 
 Use numbered prefixes for easy ordering:
 - `001-first-article.md`
