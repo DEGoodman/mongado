@@ -28,6 +28,7 @@ from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
 from neo4j_adapter import get_neo4j_adapter
 from notes_api import router as notes_router
+from notes_service import get_notes_service
 from ollama_client import get_ollama_client
 
 # Configure logging
@@ -39,6 +40,7 @@ settings: Settings = get_settings()
 secret_manager: SecretManager = get_secret_manager()
 ollama_client = get_ollama_client()
 neo4j_adapter = get_neo4j_adapter()
+notes_service = get_notes_service()
 
 # Create rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -563,6 +565,28 @@ def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> bool:
     return False
 
 
+def _get_all_resources() -> list[dict[str, Any]]:
+    """Get all searchable resources (articles + notes).
+
+    Notes are normalized to have 'note_id' field to distinguish from articles.
+    """
+    all_notes = notes_service.list_notes(is_admin=True)
+
+    # Normalize note structure to match article structure for search
+    normalized_notes = []
+    for note in all_notes:
+        normalized_note = {
+            "note_id": note.get("id"),  # Keep string ID as note_id
+            "title": note.get("title", "Untitled"),
+            "content": note.get("content", ""),
+            "tags": note.get("tags", []),
+            "created_at": note.get("created_at"),
+        }
+        normalized_notes.append(normalized_note)
+
+    return static_articles + user_resources_db + normalized_notes
+
+
 def _normalize_search_result(doc: dict[str, Any], score: float = 1.0) -> SearchResult:
     """Normalize a resource document into a consistent SearchResult."""
     # Determine if this is an article or note
@@ -600,7 +624,7 @@ def search_resources(request: SearchRequest) -> SearchResponse:
     start_time = time.time()
 
     logger.info("Search request received: query=%s, semantic=%s, limit=%s", request.query, request.semantic, request.top_k)
-    all_resources = static_articles + user_resources_db
+    all_resources = _get_all_resources()
 
     # Default: Fast text search with fuzzy matching
     if not request.semantic:
@@ -707,8 +731,8 @@ def ask_question(request: QuestionRequest) -> QuestionResponse:
             detail="AI Q&A feature is not available. Ollama is not running or not configured.",
         )
 
-    # Find relevant articles
-    all_resources = static_articles + user_resources_db
+    # Find relevant articles and notes
+    all_resources = _get_all_resources()
     relevant_docs = ollama_client.semantic_search(request.question, all_resources, top_k=5)
 
     # Generate answer with hybrid mode (KB + general knowledge)
