@@ -8,6 +8,7 @@ import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import {
   getNote,
   updateNote,
@@ -19,11 +20,13 @@ import {
   formatNoteDate,
 } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
+import { useSettings } from "@/hooks/useSettings";
 
 export default function NoteDetailPage() {
   const params = useParams();
   const router = useRouter();
   const noteId = params.id as string;
+  const { settings } = useSettings();
 
   const [note, setNote] = useState<Note | null>(null);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
@@ -147,6 +150,28 @@ export default function NoteDetailPage() {
     setError(null);
   };
 
+  const handleAddTag = (tag: string) => {
+    // Add tag if not already present
+    const currentTags = editTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t);
+
+    if (!currentTags.includes(tag)) {
+      const newTags = [...currentTags, tag].join(", ");
+      setEditTags(newTags);
+      logger.info("Tag added from AI suggestion", { tag });
+    }
+  };
+
+  const handleInsertLink = (noteId: string) => {
+    // Insert wikilink at the end of content
+    const wikilink = `[[${noteId}]]`;
+    const newContent = editContent.trim() + `\n\n${wikilink}`;
+    setEditContent(newContent);
+    logger.info("Link inserted from AI suggestion", { noteId });
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -262,58 +287,74 @@ export default function NoteDetailPage() {
 
             {/* Content */}
             {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Title (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                  />
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Editor Column */}
+                <div className="space-y-4 lg:col-span-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Title (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Tags (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      placeholder="Comma-separated tags"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Content *
+                    </label>
+                    <NoteEditor
+                      content={editContent}
+                      onChange={setEditContent}
+                      allNotes={allNotes}
+                      onNoteClick={(id) => window.open(`/knowledge-base/notes/${id}`, "_blank")}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving || !editContent.trim()}
+                      className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Tags (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={editTags}
-                    onChange={(e) => setEditTags(e.target.value)}
-                    placeholder="Comma-separated tags"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Content *</label>
-                  <NoteEditor
-                    content={editContent}
-                    onChange={setEditContent}
-                    allNotes={allNotes}
-                    onNoteClick={(id) => window.open(`/knowledge-base/notes/${id}`, "_blank")}
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving || !editContent.trim()}
-                    className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {saving ? "Saving..." : "Save Changes"}
-                  </button>
-                  <button
-                    onClick={handleCancelEdit}
-                    disabled={saving}
-                    className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                {/* AI Suggestions Panel */}
+                {settings.aiSuggestionsEnabled && (
+                  <div className="lg:col-span-1">
+                    <AISuggestionsPanel
+                      noteId={noteId}
+                      onAddTag={handleAddTag}
+                      onInsertLink={handleInsertLink}
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               <div>
