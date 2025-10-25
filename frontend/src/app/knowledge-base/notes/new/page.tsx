@@ -329,7 +329,9 @@ export default function NewNotePage() {
               <div className="text-right text-xs text-gray-500">
                 <span
                   className={
-                    content.length >= 300 && content.length <= 500 ? "font-medium text-green-600" : ""
+                    content.length >= 300 && content.length <= 500
+                      ? "font-medium text-green-600"
+                      : ""
                   }
                 >
                   {content.length} chars

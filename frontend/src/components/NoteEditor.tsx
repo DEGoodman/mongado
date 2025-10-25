@@ -117,7 +117,10 @@ export default function NoteEditor({
 
   return (
     <div className="relative">
-      <div className="overflow-hidden rounded-md border border-gray-300 bg-white resize overflow-auto" style={{ minHeight: "400px", resize: "both" }}>
+      <div
+        className="resize overflow-auto overflow-hidden rounded-md border border-gray-300 bg-white"
+        style={{ minHeight: "400px", resize: "both" }}
+      >
         <CodeMirror
           value={content}
           height="400px"

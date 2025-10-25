@@ -70,10 +70,7 @@ export default function NotesPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="mb-4 flex items-center justify-between">
-          <Link
-            href="/knowledge-base"
-            className="text-sm text-blue-600 hover:underline"
-          >
+          <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
             ← Knowledge Base
           </Link>
           <SettingsDropdown />
