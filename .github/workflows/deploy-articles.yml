@@ -32,89 +32,53 @@ jobs:
         env:
           DO_HOST: ${{ secrets.DO_HOST }}
           DO_USER: ${{ secrets.DO_USER }}
+          ADMIN_PASSKEY: ${{ secrets.ADMIN_PASSKEY }}
         run: |
-          ssh $DO_USER@$DO_HOST << 'EOF'
+          ssh $DO_USER@$DO_HOST "bash -s" "$ADMIN_PASSKEY" << 'EOF'
             set -e
 
-            echo "📄 Deploying static content only..."
+            ADMIN_PASSKEY="$1"
+
+            echo "📄 Deploying static content (zero-downtime)..."
 
             # Navigate to project directory
             cd /opt/mongado || { echo "Project directory not found"; exit 1; }
 
-            # Pull latest changes
+            # Pull latest changes (backend will auto-detect via volume mount)
             echo "🔄 Pulling latest static files from main branch..."
             git fetch origin
             git reset --hard origin/main
 
-            # Set environment variable to enable embedding sync on startup for this deployment
-            echo "⚙️  Configuring backend to sync embeddings on startup..."
-            cd backend
-            if [ ! -f .env.prod ]; then
-              touch .env.prod
+            # Wait a moment for file system to settle
+            sleep 2
+
+            # Verify backend is healthy and can see new files
+            echo "🏥 Verifying backend health..."
+            if ! curl -f http://localhost:8000/health > /dev/null 2>&1; then
+              echo "❌ Backend is not healthy"
+              docker logs --tail 50 mongado-backend-prod
+              exit 1
             fi
-            # Add or update SYNC_EMBEDDINGS_ON_STARTUP in .env.prod
-            if grep -q "^SYNC_EMBEDDINGS_ON_STARTUP=" .env.prod; then
-              sed -i 's/^SYNC_EMBEDDINGS_ON_STARTUP=.*/SYNC_EMBEDDINGS_ON_STARTUP=true/' .env.prod
+            echo "✅ Backend is healthy"
+
+            # Trigger embedding sync via API (requires admin auth)
+            echo "🔄 Triggering embedding sync..."
+            SYNC_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Authorization: Bearer $ADMIN_PASSKEY" \
+              http://localhost:8000/api/admin/sync-embeddings)
+
+            HTTP_CODE=$(echo "$SYNC_RESPONSE" | tail -n1)
+            RESPONSE_BODY=$(echo "$SYNC_RESPONSE" | head -n-1)
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Embedding sync triggered successfully"
+              echo "$RESPONSE_BODY"
             else
-              echo "SYNC_EMBEDDINGS_ON_STARTUP=true" >> .env.prod
-            fi
-            cd ..
-
-            # Restart only the backend to pick up new articles
-            echo "🔄 Restarting backend to reload articles and sync embeddings..."
-            docker restart mongado-backend-prod
-
-            # Wait for backend to be healthy (with retries)
-            echo "⏳ Waiting for backend to be healthy..."
-            MAX_RETRIES=30
-            RETRY_INTERVAL=2
-            RETRY_COUNT=0
-
-            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if curl -f http://localhost:8000/health > /dev/null 2>&1; then
-                echo "✅ Backend is healthy after $((RETRY_COUNT * RETRY_INTERVAL)) seconds"
-                break
-              fi
-
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⏳ Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in ${RETRY_INTERVAL}s..."
-                sleep $RETRY_INTERVAL
-              else
-                echo "❌ Backend health check failed after $((MAX_RETRIES * RETRY_INTERVAL)) seconds"
-                docker logs --tail 50 mongado-backend-prod
-                exit 1
-              fi
-            done
-
-            # Wait for embeddings to complete (check /ready endpoint)
-            echo "⏳ Waiting for embedding sync to complete..."
-            READY_RETRIES=60  # Up to 2 minutes for embeddings
-            READY_COUNT=0
-
-            while [ $READY_COUNT -lt $READY_RETRIES ]; do
-              READY_STATUS=$(curl -s http://localhost:8000/ready | grep -o '"ready":[^,}]*' | cut -d':' -f2)
-              if [ "$READY_STATUS" = "true" ]; then
-                echo "✅ Embedding sync complete"
-                break
-              fi
-
-              READY_COUNT=$((READY_COUNT + 1))
-              if [ $READY_COUNT -lt $READY_RETRIES ]; then
-                sleep 2
-              else
-                echo "⚠️  Embedding sync did not complete within timeout (will continue in background)"
-              fi
-            done
-
-            # Reset SYNC_EMBEDDINGS_ON_STARTUP to false for normal operations
-            echo "⚙️  Resetting SYNC_EMBEDDINGS_ON_STARTUP to false..."
-            cd /opt/mongado/backend
-            if grep -q "^SYNC_EMBEDDINGS_ON_STARTUP=" .env.prod; then
-              sed -i 's/^SYNC_EMBEDDINGS_ON_STARTUP=.*/SYNC_EMBEDDINGS_ON_STARTUP=false/' .env.prod
+              echo "⚠️  Embedding sync failed (HTTP $HTTP_CODE). Articles deployed but embeddings may be stale."
+              echo "$RESPONSE_BODY"
             fi
 
-            echo "✅ Static content deployment complete!"
+            echo "✅ Static content deployment complete (no restart required)!"
           EOF
 
       - name: Deployment notification

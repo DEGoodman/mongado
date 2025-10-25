@@ -61,6 +61,8 @@ services:
       - OLLAMA_ENABLED=true
     env_file:
       - ./backend/.env
+    volumes:
+      - ./backend/static:/app/static:ro  # Mount static files for hot-reload without restart
     networks:
       - mongado-network
     depends_on:
