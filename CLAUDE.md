@@ -41,11 +41,16 @@ docker compose up -d --build                          # Rebuild containers
 
 **All project work is tracked via [GitHub Issues](https://github.com/DEGoodman/mongado/issues).**
 
-**Never create TODO files**. Instead:
-1. Create issues: `gh issue create --label "feature,status: todo"`
-2. Track progress with status labels: `idea` → `todo` → `in-progress` → `done`
-3. Reference issues in commits: `feat: add feature (fixes #123)`
-4. Close issues when work is complete
+**CRITICAL: Always check for existing issues BEFORE starting work.**
+
+**Workflow:**
+1. **Before starting work:** Search for existing issue: `gh issue list --search "keyword"`
+2. **If no issue exists:** Create one: `gh issue create --label "feature,status: todo"`
+3. **While working:** Update issue status labels: `idea` → `todo` → `in-progress` → `done`
+4. **In commits:** Reference issue: `feat: add feature (fixes #123)`
+5. **After completing:** Issue auto-closes via commit reference, or manually close with `gh issue close N`
+
+**Never create TODO files**. GitHub Issues are the single source of truth for all project work.
 
 See `CONTRIBUTING.md` for complete workflow.
 
