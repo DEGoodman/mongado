@@ -9,9 +9,14 @@ services:
       - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/changeme}
       - NEO4J_PLUGINS=["apoc"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - BACKUP_DIR=/var/mongado-backups
+      - BACKUP_RETENTION_COUNT=14
+      - BACKUP_RETENTION_DAYS=30
     volumes:
       - neo4j-data:/data
       - neo4j-logs:/logs
+      - /var/mongado-backups:/var/mongado-backups  # Backup storage on host
+      - ./backend/scripts:/scripts:ro  # Backup scripts (read-only)
     networks:
       - mongado-network
     restart: always
@@ -95,6 +100,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  backup-cron:
+    image: alpine:latest
+    container_name: mongado-backup-cron
+    command: >
+      sh -c "
+      echo '0 2 * * * docker exec mongado-neo4j-prod /scripts/backup_neo4j.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root &&
+      crond -f -l 2
+      "
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker socket for exec
+      - /var/mongado-backups:/var/mongado-backups  # Backup directory
+    restart: always
+    depends_on:
+      neo4j:
+        condition: service_healthy
 
 networks:
   mongado-network:

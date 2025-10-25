@@ -9,9 +9,13 @@ services:
       - NEO4J_AUTH=neo4j/mongado-dev-password
       - NEO4J_PLUGINS=["apoc"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - BACKUP_DIR=/var/mongado-backups
+      - BACKUP_RETENTION_COUNT=14
+      - BACKUP_RETENTION_DAYS=30
     volumes:
       - neo4j-data:/data
       - neo4j-logs:/logs
+      - ./backend/scripts:/scripts:ro  # Backup scripts (read-only)
     networks:
       - mongado-network
     restart: unless-stopped
