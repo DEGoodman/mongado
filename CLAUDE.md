@@ -49,6 +49,24 @@ docker compose up -d --build                          # Rebuild containers
 
 See `CONTRIBUTING.md` for complete workflow.
 
+### 3. Deployment
+
+**Deployment is fully automated via GitHub Actions.**
+
+When you push to the `main` branch:
+1. **CI runs automatically**: Linting, type checking, tests, security scans
+2. **Production deployment**: Automatically deploys to DigitalOcean droplet
+3. **Health checks**: Verifies backend and frontend are healthy
+
+**DO NOT manually deploy to production.** Simply:
+```bash
+git push
+```
+
+GitHub Actions will handle the rest. You can monitor deployment status in the GitHub Actions tab.
+
+**Note**: Some one-time setup scripts (like `setup_backups.sh`) may need to be run manually on the droplet after deployment, but the application code is deployed automatically.
+
 ### When to Create Issues
 
 Create GitHub issues proactively for:
