@@ -9,6 +9,7 @@ import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
+import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
 import {
   getNote,
   updateNote,
@@ -43,6 +44,7 @@ export default function NoteDetailPage() {
   const [saving, setSaving] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
+  const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -127,6 +129,9 @@ export default function NoteDetailPage() {
       ]);
       setBacklinks(backlinksData.backlinks);
       setOutboundLinks(outboundData.links);
+
+      // Show AI suggestions modal after save
+      setShowPostSaveSuggestions(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update note";
       setError(message);
@@ -144,6 +149,41 @@ export default function NoteDetailPage() {
   const handleGetAISuggestions = () => {
     setShowZeroLinksWarning(false);
     setAiPanelOpen(true);
+  };
+
+  const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
+    if (!note) return;
+
+    try {
+      // Add the wikilink to the end of the content
+      const updatedContent = note.content.trim() + `\n\n[[${linkNoteId}]]`;
+
+      // Update the note
+      const updatedNote = await updateNote(noteId, {
+        content: updatedContent,
+        title: note.title || undefined,
+        tags: note.tags,
+      });
+
+      setNote(updatedNote);
+      setEditContent(updatedContent);
+
+      // Refresh links
+      const [backlinksData, outboundData] = await Promise.all([
+        getBacklinks(noteId),
+        getOutboundLinks(noteId),
+      ]);
+      setBacklinks(backlinksData.backlinks);
+      setOutboundLinks(outboundData.links);
+
+      logger.info("Inserted link from post-save suggestion", { linkNoteId });
+    } catch (err) {
+      logger.error("Failed to insert link from suggestion", err);
+    }
+  };
+
+  const handleCloseSuggestions = () => {
+    setShowPostSaveSuggestions(false);
   };
 
   const handleDelete = async () => {
@@ -490,6 +530,14 @@ export default function NoteDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Post-Save AI Suggestions Modal */}
+      <PostSaveAISuggestions
+        noteId={noteId}
+        isOpen={showPostSaveSuggestions}
+        onClose={handleCloseSuggestions}
+        onInsertLink={handleInsertLinkFromSuggestion}
+      />
     </div>
   );
 }

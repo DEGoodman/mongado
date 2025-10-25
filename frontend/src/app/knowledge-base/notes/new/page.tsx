@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
 import AuthStatusBanner from "@/components/AuthStatusBanner";
-import { createNote, listNotes, Note } from "@/lib/api/notes";
+import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
 
 export default function NewNotePage() {
   const router = useRouter();
@@ -25,6 +26,8 @@ export default function NewNotePage() {
     title?: string;
     tags: string[];
   } | null>(null);
+  const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -78,7 +81,10 @@ export default function NewNotePage() {
       });
 
       logger.info("Note created successfully", { id: note.id });
-      router.push(`/knowledge-base/notes/${note.id}`);
+
+      // Show AI suggestions modal instead of immediately redirecting
+      setSavedNoteId(note.id);
+      setShowPostSaveSuggestions(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create note";
       setError(message);
@@ -96,6 +102,36 @@ export default function NewNotePage() {
   const handleGetAISuggestions = () => {
     setShowZeroLinksWarning(false);
     setAiPanelOpen(true);
+  };
+
+  const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
+    if (!savedNoteId) return;
+
+    try {
+      // Fetch the current note
+      const currentNote = await getNote(savedNoteId);
+
+      // Add the wikilink to the end of the content
+      const updatedContent = currentNote.content.trim() + `\n\n[[${linkNoteId}]]`;
+
+      // Update the note
+      await updateNote(savedNoteId, {
+        content: updatedContent,
+        title: currentNote.title || undefined,
+        tags: currentNote.tags,
+      });
+
+      logger.info("Inserted link from post-save suggestion", { linkNoteId });
+    } catch (err) {
+      logger.error("Failed to insert link from suggestion", err);
+    }
+  };
+
+  const handleCloseSuggestions = () => {
+    setShowPostSaveSuggestions(false);
+    if (savedNoteId) {
+      router.push(`/knowledge-base/notes/${savedNoteId}`);
+    }
   };
 
   const handleCancel = () => {
@@ -234,6 +270,16 @@ export default function NewNotePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Post-Save AI Suggestions Modal */}
+      {savedNoteId && (
+        <PostSaveAISuggestions
+          noteId={savedNoteId}
+          isOpen={showPostSaveSuggestions}
+          onClose={handleCloseSuggestions}
+          onInsertLink={handleInsertLinkFromSuggestion}
+        />
       )}
     </div>
   );
