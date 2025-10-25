@@ -4,7 +4,7 @@ title: "Zettelkasten: Building a Personal Knowledge Graph"
 description: "How the Zettelkasten method transforms note-taking from information storage into idea generation, with practical examples from this site's implementation."
 category: knowledge-management
 published: true
-date: 2025-10-25
+created_at: "2025-10-25T10:00:00"
 tags:
   - knowledge-management
   - zettelkasten
