@@ -10,13 +10,13 @@ updated_at: "2025-10-25"
 
 Building AI features with local LLMs isn't about picking one model for everything. Different tasks need different models.
 
-This article documents the multi-LLM strategy for Mongado's knowledge base: what models we use, why we chose them, and what we learned building AI-powered tag suggestions, semantic search, and link recommendations.
+This article documents the multi-LLM strategy I built for Mongado's knowledge base: what models I chose, why, and what I learned building AI-powered tag suggestions, semantic search, and link recommendations.
 
 **Key insight:** Use the smallest, fastest model that does the job well. Specialized models beat general-purpose models.
 
 ## The Multi-Model Architecture
 
-Mongado uses three Ollama models, each optimized for specific tasks:
+I'm using three Ollama models, each optimized for specific tasks:
 
 | Task | Model | Size | Why This Model |
 |------|-------|------|----------------|
@@ -52,7 +52,7 @@ Total disk space: ~2.5 GB. All running locally on Ollama.
 - Wide context window (handles long articles)
 - Fast enough for interactive chat while maintaining quality
 
-**Alternatives considered:**
+**Alternatives I considered:**
 - `llama3.2:3b` - Better quality but 3x slower
 - `qwen2.5:1.5b` - Fast but less natural conversational ability
 
@@ -62,7 +62,7 @@ Total disk space: ~2.5 GB. All running locally on Ollama.
 
 **Use case:** Generate JSON responses for tag suggestions, link recommendations, and concept extraction.
 
-**The problem we hit:** We initially tried using llama3.2:1b for everything, including structured output. Chat worked great. JSON was a mess.
+**The problem I hit:** I initially tried using llama3.2:1b for everything, including structured output. Chat worked great. JSON was a mess.
 
 **Example failure with llama3.2:1b:**
 
@@ -209,13 +209,13 @@ All acceptable for interactive use. Embeddings are already cached, so repeated s
 
 ### 1. Don't Assume General-Purpose Works
 
-We started with llama3.2:1b for everything. Chat worked great. JSON was a mess.
+I started with llama3.2:1b for everything. Chat worked great. JSON was a mess.
 
 Lesson: Test your specific use case. "General-purpose" doesn't mean "good at everything."
 
 ### 2. Smaller Models Often Suffice
 
-qwen2.5:1.5b beats larger models at JSON tasks. llama3.2:1b handles Q&A well enough for our needs.
+qwen2.5:1.5b beats larger models at JSON tasks. llama3.2:1b handles Q&A well enough for my needs.
 
 Lesson: Start with the smallest viable model. Upgrade only when quality isn't good enough.
 
@@ -227,7 +227,7 @@ Lesson: Add defensive parsing. Log failures. Degrade gracefully. Don't assume pe
 
 ### 4. Document Model Requirements
 
-Initial production deploy failed because qwen2.5:1.5b wasn't pulled. Lost time debugging.
+My initial production deploy failed because qwen2.5:1.5b wasn't pulled. Lost time debugging.
 
 Lesson: README must list all required models. Consider startup health checks.
 
@@ -252,7 +252,7 @@ Lesson: Loose coupling between AI tasks pays off long-term.
 - Trying to optimize prematurely (measure first)
 - Following trends (use what solves your problem)
 
-Current setup (3 models) handles semantic search, Q&A, tag suggestions, link recommendations, and concept extraction. That covers all planned AI features for now.
+My current setup (3 models) handles semantic search, Q&A, tag suggestions, link recommendations, and concept extraction. That covers all planned AI features for now.
 
 ## Future Considerations
 
@@ -261,17 +261,17 @@ Current setup (3 models) handles semantic search, Q&A, tag suggestions, link rec
 **Specialized code model:**
 - Use case: Extract code examples from articles, suggest related repos
 - Candidate: `codellama:7b` or `deepseek-coder:1.3b`
-- When: If we add code-heavy content
+- When: If I add code-heavy content
 
 **Larger reasoning model:**
 - Use case: Complex multi-step analysis, clustering notes
 - Candidate: `llama3.2:3b` or `qwen2.5:7b`
-- When: If Q&A quality isn't good enough
+- When: If Q&A quality drops (haven't hit this yet, but keeping an eye on it)
 
 **Multimodal model:**
 - Use case: Analyze diagrams in articles
 - Candidate: `llava:7b`
-- When: If we add visual content
+- When: If I start adding visual content (would be cool for architecture diagrams)
 
 ### Model Versioning Strategy
 
@@ -288,7 +288,7 @@ This enables detecting drift when models update, selective re-generation after u
 
 ## Conclusion
 
-Multi-LLM architecture isn't over-engineering for Mongado—it's the right tool for each job:
+The multi-LLM approach isn't over-engineering—it's about picking the right tool for each job:
 
 - **nomic-embed-text:** Fast, high-quality embeddings (274 MB)
 - **llama3.2:1b:** Natural chat and Q&A (1.3 GB)
