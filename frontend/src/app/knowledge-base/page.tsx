@@ -131,32 +131,64 @@ export default function KnowledgeBasePage() {
         {/* Settings Section */}
         <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">⚙️ Settings</h2>
-          <div className="flex items-center justify-between">
-            <div>
-              <label htmlFor="ai-toggle" className="font-medium text-gray-900">
-                AI Suggestions
+          <div>
+            <label className="mb-3 block font-medium text-gray-900">AI Suggestions Mode</label>
+            <div className="space-y-3">
+              {/* Off Option */}
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50">
+                <input
+                  type="radio"
+                  name="ai-mode"
+                  value="off"
+                  checked={settings.aiMode === "off"}
+                  onChange={() => updateSettings({ aiMode: "off" })}
+                  className="mt-1 h-4 w-4 text-blue-600"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">Off</div>
+                  <div className="text-sm text-gray-600">
+                    No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.
+                  </div>
+                </div>
               </label>
-              <p className="text-sm text-gray-600">
-                Get AI-powered suggestions for tags, links, and concepts while working with notes
-              </p>
+
+              {/* On-demand Option */}
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50">
+                <input
+                  type="radio"
+                  name="ai-mode"
+                  value="on-demand"
+                  checked={settings.aiMode === "on-demand"}
+                  onChange={() => updateSettings({ aiMode: "on-demand" })}
+                  className="mt-1 h-4 w-4 text-blue-600"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">On-demand</div>
+                  <div className="text-sm text-gray-600">
+                    Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach with
+                    no overhead while writing.
+                  </div>
+                </div>
+              </label>
+
+              {/* Real-time Option */}
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50">
+                <input
+                  type="radio"
+                  name="ai-mode"
+                  value="real-time"
+                  checked={settings.aiMode === "real-time"}
+                  onChange={() => updateSettings({ aiMode: "real-time" })}
+                  className="mt-1 h-4 w-4 text-blue-600"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">Real-time</div>
+                  <div className="text-sm text-gray-600">
+                    Auto-update suggestions as you type. Most helpful, but may impact performance.
+                  </div>
+                </div>
+              </label>
             </div>
-            <button
-              id="ai-toggle"
-              role="switch"
-              aria-checked={settings.aiSuggestionsEnabled}
-              onClick={() =>
-                updateSettings({ aiSuggestionsEnabled: !settings.aiSuggestionsEnabled })
-              }
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.aiSuggestionsEnabled ? "bg-blue-600" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.aiSuggestionsEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
           </div>
         </div>
 

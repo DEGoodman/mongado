@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { logger } from "@/lib/logger";
+import type { AiMode } from "@/lib/settings";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -20,12 +21,14 @@ interface LinkSuggestion {
 
 interface AISuggestionsPanelProps {
   noteId: string;
+  mode: AiMode;
   onAddTag: (tag: string) => void;
   onInsertLink: (noteId: string) => void;
 }
 
 export default function AISuggestionsPanel({
   noteId,
+  mode,
   onAddTag,
   onInsertLink,
 }: AISuggestionsPanelProps) {
@@ -72,13 +75,20 @@ export default function AISuggestionsPanel({
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
-        <button
-          onClick={fetchSuggestions}
-          disabled={loading}
-          className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300"
-        >
-          {loading ? "Loading..." : "Get Suggestions"}
-        </button>
+        {mode === "on-demand" && (
+          <button
+            onClick={fetchSuggestions}
+            disabled={loading}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300"
+          >
+            {loading ? "Loading..." : "Get Suggestions"}
+          </button>
+        )}
+        {mode === "real-time" && (
+          <span className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-800">
+            Real-time mode
+          </span>
+        )}
       </div>
 
       {error && (
@@ -89,7 +99,9 @@ export default function AISuggestionsPanel({
 
       {!loading && tagSuggestions.length === 0 && linkSuggestions.length === 0 && !error && (
         <p className="text-sm text-gray-500">
-          Click &quot;Get Suggestions&quot; to see AI-powered tag and link recommendations.
+          {mode === "on-demand"
+            ? 'Click "Get Suggestions" to see AI-powered tag and link recommendations.'
+            : "Suggestions will appear automatically as you type."}
         </p>
       )}
 

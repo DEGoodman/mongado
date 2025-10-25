@@ -6,19 +6,22 @@
  * user accounts.
  */
 
+export type AiMode = "off" | "on-demand" | "real-time";
+
 export interface UserSettings {
-  aiSuggestionsEnabled: boolean;
+  aiMode: AiMode;
 }
 
 const SETTINGS_KEY = "mongado-settings";
 
 const DEFAULT_SETTINGS: UserSettings = {
-  aiSuggestionsEnabled: false, // Default to OFF (user opts in)
+  aiMode: "off", // Default to OFF (user opts in)
 };
 
 /**
  * Load settings from localStorage.
  * Falls back to defaults if not found or invalid.
+ * Migrates old boolean aiSuggestionsEnabled to new aiMode.
  */
 export function loadSettings(): UserSettings {
   if (typeof window === "undefined") {
@@ -32,6 +35,18 @@ export function loadSettings(): UserSettings {
     }
 
     const parsed = JSON.parse(stored);
+
+    // Migration: Convert old boolean aiSuggestionsEnabled to new aiMode
+    if ("aiSuggestionsEnabled" in parsed && !("aiMode" in parsed)) {
+      const aiMode: AiMode = parsed.aiSuggestionsEnabled ? "on-demand" : "off";
+      const migrated = {
+        aiMode,
+      };
+      // Save migrated settings
+      saveSettings(migrated);
+      return migrated;
+    }
+
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,

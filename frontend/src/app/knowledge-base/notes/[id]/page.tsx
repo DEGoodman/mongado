@@ -408,10 +408,11 @@ export default function NoteDetailPage() {
                 </div>
 
                 {/* AI Suggestions Panel */}
-                {settings.aiSuggestionsEnabled && (
+                {settings.aiMode !== "off" && (
                   <div className="lg:col-span-1">
                     <AISuggestionsPanel
                       noteId={noteId}
+                      mode={settings.aiMode}
                       onAddTag={handleAddTag}
                       onInsertLink={handleInsertLink}
                     />
