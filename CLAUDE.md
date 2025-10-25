@@ -89,6 +89,41 @@ gh issue create --title "Article: SRE Incident Response" --label "article-idea,s
 gh issue create --title "Bug: Search returns duplicates" --label "bug,status: todo"
 ```
 
+## Writing Style for Articles
+
+When creating or editing articles in `backend/static/articles/`, follow these guidelines based on the author's established tone and style:
+
+**Principles:**
+- **Concise and direct**: No fluff, get to the point quickly
+- **Practical and actionable**: Focus on frameworks and concrete steps
+- **Clear definitions**: Define terms upfront
+- **Quantified examples**: Use specific numbers and measurements where possible
+- **Structured sections**: Use consistent headings (Intro, Definitions, Framework, Examples, etc.)
+- **Minimal prose**: Avoid flowery language, superlatives, or excessive storytelling
+- **Bulleted lists**: Prefer lists over paragraphs for clarity
+- **Caveats and pitfalls**: Call out what doesn't work and why
+
+**Reference articles:**
+- `005-software-delivery-perf-framework.md` - exemplary tone and structure
+- `008-rocks-and-barnacles.md` - balance of metaphor (pirate ship) with practical execution
+
+**Structure pattern:**
+1. **Intro**: Problem statement and what this framework provides
+2. **Definitions**: Clear, upfront definitions of key terms
+3. **Framework/Process**: Step-by-step mechanics
+4. **Examples**: Real-world outputs with numbers
+5. **Pitfalls**: Common mistakes and fixes
+6. **Measuring Success**: How to know it's working
+7. **Conclusion**: Brief summary, no new info
+8. **References**: Citations if applicable
+
+**Avoid:**
+- Excessive enthusiasm or motivational language
+- Long paragraphs (keep to 2-3 sentences max)
+- Burying the lede (start with the value prop)
+- Vague advice without concrete steps
+- Over-explaining obvious points
+
 ## Project Overview
 
 Mongado is the personal website of D. Erik Goodman (Mongado = anagram of Goodman). Built with Python FastAPI backend and Next.js frontend.
