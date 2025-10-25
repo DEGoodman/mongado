@@ -371,6 +371,25 @@ class ConceptExtractionResponse(BaseModel):
     count: int
 
 
+class BatchConceptSuggestion(BaseModel):
+    """A concept suggestion with source article information."""
+
+    concept: str
+    excerpt: str
+    confidence: float
+    reason: str
+    article_ids: list[int]  # Which articles mention this concept
+    article_titles: list[str]
+
+
+class BatchConceptExtractionResponse(BaseModel):
+    """Response model for batch concept extraction from all articles."""
+
+    concepts: list[BatchConceptSuggestion]
+    count: int
+    articles_processed: int
+
+
 @app.get("/", response_model=StatusResponse)
 def read_root() -> StatusResponse:
     """Get API status and information."""
@@ -967,6 +986,96 @@ JSON:"""
     except Exception as e:
         logger.error("Error extracting concepts: %s", e)
         return ConceptExtractionResponse(concepts=[], count=0)
+
+
+@app.post("/api/articles/extract-all-concepts", response_model=BatchConceptExtractionResponse)
+def extract_all_article_concepts() -> BatchConceptExtractionResponse:
+    """Extract and deduplicate concepts from all articles.
+
+    Batch processes all articles and aggregates concepts, showing which articles
+    mention each concept. Deduplicates similar concepts across articles.
+
+    Returns empty list if Ollama unavailable.
+    """
+    # If Ollama unavailable, return empty
+    if not ollama_client.is_available():
+        logger.warning("Ollama not available for batch concept extraction")
+        return BatchConceptExtractionResponse(concepts=[], count=0, articles_processed=0)
+
+    # Get all static articles (not user resources, just the curated articles)
+    articles = [r for r in static_articles if r.get("type") == "article"]
+
+    if not articles:
+        logger.warning("No articles found for batch concept extraction")
+        return BatchConceptExtractionResponse(concepts=[], count=0, articles_processed=0)
+
+    # Extract concepts from each article
+    concept_map: dict[str, dict] = {}  # concept_name -> {excerpts, confidence, reasons, article_ids, article_titles}
+
+    for article in articles:
+        article_id = article["id"]
+        article_title = article.get("title", "Untitled")
+
+        # Extract concepts for this article
+        result = extract_article_concepts(article_id)
+
+        # Aggregate concepts
+        for concept_obj in result.concepts:
+            concept_name = concept_obj.concept.lower().strip()
+
+            if concept_name not in concept_map:
+                concept_map[concept_name] = {
+                    "concept": concept_obj.concept,  # Use original casing from first occurrence
+                    "excerpts": [],
+                    "confidences": [],
+                    "reasons": [],
+                    "article_ids": [],
+                    "article_titles": [],
+                }
+
+            concept_map[concept_name]["excerpts"].append(concept_obj.excerpt)
+            concept_map[concept_name]["confidences"].append(concept_obj.confidence)
+            concept_map[concept_name]["reasons"].append(concept_obj.reason)
+            concept_map[concept_name]["article_ids"].append(article_id)
+            concept_map[concept_name]["article_titles"].append(article_title)
+
+    # Convert to BatchConceptSuggestion models
+    batch_concepts = []
+    for data in concept_map.values():
+        # Use the highest confidence score
+        max_confidence = max(data["confidences"])
+        # Use the first excerpt (could enhance to pick best one)
+        excerpt = data["excerpts"][0]
+        # Combine reasons or use the first one
+        reason = data["reasons"][0]
+        if len(data["article_ids"]) > 1:
+            reason = f"Mentioned in {len(data['article_ids'])} articles. {reason}"
+
+        batch_concepts.append(
+            BatchConceptSuggestion(
+                concept=data["concept"],
+                excerpt=excerpt,
+                confidence=max_confidence,
+                reason=reason,
+                article_ids=data["article_ids"],
+                article_titles=data["article_titles"],
+            )
+        )
+
+    # Sort by confidence (highest first)
+    batch_concepts.sort(key=lambda x: x.confidence, reverse=True)
+
+    logger.info(
+        "Extracted %d unique concepts from %d articles",
+        len(batch_concepts),
+        len(articles)
+    )
+
+    return BatchConceptExtractionResponse(
+        concepts=batch_concepts,
+        count=len(batch_concepts),
+        articles_processed=len(articles),
+    )
 
 
 @app.post("/api/admin/sync-embeddings", response_model=EmbeddingSyncResponse)
