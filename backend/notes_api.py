@@ -90,6 +90,21 @@ class BacklinksResponse(BaseModel):
     count: int
 
 
+class TagSuggestion(BaseModel):
+    """A single tag suggestion."""
+
+    tag: str
+    confidence: float
+    reason: str
+
+
+class TagSuggestionsResponse(BaseModel):
+    """Response model for tag suggestions."""
+
+    suggestions: list[TagSuggestion]
+    count: int
+
+
 # Helper function to try admin auth without raising
 def try_verify_admin(authorization: str | None = Header(None)) -> bool:
     """Try to verify admin token without raising exceptions."""
@@ -297,3 +312,137 @@ async def get_graph_data(
             "edges": len(edges),
         }
     }
+
+
+@router.post("/{note_id}/suggest-tags", response_model=TagSuggestionsResponse)
+async def suggest_tags(note_id: str) -> TagSuggestionsResponse:
+    """Suggest relevant tags for a note using AI analysis.
+
+    Analyzes note content and suggests 2-4 relevant tags based on:
+    - Topic/domain (e.g., "management", "sre", "pkm")
+    - Type (e.g., "framework", "concept", "practice")
+    - Existing tags in the knowledge base
+
+    Returns empty suggestions if Ollama is unavailable.
+    """
+    import json
+
+    from ollama_client import get_ollama_client
+
+    ollama = get_ollama_client()
+
+    # Get the note
+    note = notes_service.get_note(note_id, is_admin=True)
+    if not note:
+        raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
+
+    # If Ollama unavailable, return empty suggestions
+    if not ollama.is_available():
+        logger.warning("Ollama not available for tag suggestions")
+        return TagSuggestionsResponse(suggestions=[], count=0)
+
+    # Get all existing tags from all notes for context
+    all_notes = notes_service.list_notes(is_admin=True)
+    existing_tags = set()
+    for n in all_notes:
+        existing_tags.update(n.get("tags", []))
+    existing_tags_str = ", ".join(sorted(existing_tags)) if existing_tags else "None yet"
+
+    # Build prompt for LLM
+    title = note.get("title", "")
+    content = note.get("content", "")
+    current_tags = note.get("tags", [])
+
+    prompt = f"""Analyze this note and suggest 2-4 relevant tags.
+
+Note Title: {title}
+Note Content:
+{content[:1000]}
+
+Current Tags: {', '.join(current_tags) if current_tags else 'None'}
+Existing tags in knowledge base: {existing_tags_str[:200]}
+
+Focus on:
+- Topic/domain (e.g., "management", "sre", "pkm", "devops")
+- Type (e.g., "framework", "concept", "practice", "mental-model")
+- Avoid duplicating current tags
+- Prefer tags already in use when appropriate
+
+Return ONLY a JSON array of suggestions, each with: tag, confidence (0-1), reason
+Example: [{{"tag": "management", "confidence": 0.9, "reason": "Discusses leadership and team dynamics"}}]
+
+JSON:"""
+
+    try:
+        # Use qwen2.5:1.5b for instruction-following (excellent at JSON format)
+        response_data = ollama.client.generate(
+            model="qwen2.5:1.5b",
+            prompt=prompt,
+            options={"num_ctx": 4096}
+        )
+
+        response = response_data.get("response", "")
+        if not response:
+            logger.error("Empty response from Ollama for tag suggestions")
+            return TagSuggestionsResponse(suggestions=[], count=0)
+
+        # Parse JSON response
+        # Extract JSON from response (might have extra text or markdown)
+        response = response.strip()
+        if response.startswith("```json"):
+            response = response[7:]
+        if response.startswith("```"):
+            response = response[3:]
+        if response.endswith("```"):
+            response = response[:-3]
+        response = response.strip()
+
+        # Try to parse as array first
+        try:
+            suggestions_data = json.loads(response)
+            if isinstance(suggestions_data, dict):
+                suggestions_data = [suggestions_data]
+            elif not isinstance(suggestions_data, list):
+                logger.error("Unexpected response format from LLM: %s", type(suggestions_data))
+                return TagSuggestionsResponse(suggestions=[], count=0)
+        except json.JSONDecodeError:
+            # LLM might return multiple JSON objects on separate lines
+            # Try to parse each line as a separate JSON object
+            suggestions_data = []
+            for line in response.split('\n'):
+                line = line.strip()
+                if line and line.startswith('{'):
+                    try:
+                        obj = json.loads(line)
+                        suggestions_data.append(obj)
+                    except json.JSONDecodeError:
+                        continue
+
+            if not suggestions_data:
+                logger.error("Could not parse any JSON from response")
+                logger.error("Full response was: %s", response[:500])
+                return TagSuggestionsResponse(suggestions=[], count=0)
+
+        # Convert to TagSuggestion models
+        suggestions = [
+            TagSuggestion(
+                tag=s["tag"],
+                confidence=s.get("confidence", 0.5),
+                reason=s.get("reason", "")
+            )
+            for s in suggestions_data
+        ]
+
+        # Limit to top 4 suggestions
+        suggestions = suggestions[:4]
+
+        logger.info("Generated %d tag suggestions for note %s", len(suggestions), note_id)
+        return TagSuggestionsResponse(suggestions=suggestions, count=len(suggestions))
+
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse JSON from Ollama response: %s", e)
+        logger.error("Full response was: %s", response[:500])
+        return TagSuggestionsResponse(suggestions=[], count=0)
+    except Exception as e:
+        logger.error("Error generating tag suggestions: %s", e)
+        return TagSuggestionsResponse(suggestions=[], count=0)

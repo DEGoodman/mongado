@@ -93,6 +93,11 @@ docker compose logs -f backend  # View logs
 
 > **⚠️ First Startup Note:** The backend generates and stores embeddings for all articles and notes on startup. This takes ~2-5 minutes the first time or after deleting containers/volumes. Subsequent startups are fast (~5-10 seconds) because embeddings are cached in Neo4j. You'll see progress logs like `[3/12] Generating embedding for article...` during this process.
 
+> **📦 Required Ollama Models:** The AI features require these models:
+> - `nomic-embed-text` (embeddings, auto-downloaded)
+> - `llama3.2:1b` (chat, auto-downloaded)
+> - `qwen2.5:1.5b` (AI suggestions) - **Pull manually:** `docker compose exec ollama ollama pull qwen2.5:1.5b`
+
 ## Technology Stack
 
 **Backend:**
