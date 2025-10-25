@@ -355,6 +355,22 @@ class EmbeddingSyncResponse(BaseModel):
     stats: dict[str, int] | None = None
 
 
+class ConceptSuggestion(BaseModel):
+    """A single concept suggestion extracted from an article."""
+
+    concept: str
+    excerpt: str
+    confidence: float
+    reason: str
+
+
+class ConceptExtractionResponse(BaseModel):
+    """Response model for concept extraction from articles."""
+
+    concepts: list[ConceptSuggestion]
+    count: int
+
+
 @app.get("/", response_model=StatusResponse)
 def read_root() -> StatusResponse:
     """Get API status and information."""
@@ -807,6 +823,150 @@ def get_article_summary(resource_id: int) -> SummaryResponse:
         )
 
     return SummaryResponse(summary=summary)
+
+
+@app.post("/api/articles/{resource_id}/extract-concepts", response_model=ConceptExtractionResponse)
+def extract_article_concepts(resource_id: int) -> ConceptExtractionResponse:
+    """Extract key concepts from an article that could become Zettelkasten notes.
+
+    Analyzes article content using AI to identify frameworks, methodologies,
+    principles, and mental models worth capturing as atomic notes.
+
+    Returns empty list if Ollama unavailable or article not found.
+    """
+    import json
+
+    # If Ollama unavailable, return empty concepts
+    if not ollama_client.is_available():
+        logger.warning("Ollama not available for concept extraction")
+        return ConceptExtractionResponse(concepts=[], count=0)
+
+    # Find the article
+    all_resources = static_articles + user_resources_db
+    article = None
+    for resource in all_resources:
+        if resource["id"] == resource_id:
+            article = resource
+            break
+
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    # Get article content
+    article_title = article.get("title", "Untitled")
+    article_content = article.get("content", "")
+
+    if not article_content:
+        logger.warning("Article %s has no content", resource_id)
+        return ConceptExtractionResponse(concepts=[], count=0)
+
+    # Build prompt for LLM
+    # Limit content to avoid token limits (first ~3000 chars should capture key concepts)
+    content_preview = article_content[:3000]
+    if len(article_content) > 3000:
+        content_preview += "\n\n[Article continues...]"
+
+    prompt = f"""Analyze this article and identify 5-10 key concepts that would make good atomic notes in a Zettelkasten.
+
+Article Title: {article_title}
+
+Article Content:
+{content_preview}
+
+Focus on:
+- Frameworks and methodologies (e.g., "DORA metrics", "Rocks & Barnacles")
+- Important principles or practices (e.g., "Psychological safety", "Continuous delivery")
+- Specific techniques (e.g., "Wardley mapping", "Incident retrospectives")
+- Mental models (e.g., "Queue theory", "Lead time vs cycle time")
+
+For each concept, provide:
+- concept: Short name suitable as a note title (2-5 words)
+- excerpt: Brief quote or paraphrase showing where it appears (1-2 sentences)
+- confidence: Float 0-1 indicating how well-defined the concept is
+- reason: Why this concept is worth capturing as a separate note
+
+Return ONLY a JSON array of concept suggestions.
+Example: [{{"concept": "DORA metrics", "excerpt": "Four key metrics...", "confidence": 0.9, "reason": "Core framework for measuring software delivery"}}]
+
+JSON:"""
+
+    try:
+        # Use qwen2.5:1.5b for structured output
+        response_data = ollama_client.client.generate(
+            model="qwen2.5:1.5b",
+            prompt=prompt,
+            options={"num_ctx": 8192}
+        )
+
+        response = response_data.get("response", "")
+        if not response:
+            logger.error("Empty response from Ollama for concept extraction")
+            return ConceptExtractionResponse(concepts=[], count=0)
+
+        # Defensive JSON parsing (same pattern as other endpoints)
+        response = response.strip()
+        if response.startswith("```json"):
+            response = response[7:]
+        if response.startswith("```"):
+            response = response[3:]
+        if response.endswith("```"):
+            response = response[:-3]
+        response = response.strip()
+
+        # Try to parse as array
+        try:
+            concepts_data = json.loads(response)
+            if isinstance(concepts_data, dict):
+                concepts_data = [concepts_data]
+            elif not isinstance(concepts_data, list):
+                logger.error("Unexpected response format: %s", type(concepts_data))
+                return ConceptExtractionResponse(concepts=[], count=0)
+        except json.JSONDecodeError:
+            # Try line-by-line parsing
+            concepts_data = []
+            for line in response.split('\n'):
+                line = line.strip()
+                if line and line.startswith('{'):
+                    try:
+                        obj = json.loads(line)
+                        concepts_data.append(obj)
+                    except json.JSONDecodeError:
+                        continue
+
+            if not concepts_data:
+                logger.error("Could not parse any JSON from response")
+                logger.error("Full response was: %s", response[:500])
+                return ConceptExtractionResponse(concepts=[], count=0)
+
+        # Convert to ConceptSuggestion models
+        concepts = []
+        for c in concepts_data:
+            try:
+                concepts.append(
+                    ConceptSuggestion(
+                        concept=c.get("concept", ""),
+                        excerpt=c.get("excerpt", ""),
+                        confidence=c.get("confidence", 0.5),
+                        reason=c.get("reason", "")
+                    )
+                )
+            except Exception as e:
+                logger.warning("Failed to parse concept: %s - %s", c, e)
+                continue
+
+        # Limit to top 10 concepts
+        concepts = concepts[:10]
+
+        logger.info("Extracted %d concepts from article %s", len(concepts), resource_id)
+        return ConceptExtractionResponse(concepts=concepts, count=len(concepts))
+
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse JSON from Ollama: %s", e)
+        logger.error("Full response was: %s", response[:500])
+        return ConceptExtractionResponse(concepts=[], count=0)
+    except Exception as e:
+        logger.error("Error extracting concepts: %s", e)
+        return ConceptExtractionResponse(concepts=[], count=0)
 
 
 @app.post("/api/admin/sync-embeddings", response_model=EmbeddingSyncResponse)
