@@ -10,9 +10,13 @@ import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
+import SettingsDropdown from "@/components/SettingsDropdown";
+import AISuggestionsPanel from "@/components/AISuggestionsPanel";
+import { useSettings } from "@/hooks/useSettings";
 
 export default function NewNotePage() {
   const router = useRouter();
+  const { settings } = useSettings();
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState("");
@@ -185,6 +189,28 @@ export default function NewNotePage() {
     router.push("/knowledge-base/notes");
   };
 
+  const handleAddTag = (tag: string) => {
+    // Add tag if not already present
+    const currentTags = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t);
+
+    if (!currentTags.includes(tag)) {
+      const newTags = [...currentTags, tag].join(", ");
+      setTags(newTags);
+      logger.info("Tag added from AI suggestion", { tag });
+    }
+  };
+
+  const handleInsertLink = (noteId: string) => {
+    // Insert wikilink at the end of content
+    const wikilink = `[[${noteId}]]`;
+    const newContent = content.trim() + `\n\n${wikilink}`;
+    setContent(newContent);
+    logger.info("Link inserted from AI suggestion", { noteId });
+  };
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       {/* AI Panel */}
@@ -195,13 +221,16 @@ export default function NewNotePage() {
 
       {/* Header */}
       <div className="mb-6">
-        <div className="mb-4 flex gap-4">
-          <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
-            ← Knowledge Base
-          </Link>
-          <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
-            All notes
-          </Link>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex gap-4">
+            <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
+              ← Knowledge Base
+            </Link>
+            <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
+              All notes
+            </Link>
+          </div>
+          <SettingsDropdown />
         </div>
         <h1 className="mb-2 text-3xl font-bold text-gray-900">Create New Note</h1>
         <p className="text-gray-600">Add a new note to your Zettelkasten knowledge base</p>
@@ -256,102 +285,118 @@ export default function NewNotePage() {
       )}
 
       {/* Form */}
-      <div className="space-y-4">
-        {/* Title (optional) */}
-        <div>
-          <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
-            Title (optional)
-          </label>
-          <input
-            id="title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="What's the ONE idea this note captures?"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
-            &quot;Team Culture Concepts&quot;
-          </p>
-        </div>
-
-        {/* Tags (optional) */}
-        <div>
-          <label htmlFor="tags" className="mb-1 block text-sm font-medium text-gray-700">
-            Tags (optional)
-          </label>
-          <input
-            id="tags"
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="Comma-separated tags (e.g., idea, research, todo)"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Content */}
-        <div>
-          <div className="mb-2 flex items-start justify-between">
-            <label className="block text-sm font-medium text-gray-700">Content *</label>
-            <div className="text-right text-xs text-gray-500">
-              <span
-                className={
-                  content.length >= 300 && content.length <= 500 ? "font-medium text-green-600" : ""
-                }
-              >
-                {content.length} chars
-              </span>
-              {content.length > 0 && content.length < 300 && (
-                <span className="ml-2 text-gray-400">• Brief - good for atomic notes</span>
-              )}
-              {content.length >= 300 && content.length <= 500 && (
-                <span className="ml-2 text-green-600">• ✓ Good length for atomic note</span>
-              )}
-              {content.length > 500 && content.length <= 1000 && (
-                <span className="ml-2 text-yellow-600">• Getting long - single idea?</span>
-              )}
-              {content.length > 1000 && (
-                <span className="ml-2 text-orange-600">
-                  • Consider splitting into multiple notes
-                </span>
-              )}
-            </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Editor Column */}
+        <div className="space-y-4 lg:col-span-2">
+          {/* Title (optional) */}
+          <div>
+            <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
+              Title (optional)
+            </label>
+            <input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What's the ONE idea this note captures?"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
+              &quot;Team Culture Concepts&quot;
+            </p>
           </div>
-          <NoteEditor
-            content={content}
-            onChange={setContent}
-            allNotes={allNotes}
-            placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
-            onNoteClick={(noteId) => {
-              // Open note in new tab
-              window.open(`/knowledge-base/notes/${noteId}`, "_blank");
-            }}
-          />
-          <p className="mt-2 text-xs text-gray-500">
-            💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
-            concepts, consider creating separate notes.
-          </p>
+
+          {/* Tags (optional) */}
+          <div>
+            <label htmlFor="tags" className="mb-1 block text-sm font-medium text-gray-700">
+              Tags (optional)
+            </label>
+            <input
+              id="tags"
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="Comma-separated tags (e.g., idea, research, todo)"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Content */}
+          <div>
+            <div className="mb-2 flex items-start justify-between">
+              <label className="block text-sm font-medium text-gray-700">Content *</label>
+              <div className="text-right text-xs text-gray-500">
+                <span
+                  className={
+                    content.length >= 300 && content.length <= 500 ? "font-medium text-green-600" : ""
+                  }
+                >
+                  {content.length} chars
+                </span>
+                {content.length > 0 && content.length < 300 && (
+                  <span className="ml-2 text-gray-400">• Brief - good for atomic notes</span>
+                )}
+                {content.length >= 300 && content.length <= 500 && (
+                  <span className="ml-2 text-green-600">• ✓ Good length for atomic note</span>
+                )}
+                {content.length > 500 && content.length <= 1000 && (
+                  <span className="ml-2 text-yellow-600">• Getting long - single idea?</span>
+                )}
+                {content.length > 1000 && (
+                  <span className="ml-2 text-orange-600">
+                    • Consider splitting into multiple notes
+                  </span>
+                )}
+              </div>
+            </div>
+            <NoteEditor
+              content={content}
+              onChange={setContent}
+              allNotes={allNotes}
+              placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
+              onNoteClick={(noteId) => {
+                // Open note in new tab
+                window.open(`/knowledge-base/notes/${noteId}`, "_blank");
+              }}
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
+              concepts, consider creating separate notes.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={() => handleSave()}
+              disabled={saving || !content.trim()}
+              className="rounded-lg bg-blue-600 px-6 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Note"}
+            </button>
+            <button
+              onClick={handleCancel}
+              disabled={saving}
+              className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-4">
-          <button
-            onClick={() => handleSave()}
-            disabled={saving || !content.trim()}
-            className="rounded-lg bg-blue-600 px-6 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save Note"}
-          </button>
-          <button
-            onClick={handleCancel}
-            disabled={saving}
-            className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        </div>
+        {/* AI Suggestions Panel */}
+        {settings.aiMode !== "off" && (
+          <div className="lg:col-span-1">
+            <AISuggestionsPanel
+              noteId="new-note-temp-id"
+              mode={settings.aiMode}
+              content={content}
+              onAddTag={handleAddTag}
+              onInsertLink={handleInsertLink}
+            />
+          </div>
+        )}
       </div>
 
       {/* Atomicity Warning Modal */}

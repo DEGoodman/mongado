@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
+import SettingsDropdown from "@/components/SettingsDropdown";
 import { logger } from "@/lib/logger";
 
 interface GraphNode {
@@ -314,13 +315,16 @@ export default function NotesGraphPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <div className="mb-4 flex gap-4">
-            <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
-              ← Knowledge Base
-            </Link>
-            <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
-              All notes
-            </Link>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex gap-4">
+              <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
+                ← Knowledge Base
+              </Link>
+              <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
+                All notes
+              </Link>
+            </div>
+            <SettingsDropdown />
           </div>
 
           <h1 className="mb-2 text-3xl font-bold text-gray-900">Notes Graph</h1>

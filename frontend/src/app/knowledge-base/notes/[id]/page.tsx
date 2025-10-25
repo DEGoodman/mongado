@@ -10,6 +10,7 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
+import SettingsDropdown from "@/components/SettingsDropdown";
 import {
   getNote,
   updateNote,
@@ -282,16 +283,19 @@ export default function NoteDetailPage() {
           <div className="lg:col-span-2">
             {/* Header */}
             <div className="mb-6">
-              <div className="mb-4 flex gap-4">
-                <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
-                  ← Knowledge Base
-                </Link>
-                <Link
-                  href="/knowledge-base/notes"
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  All notes
-                </Link>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex gap-4">
+                  <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
+                    ← Knowledge Base
+                  </Link>
+                  <Link
+                    href="/knowledge-base/notes"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    All notes
+                  </Link>
+                </div>
+                <SettingsDropdown />
               </div>
 
               <div className="flex items-start justify-between">

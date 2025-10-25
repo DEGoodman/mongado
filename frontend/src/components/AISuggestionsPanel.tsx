@@ -103,106 +103,108 @@ export default function AISuggestionsPanel({
   }, [mode, content, fetchSuggestions]); // Include fetchSuggestions in dependencies
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
-        {mode === "on-demand" && (
-          <button
-            onClick={fetchSuggestions}
-            disabled={loading}
-            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300"
-          >
-            {loading ? "Loading..." : "Get Suggestions"}
-          </button>
+    <div className="sticky top-8">
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-start justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
+          {mode === "on-demand" && (
+            <button
+              onClick={fetchSuggestions}
+              disabled={loading}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300"
+            >
+              {loading ? "Loading..." : "Get Suggestions"}
+            </button>
+          )}
+          {mode === "real-time" && (
+            <div className="flex items-center gap-2">
+              {loading && <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>}
+              <span className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-800">
+                Real-time
+              </span>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            {error}
+          </div>
         )}
-        {mode === "real-time" && (
-          <div className="flex items-center gap-2">
-            {loading && <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>}
-            <span className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-800">
-              Real-time
-            </span>
+
+        {!loading && tagSuggestions.length === 0 && linkSuggestions.length === 0 && !error && (
+          <p className="text-sm leading-relaxed text-gray-500">
+            {mode === "on-demand"
+              ? 'Click "Get Suggestions" to see AI-powered tag and link recommendations.'
+              : "Suggestions will appear automatically as you type."}
+          </p>
+        )}
+
+        {/* Tag Suggestions */}
+        {tagSuggestions.length > 0 && (
+          <div className="mb-6">
+            <h4 className="mb-3 text-sm font-semibold text-gray-700">🏷️ Suggested Tags</h4>
+            <div className="space-y-3">
+              {tagSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <span className="font-medium text-gray-900">{suggestion.tag}</span>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {Math.round(suggestion.confidence * 100)}%
+                      </span>
+                      <button
+                        onClick={() => onAddTag(suggestion.tag)}
+                        className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Link Suggestions */}
+        {linkSuggestions.length > 0 && (
+          <div>
+            <h4 className="mb-3 text-sm font-semibold text-gray-700">🔗 Suggested Links</h4>
+            <div className="space-y-3">
+              {linkSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 font-medium text-gray-900">{suggestion.title}</div>
+                      <code className="text-xs text-gray-500">{suggestion.note_id}</code>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {Math.round(suggestion.confidence * 100)}%
+                      </span>
+                      <button
+                        onClick={() => onInsertLink(suggestion.note_id)}
+                        className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                      >
+                        Insert
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
-
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
-
-      {!loading && tagSuggestions.length === 0 && linkSuggestions.length === 0 && !error && (
-        <p className="text-sm text-gray-500">
-          {mode === "on-demand"
-            ? 'Click "Get Suggestions" to see AI-powered tag and link recommendations.'
-            : "Suggestions will appear automatically as you type."}
-        </p>
-      )}
-
-      {/* Tag Suggestions */}
-      {tagSuggestions.length > 0 && (
-        <div className="mb-4">
-          <h4 className="mb-2 text-sm font-semibold text-gray-700">🏷️ Suggested Tags</h4>
-          <div className="space-y-2">
-            {tagSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{suggestion.tag}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">
-                      {Math.round(suggestion.confidence * 100)}%
-                    </span>
-                    <button
-                      onClick={() => onAddTag(suggestion.tag)}
-                      className="rounded bg-blue-600 px-2 py-1 text-xs text-white transition-colors hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600">{suggestion.reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Link Suggestions */}
-      {linkSuggestions.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-sm font-semibold text-gray-700">🔗 Suggested Links</h4>
-          <div className="space-y-2">
-            {linkSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <div>
-                    <span className="font-medium text-gray-900">{suggestion.title}</span>
-                    <code className="ml-2 text-xs text-gray-500">{suggestion.note_id}</code>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">
-                      {Math.round(suggestion.confidence * 100)}%
-                    </span>
-                    <button
-                      onClick={() => onInsertLink(suggestion.note_id)}
-                      className="rounded bg-blue-600 px-2 py-1 text-xs text-white transition-colors hover:bg-blue-700"
-                    >
-                      Insert
-                    </button>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600">{suggestion.reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

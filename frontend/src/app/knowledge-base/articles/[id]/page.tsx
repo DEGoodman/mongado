@@ -6,6 +6,7 @@ import Link from "next/link";
 import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import SettingsDropdown from "@/components/SettingsDropdown";
 import { logger } from "@/lib/logger";
 
 interface Article {
@@ -98,16 +99,19 @@ export default function ArticleDetailPage() {
       {/* Header */}
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mb-4 flex items-center gap-4">
-            <Link href="/knowledge-base" className="text-sm text-blue-600 hover:text-blue-800">
-              ← Knowledge Base
-            </Link>
-            <Link
-              href="/knowledge-base/articles"
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              All articles
-            </Link>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex gap-4">
+              <Link href="/knowledge-base" className="text-sm text-blue-600 hover:text-blue-800">
+                ← Knowledge Base
+              </Link>
+              <Link
+                href="/knowledge-base/articles"
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                All articles
+              </Link>
+            </div>
+            <SettingsDropdown />
           </div>
 
           <h1 className="mb-3 text-4xl font-bold text-gray-900">{article.title}</h1>

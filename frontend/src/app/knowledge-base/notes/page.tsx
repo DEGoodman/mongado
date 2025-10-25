@@ -6,6 +6,7 @@ import { listNotes, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import SettingsDropdown from "@/components/SettingsDropdown";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -68,12 +69,15 @@ export default function NotesPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <Link
-          href="/knowledge-base"
-          className="mb-4 inline-block text-sm text-blue-600 hover:underline"
-        >
-          ← Knowledge Base
-        </Link>
+        <div className="mb-4 flex items-center justify-between">
+          <Link
+            href="/knowledge-base"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            ← Knowledge Base
+          </Link>
+          <SettingsDropdown />
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Notes</h1>
