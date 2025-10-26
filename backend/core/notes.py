@@ -43,12 +43,14 @@ def validate_note_id(note_id: str) -> bool:
     Examples:
         >>> validate_note_id("curious-elephant")
         True
+        >>> validate_note_id("note-123")
+        True
         >>> validate_note_id("invalid_format")
         False
         >>> validate_note_id("UPPERCASE")
         False
     """
-    pattern = r'^[a-z]+-[a-z]+$'
+    pattern = r'^[a-z0-9]+-[a-z0-9]+$'
     return bool(re.match(pattern, note_id))
 
 
