@@ -35,11 +35,11 @@ from models import (
     ResourceResponse,
     StatusResponse,
 )
-from notes_api import router as notes_router
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
 from routers.ai import create_ai_router
 from routers.articles import create_articles_router
+from routers.notes import create_notes_router
 from routers.search import create_search_router
 
 # Configure logging
@@ -235,10 +235,12 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # 3. Cache control
 app.add_middleware(CacheControlMiddleware)
 
-# Include routers
+# Create and include domain routers with dependency injection
+notes_router = create_notes_router(
+    notes_service=notes_service
+)
 app.include_router(notes_router)
 
-# Create and include domain routers with dependency injection
 search_router = create_search_router(
     static_articles=static_articles,
     user_resources_db=user_resources_db,
