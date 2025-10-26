@@ -62,6 +62,9 @@ RUN pip install --no-cache-dir -r requirements-prod.txt && \
 # Copy application code (exclude tests and dev files)
 COPY --chown=appuser:appuser *.py ./
 COPY --chown=appuser:appuser *.sql ./
+COPY --chown=appuser:appuser models ./models
+COPY --chown=appuser:appuser adapters ./adapters
+COPY --chown=appuser:appuser routers ./routers
 COPY --chown=appuser:appuser static ./static
 COPY --chown=appuser:appuser data ./data
 
