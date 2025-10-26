@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import Link from "next/link";
+import type { Components } from "react-markdown";
 
 interface MarkdownWithWikilinksProps {
   content: string | null | undefined;
@@ -19,8 +20,51 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
     );
   }
 
-  // Split content by wikilinks and render each part
-  const parts = content.split(/(\[\[[a-z0-9-]+\]\])/g);
+  // Custom component to handle text nodes and convert wikilinks
+  const components: Components = {
+    // Process text nodes to convert wikilinks to actual links
+    p: ({ children, ...props }) => {
+      const processedChildren = processWikilinks(children);
+      return <p {...props}>{processedChildren}</p>;
+    },
+    li: ({ children, ...props }) => {
+      const processedChildren = processWikilinks(children);
+      return <li {...props}>{processedChildren}</li>;
+    },
+  };
+
+  // Process children to convert [[note-id]] to Link components
+  const processWikilinks = (children: React.ReactNode): React.ReactNode => {
+    if (typeof children === "string") {
+      const parts = children.split(/(\[\[[a-z0-9-]+\]\])/g);
+      return parts.map((part, i) => {
+        const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
+        if (match) {
+          return (
+            <Link
+              key={i}
+              href={`/knowledge-base/notes/${match[1]}`}
+              className="inline-block rounded bg-blue-50 px-1 font-mono text-sm text-blue-600 no-underline hover:underline"
+            >
+              {part}
+            </Link>
+          );
+        }
+        return part;
+      });
+    }
+
+    if (Array.isArray(children)) {
+      return children.map((child, i) => {
+        if (typeof child === "string") {
+          return <span key={i}>{processWikilinks(child)}</span>;
+        }
+        return child;
+      });
+    }
+
+    return children;
+  };
 
   return (
     <div className="prose prose-sm max-w-none overflow-x-auto">
@@ -120,27 +164,13 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
           font-weight: 500;
         }
       `}</style>
-      {parts.map((part, i) => {
-        const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
-        if (match) {
-          // Render wikilink as a special styled link
-          return (
-            <Link
-              key={i}
-              href={`/knowledge-base/notes/${match[1]}`}
-              className="inline-block rounded bg-blue-50 px-1 font-mono text-sm text-blue-600 no-underline hover:underline"
-            >
-              {part}
-            </Link>
-          );
-        }
-        // Render regular markdown
-        return (
-          <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug]}>
-            {part}
-          </ReactMarkdown>
-        );
-      })}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeSlug]}
+        components={components}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
