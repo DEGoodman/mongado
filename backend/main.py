@@ -823,7 +823,51 @@ def ask_question(request: QuestionRequest) -> QuestionResponse:
 
     # Find relevant articles and notes
     all_resources = _get_all_resources()
-    relevant_docs = ollama_client.semantic_search(request.question, all_resources, top_k=5)
+    relevant_docs = []
+
+    # Try to use fast semantic search with precomputed embeddings from Neo4j
+    if neo4j_adapter.is_available():
+        logger.info("Q&A: Using fast semantic search with precomputed embeddings from Neo4j")
+
+        # Fetch precomputed embeddings for articles and notes
+        embeddings_data = neo4j_adapter.get_all_embeddings()
+        logger.info("Q&A: Fetched %d precomputed embeddings from Neo4j", len(embeddings_data))
+
+        if embeddings_data:
+            # Build documents with embeddings
+            documents_with_embeddings = []
+
+            for emb_data in embeddings_data:
+                doc_id = emb_data["id"]
+                doc_type = emb_data["type"]
+
+                # Find the full document from all_resources
+                full_doc = next(
+                    (doc for doc in all_resources
+                     if (doc_type == "Article" and str(doc.get("id")) == doc_id) or
+                        (doc_type == "Note" and doc.get("note_id") == doc_id)),
+                    None
+                )
+
+                if full_doc:
+                    # Combine full document with its embedding
+                    doc_with_embedding = {**full_doc, "embedding": emb_data["embedding"]}
+                    documents_with_embeddings.append(doc_with_embedding)
+
+            logger.info("Q&A: Matched %d documents with embeddings", len(documents_with_embeddings))
+
+            # Perform fast semantic search
+            relevant_docs = ollama_client.semantic_search_with_precomputed_embeddings(
+                request.question, documents_with_embeddings, top_k=5
+            )
+            logger.info("Q&A: Fast semantic search found %d relevant docs", len(relevant_docs))
+        else:
+            logger.warning("Q&A: No precomputed embeddings found, falling back to on-demand generation")
+
+    # Fallback: Generate embeddings on-demand (slow but works without Neo4j)
+    if not relevant_docs:
+        logger.info("Q&A: Using on-demand embedding generation (slower)")
+        relevant_docs = ollama_client.semantic_search(request.question, all_resources, top_k=5)
 
     # Generate answer with hybrid mode (KB + general knowledge)
     answer = ollama_client.ask_question(
