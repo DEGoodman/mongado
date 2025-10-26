@@ -13,7 +13,6 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from rapidfuzz import fuzz
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -40,9 +39,6 @@ from models import (
     Resource,
     ResourceListResponse,
     ResourceResponse,
-    SearchRequest,
-    SearchResponse,
-    SearchResult,
     StatusResponse,
     SummaryResponse,
     WarmupResponse,
@@ -50,6 +46,8 @@ from models import (
 from notes_api import router as notes_router
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
+from routers.articles import create_articles_router
+from routers.search import create_search_router
 
 # Configure logging
 setup_logging(level="INFO")
@@ -247,6 +245,23 @@ app.add_middleware(CacheControlMiddleware)
 # Include routers
 app.include_router(notes_router)
 
+# Create and include domain routers with dependency injection
+search_router = create_search_router(
+    static_articles=static_articles,
+    user_resources_db=user_resources_db,
+    notes_service=notes_service,
+    ollama_client=ollama_client,
+    neo4j_adapter=neo4j_adapter
+)
+app.include_router(search_router)
+
+articles_router = create_articles_router(
+    static_articles=static_articles,
+    user_resources_db=user_resources_db,
+    ollama_client=ollama_client
+)
+app.include_router(articles_router)
+
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -438,83 +453,13 @@ def delete_resource(resource_id: int) -> dict[str, str]:
     return {"message": "Resource deleted"}
 
 
-def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> float:
-    """
-    Check if query fuzzy matches the text and return relevance score.
-
-    - Queries < 3 chars: exact substring match only (for terms like "SRE")
-    - Queries >= 3 chars: fuzzy match with 80% threshold (handles typos)
-
-    Args:
-        query: Search query (lowercase)
-        text: Text to search in (lowercase)
-        threshold: Minimum similarity score (0-100)
-
-    Returns:
-        Relevance score (0.0 = no match, 1.0 = fuzzy match, 2.0 = exact match)
-    """
-    # Short queries: require exact match (prevents false positives)
-    if len(query) < 3:
-        return 2.0 if query in text else 0.0
-
-    # Exact match (highest score)
-    if query in text:
-        return 2.0
-
-    # Fuzzy match: check if query is similar to any word in text
-    # Only match against words of similar length to avoid false positives
-    words = text.split()
-    best_score = 0.0
-    for word in words:
-        # Only fuzzy match words that are within 2 chars of query length
-        if abs(len(word) - len(query)) <= 2:
-            similarity = fuzz.ratio(query, word)
-            if similarity >= threshold:
-                # Map 80-100 similarity to 0.8-1.0 score
-                best_score = max(best_score, similarity / 100.0)
-
-    return best_score
+# Search and Q&A routes moved to routers/search.py
 
 
-def _get_all_resources() -> list[dict[str, Any]]:
-    """Get all searchable resources (articles + notes).
-
-    Notes are normalized to have 'note_id' field to distinguish from articles.
-    """
-    all_notes = notes_service.list_notes(is_admin=True)
-
-    # Normalize note structure to match article structure for search
-    normalized_notes = []
-    for note in all_notes:
-        normalized_note = {
-            "note_id": note.get("id"),  # Keep string ID as note_id
-            "title": note.get("title", "Untitled"),
-            "content": note.get("content", ""),
-            "tags": note.get("tags", []),
-            "created_at": note.get("created_at"),
-        }
-        normalized_notes.append(normalized_note)
-
-    return static_articles + user_resources_db + normalized_notes
+# Article AI features moved to routers/articles.py
 
 
-def _normalize_search_result(doc: dict[str, Any], score: float = 1.0) -> SearchResult:
-    """Normalize a resource document into a consistent SearchResult."""
-    # Determine if this is an article or note
-    is_note = "note_id" in doc
-    resource_type = "note" if is_note else "article"
-    resource_id = doc.get("note_id") if is_note else doc.get("id")
-
-    return SearchResult(
-        id=resource_id,
-        type=resource_type,
-        title=doc.get("title", "Untitled"),
-        content=doc.get("content", ""),
-        score=score
-    )
-
-
-@app.post("/api/search", response_model=SearchResponse)
+@app.post("/api/ollama/warmup", response_model=WarmupResponse)
 def search_resources(request: SearchRequest) -> SearchResponse:
     """
     Search across all resources (articles + notes).
