@@ -34,7 +34,6 @@ from models import (
     ResourceListResponse,
     ResourceResponse,
     StatusResponse,
-    WarmupResponse,
 )
 from notes_api import router as notes_router
 from notes_service import get_notes_service
