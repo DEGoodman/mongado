@@ -5,9 +5,14 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from core import ai as ai_core
 from models import (
+    LinkSuggestion,
+    LinkSuggestionsResponse,
     QuestionRequest,
     QuestionResponse,
+    TagSuggestion,
+    TagSuggestionsResponse,
     WarmupResponse,
 )
 
@@ -159,5 +164,170 @@ def create_ai_router(
             )
 
         return QuestionResponse(answer=answer, sources=relevant_docs)
+
+    @router.post("/notes/{note_id}/suggest-tags", response_model=TagSuggestionsResponse)
+    def suggest_tags(note_id: str) -> TagSuggestionsResponse:
+        """Suggest relevant tags for a note using AI analysis.
+
+        Analyzes note content and suggests 2-4 relevant tags based on:
+        - Topic/domain (e.g., "management", "sre", "pkm")
+        - Type (e.g., "framework", "concept", "practice")
+        - Existing tags in the knowledge base
+
+        Returns empty suggestions if Ollama is unavailable.
+        """
+        # Get the note
+        note = notes_service.get_note(note_id, is_admin=True)
+        if not note:
+            raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
+
+        # If Ollama unavailable, return empty suggestions
+        if not ollama_client.is_available():
+            logger.warning("Ollama not available for tag suggestions")
+            return TagSuggestionsResponse(suggestions=[], count=0)
+
+        # Get all existing tags from all notes for context
+        all_notes = notes_service.list_notes(is_admin=True)
+        existing_tags = set()
+        for n in all_notes:
+            existing_tags.update(n.get("tags", []))
+
+        # Build prompt using pure function
+        title = note.get("title", "")
+        content = note.get("content", "")
+        current_tags = note.get("tags", [])
+
+        prompt = ai_core.build_tag_suggestion_prompt(
+            title=title,
+            content=content,
+            current_tags=current_tags,
+            existing_tags=existing_tags
+        )
+
+        try:
+            # Use qwen2.5:1.5b for instruction-following (excellent at JSON format)
+            response_data = ollama_client.client.generate(
+                model="qwen2.5:1.5b",
+                prompt=prompt,
+                options={"num_ctx": 4096}
+            )
+
+            response = response_data.get("response", "")
+            if not response:
+                logger.error("Empty response from Ollama for tag suggestions")
+                return TagSuggestionsResponse(suggestions=[], count=0)
+
+            # Parse JSON response using pure function
+            suggestions_data = ai_core.parse_json_response(response, expected_type="array")
+            if not suggestions_data:
+                return TagSuggestionsResponse(suggestions=[], count=0)
+
+            # Convert to TagSuggestion models
+            suggestions = [
+                TagSuggestion(
+                    tag=s["tag"],
+                    confidence=s.get("confidence", 0.5),
+                    reason=s.get("reason", "")
+                )
+                for s in suggestions_data
+            ]
+
+            # Limit to top 4 suggestions
+            suggestions = suggestions[:4]
+
+            logger.info("Generated %d tag suggestions for note %s", len(suggestions), note_id)
+            return TagSuggestionsResponse(suggestions=suggestions, count=len(suggestions))
+
+        except Exception as e:
+            logger.error("Error generating tag suggestions: %s", e)
+            return TagSuggestionsResponse(suggestions=[], count=0)
+
+    @router.post("/notes/{note_id}/suggest-links", response_model=LinkSuggestionsResponse)
+    def suggest_links(note_id: str) -> LinkSuggestionsResponse:
+        """Suggest related notes that should be linked via wikilinks.
+
+        Analyzes note content and suggests other notes that are conceptually related.
+        Returns suggestions with confidence scores and reasoning.
+
+        Returns empty suggestions if Ollama is unavailable or note not found.
+        """
+        # Get the current note
+        note = notes_service.get_note(note_id, is_admin=True)
+        if not note:
+            raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
+
+        # If Ollama unavailable, return empty suggestions
+        if not ollama_client.is_available():
+            logger.warning("Ollama not available for link suggestions")
+            return LinkSuggestionsResponse(suggestions=[], count=0)
+
+        # Get all other notes and filter candidates using pure function
+        all_notes = notes_service.list_notes(is_admin=True)
+        existing_links = note.get("links", [])
+
+        candidate_notes = ai_core.filter_link_candidates(
+            all_notes=all_notes,
+            current_note_id=note_id,
+            existing_links=existing_links
+        )
+
+        if not candidate_notes:
+            logger.info("No candidate notes for link suggestions")
+            return LinkSuggestionsResponse(suggestions=[], count=0)
+
+        # Build prompt using pure function
+        current_title = note.get("title", note_id)
+        current_content = note.get("content", "")
+
+        prompt = ai_core.build_link_suggestion_prompt(
+            current_title=current_title,
+            current_content=current_content,
+            candidate_notes=candidate_notes,
+            max_candidates=50
+        )
+
+        try:
+            # Use qwen2.5:1.5b for structured output
+            response_data = ollama_client.client.generate(
+                model="qwen2.5:1.5b",
+                prompt=prompt,
+                options={"num_ctx": 8192}  # Larger context for multiple notes
+            )
+
+            response = response_data.get("response", "")
+            if not response:
+                logger.error("Empty response from Ollama for link suggestions")
+                return LinkSuggestionsResponse(suggestions=[], count=0)
+
+            # Parse JSON response using pure function
+            suggestions_data = ai_core.parse_json_response(response, expected_type="array")
+            if not suggestions_data:
+                return LinkSuggestionsResponse(suggestions=[], count=0)
+
+            # Convert to LinkSuggestion models and add titles
+            suggestions = []
+            note_map = {n["id"]: n for n in candidate_notes}
+
+            for s in suggestions_data:
+                note_id_suggestion = s.get("note_id")
+                if note_id_suggestion and note_id_suggestion in note_map:
+                    suggestions.append(
+                        LinkSuggestion(
+                            note_id=note_id_suggestion,
+                            title=note_map[note_id_suggestion].get("title", "Untitled"),
+                            confidence=s.get("confidence", 0.5),
+                            reason=s.get("reason", "")
+                        )
+                    )
+
+            # Limit to top 5 suggestions
+            suggestions = suggestions[:5]
+
+            logger.info("Generated %d link suggestions for note %s", len(suggestions), note_id)
+            return LinkSuggestionsResponse(suggestions=suggestions, count=len(suggestions))
+
+        except Exception as e:
+            logger.error("Error generating link suggestions: %s", e)
+            return LinkSuggestionsResponse(suggestions=[], count=0)
 
     return router

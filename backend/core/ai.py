@@ -167,6 +167,127 @@ def build_summary_prompt(content: str) -> str:
 Summary:"""
 
 
+def build_tag_suggestion_prompt(
+    title: str,
+    content: str,
+    current_tags: list[str],
+    existing_tags: set[str]
+) -> str:
+    """Build prompt for AI tag suggestions.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Args:
+        title: Note title
+        content: Note content (will be truncated to 1000 chars)
+        current_tags: Tags already on this note
+        existing_tags: All tags in the knowledge base
+
+    Returns:
+        Complete prompt string for LLM
+    """
+    existing_tags_str = ", ".join(sorted(existing_tags)) if existing_tags else "None yet"
+    current_tags_str = ", ".join(current_tags) if current_tags else "None"
+
+    return f"""Analyze this note and suggest 2-4 relevant tags.
+
+Note Title: {title}
+Note Content:
+{content[:1000]}
+
+Current Tags: {current_tags_str}
+Existing tags in knowledge base: {existing_tags_str[:200]}
+
+Focus on:
+- Topic/domain (e.g., "management", "sre", "pkm", "devops")
+- Type (e.g., "framework", "concept", "practice", "mental-model")
+- Avoid duplicating current tags
+- Prefer tags already in use when appropriate
+
+Return ONLY a JSON array of suggestions, each with: tag, confidence (0-1), reason
+Example: [{{"tag": "management", "confidence": 0.9, "reason": "Discusses leadership and team dynamics"}}]
+
+JSON:"""
+
+
+def filter_link_candidates(
+    all_notes: list[dict[str, Any]],
+    current_note_id: str,
+    existing_links: list[str]
+) -> list[dict[str, Any]]:
+    """Filter notes to get valid link candidates.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Args:
+        all_notes: All notes in the system
+        current_note_id: ID of the current note
+        existing_links: IDs of notes already linked from current note
+
+    Returns:
+        List of candidate notes (excluding current note and existing links)
+    """
+    excluded_ids = set(existing_links)
+    excluded_ids.add(current_note_id)
+
+    return [
+        note for note in all_notes
+        if note["id"] not in excluded_ids and note.get("content")
+    ]
+
+
+def build_link_suggestion_prompt(
+    current_title: str,
+    current_content: str,
+    candidate_notes: list[dict[str, Any]],
+    max_candidates: int = 50
+) -> str:
+    """Build prompt for AI link suggestions.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Args:
+        current_title: Title of the current note
+        current_content: Content of the current note (truncated to 500 chars)
+        candidate_notes: List of candidate notes to suggest
+        max_candidates: Maximum number of candidates to include in prompt
+
+    Returns:
+        Complete prompt string for LLM
+    """
+    # Format candidate notes for the prompt (limit to avoid token limits)
+    candidates_text = "\n\n".join([
+        f"ID: {n['id']}\nTitle: {n.get('title', 'Untitled')}\nContent: {n.get('content', '')[:200]}..."
+        for n in candidate_notes[:max_candidates]
+    ])
+
+    return f"""You are analyzing a note to suggest related notes that should be linked.
+
+Current Note:
+Title: {current_title}
+Content:
+{current_content[:500]}
+
+Candidate Notes to Link:
+{candidates_text}
+
+Suggest 3-5 notes that are most related to the current note. Focus on:
+- Directly related concepts or prerequisites
+- Practical applications or examples
+- Contrasting viewpoints
+- Building blocks or dependencies
+
+For each suggestion, provide:
+- note_id: The ID of the note to link to
+- confidence: Float 0-1 indicating relevance
+- reason: Brief explanation of why they should be linked
+
+Return ONLY a JSON array of suggestions.
+Example: [{{"note_id": "psychological-safety", "confidence": 0.85, "reason": "Both discuss team culture"}}]
+
+JSON:"""
+
+
 def parse_json_response(
     raw_response: str,
     expected_type: str = "array"
