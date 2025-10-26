@@ -13,7 +13,6 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, field_validator
 from rapidfuzz import fuzz
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -26,6 +25,27 @@ from config import SecretManager, Settings, get_secret_manager, get_settings
 from embedding_sync import sync_embeddings_on_startup
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
+from models import (
+    BatchConceptExtractionResponse,
+    BatchConceptSuggestion,
+    ConceptExtractionResponse,
+    ConceptSuggestion,
+    EmbeddingSyncResponse,
+    HealthResponse,
+    ImageUploadResponse,
+    QuestionRequest,
+    QuestionResponse,
+    ReadyResponse,
+    Resource,
+    ResourceListResponse,
+    ResourceResponse,
+    SearchRequest,
+    SearchResponse,
+    SearchResult,
+    StatusResponse,
+    SummaryResponse,
+    WarmupResponse,
+)
 from neo4j_adapter import get_neo4j_adapter
 from notes_api import router as notes_router
 from notes_service import get_notes_service
@@ -240,162 +260,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR), html=False), name="s
 
 # User uploads - shorter cache time
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
-
-class Resource(BaseModel):
-    """Resource model for knowledge base entries."""
-
-    id: int | None = None
-    title: str
-    content: str  # Markdown content (preferred) or plain text
-    content_type: str = "markdown"  # "markdown" (default) or "plain"
-    url: str | None = None
-    tags: list[str] = []
-    created_at: datetime | None = None
-
-
-class ResourceResponse(BaseModel):
-    """Response model for resource operations."""
-
-    resource: Resource
-
-
-class ResourceListResponse(BaseModel):
-    """Response model for listing resources."""
-
-    resources: list[dict[str, Any]]
-
-
-class StatusResponse(BaseModel):
-    """Response model for status endpoint."""
-
-    message: str
-    version: str
-    onepassword_enabled: bool  # Changed from "1password_enabled" for valid Python identifier
-
-
-class HealthResponse(BaseModel):
-    """Response model for health check endpoint."""
-
-    status: str  # "healthy"
-    version: str
-
-
-class ReadyResponse(BaseModel):
-    """Response model for readiness check endpoint."""
-
-    ready: bool
-    embedding_sync_complete: bool
-    message: str
-
-
-class ImageUploadResponse(BaseModel):
-    """Response model for image upload."""
-
-    url: str
-    filename: str
-
-
-class SearchRequest(BaseModel):
-    """Request model for search."""
-
-    query: str
-    top_k: int = 5
-    semantic: bool = False  # Use AI semantic search (slower, opt-in)
-
-    @field_validator("query")
-    @classmethod
-    def validate_query(cls, v: str) -> str:
-        """Validate query is not empty."""
-        if not v or not v.strip():
-            raise ValueError("Query cannot be empty")
-        return v
-
-
-class SearchResult(BaseModel):
-    """A single search result with normalized fields."""
-
-    id: int | str
-    type: str  # "article" or "note"
-    title: str
-    content: str
-    score: float  # 1.0 for text search, cosine similarity for semantic
-
-
-class SearchResponse(BaseModel):
-    """Response model for search (both text and semantic)."""
-
-    results: list[SearchResult]
-    count: int
-
-
-class QuestionRequest(BaseModel):
-    """Request model for Q&A."""
-
-    question: str
-
-
-class QuestionResponse(BaseModel):
-    """Response model for Q&A."""
-
-    answer: str
-    sources: list[dict[str, Any]]
-
-
-class SummaryResponse(BaseModel):
-    """Response model for article summary."""
-
-    summary: str
-
-
-class WarmupResponse(BaseModel):
-    """Response model for Ollama warmup."""
-
-    success: bool
-    message: str
-
-
-class EmbeddingSyncResponse(BaseModel):
-    """Response model for embedding sync trigger."""
-
-    success: bool
-    message: str
-    stats: dict[str, int] | None = None
-
-
-class ConceptSuggestion(BaseModel):
-    """A single concept suggestion extracted from an article."""
-
-    concept: str
-    excerpt: str
-    confidence: float
-    reason: str
-
-
-class ConceptExtractionResponse(BaseModel):
-    """Response model for concept extraction from articles."""
-
-    concepts: list[ConceptSuggestion]
-    count: int
-
-
-class BatchConceptSuggestion(BaseModel):
-    """A concept suggestion with source article information."""
-
-    concept: str
-    excerpt: str
-    confidence: float
-    reason: str
-    article_ids: list[int]  # Which articles mention this concept
-    article_titles: list[str]
-
-
-class BatchConceptExtractionResponse(BaseModel):
-    """Response model for batch concept extraction from all articles."""
-
-    concepts: list[BatchConceptSuggestion]
-    count: int
-    articles_processed: int
 
 
 @app.get("/", response_model=StatusResponse)
