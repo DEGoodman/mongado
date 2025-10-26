@@ -144,9 +144,100 @@ The Knowledge Base combines static markdown articles with a Zettelkasten-style n
 
 ### Functional Core, Imperative Shell
 
-- **Functional Core**: Pure business logic, no side effects (unit tests)
-- **Imperative Shell**: I/O operations (integration tests)
-- Keep business logic pure and separate from data access
+The backend follows a strict **Functional Core / Imperative Shell** architecture pattern:
+
+**Functional Core** (`backend/core/`):
+- Pure business logic with no I/O or side effects
+- Deterministic functions: same input → same output
+- Fully unit-testable without mocks or fixtures
+- Examples: graph algorithms, wikilink parsing, similarity calculations, prompt building
+
+**Imperative Shell** (`backend/routers/`, `backend/adapters/`):
+- Thin orchestration layer for I/O operations
+- Calls pure functions from core/ for business logic
+- Handles database access, API requests, file I/O
+- Tested with integration tests
+
+**Directory Structure:**
+```
+backend/
+├── core/               # Pure business logic (Functional Core)
+│   ├── ai.py          # AI/ML algorithms (cosine similarity, ranking, prompts)
+│   └── notes.py       # Notes/graph logic (wikilinks, BFS, graph building)
+├── routers/           # API endpoints (Imperative Shell)
+│   ├── ai.py          # AI feature endpoints (search, Q&A, suggestions)
+│   ├── articles.py    # Article management endpoints
+│   ├── notes.py       # Notes CRUD and graph endpoints
+│   └── search.py      # Search endpoints
+├── adapters/          # Data access layer (Imperative Shell)
+│   ├── neo4j.py       # Neo4j database operations
+│   ├── ephemeral_notes.py  # In-memory note storage
+│   └── article_loader.py   # Static file loading
+└── notes_service.py   # Service layer (orchestrates adapters + core)
+```
+
+**Adding New Routers (Factory Pattern):**
+
+All routers use a factory function for dependency injection. Follow this pattern:
+
+```python
+# backend/routers/example.py
+from fastapi import APIRouter, Depends
+from typing import Any
+
+router = APIRouter(prefix="/api/example", tags=["example"])
+
+def create_example_router(service: Any) -> APIRouter:
+    """Create example router with dependencies injected.
+
+    Args:
+        service: Service instance for data access
+
+    Returns:
+        Configured APIRouter with endpoints
+    """
+
+    @router.get("/data", response_model=dict[str, Any])
+    async def get_data() -> dict[str, Any]:
+        """Get data endpoint."""
+        # 1. Fetch data (I/O via service)
+        raw_data = service.get_raw_data()
+
+        # 2. Process with pure function from core
+        from core import example
+        processed = example.process_data(raw_data)
+
+        return processed
+
+    return router
+```
+
+Then register in `main.py`:
+
+```python
+from routers.example import create_example_router
+
+# Create router with injected dependencies
+example_router = create_example_router(service=some_service)
+app.include_router(example_router)
+```
+
+**Why This Pattern:**
+- **Testability**: Pure functions are trivial to test (no mocks needed)
+- **Maintainability**: Business logic isolated from infrastructure
+- **Dependency Injection**: Services injected at router creation time
+- **Reusability**: Pure functions can be composed and reused
+- **Type Safety**: All functions have full type hints
+
+**Real Examples:**
+- `core/notes.py:build_local_subgraph()` - BFS algorithm for graph traversal
+- `core/ai.py:cosine_similarity()` - Vector similarity calculation
+- `routers/notes.py:create_notes_router()` - Factory with dependency injection
+- `routers/ai.py:create_ai_router()` - Factory with Ollama + notes service
+
+**Testing:**
+- `tests/unit/test_core_*.py` - Unit tests for pure functions (no I/O)
+- `tests/unit/test_*_api.py` - Integration tests for endpoints (with TestClient)
 
 ### Configuration & Secrets
 
