@@ -221,5 +221,5 @@ def load_static_articles() -> list[dict[str, Any]]:
         return load_static_articles_from_s3(bucket, prefix)
     else:
         # Default to local filesystem
-        articles_dir = Path(__file__).parent / "static" / "articles"
+        articles_dir = Path(__file__).parent.parent / "static" / "articles"
         return load_static_articles_from_local(articles_dir)

@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 # Set testing mode before importing app modules
 os.environ["TESTING"] = "1"
 
+from adapters.ephemeral_notes import get_ephemeral_store
 from database import get_database
-from ephemeral_notes import get_ephemeral_store
 from main import app
 from notes_service import get_notes_service
 

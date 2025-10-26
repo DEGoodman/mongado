@@ -5,10 +5,10 @@ import logging
 import time
 from typing import Any
 
+from adapters.ephemeral_notes import EphemeralNote, get_ephemeral_store
+from adapters.neo4j import get_neo4j_adapter
 from database import get_database
 from embedding_sync import EMBEDDING_VERSION
-from ephemeral_notes import EphemeralNote, get_ephemeral_store
-from neo4j_adapter import get_neo4j_adapter
 from note_id_generator import get_id_generator
 from ollama_client import get_ollama_client
 from wikilink_parser import get_wikilink_parser

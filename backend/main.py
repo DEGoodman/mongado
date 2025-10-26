@@ -19,7 +19,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from article_loader import load_static_articles
+from adapters.article_loader import load_static_articles
+from adapters.neo4j import get_neo4j_adapter
 from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from embedding_sync import sync_embeddings_on_startup
@@ -46,7 +47,6 @@ from models import (
     SummaryResponse,
     WarmupResponse,
 )
-from neo4j_adapter import get_neo4j_adapter
 from notes_api import router as notes_router
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
