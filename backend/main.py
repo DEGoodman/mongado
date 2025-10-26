@@ -39,6 +39,7 @@ from models import (
 from notes_api import router as notes_router
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
+from routers.ai import create_ai_router
 from routers.articles import create_articles_router
 from routers.search import create_search_router
 
@@ -255,6 +256,15 @@ articles_router = create_articles_router(
 )
 app.include_router(articles_router)
 
+ai_router = create_ai_router(
+    ollama_client=ollama_client,
+    static_articles=static_articles,
+    user_resources_db=user_resources_db,
+    notes_service=notes_service,
+    neo4j_adapter=neo4j_adapter
+)
+app.include_router(ai_router)
+
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -449,35 +459,6 @@ def delete_resource(resource_id: int) -> dict[str, str]:
 # Search and Q&A routes moved to routers/search.py
 # Article AI features moved to routers/articles.py
 
-
-@app.post("/api/ollama/warmup", response_model=WarmupResponse)
-def warmup_ollama() -> WarmupResponse:
-    """
-    Warm up the Ollama model by starting the llama runner.
-
-    This endpoint takes ~15-20 seconds to complete, but makes subsequent
-    AI requests much faster. Call this when the user opens the Q&A panel
-    or knowledge base page.
-
-    **Optimization:** Pre-load the model before users need it.
-    """
-    if not ollama_client.is_available():
-        return WarmupResponse(
-            success=False,
-            message="Ollama is not available or not configured."
-        )
-
-    success = ollama_client.warmup()
-    if success:
-        return WarmupResponse(
-            success=True,
-            message="Ollama model warmed up successfully. Subsequent requests will be faster."
-        )
-    else:
-        return WarmupResponse(
-            success=False,
-            message="Failed to warm up Ollama model. Check logs for details."
-        )
 
 
 
