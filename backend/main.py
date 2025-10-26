@@ -13,7 +13,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from rapidfuzz import fuzz
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -303,6 +303,14 @@ class SearchRequest(BaseModel):
     top_k: int = 5
     semantic: bool = False  # Use AI semantic search (slower, opt-in)
 
+    @field_validator("query")
+    @classmethod
+    def validate_query(cls, v: str) -> str:
+        """Validate query is not empty."""
+        if not v or not v.strip():
+            raise ValueError("Query cannot be empty")
+        return v
+
 
 class SearchResult(BaseModel):
     """A single search result with normalized fields."""
@@ -566,9 +574,9 @@ def delete_resource(resource_id: int) -> dict[str, str]:
     return {"message": "Resource deleted"}
 
 
-def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> bool:
+def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> float:
     """
-    Check if query fuzzy matches the text.
+    Check if query fuzzy matches the text and return relevance score.
 
     - Queries < 3 chars: exact substring match only (for terms like "SRE")
     - Queries >= 3 chars: fuzzy match with 80% threshold (handles typos)
@@ -579,25 +587,29 @@ def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> bool:
         threshold: Minimum similarity score (0-100)
 
     Returns:
-        True if query matches text (exact or fuzzy)
+        Relevance score (0.0 = no match, 1.0 = fuzzy match, 2.0 = exact match)
     """
     # Short queries: require exact match (prevents false positives)
     if len(query) < 3:
-        return query in text
+        return 2.0 if query in text else 0.0
 
-    # Exact match (fastest path)
+    # Exact match (highest score)
     if query in text:
-        return True
+        return 2.0
 
     # Fuzzy match: check if query is similar to any word in text
     # Only match against words of similar length to avoid false positives
     words = text.split()
+    best_score = 0.0
     for word in words:
         # Only fuzzy match words that are within 2 chars of query length
-        if abs(len(word) - len(query)) <= 2 and fuzz.ratio(query, word) >= threshold:
-            return True
+        if abs(len(word) - len(query)) <= 2:
+            similarity = fuzz.ratio(query, word)
+            if similarity >= threshold:
+                # Map 80-100 similarity to 0.8-1.0 score
+                best_score = max(best_score, similarity / 100.0)
 
-    return False
+    return best_score
 
 
 def _get_all_resources() -> list[dict[str, Any]]:
@@ -665,12 +677,23 @@ def search_resources(request: SearchRequest) -> SearchResponse:
     if not request.semantic:
         logger.debug("Using fast text search with fuzzy matching")
         query_lower = request.query.lower()
-        matching_docs = [
-            doc for doc in all_resources
-            if _fuzzy_match_text(query_lower, doc.get("content", "").lower())
-            or _fuzzy_match_text(query_lower, doc.get("title", "").lower())
-        ]
-        results = [_normalize_search_result(doc, score=1.0) for doc in matching_docs[:request.top_k]]
+
+        # Score each document based on title and content matches
+        scored_docs = []
+        for doc in all_resources:
+            title_score = _fuzzy_match_text(query_lower, doc.get("title", "").lower())
+            content_score = _fuzzy_match_text(query_lower, doc.get("content", "").lower())
+
+            # Title matches are weighted higher (2x)
+            total_score = (title_score * 2.0) + content_score
+
+            if total_score > 0:
+                scored_docs.append((doc, total_score))
+
+        # Sort by score (descending) and take top_k
+        scored_docs.sort(key=lambda x: x[1], reverse=True)
+        results = [_normalize_search_result(doc, score=score) for doc, score in scored_docs[:request.top_k]]
+
         duration = time.time() - start_time
         logger.info("Text search complete: %d results in %.2fs", len(results), duration)
         return SearchResponse(results=results, count=len(results))
@@ -682,12 +705,23 @@ def search_resources(request: SearchRequest) -> SearchResponse:
     if not ollama_client.is_available():
         logger.warning("Ollama not available, falling back to text search with fuzzy matching")
         query_lower = request.query.lower()
-        matching_docs = [
-            doc for doc in all_resources
-            if _fuzzy_match_text(query_lower, doc.get("content", "").lower())
-            or _fuzzy_match_text(query_lower, doc.get("title", "").lower())
-        ]
-        results = [_normalize_search_result(doc, score=1.0) for doc in matching_docs[:request.top_k]]
+
+        # Score each document based on title and content matches (same logic as text search)
+        scored_docs = []
+        for doc in all_resources:
+            title_score = _fuzzy_match_text(query_lower, doc.get("title", "").lower())
+            content_score = _fuzzy_match_text(query_lower, doc.get("content", "").lower())
+
+            # Title matches are weighted higher (2x)
+            total_score = (title_score * 2.0) + content_score
+
+            if total_score > 0:
+                scored_docs.append((doc, total_score))
+
+        # Sort by score (descending) and take top_k
+        scored_docs.sort(key=lambda x: x[1], reverse=True)
+        results = [_normalize_search_result(doc, score=score) for doc, score in scored_docs[:request.top_k]]
+
         duration = time.time() - start_time
         logger.info("Fallback text search complete: %d results in %.2fs", len(results), duration)
         return SearchResponse(results=results, count=len(results))

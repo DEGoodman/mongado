@@ -17,6 +17,25 @@ interface SearchResult {
   score: number; // 1.0 for text search, cosine similarity for semantic
 }
 
+// Helper function to highlight search terms in text
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+
+  // Create regex to match query (case-insensitive, whole word or partial)
+  const regex = new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+
+  return parts.map((part, index) =>
+    regex.test(part) ? (
+      <mark key={index} className="bg-yellow-200 font-medium">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
+
 export default function KnowledgeBasePage() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,15 +111,14 @@ export default function KnowledgeBasePage() {
     const timeoutId = setTimeout(() => {
       const trimmedQuery = searchQuery.trim();
 
-      // Only trigger search if query is 3+ characters
-      if (trimmedQuery.length >= 3) {
+      // Trigger search for any non-empty query
+      if (trimmedQuery.length > 0) {
         performSearch(searchQuery);
-      } else if (trimmedQuery.length === 0) {
+      } else {
         // Clear results when search is empty
         setSearchResults([]);
         setHasSearched(false);
       }
-      // For 1-2 character queries, do nothing (wait for user to type more)
     }, 300);
 
     return () => clearTimeout(timeoutId);
@@ -156,8 +174,8 @@ export default function KnowledgeBasePage() {
             </div>
           </form>
           <p className="mt-2 text-sm text-gray-500">
-            Live search enabled - results appear as you type (minimum 3 characters). For AI-powered
-            semantic search, use the AI Assistant.
+            Live search enabled - results appear as you type. For AI-powered semantic search, use
+            the AI Assistant.
           </p>
 
           {/* Search Error */}
@@ -189,10 +207,15 @@ export default function KnowledgeBasePage() {
                       <span className="text-xs font-medium text-gray-500">
                         {result.type === "article" ? "📚 Article" : "🔗 Note"}
                       </span>
+                      <span className="text-xs text-gray-400">
+                        Score: {result.score.toFixed(1)}
+                      </span>
                     </div>
-                    <h4 className="mb-2 font-semibold text-gray-900">{result.title}</h4>
+                    <h4 className="mb-2 font-semibold text-gray-900">
+                      {highlightText(result.title, searchQuery)}
+                    </h4>
                     <p className="line-clamp-2 text-sm text-gray-600">
-                      {result.content.substring(0, 200)}
+                      {highlightText(result.content.substring(0, 200), searchQuery)}
                     </p>
                   </Link>
                 );
