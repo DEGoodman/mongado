@@ -688,6 +688,18 @@ def search_resources(request: SearchRequest) -> SearchResponse:
             total_score = (title_score * 2.0) + content_score
 
             if total_score > 0:
+                # Debug: Check for None IDs before adding
+                is_note = "note_id" in doc
+                resource_id = doc.get("note_id") if is_note else doc.get("id")
+                if resource_id is None:
+                    logger.error(
+                        "Found resource with None ID! Query=%s, Title=%s, Type=%s, Keys=%s",
+                        query_lower,
+                        doc.get("title", "Unknown"),
+                        "note" if is_note else "article",
+                        list(doc.keys())
+                    )
+                    continue  # Skip resources with None IDs
                 scored_docs.append((doc, total_score))
 
         # Sort by score (descending) and take top_k
@@ -716,6 +728,15 @@ def search_resources(request: SearchRequest) -> SearchResponse:
             total_score = (title_score * 2.0) + content_score
 
             if total_score > 0:
+                # Skip resources with None IDs
+                is_note = "note_id" in doc
+                resource_id = doc.get("note_id") if is_note else doc.get("id")
+                if resource_id is None:
+                    logger.warning(
+                        "Skipping resource with None ID in fallback search: Title=%s",
+                        doc.get("title", "Unknown")
+                    )
+                    continue
                 scored_docs.append((doc, total_score))
 
         # Sort by score (descending) and take top_k
