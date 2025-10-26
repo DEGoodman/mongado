@@ -291,9 +291,18 @@ export default function KnowledgeBasePage() {
             <div>
               Both systems support cross-linking - reference notes from articles and vice versa.
             </div>
-            <div>
-              Use the AI Assistant for conversational Q&amp;A and semantic search across your
-              knowledge base.
+            <div className="md:col-span-2">
+              <strong>Fast Text Search:</strong> Use the search box above for instant keyword
+              matching. Best when you know exact terms or want quick results.
+            </div>
+            <div className="md:col-span-2">
+              <strong>AI Semantic Search:</strong> Use the AI Assistant&apos;s Search tab to find
+              conceptually related content, even without exact keyword matches. Takes longer but
+              discovers connections.
+            </div>
+            <div className="md:col-span-2">
+              <strong>Chat with AI:</strong> Use the AI Assistant&apos;s Chat tab to ask questions
+              and get answers with context from your knowledge base.
             </div>
             <div className="md:col-span-2">
               <strong>API Access:</strong> Programmatic access available via the{" "}

@@ -259,18 +259,20 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
           <div className="mt-8 text-center text-gray-500">
             {mode === "chat" ? (
               <>
-                <p className="text-sm">Ask me anything!</p>
+                <p className="text-sm font-medium">💬 Conversational Q&A</p>
                 <p className="mt-2 text-xs">
-                  I can answer questions from your knowledge base or use general knowledge when
-                  needed.
+                  Ask questions like &quot;What is systems thinking?&quot; I&apos;ll search your
+                  knowledge base and provide answers with context. For finding related content, use
+                  the Search tab.
                 </p>
               </>
             ) : (
               <>
-                <p className="text-sm">Semantic Search</p>
+                <p className="text-sm font-medium">🔍 AI Semantic Search</p>
                 <p className="mt-2 text-xs">
-                  Find conceptually related content using AI embeddings. Results may take 15-30
-                  seconds.
+                  Find conceptually related content using AI embeddings. Discovers connections even
+                  without exact keyword matches. Takes 15-30 seconds. For faster keyword search, use
+                  the main search box.
                 </p>
               </>
             )}

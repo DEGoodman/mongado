@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     # Ollama settings
     ollama_host: str = "http://localhost:11434"  # Default Ollama endpoint
     ollama_embed_model: str = "nomic-embed-text"  # Embedding model (small, fast, optimized)
-    ollama_chat_model: str = "llama3.2:latest"  # Chat model (better quality, 3B params)
+    ollama_chat_model: str = "qwen2.5:1.5b"  # Chat model (1.5B params, good quality, small)
     ollama_model: str = "llama3.2:1b"  # Legacy: fallback if embed/chat not set
     ollama_enabled: bool = True  # Enable/disable Ollama features
     ollama_num_ctx: int = 2048  # Context window size (reduce from default 4096 to save memory)
