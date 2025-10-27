@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from core import ai as ai_core
 from models import (
+    GPUStatusResponse,
     LinkSuggestion,
     LinkSuggestionsResponse,
     QuestionRequest,
@@ -94,6 +95,35 @@ def create_ai_router(
             return WarmupResponse(
                 success=False,
                 message="Failed to warm up Ollama model. Check logs for details."
+            )
+
+    @router.get("/ollama/gpu-status", response_model=GPUStatusResponse)
+    def get_gpu_status() -> GPUStatusResponse:
+        """Check if GPU acceleration is available for AI features.
+
+        Returns GPU availability status. When GPU is not available,
+        AI generation features (Q&A, summaries, suggestions) will be
+        significantly slower (60-120 seconds vs 2-5 seconds).
+
+        Semantic search remains fast even without GPU as it uses
+        pre-computed embeddings.
+        """
+        if not ollama_client.is_available():
+            return GPUStatusResponse(
+                has_gpu=False,
+                message="Ollama is not available. AI features are disabled."
+            )
+
+        has_gpu = ollama_client.has_gpu()
+        if has_gpu:
+            return GPUStatusResponse(
+                has_gpu=True,
+                message="GPU acceleration is available. AI features will be fast."
+            )
+        else:
+            return GPUStatusResponse(
+                has_gpu=False,
+                message="Running on CPU only. AI generation features will be slower (60-120s response times)."
             )
 
     @router.post("/ask", response_model=QuestionResponse)

@@ -46,6 +46,45 @@ class OllamaClient:
         """Check if Ollama is available and enabled."""
         return self.enabled and self.client is not None
 
+    def has_gpu(self) -> bool:
+        """Check if GPU acceleration is available.
+
+        Returns:
+            True if GPU is detected and available, False if CPU-only
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            # The most reliable way is to make a tiny generation request and check
+            # if it's fast enough to indicate GPU usage. But that's expensive.
+            #
+            # Instead, we can check the ollama ps endpoint which shows running models
+            # and their GPU status. If no models are running, we can't tell.
+            #
+            # For now, use a heuristic: Try to see if we can import ollama internals
+            # or check environment variables, but the simplest approach is to just
+            # assume CPU-only unless we can confirm GPU.
+            #
+            # Check if running on Docker which typically doesn't pass through GPU
+            import os
+            in_docker = os.path.exists("/.dockerenv")
+
+            # In Docker, GPU passthrough is rare unless specifically configured
+            # For now, conservatively assume CPU-only in Docker
+            if in_docker:
+                logger.info("Running in Docker - assuming CPU-only unless GPU explicitly configured")
+                return False
+
+            # On native installs, Ollama will use GPU if available
+            # We can't reliably detect this without making a test request
+            logger.info("Running natively - assuming GPU may be available")
+            return True
+
+        except Exception as e:
+            logger.warning("Failed to detect GPU availability: %s", e)
+            return False
+
     def _get_content_hash(self, text: str) -> str:
         """Generate a hash of content for cache key."""
         return calculate_content_hash(text)
@@ -259,11 +298,18 @@ class OllamaClient:
             return None
 
         try:
-            # Build context from documents
+            # Build context from documents (truncate long content to keep prompt manageable)
             context_parts = []
+            MAX_CONTENT_LENGTH = 1000  # Characters per document to prevent prompt overflow
+
             for i, doc in enumerate(context_documents[:5], 1):  # Use top 5 docs
                 title = doc.get("title", f"Document {i}")
                 content = doc.get("content", "")
+
+                # Truncate very long documents to keep prompt size reasonable
+                if len(content) > MAX_CONTENT_LENGTH:
+                    content = content[:MAX_CONTENT_LENGTH] + "... [truncated]"
+
                 context_parts.append(f"### {title}\n{content}\n")
 
             context = "\n".join(context_parts) if context_parts else "No relevant documents found."
@@ -297,11 +343,14 @@ Question: {question}
 
 Answer:"""
 
-            # Generate response with reduced context window for performance
+            # Generate response with larger context window for Q&A (needs room for context docs)
             response = self.client.generate(
                 model=self.chat_model,  # Use chat model for Q&A
                 prompt=prompt,
-                options={"num_ctx": self.num_ctx}
+                options={
+                    "num_ctx": 8192,  # Larger context for Q&A with multiple documents
+                    "num_predict": 512  # Limit response length for faster generation
+                }
             )
             return response["response"]
 

@@ -50,6 +50,17 @@ npm run dev
 
 This enables pre-push hooks that run fast quality checks (linting, type checking, formatting) before pushing code. Prevents CI failures and keeps the feedback loop tight.
 
+**Seeding Test Notes (Optional):**
+```bash
+# Restore dev backup with 50+ test notes for development/testing
+docker compose up -d
+cat dev-backups/test-notes-backup.tar.gz | docker compose exec -T neo4j sh -c 'cat > /var/mongado-backups/test-notes.tar.gz'
+docker compose exec -it neo4j /scripts/restore_neo4j.sh test-notes.tar.gz
+docker compose restart neo4j
+```
+
+Articles load automatically from `backend/static/articles/`. Test notes provide a realistic Zettelkasten corpus (~50 notes) for testing AI features, search, and graph traversal.
+
 ## Project Structure
 
 ```

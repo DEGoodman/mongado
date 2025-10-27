@@ -26,7 +26,8 @@ interface AIPanelProps {
 }
 
 export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
-  const [mode, setMode] = useState<AIMode>("chat");
+  const [mode, setMode] = useState<AIMode>("search"); // Default to Search (faster)
+  const [hasGPU, setHasGPU] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       if (mode === "chat") {
         // Chat mode - Q&A with hybrid KB + general knowledge
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout (CPU can be slow)
 
         const response = await fetch(`${API_URL}/api/ask`, {
           method: "POST",
@@ -142,7 +143,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       if (err instanceof Error) {
         if (err.name === "AbortError") {
           errorContent =
-            "Request timed out after 90 seconds. The AI model may be overloaded or the server may need more resources.";
+            "Request timed out after 120 seconds. The AI model may be overloaded or CPU inference is too slow. Try a shorter question or use Search mode.";
         } else if (err.message.includes("Failed to fetch")) {
           errorContent = "Network error: Could not connect to the API server.";
         } else {
@@ -172,37 +173,55 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
     setMessages([]);
   };
 
-  // Warm up Ollama when AI Panel opens (not on page load)
+  // Check GPU status and warm up Ollama when AI Panel opens
   useEffect(() => {
     if (!isOpen) return;
 
-    // Prevent duplicate warmups
-    if (warmupStartedRef.current) {
-      return;
-    }
-    warmupStartedRef.current = true;
-
-    const warmupOllama = async () => {
+    // Check GPU status
+    const checkGPU = async () => {
       try {
-        logger.info("Starting Ollama warmup (AI Assistant opened)");
-        const response = await fetch(`${API_URL}/api/ollama/warmup`, {
-          method: "POST",
-        });
-
+        const response = await fetch(`${API_URL}/api/ollama/gpu-status`);
         if (response.ok) {
           const data = await response.json();
-          logger.info("Ollama warmup completed", { duration: data.duration_seconds });
-        } else {
-          logger.warn("Ollama warmup failed", { status: response.status });
+          setHasGPU(data.has_gpu);
+          logger.info("GPU status checked", { has_gpu: data.has_gpu });
         }
       } catch (err) {
-        // Silently fail - warmup is optional optimization
-        logger.debug("Ollama warmup error (non-critical)", err);
+        logger.warn("Failed to check GPU status", err);
+        setHasGPU(false); // Assume no GPU on error
       }
     };
 
-    // Fire and forget - don't block UI
-    warmupOllama();
+    // Prevent duplicate warmups
+    if (!warmupStartedRef.current) {
+      warmupStartedRef.current = true;
+
+      const warmupOllama = async () => {
+        try {
+          logger.info("Starting Ollama warmup (AI Assistant opened)");
+          const response = await fetch(`${API_URL}/api/ollama/warmup`, {
+            method: "POST",
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            logger.info("Ollama warmup completed", { duration: data.duration_seconds });
+          } else {
+            logger.warn("Ollama warmup failed", { status: response.status });
+          }
+        } catch (err) {
+          // Silently fail - warmup is optional optimization
+          logger.debug("Ollama warmup error (non-critical)", err);
+        }
+      };
+
+      // Fire both in parallel
+      checkGPU();
+      warmupOllama();
+    } else {
+      // Just check GPU if warmup already done
+      checkGPU();
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -228,18 +247,8 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             </svg>
           </button>
         </div>
-        {/* Mode Switcher */}
+        {/* Mode Switcher - Search first (faster) */}
         <div className="flex gap-2">
-          <button
-            onClick={() => handleModeChange("chat")}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
-              mode === "chat"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            💬 Chat
-          </button>
           <button
             onClick={() => handleModeChange("search")}
             className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -249,6 +258,16 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             }`}
           >
             🔍 Search
+          </button>
+          <button
+            onClick={() => handleModeChange("chat")}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              mode === "chat"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            💬 Chat
           </button>
         </div>
       </div>
@@ -265,14 +284,23 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                   knowledge base and provide answers with context. For finding related content, use
                   the Search tab.
                 </p>
+                {hasGPU === false && (
+                  <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-left">
+                    <p className="text-xs font-medium text-yellow-800">⚠️ Development Mode Notice</p>
+                    <p className="mt-1 text-xs text-yellow-700">
+                      Running on CPU without GPU acceleration. Responses may take 60-120 seconds.
+                      This simulates production performance. Use Search tab for faster results.
+                    </p>
+                  </div>
+                )}
               </>
             ) : (
               <>
                 <p className="text-sm font-medium">🔍 AI Semantic Search</p>
                 <p className="mt-2 text-xs">
                   Find conceptually related content using AI embeddings. Discovers connections even
-                  without exact keyword matches. Takes 15-30 seconds. For faster keyword search, use
-                  the main search box.
+                  without exact keyword matches. Fast with pre-computed embeddings. For keyword
+                  search, use the main search box.
                 </p>
               </>
             )}

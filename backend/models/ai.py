@@ -31,6 +31,13 @@ class WarmupResponse(BaseModel):
     message: str
 
 
+class GPUStatusResponse(BaseModel):
+    """Response model for GPU availability status."""
+
+    has_gpu: bool
+    message: str
+
+
 class EmbeddingSyncResponse(BaseModel):
     """Response model for embedding sync trigger."""
 
