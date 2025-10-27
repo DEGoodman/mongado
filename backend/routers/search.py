@@ -91,8 +91,8 @@ def _normalize_search_result(doc: dict[str, Any], score: float = 1.0) -> SearchR
 
 
 def create_search_router(
-    static_articles: list,
-    user_resources_db: list,
+    get_static_articles: Any,  # Callable that returns current articles list
+    get_user_resources_db: Any,  # Callable that returns current user resources
     notes_service: Any,
     ollama_client: Any,
     neo4j_adapter: Any
@@ -101,6 +101,13 @@ def create_search_router(
 
     This allows the router to access global state from main.py without
     circular imports while still keeping routes organized.
+
+    Args:
+        get_static_articles: Callable that returns current static articles list
+        get_user_resources_db: Callable that returns current user resources list
+        notes_service: Notes service instance
+        ollama_client: Ollama client instance
+        neo4j_adapter: Neo4j adapter instance
     """
 
     @router.post("/search", response_model=SearchResponse)
@@ -123,6 +130,9 @@ def create_search_router(
         start_time = time.time()
 
         logger.info("Search request received: query=%s, semantic=%s, limit=%s", request.query, request.semantic, request.top_k)
+        # Get current state dynamically (not captured at router creation time)
+        static_articles = get_static_articles()
+        user_resources_db = get_user_resources_db()
         all_resources = _get_all_resources(static_articles, user_resources_db, notes_service)
 
         # Default: Fast text search with fuzzy matching

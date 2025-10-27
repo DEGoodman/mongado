@@ -21,10 +21,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["ai"])
 
 
-def _get_all_resources(static_articles: list, user_resources_db: list, notes_service: Any) -> list[dict[str, Any]]:
+def _get_all_resources(get_static_articles: Any, get_user_resources_db: Any, notes_service: Any) -> list[dict[str, Any]]:
     """Get all searchable resources (articles + notes).
 
     Notes are normalized to have 'note_id' field to distinguish from articles.
+
+    Args:
+        get_static_articles: Callable that returns current static articles list
+        get_user_resources_db: Callable that returns current user resources list
+        notes_service: Notes service for note operations
     """
     all_notes = notes_service.list_notes(is_admin=True)
 
@@ -40,13 +45,13 @@ def _get_all_resources(static_articles: list, user_resources_db: list, notes_ser
         }
         normalized_notes.append(normalized_note)
 
-    return static_articles + user_resources_db + normalized_notes
+    return get_static_articles() + get_user_resources_db() + normalized_notes
 
 
 def create_ai_router(
     ollama_client: Any,
-    static_articles: list,
-    user_resources_db: list,
+    get_static_articles: Any,  # Callable that returns current articles list
+    get_user_resources_db: Any,  # Callable that returns current user resources
     notes_service: Any,
     neo4j_adapter: Any,
 ) -> APIRouter:
@@ -54,8 +59,8 @@ def create_ai_router(
 
     Args:
         ollama_client: Ollama client for AI operations
-        static_articles: List of static articles
-        user_resources_db: User resources database
+        get_static_articles: Callable that returns current static articles list
+        get_user_resources_db: Callable that returns current user resources list
         notes_service: Notes service for note operations
         neo4j_adapter: Neo4j adapter for embeddings (optional)
 
@@ -105,8 +110,8 @@ def create_ai_router(
                 detail="AI Q&A feature is not available. Ollama is not running or not configured.",
             )
 
-        # Find relevant articles and notes
-        all_resources = _get_all_resources(static_articles, user_resources_db, notes_service)
+        # Find relevant articles and notes - get current state dynamically
+        all_resources = _get_all_resources(get_static_articles, get_user_resources_db, notes_service)
         relevant_docs = []
 
         # Try to use fast semantic search with precomputed embeddings from Neo4j

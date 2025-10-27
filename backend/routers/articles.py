@@ -20,8 +20,8 @@ router = APIRouter(prefix="/api/articles", tags=["articles"])
 
 
 def create_articles_router(
-    static_articles: list,
-    user_resources_db: list,
+    get_static_articles: Any,  # Callable that returns current articles list
+    get_user_resources_db: Any,  # Callable that returns current user resources
     ollama_client: Any,
 ) -> APIRouter:
     """Create articles router with dependencies injected."""
@@ -35,8 +35,8 @@ def create_articles_router(
                 detail="AI summary feature is not available. Ollama is not running or not configured.",
             )
 
-        # Find the article
-        all_resources = static_articles + user_resources_db
+        # Find the article - get current state dynamically
+        all_resources = get_static_articles() + get_user_resources_db()
         article = None
         for resource in all_resources:
             if resource["id"] == resource_id:
@@ -70,8 +70,8 @@ def create_articles_router(
             logger.warning("Ollama not available for concept extraction")
             return ConceptExtractionResponse(concepts=[], count=0)
 
-        # Find the article
-        all_resources = static_articles + user_resources_db
+        # Find the article - get current state dynamically
+        all_resources = get_static_articles() + get_user_resources_db()
         article = None
         for resource in all_resources:
             if resource["id"] == resource_id:
@@ -211,8 +211,8 @@ JSON:"""
             logger.warning("Ollama not available for batch concept extraction")
             return BatchConceptExtractionResponse(concepts=[], count=0, articles_processed=0)
 
-        # Get all static articles (not user resources, just the curated articles)
-        articles = [r for r in static_articles if r.get("type") == "article"]
+        # Get all static articles (not user resources, just the curated articles) - get current state dynamically
+        articles = [r for r in get_static_articles() if r.get("type") == "article"]
 
         if not articles:
             logger.warning("No articles found for batch concept extraction")

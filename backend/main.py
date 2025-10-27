@@ -242,8 +242,8 @@ notes_router = create_notes_router(
 app.include_router(notes_router)
 
 search_router = create_search_router(
-    static_articles=static_articles,
-    user_resources_db=user_resources_db,
+    get_static_articles=lambda: static_articles,  # Callable returns current list
+    get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
     notes_service=notes_service,
     ollama_client=ollama_client,
     neo4j_adapter=neo4j_adapter
@@ -251,16 +251,16 @@ search_router = create_search_router(
 app.include_router(search_router)
 
 articles_router = create_articles_router(
-    static_articles=static_articles,
-    user_resources_db=user_resources_db,
+    get_static_articles=lambda: static_articles,  # Callable returns current list
+    get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
     ollama_client=ollama_client
 )
 app.include_router(articles_router)
 
 ai_router = create_ai_router(
     ollama_client=ollama_client,
-    static_articles=static_articles,
-    user_resources_db=user_resources_db,
+    get_static_articles=lambda: static_articles,  # Callable returns current list
+    get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
     notes_service=notes_service,
     neo4j_adapter=neo4j_adapter
 )
