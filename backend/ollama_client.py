@@ -300,15 +300,15 @@ class OllamaClient:
         try:
             # Build context from documents (truncate long content to keep prompt manageable)
             context_parts = []
-            MAX_CONTENT_LENGTH = 1000  # Characters per document to prevent prompt overflow
+            max_content_length = 1000  # Characters per document to prevent prompt overflow
 
             for i, doc in enumerate(context_documents[:5], 1):  # Use top 5 docs
                 title = doc.get("title", f"Document {i}")
                 content = doc.get("content", "")
 
                 # Truncate very long documents to keep prompt size reasonable
-                if len(content) > MAX_CONTENT_LENGTH:
-                    content = content[:MAX_CONTENT_LENGTH] + "... [truncated]"
+                if len(content) > max_content_length:
+                    content = content[:max_content_length] + "... [truncated]"
 
                 context_parts.append(f"### {title}\n{content}\n")
 
