@@ -200,9 +200,10 @@ class Neo4jAdapter:
         with self.driver.session(database=self.database) as session:
             result = session.run(
                 """
-                MATCH (n:Note {id: $id})
+                MATCH (n:Note)
+                WHERE n.id = $id OR n.note_id = $id
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(target.id) AS links
+                RETURN n, collect(target.note_id) AS links
                 """,
                 id=note_id,
             )
@@ -283,7 +284,8 @@ class Neo4jAdapter:
             # Update note properties
             result = session.run(
                 """
-                MATCH (n:Note {id: $id})
+                MATCH (n:Note)
+                WHERE n.id = $id OR n.note_id = $id
                 SET n.content = $content,
                     n.title = $title,
                     n.tags = $tags,
@@ -325,7 +327,8 @@ class Neo4jAdapter:
         with self.driver.session(database=self.database) as session:
             result = session.run(
                 """
-                MATCH (n:Note {id: $id})
+                MATCH (n:Note)
+                WHERE n.id = $id OR n.note_id = $id
                 DETACH DELETE n
                 RETURN count(n) AS deleted
                 """,
@@ -350,9 +353,11 @@ class Neo4jAdapter:
         with self.driver.session(database=self.database) as session:
             result = session.run(
                 """
-                MATCH (source:Note)-[:LINKS_TO]->(target:Note {id: $id})
+                MATCH (target:Note)
+                WHERE target.id = $id OR target.note_id = $id
+                MATCH (source:Note)-[:LINKS_TO]->(target)
                 OPTIONAL MATCH (source)-[:LINKS_TO]->(other:Note)
-                RETURN source, collect(other.id) AS links
+                RETURN source, collect(COALESCE(other.id, other.note_id)) AS links
                 """,
                 id=note_id,
             )
@@ -380,9 +385,11 @@ class Neo4jAdapter:
         with self.driver.session(database=self.database) as session:
             result = session.run(
                 """
-                MATCH (source:Note {id: $id})-[:LINKS_TO]->(target:Note)
+                MATCH (source:Note)
+                WHERE source.id = $id OR source.note_id = $id
+                MATCH (source)-[:LINKS_TO]->(target:Note)
                 OPTIONAL MATCH (target)-[:LINKS_TO]->(other:Note)
-                RETURN target, collect(other.id) AS links
+                RETURN target, collect(COALESCE(other.id, other.note_id)) AS links
                 """,
                 id=note_id,
             )
@@ -433,8 +440,9 @@ class Neo4jAdapter:
             # Create link even if target doesn't exist yet (forward reference)
             session.run(
                 """
-                MATCH (source:Note {id: $source_id})
-                MERGE (target:Note {id: $target_id})
+                MATCH (source:Note)
+                WHERE source.id = $source_id OR source.note_id = $source_id
+                MERGE (target:Note {note_id: $target_id})
                 MERGE (source)-[:LINKS_TO]->(target)
                 """,
                 source_id=source_id,
@@ -450,7 +458,9 @@ class Neo4jAdapter:
         """
         session.run(
             """
-            MATCH (source:Note {id: $source_id})-[r:LINKS_TO]->()
+            MATCH (source:Note)
+            WHERE source.id = $source_id OR source.note_id = $source_id
+            MATCH (source)-[r:LINKS_TO]->()
             DELETE r
             """,
             source_id=source_id,
