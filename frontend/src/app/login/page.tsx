@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { setAdminToken } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -122,6 +123,15 @@ export default function LoginPage() {
             >
               {isLoading ? "Verifying..." : "Sign in"}
             </button>
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/"
+              className="text-sm text-indigo-600 hover:text-indigo-500 hover:underline"
+            >
+              ← Back to Home
+            </Link>
           </div>
         </form>
       </div>
