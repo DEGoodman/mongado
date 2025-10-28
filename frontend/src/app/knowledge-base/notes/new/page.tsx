@@ -415,6 +415,7 @@ export default function NewNotePage() {
               mode={settings.aiMode}
               content={content}
               isOpen={aiSuggestionsOpen}
+              onClose={() => setAiSuggestionsOpen(false)}
               onAddTag={handleAddTag}
               onInsertLink={handleInsertLink}
             />

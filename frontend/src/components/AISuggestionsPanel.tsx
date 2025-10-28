@@ -32,6 +32,7 @@ interface AISuggestionsPanelProps {
   mode: AiMode;
   content?: string;
   isOpen: boolean;
+  onClose?: () => void;
   onAddTag: (tag: string) => void;
   onInsertLink: (noteId: string) => void;
 }
@@ -52,6 +53,7 @@ export default function AISuggestionsPanel({
   mode,
   content,
   isOpen,
+  onClose,
   onAddTag,
   onInsertLink,
 }: AISuggestionsPanelProps) {
@@ -180,152 +182,182 @@ export default function AISuggestionsPanel({
   const hasAnySuggestions = totalSuggestions > 0;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
-          {mode === "real-time" && (
-            <div className="mt-1 flex items-center gap-2">
-              {loading && <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>}
-              <span className="text-xs text-green-700">Automatic mode</span>
-            </div>
-          )}
-        </div>
-        {isOutdated && !loading && (
-          <button
-            onClick={fetchSuggestions}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            title="Content has changed - refresh suggestions"
-          >
-            <span>🔄</span>
-            <span>Refresh</span>
-          </button>
-        )}
-      </div>
+    <>
+      {/* Backdrop for tablet/mobile */}
+      <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={onClose} />
 
-      {/* Loading State */}
-      {loading && (
-        <div className="space-y-4">
-          <div className="rounded-lg bg-blue-50 p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
-              <p className="text-sm text-blue-900">{loadingStatus}</p>
+      {/* Panel container - responsive positioning */}
+      <div className="fixed bottom-0 right-0 top-0 z-50 w-full overflow-y-auto bg-white shadow-xl sm:max-w-md lg:static lg:z-auto lg:max-w-none lg:shadow-none">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm lg:shadow-none">
+          {/* Header with close button for mobile/tablet */}
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
+              {mode === "real-time" && (
+                <div className="mt-1 flex items-center gap-2">
+                  {loading && (
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+                  )}
+                  <span className="text-xs text-green-700">Automatic mode</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isOutdated && !loading && (
+                <button
+                  onClick={fetchSuggestions}
+                  className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  title="Content has changed - refresh suggestions"
+                >
+                  <span>🔄</span>
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+              )}
+              {/* Close button for mobile/tablet */}
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+                  aria-label="Close suggestions"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Skeleton UI */}
-          <div className="space-y-4">
-            <div>
-              <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200"></div>
-              <div className="space-y-2">
-                {[1, 2].map((i) => (
+          {/* Loading State */}
+          {loading && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-blue-50 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+                  <p className="text-sm text-blue-900">{loadingStatus}</p>
+                </div>
+              </div>
+
+              {/* Skeleton UI */}
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200"></div>
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="animate-pulse rounded-lg border border-gray-200 bg-gray-50 p-4"
+                      >
+                        <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
+                        <div className="h-3 w-full rounded bg-gray-200"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && !hasAnySuggestions && !error && (
+            <p className="text-sm leading-relaxed text-gray-500">
+              {mode === "on-demand"
+                ? "No suggestions yet. Click the button above to generate AI recommendations."
+                : "Suggestions will appear automatically as you type."}
+            </p>
+          )}
+
+          {/* Outdated Warning */}
+          {isOutdated && !loading && hasAnySuggestions && (
+            <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+              ⚠️ Suggestions may be outdated - content has changed since generation.
+            </div>
+          )}
+
+          {/* Tag Suggestions */}
+          {!loading && tagSuggestions.length > 0 && (
+            <div className="mb-6">
+              <h4 className="mb-3 text-sm font-semibold text-gray-700">🏷️ Suggested Tags</h4>
+              <div className="space-y-3">
+                {tagSuggestions.map((suggestion, index) => (
                   <div
-                    key={i}
-                    className="animate-pulse rounded-lg border border-gray-200 bg-gray-50 p-4"
+                    key={index}
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
                   >
-                    <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
-                    <div className="h-3 w-full rounded bg-gray-200"></div>
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <span className="font-medium text-gray-900">{suggestion.tag}</span>
+                      <button
+                        onClick={() => {
+                          onAddTag(suggestion.tag);
+                          // Remove from current suggestions (optimistic UI)
+                          setTagSuggestions((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                        className="flex-shrink-0 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Error State */}
-      {error && !loading && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && !hasAnySuggestions && !error && (
-        <p className="text-sm leading-relaxed text-gray-500">
-          {mode === "on-demand"
-            ? "No suggestions yet. Click the button above to generate AI recommendations."
-            : "Suggestions will appear automatically as you type."}
-        </p>
-      )}
-
-      {/* Outdated Warning */}
-      {isOutdated && !loading && hasAnySuggestions && (
-        <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
-          ⚠️ Suggestions may be outdated - content has changed since generation.
-        </div>
-      )}
-
-      {/* Tag Suggestions */}
-      {!loading && tagSuggestions.length > 0 && (
-        <div className="mb-6">
-          <h4 className="mb-3 text-sm font-semibold text-gray-700">🏷️ Suggested Tags</h4>
-          <div className="space-y-3">
-            {tagSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <span className="font-medium text-gray-900">{suggestion.tag}</span>
-                  <button
-                    onClick={() => {
-                      onAddTag(suggestion.tag);
-                      // Remove from current suggestions (optimistic UI)
-                      setTagSuggestions((prev) => prev.filter((_, i) => i !== index));
-                    }}
-                    className="flex-shrink-0 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+          {/* Link Suggestions */}
+          {!loading && linkSuggestions.length > 0 && (
+            <div>
+              <h4 className="mb-3 text-sm font-semibold text-gray-700">🔗 Suggested Links</h4>
+              <div className="space-y-3">
+                {linkSuggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
                   >
-                    Add
-                  </button>
-                </div>
-                <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Link Suggestions */}
-      {!loading && linkSuggestions.length > 0 && (
-        <div>
-          <h4 className="mb-3 text-sm font-semibold text-gray-700">🔗 Suggested Links</h4>
-          <div className="space-y-3">
-            {linkSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 font-medium text-gray-900">{suggestion.title}</div>
-                    <code className="text-xs text-gray-500">{suggestion.note_id}</code>
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 font-medium text-gray-900">{suggestion.title}</div>
+                        <code className="text-xs text-gray-500">{suggestion.note_id}</code>
+                      </div>
+                      <button
+                        onClick={() => {
+                          onInsertLink(suggestion.note_id);
+                          // Remove from current suggestions (optimistic UI)
+                          setLinkSuggestions((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                        className="flex-shrink-0 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                      >
+                        Insert
+                      </button>
+                    </div>
+                    <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      onInsertLink(suggestion.note_id);
-                      // Remove from current suggestions (optimistic UI)
-                      setLinkSuggestions((prev) => prev.filter((_, i) => i !== index));
-                    }}
-                    className="flex-shrink-0 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
-                  >
-                    Insert
-                  </button>
-                </div>
-                <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* Toast for automatic mode */}
-      <Toast
-        message="AI suggestions ready"
-        isVisible={showToast}
-        onClose={() => setShowToast(false)}
-        duration={4000}
-      />
-    </div>
+          {/* Toast for automatic mode */}
+          <Toast
+            message="AI suggestions ready"
+            isVisible={showToast}
+            onClose={() => setShowToast(false)}
+            duration={4000}
+          />
+        </div>
+      </div>
+    </>
   );
 }
