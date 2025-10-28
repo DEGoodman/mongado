@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { logger } from "@/lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 
 type AIMode = "chat" | "search";
 
@@ -270,47 +271,49 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
           <div className="flex items-center gap-2">
-            {/* Settings Dropdown */}
-            <div className="settings-dropdown relative">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="text-gray-400 transition hover:text-gray-600"
-                aria-label="Settings"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-8 z-10 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-                  <div className="mb-2 text-xs font-medium text-gray-700">Developer Settings</div>
-                  <label className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">Force CPU Mode</span>
-                    <input
-                      type="checkbox"
-                      checked={forceCpuMode}
-                      onChange={(e) => setForceCpuMode(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+            {/* Settings Dropdown - Only in Development */}
+            {IS_DEVELOPMENT && (
+              <div className="settings-dropdown relative">
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="text-gray-400 transition hover:text-gray-600"
+                  aria-label="Settings"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
                     />
-                  </label>
-                  <p className="mt-2 text-xs text-gray-500">
-                    Simulates CPU-only environment for testing production performance on GPU-enabled
-                    machines.
-                  </p>
-                </div>
-              )}
-            </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </button>
+                {showSettings && (
+                  <div className="absolute right-0 top-8 z-10 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                    <div className="mb-2 text-xs font-medium text-gray-700">Developer Settings</div>
+                    <label className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">Force CPU Mode</span>
+                      <input
+                        type="checkbox"
+                        checked={forceCpuMode}
+                        onChange={(e) => setForceCpuMode(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </label>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Simulates CPU-only environment for testing production performance on
+                      GPU-enabled machines.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={onClose}
               className="text-gray-400 transition hover:text-gray-600"
@@ -366,12 +369,11 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                 </p>
                 {hasGPU === false && (
                   <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-left">
-                    <p className="text-xs font-medium text-yellow-800">
-                      ⚠️ Development Mode Notice
-                    </p>
+                    <p className="text-xs font-medium text-yellow-800">⚠️ Performance Notice</p>
                     <p className="mt-1 text-xs text-yellow-700">
-                      Running on CPU without GPU acceleration. Responses may take 60-120 seconds.
-                      This simulates production performance. Use Search tab for faster results.
+                      This feature is under active development and currently running on CPU-only
+                      infrastructure. Response times may be 60-120 seconds. For faster results, use
+                      the Search tab.
                     </p>
                   </div>
                 )}
