@@ -4,6 +4,9 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Session TTL: 7 days (in milliseconds)
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Get authorization headers if admin token is set
  */
@@ -98,11 +101,27 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
 }
 
 /**
- * Check if user is authenticated
+ * Check if user is authenticated and session hasn't expired
  */
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
-  return !!localStorage.getItem("admin_token");
+
+  const token = localStorage.getItem("admin_token");
+  const loginTime = localStorage.getItem("admin_token_timestamp");
+
+  if (!token || !loginTime) {
+    return false;
+  }
+
+  // Check if session has expired
+  const elapsed = Date.now() - parseInt(loginTime, 10);
+  if (elapsed > SESSION_TTL) {
+    // Session expired - clear token
+    clearAdminToken();
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -111,6 +130,7 @@ export function isAuthenticated(): boolean {
 export function setAdminToken(token: string): void {
   if (typeof window !== "undefined") {
     localStorage.setItem("admin_token", token);
+    localStorage.setItem("admin_token_timestamp", Date.now().toString());
   }
 }
 
@@ -120,6 +140,7 @@ export function setAdminToken(token: string): void {
 export function clearAdminToken(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_token_timestamp");
   }
 }
 

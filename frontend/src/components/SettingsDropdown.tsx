@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSettings } from "@/hooks/useSettings";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
+import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -12,6 +14,7 @@ export default function SettingsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,6 +58,13 @@ export default function SettingsDropdown() {
     if (oldMode === "off" && (newMode === "on-demand" || newMode === "real-time")) {
       await warmupOllama();
     }
+  };
+
+  const handleLogout = () => {
+    clearAdminToken();
+    logger.info("User logged out");
+    setIsOpen(false);
+    router.push("/login");
   };
 
   return (
@@ -136,6 +146,18 @@ export default function SettingsDropdown() {
                 </p>
               )}
             </div>
+
+            {/* Logout section */}
+            {isAuthenticated() && (
+              <div className="mt-4 border-t border-gray-200 pt-3">
+                <button
+                  onClick={handleLogout}
+                  className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

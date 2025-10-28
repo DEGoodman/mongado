@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
-import AuthStatusBanner from "@/components/AuthStatusBanner";
 import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
@@ -13,6 +12,7 @@ import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
+import { isAuthenticated } from "@/lib/api/client";
 
 export default function NewNotePage() {
   const router = useRouter();
@@ -81,6 +81,13 @@ export default function NewNotePage() {
   };
 
   const handleSave = async (forceSave = false) => {
+    // Check authentication before saving
+    if (!isAuthenticated()) {
+      setError("You must be logged in to create notes. Changes you make will not be persisted.");
+      logger.warn("Unauthenticated user attempted to create note");
+      return;
+    }
+
     if (!content.trim()) {
       setError("Content cannot be empty");
       return;
@@ -145,6 +152,13 @@ export default function NewNotePage() {
 
   const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
     if (!savedNoteId) return;
+
+    // Check authentication before saving
+    if (!isAuthenticated()) {
+      setError("You must be logged in to save notes. Changes you make will not be persisted.");
+      logger.warn("Unauthenticated user attempted to insert link");
+      return;
+    }
 
     try {
       // Fetch the current note
@@ -236,9 +250,6 @@ export default function NewNotePage() {
         <h1 className="mb-2 text-3xl font-bold text-gray-900">Create New Note</h1>
         <p className="text-gray-600">Add a new note to your Zettelkasten knowledge base</p>
       </div>
-
-      {/* Authentication status banner */}
-      <AuthStatusBanner mode="auto" />
 
       {/* First-Person Voice Reminder */}
       {showFirstPersonReminder && (

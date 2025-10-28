@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
 import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
-import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
@@ -23,6 +22,7 @@ import {
 } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
+import { isAuthenticated } from "@/lib/api/client";
 
 export default function NoteDetailPage() {
   const params = useParams();
@@ -128,6 +128,13 @@ export default function NoteDetailPage() {
   };
 
   const handleSave = async (forceSave = false) => {
+    // Check authentication before saving
+    if (!isAuthenticated()) {
+      setError("You must be logged in to save notes. Changes you make will not be persisted.");
+      logger.warn("Unauthenticated user attempted to save note");
+      return;
+    }
+
     if (!editContent.trim()) {
       setError("Content cannot be empty");
       return;
@@ -190,6 +197,13 @@ export default function NoteDetailPage() {
   const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
     if (!note) return;
 
+    // Check authentication before saving
+    if (!isAuthenticated()) {
+      setError("You must be logged in to save notes. Changes you make will not be persisted.");
+      logger.warn("Unauthenticated user attempted to insert link");
+      return;
+    }
+
     try {
       // Add the wikilink to the end of the content
       const updatedContent = note.content.trim() + `\n\n[[${linkNoteId}]]`;
@@ -223,6 +237,13 @@ export default function NoteDetailPage() {
   };
 
   const handleDelete = async () => {
+    // Check authentication before deleting
+    if (!isAuthenticated()) {
+      setError("You must be logged in to delete notes.");
+      logger.warn("Unauthenticated user attempted to delete note");
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
       return;
     }
@@ -308,9 +329,6 @@ export default function NoteDetailPage() {
 
       {/* AI Button */}
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
-
-      {/* Auth status indicator at top */}
-      <AuthStatusIndicator />
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { AuthStatusIndicator } from "@/components/AuthStatusBanner";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import { logger } from "@/lib/logger";
 
@@ -287,7 +286,6 @@ export default function NotesGraphPage() {
   if (!graphData || graphData.nodes.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <AuthStatusIndicator />
         <div className="mb-6">
           <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
             ← Back to notes
@@ -310,8 +308,6 @@ export default function NotesGraphPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AuthStatusIndicator />
-
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
