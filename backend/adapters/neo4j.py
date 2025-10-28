@@ -468,8 +468,11 @@ class Neo4jAdapter:
         Returns:
             Dict representation including all available fields
         """
+        # Handle both 'id' and 'note_id' properties for backward compatibility
+        node_id = node.get("id") or node.get("note_id") or node.get("article_id")
+
         result = {
-            "id": node["id"],
+            "id": node_id,
             "title": node.get("title", ""),
             "content": node.get("content", ""),
             "created_at": node.get("created_at", 0.0),
