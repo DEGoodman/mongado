@@ -114,7 +114,7 @@ export default function SettingsDropdown() {
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
-                Real-time
+                Automatic
               </button>
             </div>
 
@@ -131,7 +131,8 @@ export default function SettingsDropdown() {
               )}
               {settings.aiMode === "real-time" && (
                 <p>
-                  Auto-update suggestions as you type. Most helpful, but may impact performance.
+                  Automatically generate suggestions in the background as you type. Panel stays
+                  collapsed until you open it.
                 </p>
               )}
             </div>

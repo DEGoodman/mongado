@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { logger } from "@/lib/logger";
 import type { AiMode } from "@/lib/settings";
+import Toast from "@/components/Toast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const DEBOUNCE_MS = 5000; // 5 second debounce for automatic mode
@@ -61,6 +62,7 @@ export default function AISuggestionsPanel({
   const [error, setError] = useState<string | null>(null);
   const [cachedData, setCachedData] = useState<CachedSuggestions | null>(null);
   const [isOutdated, setIsOutdated] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Check if current content matches cached content
@@ -118,6 +120,11 @@ export default function AISuggestionsPanel({
         tags: tagsData.count,
         links: linksData.count,
       });
+
+      // Show toast notification for automatic mode
+      if (mode === "real-time") {
+        setShowToast(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load suggestions";
       setError(message);
@@ -126,7 +133,7 @@ export default function AISuggestionsPanel({
       setLoading(false);
       setLoadingStatus("");
     }
-  }, [noteId, content]);
+  }, [noteId, content, mode]);
 
   // On-demand mode: fetch when panel is opened (if no cached data or outdated)
   useEffect(() => {
@@ -179,8 +186,8 @@ export default function AISuggestionsPanel({
           <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
           {mode === "real-time" && (
             <div className="mt-1 flex items-center gap-2">
-              {loading && <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>}
-              <span className="text-xs text-gray-600">Automatic mode</span>
+              {loading && <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>}
+              <span className="text-xs text-green-700">Automatic mode</span>
             </div>
           )}
         </div>
@@ -311,6 +318,14 @@ export default function AISuggestionsPanel({
           </div>
         </div>
       )}
+
+      {/* Toast for automatic mode */}
+      <Toast
+        message="AI suggestions ready"
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+        duration={4000}
+      />
     </div>
   );
 }

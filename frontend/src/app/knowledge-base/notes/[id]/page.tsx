@@ -47,6 +47,7 @@ export default function NoteDetailPage() {
   const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
   const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
   const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
+  const [aiPrewarming, setAiPrewarming] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -87,6 +88,39 @@ export default function NoteDetailPage() {
 
     fetchData();
   }, [noteId]);
+
+  // Pre-warm Ollama (lightweight) when entering edit mode
+  useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    async function prewarmOllama() {
+      if (!isEditing || settings.aiMode === "off" || aiPrewarming) {
+        return;
+      }
+
+      setAiPrewarming(true);
+      logger.info("Pre-warming Ollama model for edit mode");
+
+      try {
+        // Just warm up the model (lightweight) - don't generate suggestions yet
+        const response = await fetch(`${API_URL}/api/ollama/warmup`, {
+          method: "POST",
+        });
+
+        if (response.ok) {
+          logger.info("Ollama model pre-warmed successfully");
+        }
+      } catch (err) {
+        logger.error("Failed to pre-warm Ollama", err);
+        // Don't block - warmup will happen on first suggestion request
+      } finally {
+        setAiPrewarming(false);
+      }
+    }
+
+    prewarmOllama();
+    // Only depend on isEditing and aiMode - don't re-run on content changes
+  }, [isEditing, settings.aiMode, aiPrewarming]);
 
   // Check if content has wikilinks
   const hasWikilinks = (text: string): boolean => {
