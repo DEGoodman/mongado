@@ -35,6 +35,7 @@ export default function NewNotePage() {
   const [showAtomicityWarning, setShowAtomicityWarning] = useState(false);
   const [atomicityIssues, setAtomicityIssues] = useState<string[]>([]);
   const [showFirstPersonReminder, setShowFirstPersonReminder] = useState(true);
+  const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -285,9 +286,9 @@ export default function NewNotePage() {
       )}
 
       {/* Form */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={`grid gap-6 ${aiSuggestionsOpen ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
         {/* Editor Column */}
-        <div className="space-y-4 lg:col-span-2">
+        <div className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}>
           {/* Title (optional) */}
           <div>
             <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
@@ -369,7 +370,7 @@ export default function NewNotePage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-wrap gap-3 pt-4">
             <button
               onClick={() => handleSave()}
               disabled={saving || !content.trim()}
@@ -384,16 +385,25 @@ export default function NewNotePage() {
             >
               Cancel
             </button>
+            {settings.aiMode !== "off" && (
+              <button
+                onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
+                className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
+              >
+                {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+              </button>
+            )}
           </div>
         </div>
 
         {/* AI Suggestions Panel */}
-        {settings.aiMode !== "off" && (
+        {settings.aiMode !== "off" && aiSuggestionsOpen && (
           <div className="lg:col-span-1">
             <AISuggestionsPanel
               noteId="new-note-temp-id"
               mode={settings.aiMode}
               content={content}
+              isOpen={aiSuggestionsOpen}
               onAddTag={handleAddTag}
               onInsertLink={handleInsertLink}
             />

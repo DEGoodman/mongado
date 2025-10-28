@@ -46,6 +46,7 @@ export default function NoteDetailPage() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
   const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
+  const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -353,9 +354,13 @@ export default function NoteDetailPage() {
 
             {/* Content */}
             {isEditing ? (
-              <div className="grid gap-6 lg:grid-cols-3">
+              <div
+                className={`grid gap-6 ${aiSuggestionsOpen ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}
+              >
                 {/* Editor Column */}
-                <div className="space-y-4 lg:col-span-2">
+                <div
+                  className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}
+                >
                   <div>
                     <label className="mb-1 block text-sm font-medium text-gray-700">
                       Title (optional)
@@ -393,7 +398,7 @@ export default function NoteDetailPage() {
                     />
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <button
                       onClick={() => handleSave()}
                       disabled={saving || !editContent.trim()}
@@ -408,16 +413,25 @@ export default function NoteDetailPage() {
                     >
                       Cancel
                     </button>
+                    {settings.aiMode !== "off" && (
+                      <button
+                        onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
+                        className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
+                      >
+                        {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* AI Suggestions Panel */}
-                {settings.aiMode !== "off" && (
+                {settings.aiMode !== "off" && aiSuggestionsOpen && (
                   <div className="lg:col-span-1">
                     <AISuggestionsPanel
                       noteId={noteId}
                       mode={settings.aiMode}
                       content={editContent}
+                      isOpen={aiSuggestionsOpen}
                       onAddTag={handleAddTag}
                       onInsertLink={handleInsertLink}
                     />
