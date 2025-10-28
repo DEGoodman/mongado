@@ -13,8 +13,16 @@ export default function SettingsDropdown() {
   const { settings, updateSettings } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Check authentication status when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsUserAuthenticated(isAuthenticated());
+    }
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -148,7 +156,7 @@ export default function SettingsDropdown() {
             </div>
 
             {/* Logout section */}
-            {isAuthenticated() && (
+            {isUserAuthenticated && (
               <div className="mt-4 border-t border-gray-200 pt-3">
                 <button
                   onClick={handleLogout}

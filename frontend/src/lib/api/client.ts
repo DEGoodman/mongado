@@ -109,8 +109,15 @@ export function isAuthenticated(): boolean {
   const token = localStorage.getItem("admin_token");
   const loginTime = localStorage.getItem("admin_token_timestamp");
 
-  if (!token || !loginTime) {
+  if (!token) {
     return false;
+  }
+
+  // Migration: If token exists but no timestamp, set timestamp now
+  // This handles sessions created before TTL feature was added
+  if (!loginTime) {
+    localStorage.setItem("admin_token_timestamp", Date.now().toString());
+    return true;
   }
 
   // Check if session has expired
