@@ -13,10 +13,16 @@ import SettingsDropdown from "@/components/SettingsDropdown";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
+import { config } from "@/lib/config";
 
 export default function NewNotePage() {
   const router = useRouter();
   const { settings } = useSettings();
+
+  // Check if AI features should be available
+  // AI is available if: user is authenticated OR unauthenticated AI is allowed
+  const aiAvailable = isAuthenticated() || config.allowUnauthenticatedAI;
+
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState("");
@@ -396,7 +402,7 @@ export default function NewNotePage() {
             >
               Cancel
             </button>
-            {settings.aiMode !== "off" && (
+            {settings.aiMode !== "off" && aiAvailable && (
               <button
                 onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
                 className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
@@ -408,7 +414,7 @@ export default function NewNotePage() {
         </div>
 
         {/* AI Suggestions Panel */}
-        {settings.aiMode !== "off" && aiSuggestionsOpen && (
+        {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
           <div className="lg:col-span-1">
             <AISuggestionsPanel
               noteId="new-note-temp-id"
