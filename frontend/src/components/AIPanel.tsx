@@ -265,7 +265,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed right-0 top-0 z-50 flex h-screen w-full flex-col border-l border-gray-200 bg-white shadow-lg md:w-96">
+    <div className="fixed inset-0 right-0 z-50 flex h-full max-h-dvh w-full flex-col border-l border-gray-200 bg-white shadow-lg md:inset-auto md:top-0 md:h-screen md:w-96">
       {/* Header */}
       <div className="border-b border-gray-200 p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -356,7 +356,10 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div
+        className="flex-1 space-y-4 overflow-y-auto p-4"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         {messages.length === 0 && (
           <div className="mt-8 text-center text-gray-500">
             {mode === "chat" ? (
