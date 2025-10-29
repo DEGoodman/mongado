@@ -60,6 +60,10 @@ export default function ArticleDetailPage() {
     fetchArticle();
   }, [articleId, API_URL]);
 
+  const handleTagClick = (tag: string) => {
+    router.push(`/knowledge-base/articles?tag=${encodeURIComponent(tag)}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -135,7 +139,9 @@ export default function ArticleDetailPage() {
           </div>
 
           {/* Tags */}
-          {article.tags.length > 0 && <TagPillList tags={article.tags} showHash className="mt-4" />}
+          {article.tags.length > 0 && (
+            <TagPillList tags={article.tags} showHash onClick={handleTagClick} className="mt-4" />
+          )}
         </div>
       </header>
 

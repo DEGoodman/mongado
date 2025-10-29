@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { logger } from "@/lib/logger";
 import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import AIPanel from "@/components/AIPanel";
@@ -20,6 +21,10 @@ interface Resource {
 }
 
 export default function ArticlesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tagFilter = searchParams.get("tag");
+
   const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
@@ -45,6 +50,12 @@ export default function ArticlesPage() {
   }, [fetchResources]);
 
   const filteredResources = resources.filter((resource) => {
+    // Filter by tag if tag query param is present
+    if (tagFilter && !resource.tags.includes(tagFilter)) {
+      return false;
+    }
+
+    // Filter by search query
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -53,6 +64,14 @@ export default function ArticlesPage() {
       resource.tags.some((tag) => tag.toLowerCase().includes(query))
     );
   });
+
+  const handleTagClick = (tag: string) => {
+    router.push(`/knowledge-base/articles?tag=${encodeURIComponent(tag)}`);
+  };
+
+  const clearTagFilter = () => {
+    router.push("/knowledge-base/articles");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -73,6 +92,24 @@ export default function ArticlesPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Tag Filter Banner */}
+        {tagFilter && (
+          <div className="mb-6 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-blue-900">Filtering by tag:</span>
+              <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                #{tagFilter}
+              </span>
+            </div>
+            <button
+              onClick={clearTagFilter}
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
+
         {/* Search Bar */}
         <div className="mb-6">
           <input
@@ -140,7 +177,12 @@ export default function ArticlesPage() {
 
                   {/* Tags */}
                   {resource.tags.length > 0 && (
-                    <TagPillList tags={resource.tags} showHash className="mt-4" />
+                    <TagPillList
+                      tags={resource.tags}
+                      showHash
+                      onClick={handleTagClick}
+                      className="mt-4"
+                    />
                   )}
 
                   {/* Read more indicator */}

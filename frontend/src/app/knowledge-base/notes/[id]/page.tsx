@@ -299,6 +299,10 @@ export default function NoteDetailPage() {
     logger.info("Link inserted from AI suggestion", { noteId });
   };
 
+  const handleTagClick = (tag: string) => {
+    router.push(`/knowledge-base/notes?tag=${encodeURIComponent(tag)}`);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -416,7 +420,7 @@ export default function NoteDetailPage() {
               {/* Tags */}
               {note.tags.length > 0 && !isEditing && (
                 <div className="mt-4">
-                  <TagPillList tags={note.tags} />
+                  <TagPillList tags={note.tags} onClick={handleTagClick} />
                 </div>
               )}
             </div>

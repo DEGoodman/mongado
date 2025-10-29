@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { listNotes, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
@@ -11,6 +12,10 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 
 export default function NotesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tagFilter = searchParams.get("tag");
+
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +39,17 @@ export default function NotesPage() {
 
     fetchNotes();
   }, []);
+
+  // Filter notes by tag
+  const filteredNotes = tagFilter ? notes.filter((note) => note.tags.includes(tagFilter)) : notes;
+
+  const handleTagClick = (tag: string) => {
+    router.push(`/knowledge-base/notes?tag=${encodeURIComponent(tag)}`);
+  };
+
+  const clearTagFilter = () => {
+    router.push("/knowledge-base/notes");
+  };
 
   if (loading) {
     return (
@@ -91,8 +107,26 @@ export default function NotesPage() {
         </div>
       </div>
 
+      {/* Tag Filter Banner */}
+      {tagFilter && (
+        <div className="mb-6 flex items-center justify-between rounded-lg border border-purple-200 bg-purple-50 p-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-purple-900">Filtering by tag:</span>
+            <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-800">
+              {tagFilter}
+            </span>
+          </div>
+          <button
+            onClick={clearTagFilter}
+            className="text-sm text-purple-600 hover:text-purple-800 hover:underline"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
       {/* Notes list */}
-      {notes.length === 0 ? (
+      {filteredNotes.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-12 text-center">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
@@ -120,7 +154,7 @@ export default function NotesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {notes.map((note) => (
+          {filteredNotes.map((note) => (
             <Link
               key={note.id}
               href={`/knowledge-base/notes/${note.id}`}
@@ -156,7 +190,9 @@ export default function NotesPage() {
                   </div>
 
                   {/* Tags */}
-                  {note.tags.length > 0 && <TagPillList tags={note.tags} maxVisible={3} />}
+                  {note.tags.length > 0 && (
+                    <TagPillList tags={note.tags} maxVisible={3} onClick={handleTagClick} />
+                  )}
                 </div>
 
                 {/* Arrow icon */}
