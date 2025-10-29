@@ -13,6 +13,9 @@ from database import get_database
 from main import app
 from notes_service import get_notes_service
 
+# Test admin token constant
+TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
+
 
 @pytest.fixture
 def client() -> TestClient:
@@ -23,8 +26,11 @@ def client() -> TestClient:
 @pytest.fixture
 def admin_headers() -> dict[str, str]:
     """Get admin authentication headers for testing."""
+    # Use the actual admin token from settings for local development
+    # In CI, this will be overridden by environment variable
     settings = get_settings()
-    return {"Authorization": f"Bearer {settings.admin_token}"}
+    token = settings.admin_token or TEST_ADMIN_TOKEN
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture(autouse=True)
