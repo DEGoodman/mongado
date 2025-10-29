@@ -32,7 +32,7 @@ def _get_all_resources(get_static_articles: Any, get_user_resources_db: Any, not
         get_user_resources_db: Callable that returns current user resources list
         notes_service: Notes service for note operations
     """
-    all_notes = notes_service.list_notes(is_admin=True)
+    all_notes = notes_service.list_notes()
 
     # Normalize note structure to match article structure for search
     normalized_notes = []
@@ -222,7 +222,7 @@ def create_ai_router(
             return TagSuggestionsResponse(suggestions=[], count=0)
 
         # Get all existing tags from all notes for context
-        all_notes = notes_service.list_notes(is_admin=True)
+        all_notes = notes_service.list_notes()
         existing_tags = set()
         for n in all_notes:
             existing_tags.update(n.get("tags", []))
@@ -297,7 +297,7 @@ def create_ai_router(
             return LinkSuggestionsResponse(suggestions=[], count=0)
 
         # Get all other notes and filter candidates using pure function
-        all_notes = notes_service.list_notes(is_admin=True)
+        all_notes = notes_service.list_notes()
         existing_links = note.get("links", [])
 
         candidate_notes = ai_core.filter_link_candidates(

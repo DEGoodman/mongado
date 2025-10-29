@@ -57,7 +57,7 @@ def _get_all_resources(static_articles: list, user_resources_db: list, notes_ser
 
     Notes are normalized to have 'note_id' field to distinguish from articles.
     """
-    all_notes = notes_service.list_notes(is_admin=True)
+    all_notes = notes_service.list_notes()
 
     # Normalize note structure to match article structure for search
     normalized_notes = []
