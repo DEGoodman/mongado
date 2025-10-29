@@ -8,6 +8,9 @@ import ArticleTableOfContents from "@/components/ArticleTableOfContents";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
+import Breadcrumb from "@/components/Breadcrumb";
+import Badge from "@/components/Badge";
+import { TagPillList } from "@/components/TagPill";
 import { logger } from "@/lib/logger";
 
 interface Article {
@@ -98,48 +101,41 @@ export default function ArticleDetailPage() {
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white shadow-sm">
+      <header className="border-b border-gray-200 bg-gray-50 shadow-sm">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex gap-4">
-              <Link href="/knowledge-base" className="text-sm text-blue-600 hover:text-blue-800">
-                ← Knowledge Base
-              </Link>
-              <Link
-                href="/knowledge-base/articles"
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                All articles
-              </Link>
-            </div>
+          {/* Breadcrumb and Settings */}
+          <div className="mb-8 flex items-center justify-between">
+            <Breadcrumb section="articles" />
             <SettingsDropdown />
           </div>
 
-          <h1 className="mb-3 text-4xl font-bold text-gray-900">{article.title}</h1>
+          {/* Content Type Badge */}
+          <div className="mb-4">
+            <Badge type="article" />
+          </div>
 
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <time dateTime={article.created_at}>
-              {new Date(article.created_at).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
+          {/* Title */}
+          <h1 className="mb-6 text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
+            {article.title}
+          </h1>
+
+          {/* Metadata */}
+          <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
+            <span aria-hidden="true">📅</span>
+            <span>
+              Published{" "}
+              <time dateTime={article.created_at}>
+                {new Date(article.created_at).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            </span>
           </div>
 
           {/* Tags */}
-          {article.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {article.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+          {article.tags.length > 0 && <TagPillList tags={article.tags} showHash className="mt-4" />}
         </div>
       </header>
 

@@ -6,6 +6,8 @@ import { logger } from "@/lib/logger";
 import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import Breadcrumb from "@/components/Breadcrumb";
+import { TagPillList } from "@/components/TagPill";
 
 interface Resource {
   id: number;
@@ -63,12 +65,10 @@ export default function ArticlesPage() {
       {/* Header */}
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Link href="/knowledge-base" className="text-sm text-blue-600 hover:text-blue-800">
-              ← Knowledge Base
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Articles</h1>
+          <div className="mb-4">
+            <Breadcrumb section="articles" />
           </div>
+          <h1 className="text-3xl font-bold text-gray-900">Articles</h1>
         </div>
       </header>
 
@@ -140,16 +140,7 @@ export default function ArticlesPage() {
 
                   {/* Tags */}
                   {resource.tags.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {resource.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
+                    <TagPillList tags={resource.tags} showHash className="mt-4" />
                   )}
 
                   {/* Read more indicator */}
