@@ -167,6 +167,93 @@ Answer this question: [...]
 
 Notice qwen gets straight to the point with clear examples, while llama gets conversational context.
 
+### Pattern 4: Hybrid Search Strategy
+
+**Problem:** Embedding generation is expensive. Need fast search even when embeddings aren't available.
+
+**Solution:** Multi-tier search with graceful fallback.
+
+```python
+# Fast path: Use precomputed embeddings from Neo4j
+try:
+    results = await semantic_search_with_precomputed_embeddings(query)
+    if results:
+        return results  # 5-10s response time
+except Exception:
+    pass  # Neo4j unavailable
+
+# Fallback path: Generate embeddings on-demand
+try:
+    results = await semantic_search(query)
+    return results  # 15-30s response time
+except Exception:
+    pass  # Ollama unavailable
+
+# Final fallback: Text search (no AI)
+return fuzzy_text_search(query)  # <100ms response time
+```
+
+**Performance impact:**
+- Neo4j path: 5-10 seconds (only query embedding needed)
+- On-demand path: 15-30 seconds (full corpus embedding)
+- Text fallback: instant
+
+**Why this works:**
+- Gracefully handles Neo4j unavailability without breaking features
+- Maintains good UX even during database restarts
+- Text search provides immediate results when AI unavailable
+- Each tier independently optimized
+
+## Production Safeguards
+
+### AI Kill Switch for Anonymous Users
+
+**Problem:** AI features use compute resources. Need control over who can access them.
+
+**Solution:** Unauthenticated users see AI features but with safeguards:
+- Tag/link suggestions visible but gated
+- Requires authentication to use
+- Prevents abuse while showcasing capabilities
+
+**Implementation:** Backend checks session authentication before processing AI requests.
+
+```python
+# Backend enforcement
+if not is_authenticated(request):
+    raise HTTPException(
+        status_code=401,
+        detail="Authentication required for AI features"
+    )
+```
+
+**Why this matters:**
+- AI operations are expensive (60-120s on CPU)
+- Prevent denial-of-service via repeated AI requests
+- Demonstrate features to visitors without giving full access
+- Clear upgrade path: anonymous → authenticated for AI features
+
+### Cold Start Optimization
+
+**Warmup endpoint:** `POST /api/ollama/warmup`
+- Pre-loads llama3.2:1b model into memory
+- Takes 15-20 seconds (one-time cost)
+- Subsequent requests skip model loading phase
+- Reduces first-request latency from 60s+ to 2-5s
+
+**When to use:** After deployment or Ollama restart.
+
+**How it works:**
+```python
+# Frontend pre-warms when entering edit mode
+if isEditing and settings.aiMode !== "off":
+    await fetch(`${API_URL}/api/ollama/warmup`, { method: "POST" })
+```
+
+**Production pattern:**
+- User enters edit mode → warmup triggers in background
+- By the time they click "Get AI Suggestions," model is ready
+- Eliminates frustrating wait on first AI request
+
 ## Deployment Considerations
 
 ### Model Installation
@@ -198,13 +285,27 @@ This means core features work without AI, Ollama can restart without breaking th
 
 From production monitoring:
 
+**GPU-accelerated (optimal):**
+
 | Task | Model | Avg Time | P95 Time |
 |------|-------|----------|----------|
-| Generate embedding | nomic-embed-text | 3-5s | 8s |
-| Answer question | llama3.2:1b | 5-10s | 15s |
-| Suggest tags | qwen2.5:1.5b | 6-8s | 12s |
+| Generate embedding | nomic-embed-text | 2-5s | 8s |
+| Answer question | llama3.2:1b | 2-5s | 10s |
+| Suggest tags | qwen2.5:1.5b | 2-5s | 8s |
 
-All acceptable for interactive use. Embeddings are already cached, so repeated searches are fast.
+**CPU-only (Docker default):**
+
+| Task | Model | Avg Time | P95 Time |
+|------|-------|----------|----------|
+| Generate embedding | nomic-embed-text | 30-60s | 90s |
+| Answer question | llama3.2:1b | 60-120s | 180s |
+| Suggest tags | qwen2.5:1.5b | 60-120s | 180s |
+
+**Key insights:**
+- GPU provides 10-30x speedup
+- Docker deployments default to CPU-only unless configured with GPU passthrough
+- CPU-only is usable but requires patience and aggressive caching
+- Embeddings cached in Neo4j, so repeated searches remain fast even on CPU
 
 ## Lessons Learned
 

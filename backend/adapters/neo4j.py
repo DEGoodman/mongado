@@ -494,8 +494,8 @@ class Neo4jAdapter:
             result["author"] = node["author"]
         if "is_ephemeral" in node:
             result["is_ephemeral"] = node["is_ephemeral"]
-        if "tags" in node:
-            result["tags"] = node["tags"]
+        # Always provide tags as array (default to empty list for backward compatibility)
+        result["tags"] = node.get("tags", [])
 
         # Embedding-related fields (present in both Notes and Articles)
         if "content_hash" in node:

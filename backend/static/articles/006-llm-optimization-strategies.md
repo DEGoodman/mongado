@@ -37,24 +37,30 @@ Tradeoffs:
 
 When to use: small static corpus, infrequent deploys
 
-### Level 2: Persistent Storage
+### Level 2: Persistent Storage (Mongado's Production Choice)
 
 Store embeddings in database. Use content hash to detect changes and skip regeneration.
 
-Performance: 15-20s (first run), 5-6s (production)
+Performance: 15-20s (first run), 5-10s (production)
+
+**Mongado uses Neo4j for embedding persistence:**
+- Embeddings stored directly on Article and Note nodes
+- Content hash verification prevents unnecessary regeneration
+- Embedding version tracking enables safe model upgrades
+- Graph database provides natural fit for note relationships
 
 Tradeoffs:
 - Survives restarts
 - Scales to thousands of documents
 - Only regenerates changed content
 - Requires database integration
-- Still slow on cold start
+- Still slow on cold start (first search after deploy)
 
 When to use: production systems, dynamic content, multi-instance deployments
 
 Database options:
 - PostgreSQL + pgvector: good default, familiar tooling
-- Neo4j: if already using graphs
+- Neo4j: excellent for knowledge bases with relationships
 - Weaviate/Pinecone: overkill for small projects
 
 ### Level 3: Startup Precomputation
@@ -64,13 +70,20 @@ Generate all embeddings during application startup. Check content hashes, only r
 Performance: 5-6s (every search, even first)
 Startup cost: 2-5 min (one-time per deploy)
 
+**Configuration option (disabled by default in Mongado):**
+- Manual trigger via admin endpoint: `POST /api/admin/sync-embeddings`
+- Run on-demand rather than every startup
+- Prevents slow deploys while maintaining embedding freshness
+
 Tradeoffs:
 - Fast from first request
 - Predictable performance
-- Slower startup (acceptable for batch deploys)
+- Slower startup (acceptable for batch deploys, but annoying in development)
 - Not suitable for real-time user content
 
 When to use: production systems with acceptable startup delays
+
+**Alternative approach:** Prefer lazy generation (on article creation) over startup batch processing.
 
 Notes:
 - First startup: 180s (generate all 40 embeddings)
@@ -121,18 +134,56 @@ Architecture: separate models for separate tasks
 
 Only practical after persistent embeddings. Otherwise search is bottleneck.
 
+## Hardware Considerations: GPU vs CPU
+
+**Performance varies dramatically based on hardware.**
+
+GPU-accelerated Ollama:
+- Embedding generation: 2-5s per document
+- Chat/Q&A: 2-5s per response
+- Interactive and responsive
+
+CPU-only (Docker default):
+- Embedding generation: 30-60s per document
+- Chat/Q&A: 60-120s per response
+- Requires aggressive caching to be usable
+
+**Mongado auto-detects GPU availability:**
+- Docker deployments default to CPU-only unless explicitly configured with GPU passthrough
+- Native installations optimistically assume GPU may be available
+- Backend adjusts performance expectations and user messaging accordingly
+
+**Why this matters:**
+- CPU-only makes Level 1 (in-memory cache) mandatory, not optional
+- GPU acceleration makes Level 2 (persistent storage) a performance boost rather than survival requirement
+- Without GPU, any cache miss means 30+ second wait
+
+**Production recommendation:** Use GPU if available, but architect for CPU-only performance as baseline.
+
 ## Performance Numbers
 
 Mongado knowledge base (12 articles, 27 notes):
 
-| Level | First Search | Subsequent | Startup |
-|-------|-------------|------------|---------|
-| Naive | 30+ s | 30+ s | 0s |
-| Memory cache | 18s | 10s | 0s |
-| Persistent | 20s | 5.7s | 0s |
-| Startup precompute | 5.7s | 5.7s | 168s |
+**CPU-only performance (baseline):**
 
-Key insight: 168s startup cost paid once per deploy. Every search saves 24s. Break-even at 7 searches.
+| Level | First Search | Subsequent | Startup | Notes |
+|-------|-------------|------------|---------|-------|
+| Naive | 30+ s | 30+ s | 0s | Unusable |
+| Memory cache | 18s | 10s | 0s | Lost on restart |
+| Neo4j persistent | 15-30s | 5-10s | 0s | Production baseline |
+
+**GPU-accelerated performance:**
+
+| Level | First Search | Subsequent | Startup | Notes |
+|-------|-------------|------------|---------|-------|
+| Neo4j + GPU | 5-10s | 5-10s | 0s | Production optimal |
+| With warmup | 2-5s | 2-5s | 0s | Best case |
+
+**Key insights:**
+- GPU acceleration reduces search time by 3-6x
+- Persistent storage (Neo4j) + GPU delivers 5-10s searches consistently
+- Pre-warming model (via `/api/ollama/warmup`) eliminates cold-start penalty
+- CPU-only is usable but requires aggressive caching strategy
 
 ## Implementation Notes
 
