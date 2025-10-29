@@ -7,6 +7,8 @@ import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
+import Breadcrumb from "@/components/Breadcrumb";
+import { TagPillList } from "@/components/TagPill";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -69,10 +71,8 @@ export default function NotesPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <div className="mb-4 flex items-center justify-between">
-          <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
-            ← Knowledge Base
-          </Link>
+        <div className="mb-6 flex items-center justify-between">
+          <Breadcrumb section="notes" />
           <SettingsDropdown />
         </div>
         <div className="flex items-center justify-between">
@@ -145,24 +145,18 @@ export default function NotesPage() {
                   </p>
 
                   {/* Metadata */}
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="mb-2 flex items-center gap-4 text-xs text-gray-500">
                     <span>{formatNoteDate(note.created_at)}</span>
                     <span>by {note.author}</span>
-                    {note.tags.length > 0 && (
-                      <span className="flex gap-1">
-                        {note.tags.slice(0, 3).map((tag) => (
-                          <span key={tag} className="rounded bg-gray-100 px-2 py-0.5">
-                            {tag}
-                          </span>
-                        ))}
-                      </span>
-                    )}
                     {note.links.length > 0 && (
                       <span>
                         {note.links.length} link{note.links.length !== 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
+
+                  {/* Tags */}
+                  {note.tags.length > 0 && <TagPillList tags={note.tags} maxVisible={3} />}
                 </div>
 
                 {/* Arrow icon */}

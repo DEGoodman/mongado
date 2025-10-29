@@ -10,6 +10,9 @@ import AIButton from "@/components/AIButton";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
 import SettingsDropdown from "@/components/SettingsDropdown";
+import Breadcrumb from "@/components/Breadcrumb";
+import Badge from "@/components/Badge";
+import { TagPillList } from "@/components/TagPill";
 import {
   getNote,
   updateNote,
@@ -340,39 +343,53 @@ export default function NoteDetailPage() {
           {/* Main content */}
           <div className="lg:col-span-2">
             {/* Header */}
-            <div className="mb-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex gap-4">
-                  <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
-                    ← Knowledge Base
-                  </Link>
-                  <Link
-                    href="/knowledge-base/notes"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    All notes
-                  </Link>
-                </div>
+            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
+              {/* Breadcrumb and Settings */}
+              <div className="mb-6 flex items-center justify-between">
+                <Breadcrumb section="notes" />
                 <SettingsDropdown />
               </div>
 
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="mb-2 flex items-center gap-2">
-                    <code className="rounded bg-blue-50 px-2 py-1 font-mono text-sm text-blue-600">
-                      {note.id}
-                    </code>
-                  </div>
+              {/* Note ID - shown only in edit mode or as subtle metadata */}
+              {isEditing && (
+                <div className="mb-4">
+                  <span className="text-xs text-gray-400">
+                    ID: <code className="font-mono">{note.id}</code>
+                  </span>
+                </div>
+              )}
 
-                  <h1 className="mb-2 text-3xl font-bold text-gray-900">
+              {/* Content Type Badge */}
+              <div className="mb-4">
+                <Badge type="note" />
+              </div>
+
+              {/* Title and Actions */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h1 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
                     {note.title || "Untitled Note"}
                   </h1>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>{formatNoteDate(note.created_at)}</span>
+                  {/* Metadata */}
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                    <span className="flex items-center gap-2">
+                      <span aria-hidden="true">📝</span>
+                      <span>
+                        Created{" "}
+                        <time dateTime={String(note.created_at)}>
+                          {formatNoteDate(note.created_at)}
+                        </time>
+                      </span>
+                    </span>
                     <span>by {note.author}</span>
                     {note.updated_at !== note.created_at && (
-                      <span>edited {formatNoteDate(note.updated_at)}</span>
+                      <span>
+                        Edited{" "}
+                        <time dateTime={String(note.updated_at)}>
+                          {formatNoteDate(note.updated_at)}
+                        </time>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -382,19 +399,26 @@ export default function NoteDetailPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50"
                     >
                       Edit
                     </button>
                     <button
                       onClick={handleDelete}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       Delete
                     </button>
                   </div>
                 )}
               </div>
+
+              {/* Tags */}
+              {note.tags.length > 0 && !isEditing && (
+                <div className="mt-4">
+                  <TagPillList tags={note.tags} />
+                </div>
+              )}
             </div>
 
             {/* Error message */}
@@ -493,20 +517,6 @@ export default function NoteDetailPage() {
               </div>
             ) : (
               <div>
-                {/* Tags */}
-                {note.tags.length > 0 && (
-                  <div className="mb-4 flex gap-2">
-                    {note.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
                 {/* Content display with markdown and wikilinks */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6">
                   <MarkdownWithWikilinks content={note.content} />
