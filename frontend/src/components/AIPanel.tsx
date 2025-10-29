@@ -265,7 +265,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed right-0 top-0 z-50 flex h-screen w-96 flex-col border-l border-gray-200 bg-white shadow-lg">
+    <div className="fixed right-0 top-0 z-50 flex h-screen w-full flex-col border-l border-gray-200 bg-white shadow-lg md:w-96">
       {/* Header */}
       <div className="border-b border-gray-200 p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -478,7 +478,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-gray-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {messages.length > 0 && (
           <button onClick={handleClear} className="mb-2 text-xs text-gray-500 hover:text-gray-700">
             Clear {mode === "chat" ? "conversation" : "results"}
