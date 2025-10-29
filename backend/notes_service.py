@@ -2,7 +2,6 @@
 
 import json
 import logging
-import time
 from typing import Any
 
 from adapters.neo4j import get_neo4j_adapter

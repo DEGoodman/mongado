@@ -143,9 +143,9 @@ class TestListNotes:
     def test_list_notes_ordered_by_created_at(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test that notes are ordered by created_at descending (newest first)."""
         # Create notes in order
-        response1 = client.post("/api/notes", json={"content": "First"}, headers=admin_headers)
-        response2 = client.post("/api/notes", json={"content": "Second"}, headers=admin_headers)
-        response3 = client.post("/api/notes", json={"content": "Third"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "First"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Second"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Third"}, headers=admin_headers)
 
         # List notes
         response = client.get("/api/notes")

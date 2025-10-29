@@ -90,8 +90,8 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
           <div className="flex-1">
             <p className="text-sm font-medium text-yellow-800">You are not authenticated</p>
             <p className="mt-1 text-xs text-yellow-700">
-              <strong>Authentication is required</strong> to create, edit, or delete notes.
-              You can view existing notes, but cannot make changes.
+              <strong>Authentication is required</strong> to create, edit, or delete notes. You can
+              view existing notes, but cannot make changes.
             </p>
             <div className="mt-3 border-t border-yellow-200 pt-3">
               <p className="text-xs text-yellow-700">
