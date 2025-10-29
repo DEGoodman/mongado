@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,7 +12,7 @@ import SettingsDropdown from "@/components/SettingsDropdown";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 
-export default function NotesPage() {
+function NotesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagFilter = searchParams.get("tag");
@@ -215,5 +216,26 @@ export default function NotesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NotesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="mb-8 h-8 w-1/4 rounded bg-gray-200"></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 rounded bg-gray-200"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <NotesContent />
+    </Suspense>
   );
 }

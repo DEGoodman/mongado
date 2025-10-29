@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,7 +21,7 @@ interface Resource {
   created_at: string;
 }
 
-export default function ArticlesPage() {
+function ArticlesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagFilter = searchParams.get("tag");
@@ -194,5 +195,28 @@ export default function ArticlesPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ArticlesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+          <header className="border-b border-gray-200 bg-white shadow-sm">
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+              <h1 className="text-3xl font-bold text-gray-900">Articles</h1>
+            </div>
+          </header>
+          <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="py-12 text-center">
+              <p className="text-gray-500">Loading articles...</p>
+            </div>
+          </main>
+        </div>
+      }
+    >
+      <ArticlesContent />
+    </Suspense>
   );
 }
