@@ -493,7 +493,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={mode === "chat" ? "Ask a question..." : "Search query..."}
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
           <button
