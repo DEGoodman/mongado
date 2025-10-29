@@ -205,7 +205,7 @@ export default function KnowledgeBasePage() {
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <span className="text-xs font-medium text-gray-500">
-                        {result.type === "article" ? "📚 Article" : "🔗 Note"}
+                        {result.type === "article" ? "📚 Article" : "📝 Note"}
                       </span>
                       <span className="text-xs text-gray-400">
                         Score: {result.score.toFixed(1)}
@@ -253,7 +253,7 @@ export default function KnowledgeBasePage() {
 
           {/* Notes Card */}
           <div className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-4 text-4xl">🔗</div>
+            <div className="mb-4 text-4xl">📝</div>
             <h3 className="mb-2 text-2xl font-bold text-gray-900">Notes</h3>
             <p className="mb-4 text-gray-600">
               Atomic ideas, connected. A Zettelkasten-inspired system with wikilinks, backlinks, and

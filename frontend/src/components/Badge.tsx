@@ -11,7 +11,7 @@ interface BadgeProps {
 export default function Badge({ type, className = "" }: BadgeProps) {
   const config = {
     article: {
-      icon: "📄",
+      icon: "📚",
       label: "Article",
       bgColor: "bg-blue-50",
       textColor: "text-blue-700",
