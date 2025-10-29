@@ -41,7 +41,7 @@ def find_broken_notes(neo4j):
                 n.id as id_prop,
                 n.note_id as note_id_prop,
                 n.title as title,
-                length(n.content) as content_length,
+                size(n.content) as content_length,
                 n.author as author,
                 n.created_at as created_at
             ORDER BY created_at DESC
