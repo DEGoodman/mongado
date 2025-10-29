@@ -68,6 +68,7 @@ COPY --chown=appuser:appuser routers ./routers
 COPY --chown=appuser:appuser core ./core
 COPY --chown=appuser:appuser static ./static
 COPY --chown=appuser:appuser data ./data
+COPY --chown=appuser:appuser scripts ./scripts
 
 # Switch to non-root user
 USER appuser
