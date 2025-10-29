@@ -203,7 +203,7 @@ class Neo4jAdapter:
                 MATCH (n:Note)
                 WHERE n.id = $id OR n.note_id = $id
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(target.note_id) AS links
+                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
                 """,
                 id=note_id,
             )
@@ -234,7 +234,7 @@ class Neo4jAdapter:
                     """
                     MATCH (n:Note {author: $author})
                     OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                    RETURN n, collect(target.id) AS links
+                    RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
                     ORDER BY n.created_at DESC
                     """,
                     author=author,
@@ -244,7 +244,7 @@ class Neo4jAdapter:
                     """
                     MATCH (n:Note)
                     OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                    RETURN n, collect(target.id) AS links
+                    RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
                     ORDER BY n.created_at DESC
                     """
                 )
@@ -489,12 +489,9 @@ class Neo4jAdapter:
             "updated_at": node.get("updated_at", node.get("created_at", 0.0)),
         }
 
-        # Note-specific fields (only present in Note nodes)
-        if "author" in node:
-            result["author"] = node["author"]
-        if "is_ephemeral" in node:
-            result["is_ephemeral"] = node["is_ephemeral"]
-        # Always provide tags as array (default to empty list for backward compatibility)
+        # Note-specific fields (provide defaults for backward compatibility)
+        result["author"] = node.get("author", "anonymous")
+        result["is_ephemeral"] = node.get("is_ephemeral", False)
         result["tags"] = node.get("tags", [])
 
         # Embedding-related fields (present in both Notes and Articles)
