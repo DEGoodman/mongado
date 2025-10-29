@@ -73,10 +73,12 @@ class NotesService:
             return note
         else:
             # Fallback to SQLite if Neo4j unavailable
+            import time
+            timestamp = time.time()
             self.db.execute(
                 """
-                INSERT INTO notes (id, title, content, author, tags, metadata)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO notes (id, title, content, author, tags, metadata, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     note_id,
@@ -85,6 +87,8 @@ class NotesService:
                     "Erik",
                     json.dumps(tags or []),
                     json.dumps({"links": links}),
+                    timestamp,
+                    timestamp,
                 ),
             )
             self.db.commit()
@@ -183,10 +187,11 @@ class NotesService:
             # Fallback to SQLite
             note = self.db.fetchone("SELECT * FROM notes WHERE id = ?", (note_id,))
             if note:
+                import time
                 self.db.execute(
                     """
                     UPDATE notes
-                    SET content = ?, title = ?, tags = ?, metadata = ?
+                    SET content = ?, title = ?, tags = ?, metadata = ?, updated_at = ?
                     WHERE id = ?
                     """,
                     (
@@ -194,6 +199,7 @@ class NotesService:
                         title,
                         json.dumps(tags or []),
                         json.dumps({"links": links}),
+                        time.time(),
                         note_id,
                     ),
                 )
