@@ -160,8 +160,7 @@ class Neo4jAdapter:
                     author: $author,
                     tags: $tags,
                     created_at: $created_at,
-                    updated_at: $updated_at,
-                    is_ephemeral: false
+                    updated_at: $updated_at
                 })
                 RETURN n
                 """,
@@ -182,8 +181,24 @@ class Neo4jAdapter:
             if links:
                 self._create_links(session, note_id, links)
 
-            # Return created note
-            return self._node_to_dict(note_record["n"])
+            # Fetch the complete note with links
+            result = session.run(
+                """
+                MATCH (n:Note {id: $id})
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                """,
+                id=note_id,
+            )
+
+            record = result.single()
+            if not record:
+                raise RuntimeError(f"Failed to fetch note {note_id} after creation")
+
+            note = self._node_to_dict(record["n"])
+            note["links"] = record["links"] or []
+
+            return note
 
     def get_note(self, note_id: str) -> dict[str, Any] | None:
         """Get note by ID.
@@ -503,7 +518,6 @@ class Neo4jAdapter:
 
         # Note-specific fields (provide defaults for backward compatibility)
         result["author"] = node.get("author", "anonymous")
-        result["is_ephemeral"] = node.get("is_ephemeral", False)
         result["tags"] = node.get("tags", [])
 
         # Embedding-related fields (present in both Notes and Articles)

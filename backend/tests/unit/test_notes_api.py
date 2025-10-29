@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 # Set testing mode before importing app modules
 os.environ["TESTING"] = "1"
 
-from adapters.ephemeral_notes import get_ephemeral_store
+from config import get_settings
 from database import get_database
 from main import app
 from notes_service import get_notes_service
@@ -20,6 +20,13 @@ def client() -> TestClient:
     return TestClient(app)
 
 
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    """Get admin authentication headers for testing."""
+    settings = get_settings()
+    return {"Authorization": f"Bearer {settings.admin_token}"}
+
+
 @pytest.fixture(autouse=True)
 def clean_notes() -> None:
     """Clean up notes before and after each test."""
@@ -28,10 +35,6 @@ def clean_notes() -> None:
     db.execute("DELETE FROM notes")
     db.execute("DELETE FROM note_links")
     db.commit()
-
-    # Clear ephemeral notes
-    ephemeral = get_ephemeral_store()
-    ephemeral.clear_all()
 
     # Clear Neo4j notes
     notes_service = get_notes_service()
@@ -45,7 +48,6 @@ def clean_notes() -> None:
     db.execute("DELETE FROM notes")
     db.execute("DELETE FROM note_links")
     db.commit()
-    ephemeral.clear_all()
 
     # Clear Neo4j notes after test
     if notes_service.neo4j and notes_service.neo4j.is_available():
@@ -55,49 +57,54 @@ def clean_notes() -> None:
 class TestCreateNote:
     """Tests for POST /api/notes endpoint."""
 
-    def test_create_ephemeral_note_with_session_id(self, client: TestClient) -> None:
-        """Test creating an ephemeral note with session ID."""
+    def test_create_note_with_admin_token(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test creating a note with admin authentication."""
         response = client.post(
             "/api/notes",
-            json={"content": "Test ephemeral note", "title": "Test Title", "tags": ["test"]},
-            headers={"X-Session-ID": "test-session-123"}
+            json={"content": "Test note", "title": "Test Title", "tags": ["test"]},
+            headers=admin_headers
         )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["content"] == "Test ephemeral note"
+        assert data["content"] == "Test note"
         assert data["title"] == "Test Title"
         assert data["tags"] == ["test"]
-        assert data["is_ephemeral"] is True
-        assert data["author"] == "anonymous"
+        assert data["author"] == "Erik"
         assert "id" in data
 
-    def test_create_ephemeral_note_without_session_id(self, client: TestClient) -> None:
-        """Test that creating note without session ID fails for non-admin."""
+    def test_create_note_without_auth(self, client: TestClient) -> None:
+        """Test that creating note without authentication fails."""
         response = client.post(
             "/api/notes",
             json={"content": "Test note"}
         )
 
-        assert response.status_code == 400
-        assert "Session ID required" in response.json()["detail"]
+        assert response.status_code == 401
+        assert "Authorization required" in response.json()["detail"]
 
-    def test_create_persistent_note_with_passkey(self, client: TestClient) -> None:
-        """Test creating persistent note with admin passkey."""
-        # TODO: Implement once we have passkey configured for testing
-        pass
+    def test_create_note_with_invalid_token(self, client: TestClient) -> None:
+        """Test that creating note with invalid token fails."""
+        response = client.post(
+            "/api/notes",
+            json={"content": "Test note"},
+            headers={"Authorization": "Bearer invalid-token"}
+        )
 
-    def test_create_note_with_wikilinks(self, client: TestClient) -> None:
+        assert response.status_code == 403
+        assert "Invalid token" in response.json()["detail"]
+
+    def test_create_note_with_wikilinks(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test that wikilinks are extracted from content."""
         response = client.post(
             "/api/notes",
             json={"content": "This note links to [[other-note]] and [[another-note]]"},
-            headers={"X-Session-ID": "test-session-123"}
+            headers=admin_headers
         )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["links"] == ["other-note", "another-note"]
+        assert set(data["links"]) == {"other-note", "another-note"}
 
 
 class TestListNotes:
@@ -105,76 +112,66 @@ class TestListNotes:
 
     def test_list_empty_notes(self, client: TestClient) -> None:
         """Test listing notes when none exist."""
-        response = client.get("/api/notes", headers={"X-Session-ID": "test-session-123"})
+        response = client.get("/api/notes")
 
         assert response.status_code == 200
         data = response.json()
         assert data["notes"] == []
         assert data["count"] == 0
 
-    def test_list_ephemeral_notes_for_session(self, client: TestClient) -> None:
-        """Test that only session's ephemeral notes are visible."""
-        # Create notes for session 1
+    def test_list_multiple_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test listing multiple notes."""
+        # Create notes
         client.post(
             "/api/notes",
-            json={"content": "Session 1 note 1"},
-            headers={"X-Session-ID": "session-1"}
+            json={"content": "Note 1"},
+            headers=admin_headers
         )
         client.post(
             "/api/notes",
-            json={"content": "Session 1 note 2"},
-            headers={"X-Session-ID": "session-1"}
-        )
-
-        # Create note for session 2
-        client.post(
-            "/api/notes",
-            json={"content": "Session 2 note"},
-            headers={"X-Session-ID": "session-2"}
+            json={"content": "Note 2"},
+            headers=admin_headers
         )
 
-        # List notes for session 1
-        response = client.get("/api/notes", headers={"X-Session-ID": "session-1"})
+        # List notes
+        response = client.get("/api/notes")
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 2
-        assert all(note["author"] == "anonymous" for note in data["notes"])
+        assert all(note["author"] == "Erik" for note in data["notes"])
 
-    def test_list_includes_persistent_notes(self, client: TestClient) -> None:
-        """Test that persistent notes are visible to all users."""
-        # Create persistent note directly in database
-        from notes_service import get_notes_service
-        notes_service = get_notes_service()
-        notes_service.create_note(
-            content="Persistent note",
-            title="Admin Note",
-            is_admin=True,
-            session_id=None
-        )
+    def test_list_notes_ordered_by_created_at(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that notes are ordered by created_at descending (newest first)."""
+        # Create notes in order
+        response1 = client.post("/api/notes", json={"content": "First"}, headers=admin_headers)
+        response2 = client.post("/api/notes", json={"content": "Second"}, headers=admin_headers)
+        response3 = client.post("/api/notes", json={"content": "Third"}, headers=admin_headers)
 
-        # List as visitor
-        response = client.get("/api/notes", headers={"X-Session-ID": "visitor-session"})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["count"] == 1
-        assert data["notes"][0]["author"] == "Erik"
+        # List notes
+        response = client.get("/api/notes")
+        notes = response.json()["notes"]
+
+        # Should be in reverse order (newest first)
+        assert notes[0]["content"] == "Third"
+        assert notes[1]["content"] == "Second"
+        assert notes[2]["content"] == "First"
 
 
 class TestGetNote:
     """Tests for GET /api/notes/{note_id} endpoint."""
 
-    def test_get_ephemeral_note_by_id(self, client: TestClient) -> None:
-        """Test getting specific ephemeral note."""
+    def test_get_note_by_id(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test getting specific note."""
         # Create note
         create_response = client.post(
             "/api/notes",
             json={"content": "Test note", "title": "Title"},
-            headers={"X-Session-ID": "test-session"}
+            headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
         # Get note
-        response = client.get(f"/api/notes/{note_id}", headers={"X-Session-ID": "test-session"})
+        response = client.get(f"/api/notes/{note_id}")
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == note_id
@@ -182,34 +179,20 @@ class TestGetNote:
 
     def test_get_nonexistent_note(self, client: TestClient) -> None:
         """Test getting note that doesn't exist."""
-        response = client.get("/api/notes/nonexistent-id", headers={"X-Session-ID": "test-session"})
-        assert response.status_code == 404
-
-    def test_get_other_session_ephemeral_note(self, client: TestClient) -> None:
-        """Test that you cannot access other session's ephemeral notes."""
-        # Create note in session 1
-        create_response = client.post(
-            "/api/notes",
-            json={"content": "Private note"},
-            headers={"X-Session-ID": "session-1"}
-        )
-        note_id = create_response.json()["id"]
-
-        # Try to access from session 2
-        response = client.get(f"/api/notes/{note_id}", headers={"X-Session-ID": "session-2"})
+        response = client.get("/api/notes/nonexistent-id")
         assert response.status_code == 404
 
 
 class TestUpdateNote:
     """Tests for PUT /api/notes/{note_id} endpoint."""
 
-    def test_update_own_ephemeral_note(self, client: TestClient) -> None:
-        """Test updating own ephemeral note."""
+    def test_update_note_with_admin_token(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test updating note with admin authentication."""
         # Create note
         create_response = client.post(
             "/api/notes",
             json={"content": "Original content"},
-            headers={"X-Session-ID": "test-session"}
+            headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -217,7 +200,7 @@ class TestUpdateNote:
         response = client.put(
             f"/api/notes/{note_id}",
             json={"content": "Updated content", "title": "New Title", "tags": ["updated"]},
-            headers={"X-Session-ID": "test-session"}
+            headers=admin_headers
         )
 
         assert response.status_code == 200
@@ -226,32 +209,31 @@ class TestUpdateNote:
         assert data["title"] == "New Title"
         assert data["tags"] == ["updated"]
 
-    def test_update_other_session_ephemeral_note(self, client: TestClient) -> None:
-        """Test that you cannot update other session's notes."""
+    def test_update_note_without_auth(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that updating note without authentication fails."""
         # Create note
         create_response = client.post(
             "/api/notes",
             json={"content": "Original"},
-            headers={"X-Session-ID": "session-1"}
+            headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
-        # Try to update from different session
+        # Try to update without auth
         response = client.put(
             f"/api/notes/{note_id}",
-            json={"content": "Hacked"},
-            headers={"X-Session-ID": "session-2"}
+            json={"content": "Hacked"}
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 401
 
-    def test_update_with_new_wikilinks(self, client: TestClient) -> None:
+    def test_update_with_new_wikilinks(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test that updating content updates wikilinks."""
         # Create note
         create_response = client.post(
             "/api/notes",
             json={"content": "Links to [[old-note]]"},
-            headers={"X-Session-ID": "test-session"}
+            headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -259,49 +241,49 @@ class TestUpdateNote:
         response = client.put(
             f"/api/notes/{note_id}",
             json={"content": "Links to [[new-note]] and [[another-note]]"},
-            headers={"X-Session-ID": "test-session"}
+            headers=admin_headers
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["links"] == ["new-note", "another-note"]
+        assert set(data["links"]) == {"new-note", "another-note"}
 
 
 class TestDeleteNote:
     """Tests for DELETE /api/notes/{note_id} endpoint."""
 
-    def test_delete_own_ephemeral_note(self, client: TestClient) -> None:
-        """Test deleting own ephemeral note."""
+    def test_delete_note_with_admin_token(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test deleting note with admin authentication."""
         # Create note
         create_response = client.post(
             "/api/notes",
             json={"content": "To be deleted"},
-            headers={"X-Session-ID": "test-session"}
+            headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
         # Delete note
-        response = client.delete(f"/api/notes/{note_id}", headers={"X-Session-ID": "test-session"})
+        response = client.delete(f"/api/notes/{note_id}", headers=admin_headers)
         assert response.status_code == 200
         assert "deleted successfully" in response.json()["message"]
 
         # Verify note is gone
-        get_response = client.get(f"/api/notes/{note_id}", headers={"X-Session-ID": "test-session"})
+        get_response = client.get(f"/api/notes/{note_id}")
         assert get_response.status_code == 404
 
-    def test_delete_other_session_ephemeral_note(self, client: TestClient) -> None:
-        """Test that you cannot delete other session's notes."""
+    def test_delete_note_without_auth(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that deleting note without authentication fails."""
         # Create note
         create_response = client.post(
             "/api/notes",
             json={"content": "Protected"},
-            headers={"X-Session-ID": "session-1"}
+            headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
-        # Try to delete from different session
-        response = client.delete(f"/api/notes/{note_id}", headers={"X-Session-ID": "session-2"})
-        assert response.status_code == 404
+        # Try to delete without auth
+        response = client.delete(f"/api/notes/{note_id}")
+        assert response.status_code == 401
 
 
 class TestBacklinks:
@@ -313,27 +295,21 @@ class TestBacklinks:
         from notes_service import get_notes_service
         notes_service = get_notes_service()
 
-        # Create persistent notes with links
+        # Create notes with links
         target = notes_service.create_note(
             content="Target note",
-            title="Target",
-            is_admin=True,
-            session_id=None
+            title="Target"
         )
         target_id = target["id"]
 
         source1 = notes_service.create_note(
             content=f"Links to [[{target_id}]]",
-            title="Source 1",
-            is_admin=True,
-            session_id=None
+            title="Source 1"
         )
 
         source2 = notes_service.create_note(
             content=f"Also links to [[{target_id}]]",
-            title="Source 2",
-            is_admin=True,
-            session_id=None
+            title="Source 2"
         )
 
         # Get backlinks
@@ -352,11 +328,7 @@ class TestBacklinks:
         from notes_service import get_notes_service
         notes_service = get_notes_service()
 
-        note = notes_service.create_note(
-            content="Lonely note",
-            is_admin=True,
-            session_id=None
-        )
+        note = notes_service.create_note(content="Lonely note")
 
         response = client.get(f"/api/notes/{note['id']}/backlinks")
         assert response.status_code == 200
@@ -374,22 +346,12 @@ class TestOutboundLinks:
         notes_service = get_notes_service()
 
         # Create target notes
-        target1 = notes_service.create_note(
-            content="Target 1",
-            is_admin=True,
-            session_id=None
-        )
-        target2 = notes_service.create_note(
-            content="Target 2",
-            is_admin=True,
-            session_id=None
-        )
+        target1 = notes_service.create_note(content="Target 1")
+        target2 = notes_service.create_note(content="Target 2")
 
         # Create source note with links
         source = notes_service.create_note(
-            content=f"Links to [[{target1['id']}]] and [[{target2['id']}]]",
-            is_admin=True,
-            session_id=None
+            content=f"Links to [[{target1['id']}]] and [[{target2['id']}]]"
         )
 
         # Get outbound links
@@ -407,11 +369,7 @@ class TestOutboundLinks:
         from notes_service import get_notes_service
         notes_service = get_notes_service()
 
-        note = notes_service.create_note(
-            content="No links here",
-            is_admin=True,
-            session_id=None
-        )
+        note = notes_service.create_note(content="No links here")
 
         response = client.get(f"/api/notes/{note['id']}/links")
         assert response.status_code == 200

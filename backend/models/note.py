@@ -48,7 +48,6 @@ class NoteResponse(BaseModel):
     title: str | None
     content: str
     author: str
-    is_ephemeral: bool
     tags: list[str]
     created_at: str | float
     updated_at: str | float

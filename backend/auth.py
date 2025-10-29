@@ -61,24 +61,5 @@ def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
     return True
 
 
-def get_session_id(x_session_id: Annotated[str | None, Header()] = None) -> str | None:
-    """Extract session ID from custom header.
-
-    This is used to track ephemeral notes for anonymous visitors.
-    The frontend should generate and persist a session ID in localStorage
-    and send it with each request.
-
-    Args:
-        x_session_id: Custom X-Session-ID header
-
-    Returns:
-        Session ID string or None if not provided
-    """
-    if x_session_id:
-        logger.debug("Session ID: %s", x_session_id[:8] + "...")
-    return x_session_id
-
-
 # Type aliases for dependency injection
 AdminUser = Annotated[bool, verify_admin]
-SessionID = Annotated[str | None, get_session_id]

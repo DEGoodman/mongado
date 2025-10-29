@@ -69,9 +69,9 @@ def build_graph_data(notes: list[dict[str, Any]]) -> dict[str, Any]:
     Example:
         >>> notes = [
         ...     {"id": "note-1", "title": "First", "author": "admin",
-        ...      "is_ephemeral": False, "tags": ["test"], "links": ["note-2"]},
+        ...      "tags": ["test"], "links": ["note-2"]},
         ...     {"id": "note-2", "title": "Second", "author": "admin",
-        ...      "is_ephemeral": False, "tags": [], "links": []}
+        ...      "tags": [], "links": []}
         ... ]
         >>> graph = build_graph_data(notes)
         >>> len(graph['nodes'])
@@ -85,7 +85,6 @@ def build_graph_data(notes: list[dict[str, Any]]) -> dict[str, Any]:
             "id": note["id"],
             "title": note.get("title") or note["id"],
             "author": note["author"],
-            "is_ephemeral": note["is_ephemeral"],
             "tags": note.get("tags", []),
         }
         for note in notes
@@ -132,11 +131,11 @@ def build_local_subgraph(
     Example:
         >>> notes = [
         ...     {"id": "center", "title": "Center", "author": "admin",
-        ...      "is_ephemeral": False, "tags": [], "links": ["neighbor"]},
+        ...      "tags": [], "links": ["neighbor"]},
         ...     {"id": "neighbor", "title": "Neighbor", "author": "admin",
-        ...      "is_ephemeral": False, "tags": [], "links": ["distant"]},
+        ...      "tags": [], "links": ["distant"]},
         ...     {"id": "distant", "title": "Distant", "author": "admin",
-        ...      "is_ephemeral": False, "tags": [], "links": []}
+        ...      "tags": [], "links": []}
         ... ]
         >>> subgraph = build_local_subgraph(notes, "center", depth=1)
         >>> len(subgraph['nodes'])  # center + neighbor only

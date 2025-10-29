@@ -18,25 +18,21 @@ class NoteDict(TypedDict, total=False):
         id: Unique note ID (e.g., "curious-elephant")
         title: Optional note title
         content: Markdown content
-        author: Author name (e.g., "Erik", "anonymous")
-        is_ephemeral: True if ephemeral (session-scoped), False if persistent
+        author: Author name (e.g., "Erik")
         tags: List of tag strings
         created_at: Unix timestamp (float) or ISO datetime string
         updated_at: Unix timestamp (float) or ISO datetime string
         links: List of note IDs this note links to
-        session_id: Session ID for ephemeral notes (optional)
     """
 
     id: str
     title: str
     content: str
     author: str
-    is_ephemeral: bool
     tags: list[str]
     created_at: float | str
     updated_at: float | str
     links: list[str]
-    session_id: str  # Only for ephemeral notes
 
 
 class ArticleDict(TypedDict, total=False):
@@ -83,26 +79,22 @@ class ResourceDict(TypedDict, total=False):
         title: Resource title
         content: Markdown content
         author: Author name
-        is_ephemeral: True if ephemeral note, False if persistent note/article
         tags: List of tag strings
         created_at: Unix timestamp (float) or ISO datetime string
         updated_at: Unix timestamp (float) or ISO datetime string
         links: List of note IDs this note links to (empty for articles)
         content_hash: SHA256 hash (articles only)
-        session_id: Session ID (ephemeral notes only)
     """
 
     id: str
     title: str
     content: str
     author: str
-    is_ephemeral: bool
     tags: list[str]
     created_at: float | str
     updated_at: float | str
     links: list[str]
     content_hash: str
-    session_id: str
 
 
 class GraphNodeDict(TypedDict):

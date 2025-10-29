@@ -21,12 +21,6 @@ export function getAuthHeaders(): HeadersInit {
     if (adminToken) {
       headers["Authorization"] = `Bearer ${adminToken}`;
     }
-
-    // Also include session ID for ephemeral notes
-    const sessionId = localStorage.getItem("session_id");
-    if (sessionId) {
-      headers["X-Session-ID"] = sessionId;
-    }
   }
 
   return headers;
@@ -149,24 +143,4 @@ export function clearAdminToken(): void {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_token_timestamp");
   }
-}
-
-/**
- * Get or create session ID for ephemeral notes
- */
-export function getOrCreateSessionId(): string {
-  if (typeof window === "undefined") return "";
-
-  let sessionId = localStorage.getItem("session_id");
-  if (!sessionId) {
-    // Generate a random session ID
-    sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem("session_id", sessionId);
-  }
-  return sessionId;
-}
-
-// Initialize session ID on load
-if (typeof window !== "undefined") {
-  getOrCreateSessionId();
 }

@@ -109,7 +109,6 @@ class TestBuildGraphData:
                 "id": "note-1",
                 "title": "First Note",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": ["test"],
                 "links": []
             },
@@ -117,7 +116,6 @@ class TestBuildGraphData:
                 "id": "note-2",
                 "title": "Second Note",
                 "author": "visitor",
-                "is_ephemeral": True,
                 "tags": [],
                 "links": []
             }
@@ -138,7 +136,6 @@ class TestBuildGraphData:
                 "id": "note-1",
                 "title": "First",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["note-2", "note-3"]
             },
@@ -146,7 +143,6 @@ class TestBuildGraphData:
                 "id": "note-2",
                 "title": "Second",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["note-3"]
             },
@@ -154,7 +150,6 @@ class TestBuildGraphData:
                 "id": "note-3",
                 "title": "Third",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             }
@@ -186,7 +181,6 @@ class TestBuildGraphData:
             {
                 "id": "note-1",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             }
@@ -206,7 +200,6 @@ class TestBuildLocalSubgraph:
                 "id": "center",
                 "title": "Center",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             }
@@ -223,7 +216,6 @@ class TestBuildLocalSubgraph:
                 "id": "center",
                 "title": "Center",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["neighbor"]
             },
@@ -231,7 +223,6 @@ class TestBuildLocalSubgraph:
                 "id": "neighbor",
                 "title": "Neighbor",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["distant"]
             },
@@ -239,7 +230,6 @@ class TestBuildLocalSubgraph:
                 "id": "distant",
                 "title": "Distant",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             }
@@ -260,7 +250,6 @@ class TestBuildLocalSubgraph:
                 "id": "center",
                 "title": "Center",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["hop1"]
             },
@@ -268,7 +257,6 @@ class TestBuildLocalSubgraph:
                 "id": "hop1",
                 "title": "Hop 1",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["hop2"]
             },
@@ -276,7 +264,6 @@ class TestBuildLocalSubgraph:
                 "id": "hop2",
                 "title": "Hop 2",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["hop3"]
             },
@@ -284,7 +271,6 @@ class TestBuildLocalSubgraph:
                 "id": "hop3",
                 "title": "Hop 3",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             }
@@ -306,7 +292,6 @@ class TestBuildLocalSubgraph:
                 "id": "center",
                 "title": "Center",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             },
@@ -314,7 +299,6 @@ class TestBuildLocalSubgraph:
                 "id": "isolated",
                 "title": "Isolated",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": []
             }
@@ -333,7 +317,6 @@ class TestBuildLocalSubgraph:
                 "id": "a",
                 "title": "A",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["b"]
             },
@@ -341,7 +324,6 @@ class TestBuildLocalSubgraph:
                 "id": "b",
                 "title": "B",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["c"]
             },
@@ -349,7 +331,6 @@ class TestBuildLocalSubgraph:
                 "id": "c",
                 "title": "C",
                 "author": "admin",
-                "is_ephemeral": False,
                 "tags": [],
                 "links": ["a"]  # Cycle back to A
             }

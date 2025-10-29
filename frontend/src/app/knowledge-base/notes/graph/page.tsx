@@ -9,7 +9,6 @@ interface GraphNode {
   id: string;
   title: string;
   author: string;
-  is_ephemeral: boolean;
   tags: string[];
   x?: number;
   y?: number;
@@ -191,7 +190,7 @@ export default function NotesGraphPage() {
         // Node circle
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = node.is_ephemeral ? "#fbbf24" : "#3b82f6";
+        ctx.fillStyle = "#3b82f6"; // Blue for all nodes
         ctx.fill();
         ctx.strokeStyle = isSelected ? "#1e40af" : "#e5e7eb";
         ctx.lineWidth = isSelected ? 3 : 1;
@@ -343,11 +342,7 @@ export default function NotesGraphPage() {
           <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 rounded-full bg-blue-600"></div>
-              <span>Persistent notes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
-              <span>Ephemeral notes</span>
+              <span>Notes</span>
             </div>
             <div className="ml-auto text-gray-500">Click a node to select · Hover to see title</div>
           </div>
@@ -360,11 +355,6 @@ export default function NotesGraphPage() {
             <div className="mb-3 flex items-center gap-4 text-sm text-blue-700">
               <code className="rounded bg-blue-100 px-2 py-1">{selectedNode.id}</code>
               <span>by {selectedNode.author}</span>
-              {selectedNode.is_ephemeral && (
-                <span className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
-                  ephemeral
-                </span>
-              )}
             </div>
             {selectedNode.tags.length > 0 && (
               <div className="mb-3 flex gap-2">

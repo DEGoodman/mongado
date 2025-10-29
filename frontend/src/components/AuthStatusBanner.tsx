@@ -90,21 +90,12 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
           <div className="flex-1">
             <p className="text-sm font-medium text-yellow-800">You are not authenticated</p>
             <p className="mt-1 text-xs text-yellow-700">
-              <strong>Your notes are ephemeral</strong> - they will only be visible in this browser
-              session and will be lost when you close the tab or after 24 hours of inactivity.
+              <strong>Authentication is required</strong> to create, edit, or delete notes.
+              You can view existing notes, but cannot make changes.
             </p>
-            <p className="mt-2 text-xs text-yellow-700">
-              <strong>What this means:</strong>
-            </p>
-            <ul className="ml-4 mt-1 list-disc space-y-0.5 text-xs text-yellow-700">
-              <li>Notes are stored in memory only (not in the database)</li>
-              <li>Other users won't see your ephemeral notes</li>
-              <li>You can still link notes together with [[wikilinks]]</li>
-              <li>Session persists across page refreshes in the same browser</li>
-            </ul>
             <div className="mt-3 border-t border-yellow-200 pt-3">
               <p className="text-xs text-yellow-700">
-                <strong>To save notes permanently:</strong>{" "}
+                <strong>To manage notes:</strong>{" "}
                 <Link href="/login" className="font-medium underline hover:text-yellow-900">
                   Login with admin token
                 </Link>
@@ -154,7 +145,7 @@ export function AuthStatusIndicator() {
       {isAuthenticated ? (
         <span>✓ Authenticated - Notes will be saved permanently</span>
       ) : (
-        <span>⚠ Not authenticated - Ephemeral notes only (session-based)</span>
+        <span>⚠ Not authenticated - Login required to create or edit notes</span>
       )}
     </div>
   );

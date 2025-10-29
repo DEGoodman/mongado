@@ -362,11 +362,6 @@ export default function NoteDetailPage() {
                     <code className="rounded bg-blue-50 px-2 py-1 font-mono text-sm text-blue-600">
                       {note.id}
                     </code>
-                    {note.is_ephemeral && (
-                      <span className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
-                        ephemeral
-                      </span>
-                    )}
                   </div>
 
                   <h1 className="mb-2 text-3xl font-bold text-gray-900">
