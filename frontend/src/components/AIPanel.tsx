@@ -265,7 +265,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 right-0 z-50 flex h-full max-h-dvh w-full flex-col border-l border-gray-200 bg-white shadow-lg md:inset-auto md:top-0 md:h-screen md:w-96">
+    <div className="fixed inset-0 z-50 flex h-full max-h-dvh w-full flex-col border-l border-gray-200 bg-white shadow-lg md:inset-auto md:right-0 md:top-0 md:h-screen md:w-96">
       {/* Header */}
       <div className="border-b border-gray-200 p-4">
         <div className="mb-3 flex items-center justify-between">
