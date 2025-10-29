@@ -140,7 +140,9 @@ export default function NotesPage() {
                   )}
 
                   {/* Content preview */}
-                  <p className="mb-2 line-clamp-2 text-sm text-gray-600">{note.content}</p>
+                  <p className="mb-2 line-clamp-2 overflow-hidden break-words text-sm text-gray-600">
+                    {note.content}
+                  </p>
 
                   {/* Metadata */}
                   <div className="flex items-center gap-4 text-xs text-gray-500">

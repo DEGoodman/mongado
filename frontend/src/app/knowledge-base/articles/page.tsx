@@ -133,7 +133,7 @@ export default function ArticlesPage() {
                   </div>
 
                   {/* Preview */}
-                  <p className="mb-3 text-gray-700">
+                  <p className="mb-3 overflow-hidden break-words text-gray-700">
                     {preview}
                     {needsTruncation && "..."}
                   </p>
