@@ -214,6 +214,18 @@ class Neo4jAdapter:
 
             note = self._node_to_dict(record["n"])
             note["links"] = record["links"] or []
+
+            # If note has no meaningful content (all defaults), treat as not found
+            # This allows fallback to ephemeral notes or SQLite
+            has_content = bool(note.get("content", "").strip())
+            has_timestamp = note.get("created_at", 0) > 0
+            if not has_content and not has_timestamp:
+                logger.warning(
+                    "Note %s found in Neo4j but has no content or timestamp (broken node)",
+                    note.get("id")
+                )
+                return None
+
             return note
 
     def list_notes(self, author: str | None = None) -> list[dict[str, Any]]:
