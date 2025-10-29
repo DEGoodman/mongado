@@ -140,7 +140,9 @@ export default function KnowledgeBasePage() {
               <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
                 ← Home
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
+              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
+                Knowledge Base
+              </h1>
             </div>
             <SettingsDropdown />
           </div>
