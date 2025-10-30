@@ -1,9 +1,126 @@
-# Mongado Roadmap
+# Mongado Development Priorities (October 2025)
 
-> **Note**: This document is kept for reference and historical context.
-> **All active work is now tracked via [GitHub Issues](https://github.com/DEGoodman/mongado/issues)**.
->
-> See `CONTRIBUTING.md` for how to create and manage issues.
+> **Updated**: October 29, 2025  
+> **Active Tracker**: [GitHub Issues](https://github.com/DEGoodman/mongado/issues)  
+> **Project Board**: See [#82](https://github.com/DEGoodman/mongado/issues/82)
+
+## 🎯 Current Focus
+
+All active development is tracked via GitHub Issues with priority labels. This document provides a high-level view of our roadmap priorities.
+
+---
+
+## 🔥 High Priority (Do First)
+
+**Foundational UX & Philosophy**
+
+- **#78** - [Improve header and information architecture](https://github.com/DEGoodman/mongado/issues/78)
+  - Articles vs Notes distinction unclear
+  - Visual hierarchy issues
+  - Well-defined spec with mockups
+  - **Impact**: Every page view
+  
+- **#42** - [Review Zettelkasten state](https://github.com/DEGoodman/mongado/issues/42)
+  - Align Notes with Zettelkasten philosophy
+  - Review existing notes for clarity
+  - Inform future UI/UX decisions
+  - **Impact**: Core content strategy
+
+**Why these first**: Define the core user experience and content philosophy. Everything else builds on this foundation.
+
+---
+
+## 📋 Medium Priority (Do Soon)
+
+**Technical Foundation**
+
+- **#14** - [Testing: Achieve 80%+ Backend Test Coverage](https://github.com/DEGoodman/mongado/issues/14)
+  - Prevent regressions as codebase grows
+  - Add incrementally as you work on features
+  - **Approach**: Test as you go, not all at once
+
+- **#77** - [Progressive/streaming display for AI suggestions](https://github.com/DEGoodman/mongado/issues/77)
+  - Improve perceived performance
+  - Frontend streaming implementation
+  - **Benefit**: Better UX for slow AI operations
+
+---
+
+## 💡 Low Priority / Backlog
+
+**AI Feature Polish**
+- **#55** - AI Features Manual Testing Plan
+- **#34** - Batch article concept extraction
+- **#15** - AI: Auto-tagging and Concept Extraction (needs breakdown)
+
+**Infrastructure**
+- **#63** - Add resource usage monitoring endpoint
+- **#82** - Create GitHub Project board
+
+---
+
+## 💭 Ideas (Not Yet Scoped)
+
+Features to consider for future development:
+
+- **#13** - Note Templates (Person, Book, Concept, Project)
+- **#22** - Export notes as markdown files for version control
+- **#35** - AI: Add graph analysis for clusters and orphans
+- **#36** - UI: Add knowledge base health dashboard
+- **#43** - Zen Mode for distraction-free writing
+- **#58** - Search result snippeting with contextual highlighting
+
+---
+
+## 📚 Article Ideas (12 ideas)
+
+All article ideas tracked with `kb` + `article-idea` labels. Filter: [article-idea issues](https://github.com/DEGoodman/mongado/issues?q=is%3Aissue+is%3Aopen+label%3Aarticle-idea)
+
+Topics include: SaaS billing, engineering management, SRE practices, and technical frameworks.
+
+---
+
+## 🎬 Suggested Action Plan
+
+### Phase 1: Clarity & Philosophy (1-2 weeks)
+1. Start with **#42** (Review Zettelkasten) - Quick alignment check
+2. Then tackle **#78** (Header/IA improvements) - Clear spec, high impact
+
+### Phase 2: Stability (Ongoing)
+3. **#14** (Testing) - Add incrementally as you work
+
+### Phase 3: AI Polish (As needed)
+4. **#77, #55, #34** - When AI usage increases
+
+### Phase 4: Later
+5. **#63, #15, #82** - When specific needs arise
+
+---
+
+## 📊 Labels & Filtering
+
+**Priority Labels:**
+- `priority: high` - Foundational work, do first
+- `priority: medium` - Important but not urgent
+- `priority: low` - Nice to have, backlog
+
+**Status Labels:**
+- `status: todo` - Ready to work on
+- `status: in-progress` - Actively being worked on
+- `status: done` - Completed
+- `status: idea` - Not yet scoped
+
+**Quick Filters:**
+- [High priority todos](https://github.com/DEGoodman/mongado/issues?q=is%3Aissue+is%3Aopen+label%3A%22priority%3A+high%22)
+- [All open features](https://github.com/DEGoodman/mongado/issues?q=is%3Aissue+is%3Aopen+label%3Afeature)
+- [In progress work](https://github.com/DEGoodman/mongado/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3A+in-progress%22)
+
+
+---
+
+# Historical Roadmap (Reference Only)
+
+> The content below is kept for historical reference. See above for current priorities.
 
 This document tracks planned features, improvements, and technical debt for the Mongado project.
 
