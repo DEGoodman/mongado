@@ -9,10 +9,10 @@ Documentation for the Mongado project - personal website and Knowledge Base.
 
 ## Project Documentation
 
-### Current Status & Planning
+### Planning & Status
 
-- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - ⭐ Single source of truth for project status (Oct 2025)
-- **[ROADMAP.md](ROADMAP.md)** - Future features, improvements, and TODOs
+- **[GitHub Issues](https://github.com/DEGoodman/mongado/issues)** - ⭐ Active work tracking and planning
+- **[ROADMAP.md](ROADMAP.md)** - Historical roadmap (reference only, see GitHub Issues for active work)
 
 ### Deployment & Operations
 
@@ -28,10 +28,6 @@ Documentation for the Mongado project - personal website and Knowledge Base.
 - **[PROFILING.md](PROFILING.md)** - Performance profiling tools
 - **[DEPENDENCIES.md](DEPENDENCIES.md)** - Dependency structure and management
 
-### Archived Documentation
-
-- **[archive/](archive/)** - Historical documentation (outdated but kept for reference)
-
 ### Knowledge Base
 
 The Knowledge Base is a separate subproject with its own documentation:
@@ -39,6 +35,11 @@ The Knowledge Base is a separate subproject with its own documentation:
 - **[knowledge-base/README.md](knowledge-base/README.md)** - Architecture overview
 - **[knowledge-base/ARTICLES.md](knowledge-base/ARTICLES.md)** - Creating static articles
 - **[knowledge-base/NOTES.md](knowledge-base/NOTES.md)** - Zettelkasten note system
+- **[knowledge-base/BACKUP_RESTORE.md](knowledge-base/BACKUP_RESTORE.md)** - Backup and restore procedures
+
+### Archived Documentation
+
+- **[archive/](archive/)** - Historical documentation and implementation notes (kept for reference)
 
 ## Quick Reference
 
@@ -71,24 +72,27 @@ See [TESTING.md](TESTING.md) for complete command reference.
 ```
 docs/
 ├── README.md                    # This file - documentation index
-├── CURRENT_STATUS.md            # ⭐ Current project status (single source of truth)
-├── ROADMAP.md                   # Future plans and TODOs
-├── DEPLOYMENT.md                # Production deployment guide
-├── DISASTER_RECOVERY.md         # Recovery procedures
+├── ROADMAP.md                   # Historical roadmap (GitHub Issues is the active tracker)
 ├── ARCHITECTURE.md              # Backend architecture (Functional Core / Imperative Shell)
 ├── API.md                       # API documentation (Swagger/OpenAPI)
-├── SETUP.md                     # 1Password setup
-├── TESTING.md                   # Testing guide
-├── PROFILING.md                 # Performance profiling
+├── SETUP.md                     # Installation and 1Password configuration
+├── TESTING.md                   # Testing guide and commands
+├── PROFILING.md                 # Performance profiling tools
 ├── DEPENDENCIES.md              # Dependency management
-├── archive/                     # Historical/outdated documentation
-│   ├── PROJECT_STATUS.md        # Old status doc (Oct 2024)
-│   ├── DEVELOPMENT_SETUP.md     # Old setup doc (Oct 2024)
-│   └── DNS_SETUP.md             # DNS setup (completed)
-└── knowledge-base/              # Knowledge Base documentation
-    ├── README.md                # KB architecture overview
-    ├── ARTICLES.md              # Article authoring guide
-    └── NOTES.md                 # Notes/Zettelkasten guide
+├── DEPLOYMENT.md                # Production deployment guide
+├── DISASTER_RECOVERY.md         # Backup and recovery procedures
+├── knowledge-base/              # Knowledge Base documentation
+│   ├── README.md                # KB architecture overview
+│   ├── ARTICLES.md              # Article authoring guide
+│   ├── NOTES.md                 # Notes/Zettelkasten guide
+│   └── BACKUP_RESTORE.md        # KB backup/restore procedures
+└── archive/                     # Historical documentation (reference only)
+    ├── PROJECT_STATUS.md        # Old status doc (Oct 2024)
+    ├── DEVELOPMENT_SETUP.md     # Old setup doc (Oct 2024)
+    ├── DNS_SETUP.md             # DNS setup notes (completed)
+    ├── EMBEDDING_STORAGE.md     # Embedding implementation design
+    ├── LOCAL_API_SUBDOMAIN.md   # Local API subdomain setup
+    └── LOCAL_DEV_OPTIMIZATION.md # Development optimizations
 ```
 
 ## External Resources
