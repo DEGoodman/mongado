@@ -231,7 +231,6 @@ class Neo4jAdapter:
             note["links"] = record["links"] or []
 
             # If note has no meaningful content (all defaults), treat as not found
-            # This allows fallback to ephemeral notes or SQLite
             has_content = bool(note.get("content", "").strip())
             has_timestamp = note.get("created_at", 0) > 0
             if not has_content and not has_timestamp:
@@ -458,18 +457,22 @@ class Neo4jAdapter:
     def _create_links(self, session: Session, source_id: str, target_ids: list[str]) -> None:
         """Create LINKS_TO relationships.
 
+        Only creates links to notes that already exist. Broken links (to non-existent notes)
+        are intentionally not created - this prevents ghost/placeholder nodes.
+
         Args:
             session: Neo4j session
             source_id: Source note ID
             target_ids: List of target note IDs
         """
         for target_id in target_ids:
-            # Create link even if target doesn't exist yet (forward reference)
+            # Only create link if both source and target notes exist
             session.run(
                 """
                 MATCH (source:Note)
                 WHERE source.id = $source_id OR source.note_id = $source_id
-                MERGE (target:Note {note_id: $target_id})
+                MATCH (target:Note)
+                WHERE target.id = $target_id OR target.note_id = $target_id
                 MERGE (source)-[:LINKS_TO]->(target)
                 """,
                 source_id=source_id,
