@@ -466,7 +466,7 @@ class TestOrphanDetection:
 
         # Create connected notes
         connected1 = notes_service.create_note(content="Connected 1")
-        connected2 = notes_service.create_note(
+        _connected2 = notes_service.create_note(
             content=f"Links to [[{connected1['id']}]]"
         )
 
@@ -488,7 +488,7 @@ class TestOrphanDetection:
         dead_end = notes_service.create_note(
             content="Dead end - no outbound links"
         )
-        linker = notes_service.create_note(
+        _linker = notes_service.create_note(
             content=f"Links to [[{target['id']}]] and [[{dead_end['id']}]]"
         )
 

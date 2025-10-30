@@ -182,7 +182,12 @@ function NotesContent() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
               {showOrphans && (
@@ -221,7 +226,12 @@ function NotesContent() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
               {showHubs && (
@@ -259,9 +269,7 @@ function NotesContent() {
                   <span className="font-medium text-purple-900">
                     Central Concepts ({central.length})
                   </span>
-                  <span className="text-sm text-purple-700">
-                    - Highly referenced core ideas
-                  </span>
+                  <span className="text-sm text-purple-700">- Highly referenced core ideas</span>
                 </div>
                 <svg
                   className={`h-5 w-5 text-purple-600 transition-transform ${showCentral ? "rotate-180" : ""}`}
@@ -269,7 +277,12 @@ function NotesContent() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
               {showCentral && (
