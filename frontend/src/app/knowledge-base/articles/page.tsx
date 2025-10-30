@@ -18,7 +18,10 @@ interface Resource {
   content_type?: string;
   url?: string;
   tags: string[];
-  created_at: string;
+  draft?: boolean;
+  published_date?: string;
+  updated_date?: string;
+  created_at: string; // Legacy fallback
 }
 
 function ArticlesContent() {
@@ -162,11 +165,28 @@ function ArticlesContent() {
                       {resource.title}
                     </h3>
                     <div className="text-sm text-gray-500">
-                      {new Date(resource.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {resource.updated_date &&
+                      resource.updated_date !== resource.published_date ? (
+                        <>
+                          Updated{" "}
+                          {new Date(resource.updated_date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </>
+                      ) : (
+                        <>
+                          Published{" "}
+                          {new Date(
+                            resource.published_date || resource.created_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </>
+                      )}
                     </div>
                   </div>
 

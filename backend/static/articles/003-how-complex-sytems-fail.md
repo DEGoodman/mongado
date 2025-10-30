@@ -3,6 +3,8 @@ id: 3
 title: "How Complex Sytems Fail"
 url: "https://how.complexsystems.fail"
 tags: []
+draft: false
+published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"
 ---
 

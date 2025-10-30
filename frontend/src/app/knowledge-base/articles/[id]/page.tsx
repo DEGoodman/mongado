@@ -20,7 +20,10 @@ interface Article {
   content_type?: string;
   url?: string;
   tags: string[];
-  created_at: string;
+  draft?: boolean;
+  published_date?: string;
+  updated_date?: string;
+  created_at: string; // Legacy fallback
 }
 
 export default function ArticleDetailPage() {
@@ -124,18 +127,38 @@ export default function ArticleDetailPage() {
           </h1>
 
           {/* Metadata */}
-          <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
-            <span aria-hidden="true">📅</span>
-            <span>
-              Published{" "}
-              <time dateTime={article.created_at}>
-                {new Date(article.created_at).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </time>
-            </span>
+          <div className="mb-4 flex flex-col gap-1 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true">📅</span>
+              <span>
+                Published{" "}
+                <time dateTime={article.published_date || article.created_at}>
+                  {new Date(article.published_date || article.created_at).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}
+                </time>
+              </span>
+            </div>
+            {article.updated_date && article.updated_date !== article.published_date && (
+              <div className="flex items-center gap-2">
+                <span aria-hidden="true">✏️</span>
+                <span>
+                  Last updated{" "}
+                  <time dateTime={article.updated_date}>
+                    {new Date(article.updated_date).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </time>
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Tags */}

@@ -2,6 +2,8 @@
 id: 6
 title: "LLM Performance Optimization: From Naive to Production"
 tags: ["AI", "Performance", "Architecture"]
+draft: false
+published_date: "2025-10-24T00:00:00"
 created_at: "2025-10-24T00:00:00"
 ---
 

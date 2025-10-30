@@ -3,8 +3,10 @@ id: 9
 title: "Multi-LLM Integration: Choosing the Right Model for Each Task"
 description: "Why Mongado uses 3 specialized Ollama models instead of one general-purpose model, and what we learned building AI features for a knowledge base."
 tags: ["ai", "llm", "architecture", "ollama"]
-created_at: "2025-10-25"
-updated_at: "2025-10-25"
+draft: false
+published_date: "2025-10-25T00:00:00"
+updated_date: "2025-10-25T00:00:00"
+created_at: "2025-10-25T00:00:00"
 ---
 
 ## Intro

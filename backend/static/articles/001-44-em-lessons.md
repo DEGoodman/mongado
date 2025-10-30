@@ -3,6 +3,8 @@ id: 1
 title: "44 Engineering Management Lessons"
 url: "https://www.defmacro.org/2014/10/03/engman.html"
 tags: ["Engineering Management", "Leadership"]
+draft: false
+published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"
 ---
 

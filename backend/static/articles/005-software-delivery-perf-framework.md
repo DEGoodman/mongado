@@ -3,6 +3,8 @@ id: 5
 title: "Software Delivery Performance Framework"
 url: "https://itrevolution.com/product/accelerate/"
 tags: ["Operations", "Management"]
+draft: false
+published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"
 ---
 

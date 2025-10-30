@@ -47,8 +47,11 @@ class ArticleDict(TypedDict, total=False):
         content: Markdown content
         author: Author name
         tags: List of tag strings
-        created_at: Unix timestamp (float) or ISO datetime string
-        updated_at: Unix timestamp (float) or ISO datetime string
+        draft: Whether article is a draft (hidden in production)
+        published_date: Date article was first published (ISO datetime string)
+        updated_date: Date article was last updated (ISO datetime string)
+        created_at: Unix timestamp (float) or ISO datetime string (legacy)
+        updated_at: Unix timestamp (float) or ISO datetime string (legacy)
         content_hash: SHA256 hash of content (for change detection)
         embedding: Optional embedding vector
         embedding_model: Model used for embedding (e.g., "nomic-embed-text")
@@ -60,6 +63,9 @@ class ArticleDict(TypedDict, total=False):
     content: str
     author: str
     tags: list[str]
+    draft: bool
+    published_date: str
+    updated_date: str
     created_at: float | str
     updated_at: float | str
     content_hash: str
