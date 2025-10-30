@@ -4,7 +4,15 @@ import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes";
+import {
+  listNotes,
+  getRandomNote,
+  getOrphanNotes,
+  getHubNotes,
+  getCentralNotes,
+  Note,
+  formatNoteDate,
+} from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
@@ -23,13 +31,29 @@ function NotesContent() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [randomNoteLoading, setRandomNoteLoading] = useState(false);
 
+  // Special note categories
+  const [orphans, setOrphans] = useState<Note[]>([]);
+  const [hubs, setHubs] = useState<Note[]>([]);
+  const [central, setCentral] = useState<Note[]>([]);
+  const [showOrphans, setShowOrphans] = useState(false);
+  const [showHubs, setShowHubs] = useState(false);
+  const [showCentral, setShowCentral] = useState(false);
+
   useEffect(() => {
-    async function fetchNotes() {
+    async function fetchData() {
       try {
         setLoading(true);
-        const response = await listNotes();
-        setNotes(response.notes);
-        logger.info("Notes loaded", { count: response.count });
+        const [notesResp, orphansResp, hubsResp, centralResp] = await Promise.all([
+          listNotes(),
+          getOrphanNotes(),
+          getHubNotes(),
+          getCentralNotes(),
+        ]);
+        setNotes(notesResp.notes);
+        setOrphans(orphansResp.notes);
+        setHubs(hubsResp.notes);
+        setCentral(centralResp.notes);
+        logger.info("All notes data loaded");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load notes";
         setError(message);
@@ -39,7 +63,7 @@ function NotesContent() {
       }
     }
 
-    fetchNotes();
+    fetchData();
   }, []);
 
   // Filter notes by tag
@@ -132,6 +156,146 @@ function NotesContent() {
           </div>
         </div>
       </div>
+
+      {/* Special Note Categories */}
+      {(orphans.length > 0 || hubs.length > 0 || central.length > 0) && (
+        <div className="mb-6 space-y-3">
+          {/* Orphans - Notes needing integration */}
+          {orphans.length > 0 && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50">
+              <button
+                onClick={() => setShowOrphans(!showOrphans)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-yellow-100"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🏝️</span>
+                  <span className="font-medium text-yellow-900">
+                    Orphan Notes ({orphans.length})
+                  </span>
+                  <span className="text-sm text-yellow-700">
+                    - Isolated notes needing integration
+                  </span>
+                </div>
+                <svg
+                  className={`h-5 w-5 text-yellow-600 transition-transform ${showOrphans ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showOrphans && (
+                <div className="space-y-2 border-t border-yellow-200 p-4">
+                  {orphans.map((note) => (
+                    <Link
+                      key={note.id}
+                      href={`/knowledge-base/notes/${note.id}`}
+                      className="block rounded border border-yellow-300 bg-white p-3 text-sm hover:border-yellow-400 hover:shadow"
+                    >
+                      <code className="text-xs text-yellow-700">{note.id}</code>
+                      {note.title && <div className="font-medium text-gray-900">{note.title}</div>}
+                      <div className="mt-1 line-clamp-1 text-gray-600">{note.content}</div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Hub Notes - Entry points */}
+          {hubs.length > 0 && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50">
+              <button
+                onClick={() => setShowHubs(!showHubs)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-blue-100"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🗺️</span>
+                  <span className="font-medium text-blue-900">Hub Notes ({hubs.length})</span>
+                  <span className="text-sm text-blue-700">- Entry points with many links</span>
+                </div>
+                <svg
+                  className={`h-5 w-5 text-blue-600 transition-transform ${showHubs ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showHubs && (
+                <div className="space-y-2 border-t border-blue-200 p-4">
+                  {hubs.map((note: any) => (
+                    <Link
+                      key={note.id}
+                      href={`/knowledge-base/notes/${note.id}`}
+                      className="block rounded border border-blue-300 bg-white p-3 text-sm hover:border-blue-400 hover:shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <code className="text-xs text-blue-700">{note.id}</code>
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                          {note.link_count} links
+                        </span>
+                      </div>
+                      {note.title && <div className="font-medium text-gray-900">{note.title}</div>}
+                      <div className="mt-1 line-clamp-1 text-gray-600">{note.content}</div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Central Notes - Core concepts */}
+          {central.length > 0 && (
+            <div className="rounded-lg border border-purple-200 bg-purple-50">
+              <button
+                onClick={() => setShowCentral(!showCentral)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-purple-100"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⭐</span>
+                  <span className="font-medium text-purple-900">
+                    Central Concepts ({central.length})
+                  </span>
+                  <span className="text-sm text-purple-700">
+                    - Highly referenced core ideas
+                  </span>
+                </div>
+                <svg
+                  className={`h-5 w-5 text-purple-600 transition-transform ${showCentral ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showCentral && (
+                <div className="space-y-2 border-t border-purple-200 p-4">
+                  {central.map((note: any) => (
+                    <Link
+                      key={note.id}
+                      href={`/knowledge-base/notes/${note.id}`}
+                      className="block rounded border border-purple-300 bg-white p-3 text-sm hover:border-purple-400 hover:shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <code className="text-xs text-purple-700">{note.id}</code>
+                        <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
+                          {note.backlink_count} backlinks
+                        </span>
+                      </div>
+                      {note.title && <div className="font-medium text-gray-900">{note.title}</div>}
+                      <div className="mt-1 line-clamp-1 text-gray-600">{note.content}</div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tag Filter Banner */}
       {tagFilter && (

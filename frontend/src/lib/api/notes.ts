@@ -221,6 +221,78 @@ export function extractWikilinks(content: string): string[] {
 }
 
 /**
+ * Get orphan notes (no links and no backlinks)
+ */
+export async function getOrphanNotes(): Promise<NotesListResponse> {
+  const response = await fetch(`${API_URL}/api/notes/orphans`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    logger.error("Failed to get orphan notes", { status: response.status });
+    throw new Error("Failed to get orphan notes");
+  }
+
+  const data = await response.json();
+  logger.info("Orphan notes retrieved", { count: data.count });
+  return data;
+}
+
+/**
+ * Get dead-end notes (no outbound links)
+ */
+export async function getDeadEndNotes(): Promise<NotesListResponse> {
+  const response = await fetch(`${API_URL}/api/notes/dead-ends`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    logger.error("Failed to get dead-end notes", { status: response.status });
+    throw new Error("Failed to get dead-end notes");
+  }
+
+  const data = await response.json();
+  logger.info("Dead-end notes retrieved", { count: data.count });
+  return data;
+}
+
+/**
+ * Get hub notes (notes with many outbound links)
+ */
+export async function getHubNotes(minLinks: number = 3): Promise<NotesListResponse> {
+  const response = await fetch(`${API_URL}/api/notes/hubs?min_links=${minLinks}`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    logger.error("Failed to get hub notes", { status: response.status });
+    throw new Error("Failed to get hub notes");
+  }
+
+  const data = await response.json();
+  logger.info("Hub notes retrieved", { count: data.count });
+  return data;
+}
+
+/**
+ * Get central concept notes (notes with many backlinks)
+ */
+export async function getCentralNotes(minBacklinks: number = 3): Promise<NotesListResponse> {
+  const response = await fetch(`${API_URL}/api/notes/central?min_backlinks=${minBacklinks}`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    logger.error("Failed to get central notes", { status: response.status });
+    throw new Error("Failed to get central notes");
+  }
+
+  const data = await response.json();
+  logger.info("Central notes retrieved", { count: data.count });
+  return data;
+}
+
+/**
  * Format date for display
  */
 export function formatNoteDate(timestamp: number | string): string {

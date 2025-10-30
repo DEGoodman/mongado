@@ -451,3 +451,165 @@ class TestRandomNote:
         # With 10 notes and 20 calls, we should see at least 2 different notes
         # (extremely unlikely to get same note 20 times in a row)
         assert len(note_ids) >= 2
+
+
+class TestOrphanDetection:
+    """Tests for orphan detection endpoints."""
+
+    def test_get_orphan_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test getting orphan notes (no links, no backlinks)."""
+        from notes_service import get_notes_service
+        notes_service = get_notes_service()
+
+        # Create orphan note (no links)
+        orphan = notes_service.create_note(content="Isolated note")
+
+        # Create connected notes
+        connected1 = notes_service.create_note(content="Connected 1")
+        connected2 = notes_service.create_note(
+            content=f"Links to [[{connected1['id']}]]"
+        )
+
+        # Get orphans
+        response = client.get("/api/notes/orphans")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert data["notes"][0]["id"] == orphan["id"]
+
+    def test_get_dead_end_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test getting dead-end notes (no outbound links)."""
+        from notes_service import get_notes_service
+        notes_service = get_notes_service()
+
+        # Create notes
+        target = notes_service.create_note(content="Target note")
+        dead_end = notes_service.create_note(
+            content="Dead end - no outbound links"
+        )
+        linker = notes_service.create_note(
+            content=f"Links to [[{target['id']}]] and [[{dead_end['id']}]]"
+        )
+
+        # Get dead-ends
+        response = client.get("/api/notes/dead-ends")
+        assert response.status_code == 200
+
+        data = response.json()
+        # Both target and dead_end have no outbound links
+        assert data["count"] == 2
+        dead_end_ids = {note["id"] for note in data["notes"]}
+        assert target["id"] in dead_end_ids
+        assert dead_end["id"] in dead_end_ids
+
+    def test_empty_orphans(self, client: TestClient) -> None:
+        """Test orphan endpoint when all notes are connected."""
+        response = client.get("/api/notes/orphans")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 0
+        assert data["notes"] == []
+
+
+class TestEntryPointDiscovery:
+    """Tests for entry point discovery endpoints."""
+
+    def test_get_hub_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test getting hub notes (many outbound links)."""
+        from notes_service import get_notes_service
+        notes_service = get_notes_service()
+
+        # Create target notes
+        targets = [
+            notes_service.create_note(content=f"Target {i}")
+            for i in range(5)
+        ]
+
+        # Create hub note with many links
+        hub_content = " ".join([f"[[{t['id']}]]" for t in targets])
+        hub = notes_service.create_note(content=f"Hub: {hub_content}", title="Map Note")
+
+        # Create note with few links
+        notes_service.create_note(content=f"Few links: [[{targets[0]['id']}]]")
+
+        # Get hubs (default min_links=3)
+        response = client.get("/api/notes/hubs")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert data["notes"][0]["id"] == hub["id"]
+        assert data["notes"][0]["link_count"] == 5
+
+    def test_get_hub_notes_with_min_links(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test hub notes with custom min_links parameter."""
+        from notes_service import get_notes_service
+        notes_service = get_notes_service()
+
+        # Create targets
+        targets = [
+            notes_service.create_note(content=f"Target {i}")
+            for i in range(3)
+        ]
+
+        # Create note with 2 links
+        hub_content = f"[[{targets[0]['id']}]] [[{targets[1]['id']}]]"
+        hub = notes_service.create_note(content=hub_content)
+
+        # Get hubs with min_links=2
+        response = client.get("/api/notes/hubs?min_links=2")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert data["notes"][0]["id"] == hub["id"]
+
+    def test_get_central_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test getting central notes (many backlinks)."""
+        from notes_service import get_notes_service
+        notes_service = get_notes_service()
+
+        # Create central concept note
+        central = notes_service.create_note(content="Central concept", title="Core Idea")
+
+        # Create multiple notes linking to it
+        for i in range(5):
+            notes_service.create_note(content=f"Reference to [[{central['id']}]] - note {i}")
+
+        # Get central notes (default min_backlinks=3)
+        response = client.get("/api/notes/central")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert data["notes"][0]["id"] == central["id"]
+        assert data["notes"][0]["backlink_count"] == 5
+
+    def test_get_central_notes_with_min_backlinks(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test central notes with custom min_backlinks parameter."""
+        from notes_service import get_notes_service
+        notes_service = get_notes_service()
+
+        # Create note with 2 backlinks
+        target = notes_service.create_note(content="Referenced note")
+        notes_service.create_note(content=f"Link 1: [[{target['id']}]]")
+        notes_service.create_note(content=f"Link 2: [[{target['id']}]]")
+
+        # Get central with min_backlinks=2
+        response = client.get("/api/notes/central?min_backlinks=2")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert data["notes"][0]["id"] == target["id"]
+
+    def test_empty_hubs_and_central(self, client: TestClient) -> None:
+        """Test hub and central endpoints when no notes meet criteria."""
+        response = client.get("/api/notes/hubs")
+        assert response.status_code == 200
+        assert response.json()["count"] == 0
+
+        response = client.get("/api/notes/central")
+        assert response.status_code == 200
+        assert response.json()["count"] == 0

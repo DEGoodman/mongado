@@ -458,6 +458,130 @@ class Neo4jAdapter:
 
             return note
 
+    def get_orphan_notes(self) -> list[dict[str, Any]]:
+        """Get orphan notes (notes with no links and no backlinks).
+
+        Returns:
+            List of orphan notes
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                WHERE NOT (n)-[:LINKS_TO]->() AND NOT ()-[:LINKS_TO]->(n)
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                ORDER BY n.created_at DESC
+                """
+            )
+
+            orphans = []
+            for record in result:
+                note = self._node_to_dict(record["n"])
+                note["links"] = record["links"] or []
+                orphans.append(note)
+
+            return orphans
+
+    def get_dead_end_notes(self) -> list[dict[str, Any]]:
+        """Get dead-end notes (notes with no outbound links).
+
+        Returns:
+            List of dead-end notes
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                WHERE NOT (n)-[:LINKS_TO]->()
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                ORDER BY n.created_at DESC
+                """
+            )
+
+            dead_ends = []
+            for record in result:
+                note = self._node_to_dict(record["n"])
+                note["links"] = record["links"] or []
+                dead_ends.append(note)
+
+            return dead_ends
+
+    def get_hub_notes(self, min_links: int = 3) -> list[dict[str, Any]]:
+        """Get hub notes (notes with many outbound links).
+
+        Args:
+            min_links: Minimum number of outbound links (default: 3)
+
+        Returns:
+            List of hub notes with link counts
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)-[:LINKS_TO]->(target:Note)
+                WITH n, collect(COALESCE(target.id, target.note_id)) AS links
+                WHERE size(links) >= $min_links
+                RETURN n, links, size(links) AS link_count
+                ORDER BY link_count DESC, n.created_at DESC
+                """,
+                min_links=min_links,
+            )
+
+            hubs = []
+            for record in result:
+                note = self._node_to_dict(record["n"])
+                note["links"] = record["links"] or []
+                note["link_count"] = record["link_count"]
+                hubs.append(note)
+
+            return hubs
+
+    def get_central_notes(self, min_backlinks: int = 3) -> list[dict[str, Any]]:
+        """Get central concept notes (notes with many backlinks).
+
+        Args:
+            min_backlinks: Minimum number of backlinks (default: 3)
+
+        Returns:
+            List of central notes with backlink counts
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (source:Note)-[:LINKS_TO]->(n:Note)
+                WITH n, count(source) AS backlink_count
+                WHERE backlink_count >= $min_backlinks
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                WITH n, backlink_count, collect(COALESCE(target.id, target.note_id)) AS links
+                RETURN n, links, backlink_count
+                ORDER BY backlink_count DESC, n.created_at DESC
+                """,
+                min_backlinks=min_backlinks,
+            )
+
+            central = []
+            for record in result:
+                note = self._node_to_dict(record["n"])
+                note["links"] = record["links"] or []
+                note["backlink_count"] = record["backlink_count"]
+                central.append(note)
+
+            return central
+
     def get_all_note_ids(self) -> set[str]:
         """Get all note IDs (for collision detection).
 

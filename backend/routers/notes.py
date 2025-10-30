@@ -84,6 +84,48 @@ Links are automatically parsed and stored as graph relationships.
 
         return note
 
+    @router.get("/orphans", response_model=dict[str, Any])
+    async def get_orphan_notes() -> dict[str, Any]:
+        """Get orphan notes (notes with no links and no backlinks).
+
+        These are isolated notes that haven't been integrated into the knowledge base yet.
+        """
+        orphans = notes_service.get_orphan_notes()
+        return {"notes": orphans, "count": len(orphans)}
+
+    @router.get("/dead-ends", response_model=dict[str, Any])
+    async def get_dead_end_notes() -> dict[str, Any]:
+        """Get dead-end notes (notes with no outbound links).
+
+        These notes receive links but don't link to other notes - good candidates for expansion.
+        """
+        dead_ends = notes_service.get_dead_end_notes()
+        return {"notes": dead_ends, "count": len(dead_ends)}
+
+    @router.get("/hubs", response_model=dict[str, Any])
+    async def get_hub_notes(min_links: int = 3) -> dict[str, Any]:
+        """Get hub notes (notes with many outbound links).
+
+        These are index or map notes that serve as entry points into topic areas.
+
+        Args:
+            min_links: Minimum number of outbound links (default: 3)
+        """
+        hubs = notes_service.get_hub_notes(min_links=min_links)
+        return {"notes": hubs, "count": len(hubs)}
+
+    @router.get("/central", response_model=dict[str, Any])
+    async def get_central_notes(min_backlinks: int = 3) -> dict[str, Any]:
+        """Get central concept notes (notes with many backlinks).
+
+        These are highly referenced notes representing core concepts.
+
+        Args:
+            min_backlinks: Minimum number of backlinks (default: 3)
+        """
+        central = notes_service.get_central_notes(min_backlinks=min_backlinks)
+        return {"notes": central, "count": len(central)}
+
     @router.get("/{note_id}", response_model=dict[str, Any])
     async def get_note(note_id: str) -> dict[str, Any]:
         """Get a specific note by ID."""

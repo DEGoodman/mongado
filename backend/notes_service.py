@@ -308,6 +308,110 @@ class NotesService:
                 return None
             return random.choice(notes)
 
+    def get_orphan_notes(self) -> list[dict[str, Any]]:
+        """Get orphan notes (notes with no links and no backlinks).
+
+        Returns:
+            List of orphan notes
+        """
+        if self.neo4j and self.neo4j.is_available():
+            return self.neo4j.get_orphan_notes()
+        else:
+            # Fallback to SQLite
+            orphans = self.db.fetchall(
+                """
+                SELECT DISTINCT n.* FROM notes n
+                WHERE n.id NOT IN (
+                    SELECT DISTINCT source_id FROM note_links
+                    UNION
+                    SELECT DISTINCT target_id FROM note_links
+                )
+                ORDER BY n.created_at DESC
+                """
+            )
+            return [self._db_row_to_dict(row) for row in orphans]
+
+    def get_dead_end_notes(self) -> list[dict[str, Any]]:
+        """Get dead-end notes (notes with no outbound links).
+
+        Returns:
+            List of dead-end notes
+        """
+        if self.neo4j and self.neo4j.is_available():
+            return self.neo4j.get_dead_end_notes()
+        else:
+            # Fallback to SQLite
+            dead_ends = self.db.fetchall(
+                """
+                SELECT n.* FROM notes n
+                WHERE n.id NOT IN (SELECT DISTINCT source_id FROM note_links)
+                ORDER BY n.created_at DESC
+                """
+            )
+            return [self._db_row_to_dict(row) for row in dead_ends]
+
+    def get_hub_notes(self, min_links: int = 3) -> list[dict[str, Any]]:
+        """Get hub notes (notes with many outbound links).
+
+        Args:
+            min_links: Minimum number of outbound links
+
+        Returns:
+            List of hub notes with link counts
+        """
+        if self.neo4j and self.neo4j.is_available():
+            return self.neo4j.get_hub_notes(min_links=min_links)
+        else:
+            # Fallback to SQLite
+            hubs = self.db.fetchall(
+                """
+                SELECT n.*, COUNT(l.target_id) AS link_count
+                FROM notes n
+                JOIN note_links l ON n.id = l.source_id
+                GROUP BY n.id
+                HAVING link_count >= ?
+                ORDER BY link_count DESC, n.created_at DESC
+                """,
+                (min_links,),
+            )
+            result = []
+            for row in hubs:
+                note = self._db_row_to_dict(row)
+                note["link_count"] = row["link_count"]
+                result.append(note)
+            return result
+
+    def get_central_notes(self, min_backlinks: int = 3) -> list[dict[str, Any]]:
+        """Get central concept notes (notes with many backlinks).
+
+        Args:
+            min_backlinks: Minimum number of backlinks
+
+        Returns:
+            List of central notes with backlink counts
+        """
+        if self.neo4j and self.neo4j.is_available():
+            return self.neo4j.get_central_notes(min_backlinks=min_backlinks)
+        else:
+            # Fallback to SQLite
+            central = self.db.fetchall(
+                """
+                SELECT n.*, COUNT(l.source_id) AS backlink_count
+                FROM notes n
+                JOIN note_links l ON n.id = l.target_id
+                GROUP BY n.id
+                HAVING backlink_count >= ?
+                ORDER BY backlink_count DESC, n.created_at DESC
+                """,
+                (min_backlinks,),
+            )
+            result = []
+            for row in central:
+                note = self._db_row_to_dict(row)
+                note["backlink_count"] = row["backlink_count"]
+                result.append(note)
+            return result
+
     def _get_all_note_ids(self) -> set[str]:
         """Get all existing note IDs (for collision detection)."""
         if self.neo4j and self.neo4j.is_available():
