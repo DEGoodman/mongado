@@ -386,3 +386,68 @@ class TestOutboundLinks:
         data = response.json()
         assert data["count"] == 0
         assert data["links"] == []
+
+
+class TestRandomNote:
+    """Tests for GET /api/notes/random endpoint."""
+
+    def test_get_random_note(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test getting a random note when notes exist."""
+        # Create several notes
+        client.post("/api/notes", json={"content": "Note 1"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Note 2"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Note 3"}, headers=admin_headers)
+
+        # Get random note
+        response = client.get("/api/notes/random")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "id" in data
+        assert "content" in data
+        assert data["content"] in ["Note 1", "Note 2", "Note 3"]
+
+    def test_get_random_note_returns_valid_structure(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that random note returns complete note structure."""
+        # Create note with all fields
+        client.post(
+            "/api/notes",
+            json={"content": "Full note", "title": "Test Title", "tags": ["test"]},
+            headers=admin_headers
+        )
+
+        response = client.get("/api/notes/random")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "id" in data
+        assert "content" in data
+        assert "title" in data
+        assert "tags" in data
+        assert "author" in data
+        assert "created_at" in data
+        assert "updated_at" in data
+        assert "links" in data
+
+    def test_get_random_note_when_no_notes_exist(self, client: TestClient) -> None:
+        """Test getting random note when database is empty."""
+        response = client.get("/api/notes/random")
+        assert response.status_code == 404
+        assert "No notes available" in response.json()["detail"]
+
+    def test_get_random_note_different_results(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that calling random multiple times can return different notes."""
+        # Create 10 notes to increase chance of different results
+        for i in range(10):
+            client.post("/api/notes", json={"content": f"Note {i}"}, headers=admin_headers)
+
+        # Get random notes multiple times
+        note_ids = set()
+        for _ in range(20):  # Call 20 times
+            response = client.get("/api/notes/random")
+            assert response.status_code == 200
+            note_ids.add(response.json()["id"])
+
+        # With 10 notes and 20 calls, we should see at least 2 different notes
+        # (extremely unlikely to get same note 20 times in a row)
+        assert len(note_ids) >= 2

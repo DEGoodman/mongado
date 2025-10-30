@@ -56,7 +56,7 @@ function getHeaders(): HeadersInit {
 }
 
 /**
- * Create a new note (persistent if admin, ephemeral if visitor)
+ * Create a new note (requires admin authentication)
  */
 export async function createNote(request: CreateNoteRequest): Promise<Note> {
   const response = await fetch(`${API_URL}/api/notes`, {
@@ -72,12 +72,12 @@ export async function createNote(request: CreateNoteRequest): Promise<Note> {
   }
 
   const note = await response.json();
-  logger.info("Note created", { id: note.id, is_ephemeral: note.is_ephemeral });
+  logger.info("Note created", { id: note.id });
   return note;
 }
 
 /**
- * List all accessible notes (persistent + session's ephemeral)
+ * List all notes
  */
 export async function listNotes(): Promise<NotesListResponse> {
   const response = await fetch(`${API_URL}/api/notes`, {
@@ -112,6 +112,27 @@ export async function getNote(noteId: string): Promise<Note> {
 
   const note = await response.json();
   logger.info("Note retrieved", { id: note.id });
+  return note;
+}
+
+/**
+ * Get a random note for serendipitous discovery
+ */
+export async function getRandomNote(): Promise<Note> {
+  const response = await fetch(`${API_URL}/api/notes/random`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("No notes available");
+    }
+    logger.error("Failed to get random note", { status: response.status });
+    throw new Error("Failed to get random note");
+  }
+
+  const note = await response.json();
+  logger.info("Random note retrieved", { id: note.id });
   return note;
 }
 

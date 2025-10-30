@@ -428,6 +428,36 @@ class Neo4jAdapter:
 
             return links
 
+    def get_random_note(self) -> dict[str, Any] | None:
+        """Get a random note.
+
+        Returns:
+            Random note dict or None if no notes exist
+        """
+        if not self._available or not self.driver:
+            return None
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                WITH n, collect(COALESCE(target.id, target.note_id)) AS links
+                ORDER BY rand()
+                LIMIT 1
+                RETURN n, links
+                """
+            )
+
+            record = result.single()
+            if not record:
+                return None
+
+            note = self._node_to_dict(record["n"])
+            note["links"] = record["links"] or []
+
+            return note
+
     def get_all_note_ids(self) -> set[str]:
         """Get all note IDs (for collision detection).
 

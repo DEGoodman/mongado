@@ -292,6 +292,22 @@ class NotesService:
 
             return [self._db_row_to_dict(row) for row in links]
 
+    def get_random_note(self) -> dict[str, Any] | None:
+        """Get a random note for serendipitous discovery.
+
+        Returns:
+            Random note dict or None if no notes exist
+        """
+        if self.neo4j and self.neo4j.is_available():
+            return self.neo4j.get_random_note()
+        else:
+            # Fallback to SQLite - get all notes and pick random one
+            import random
+            notes = self.list_notes()
+            if not notes:
+                return None
+            return random.choice(notes)
+
     def _get_all_note_ids(self) -> set[str]:
         """Get all existing note IDs (for collision detection)."""
         if self.neo4j and self.neo4j.is_available():

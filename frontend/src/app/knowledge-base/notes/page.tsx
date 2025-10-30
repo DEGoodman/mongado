@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { listNotes, Note, formatNoteDate } from "@/lib/api/notes";
+import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
@@ -21,6 +21,7 @@ function NotesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [randomNoteLoading, setRandomNoteLoading] = useState(false);
 
   useEffect(() => {
     async function fetchNotes() {
@@ -50,6 +51,20 @@ function NotesContent() {
 
   const clearTagFilter = () => {
     router.push("/knowledge-base/notes");
+  };
+
+  const handleRandomNote = async () => {
+    try {
+      setRandomNoteLoading(true);
+      const randomNote = await getRandomNote();
+      router.push(`/knowledge-base/notes/${randomNote.id}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to get random note";
+      logger.error("Failed to get random note", err);
+      alert(message);
+    } finally {
+      setRandomNoteLoading(false);
+    }
   };
 
   if (loading) {
@@ -99,12 +114,22 @@ function NotesContent() {
               Your Zettelkasten knowledge base ({notes.length} notes)
             </p>
           </div>
-          <Link
-            href="/knowledge-base/notes/new"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-          >
-            + New Note
-          </Link>
+          <div className="flex gap-3">
+            <button
+              onClick={handleRandomNote}
+              disabled={randomNoteLoading || notes.length === 0}
+              className="rounded-lg border border-blue-600 bg-white px-4 py-2 text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Open a random note for serendipitous discovery"
+            >
+              {randomNoteLoading ? "Loading..." : "Random Note"}
+            </button>
+            <Link
+              href="/knowledge-base/notes/new"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+            >
+              + New Note
+            </Link>
+          </div>
         </div>
       </div>
 

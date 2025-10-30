@@ -74,6 +74,16 @@ Links are automatically parsed and stored as graph relationships.
 
         return NotesListResponse(notes=notes, count=len(notes))
 
+    @router.get("/random", response_model=dict[str, Any])
+    async def get_random_note() -> dict[str, Any]:
+        """Get a random note for serendipitous discovery."""
+        note = notes_service.get_random_note()
+
+        if not note:
+            raise HTTPException(status_code=404, detail="No notes available")
+
+        return note
+
     @router.get("/{note_id}", response_model=dict[str, Any])
     async def get_note(note_id: str) -> dict[str, Any]:
         """Get a specific note by ID."""
