@@ -4,22 +4,31 @@ This directory contains Neo4j database backups for development and testing.
 
 ## test-notes-backup.tar.gz
 
-Neo4j backup with ~50 test notes covering diverse topics:
-- Engineering management & leadership
-- DevOps & SRE practices
-- Software architecture patterns
-- AI & ML concepts
-- Knowledge management methods
-- Programming fundamentals
-- Testing strategies
-- Productivity & learning techniques
+Neo4j backup with **87 notes** structured as an ideal Zettelkasten corpus:
 
-**Use cases:**
-- Testing AI features (semantic search, Q&A, suggestions)
-- Performance testing with realistic corpus
-- Graph traversal and backlink testing
-- Search result ranking validation
-- Resetting to known state during development
+**Graph Structure:**
+- 5 entry point notes (broad concepts, 10-13 links each)
+- 8 hub notes (well-connected concepts, 5-11 links)
+- 40 regular atomic notes (2-3 links each)
+- 15 stub notes (TODOs for testing incomplete states)
+- 10 question notes (exploring open ideas)
+- 10 orphan notes (0 links for testing orphan detection)
+- **Total:** 308 bidirectional links, 3.5 avg links/note
+
+**Topics:**
+- Engineering management & leadership
+- SRE & operations (SLOs, incidents, monitoring)
+- Knowledge management (Zettelkasten, PARA, PKM)
+- Software development (CI/CD, testing, architecture)
+- AI/ML (MLOps, model serving, feature stores)
+
+**Use Cases:**
+- Testing AI features (semantic search, Q&A, link suggestions)
+- Performance testing with realistic corpus (~90 notes)
+- Graph visualization (hubs, clusters, orphans)
+- Entry point discovery
+- Orphan detection validation
+- Resetting to known good state during development
 
 ## Restoring the Backup
 
