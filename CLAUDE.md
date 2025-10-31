@@ -171,7 +171,6 @@ backend/
 │   └── search.py      # Search endpoints
 ├── adapters/          # Data access layer (Imperative Shell)
 │   ├── neo4j.py       # Neo4j database operations
-│   ├── ephemeral_notes.py  # In-memory note storage
 │   └── article_loader.py   # Static file loading
 └── notes_service.py   # Service layer (orchestrates adapters + core)
 ```
@@ -266,7 +265,6 @@ All configuration in `backend/config.py`:
 
 **Notes** (Zettelkasten system):
 - Persistent notes: Neo4j graph database (admin only)
-- Ephemeral notes: In-memory with session tracking (visitors)
 - Adjective-noun IDs (e.g., `curious-elephant`, `wise-mountain`)
 - Bidirectional wikilinks: `[[note-id]]` syntax
 - See `docs/knowledge-base/NOTES.md` for complete guide

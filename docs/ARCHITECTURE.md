@@ -53,7 +53,6 @@ backend/
 ├── adapters/                  # Imperative Shell - Data Layer
 │   ├── __init__.py
 │   ├── neo4j.py             # Neo4j database operations
-│   ├── ephemeral_notes.py   # In-memory note storage
 │   └── article_loader.py    # Static file loading
 │
 ├── notes_service.py          # Service layer (orchestrates adapters + core)
@@ -70,7 +69,7 @@ backend/
    ↓
 2. Router (routers/notes.py:get_graph_data)
    ├─→ Call notes_service.list_notes() [I/O]
-   │   ├─→ Adapter: neo4j.py or ephemeral_notes.py
+   │   ├─→ Adapter: neo4j.py
    │   └─→ Returns: list[dict] (raw note data)
    ↓
 3. Pure Function (core/notes.py:build_graph_data)

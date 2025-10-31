@@ -138,7 +138,6 @@ This document tracks planned features, improvements, and technical debt for the 
   - [x] Adjective-noun IDs
   - [x] Wikilink syntax `[[note-id]]`
   - [x] Persistent notes (Neo4j database)
-  - [x] Ephemeral notes (in-memory)
   - [x] Bidirectional backlinks
 - [x] AI integration (Ollama)
   - [x] Semantic search
@@ -191,10 +190,9 @@ This document tracks planned features, improvements, and technical debt for the 
 - [ ] Implement session management (JWT or session cookies)
 - [ ] Add logout functionality
 - [ ] Protect admin endpoints:
-  - `POST /api/notes` (persistent notes)
+  - `POST /api/notes`
   - `PUT /api/notes/{id}`
   - `DELETE /api/notes/{id}`
-  - `DELETE /api/admin/ephemeral`
   - `POST /api/resources` (if used for persistent content)
 - [ ] Add admin indicator in UI (header/nav bar)
 - [ ] Test auth flow in both dev and prod environments
@@ -215,7 +213,6 @@ See `docs/knowledge-base/NOTES.md` for current auth implementation details.
 **Current State**:
 - Static articles: Filesystem (✅ complete)
 - Persistent notes: Neo4j (✅ complete)
-- Ephemeral notes: In-memory (⚠️ temporary)
 - User-created resources: In-memory (⚠️ needs migration)
 
 **Tasks**:

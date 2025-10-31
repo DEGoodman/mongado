@@ -15,7 +15,7 @@ The Knowledge Base consists of two complementary content types:
 
 ### Notes (Dynamic Content)
 - **Format**: Atomic notes with bidirectional wikilinks
-- **Storage**: Database (Neo4j) with in-memory ephemeral support
+- **Storage**: Database (Neo4j)
 - **Purpose**: Personal thoughts, work-in-progress ideas, interconnected concepts
 - **Characteristics**: Short, single-concept, heavily linked
 - **Examples**: `curious-elephant`, `wise-mountain` (adjective-noun IDs)
@@ -30,8 +30,7 @@ Both articles and notes are treated as "resources" in the API, allowing:
 
 ### 2. Hybrid Storage Strategy
 - **Articles**: Static markdown files, cached at startup, auto-reload on changes
-- **Persistent Notes**: Database-backed (Neo4j), for admin-created content
-- **Ephemeral Notes**: In-memory, session-based, for visitor demos
+- **Notes**: Database-backed (Neo4j), for admin-created content
 
 ### 3. AI Integration (Ollama)
 - Semantic search across articles and notes
@@ -58,7 +57,6 @@ See **[ARTICLES.md](ARTICLES.md)** for the complete guide on:
 See **[NOTES.md](NOTES.md)** for the complete guide on:
 - Creating atomic notes with adjective-noun IDs
 - Using wikilink syntax `[[note-id]]` for bidirectional linking
-- Understanding persistent vs ephemeral notes
 - Admin authentication and permissions
 - Working with the graph visualization
 
@@ -124,8 +122,7 @@ GET    /api/articles/{id}/summary         # AI-generated article summary
 
 ### Authentication
 - **Admin**: Simple passkey-based auth (stored in 1Password)
-- **Visitors**: No auth required for reading or creating ephemeral notes
-- **Persistence**: Only admin can create persistent notes
+- **Permissions**: Only admin can create notes
 
 ### Performance Optimizations
 - **Article caching**: Loaded once at startup, cached in memory
@@ -238,9 +235,8 @@ Navigate to `/knowledge-base/notes/graph` to see the full interactive graph visu
 
 ### Notes not persisting
 1. Verify Neo4j is running
-2. Check authentication for admin notes
+2. Check authentication for admin user
 3. Review backend logs for errors
-4. Ensure session cookie for ephemeral notes
 
 ### Graph not rendering
 1. Check browser console for errors

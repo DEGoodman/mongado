@@ -10,8 +10,7 @@ The Notes system implements atomic, interconnected notes with bidirectional link
 - **Bidirectional Linking**: `[[adjective-noun]]` wikilink syntax with automatic backlinks
 - **Graph Visualization**: Interactive graph showing note connections
 - **Hybrid System**: Coexists with static markdown articles
-- **Single Admin**: Only you can create persistent notes (via auth)
-- **Visitor Demo**: Anonymous users can create ephemeral in-memory notes
+- **Single Admin**: Only authenticated users can create notes (via auth)
 - **AI Integration**: Ollama-powered search, link suggestions, and summaries
 
 ## Note Identification
@@ -47,20 +46,11 @@ The system:
 
 ## Authentication & Permissions
 
-### Single Admin User (You)
+### Admin User
 
 - Authenticate via 1Password secret (passkey/API token)
 - Create persistent notes (saved to Neo4j database)
 - Full CRUD operations on all notes
-- Can manually evict ephemeral notes
-
-### Anonymous Visitors
-
-- No authentication required
-- Create ephemeral notes (in-memory only)
-- Read all notes (persistent + ephemeral)
-- Notes expire at end of session
-- Author shown as "Anonymous"
 
 ### Authentication Flow
 
@@ -142,14 +132,6 @@ ADMIN_PASSKEY=$(op read "op://vault/mongado-admin/passkey")
 - **Persistence**: Written to disk immediately
 - **Lifecycle**: Survives server restarts
 
-### Ephemeral Notes (Visitors)
-
-- **Storage**: In-memory dictionary with session IDs
-- **TTL**: End of browser session (session cookie)
-- **Memory limit**: 500MB total for all ephemeral notes
-- **Auto-eviction**: Oldest notes removed when limit reached
-- **Manual eviction**: Admin can clear via endpoint
-
 ### Database Schema (Neo4j)
 
 Notes are stored as nodes with properties:
@@ -161,8 +143,6 @@ CREATE (n:Note {
   title: "Database Design Patterns",
   content: "When designing for relationships...",
   author: "admin",
-  is_ephemeral: false,
-  session_id: null,
   created_at: datetime(),
   updated_at: datetime(),
   tags: ["database", "patterns"],
@@ -178,7 +158,6 @@ CREATE (source:Note {id: "curious-elephant"})
 Indexes for performance:
 - `Note.id` (unique)
 - `Note.author`
-- `Note.is_ephemeral`
 - `Note.created_at`
 
 ## Wikilink Syntax
@@ -262,10 +241,10 @@ class WikilinkParser:
 ### ✅ Available Now - Notes CRUD
 
 ```bash
-# List all notes (persistent + ephemeral for current session)
+# List all notes
 GET /api/notes
 
-# Create note (requires auth for persistent, session ID for ephemeral)
+# Create note (requires auth)
 POST /api/notes
 {
   "title": "Database Design Patterns",
@@ -276,10 +255,10 @@ POST /api/notes
 # Get single note
 GET /api/notes/{note_id}
 
-# Update note (admin only for persistent)
+# Update note (admin only)
 PUT /api/notes/{note_id}
 
-# Delete note (admin only for persistent)
+# Delete note (admin only)
 DELETE /api/notes/{note_id}
 ```
 
@@ -339,9 +318,6 @@ GET /api/notes/{note_id}/summary
 # Authenticate with passkey (currently uses Authorization header)
 POST /api/admin/auth
 
-# Clear all ephemeral notes
-DELETE /api/admin/ephemeral
-
 # Get system statistics
 GET /api/admin/stats
 ```
@@ -353,16 +329,15 @@ GET /api/admin/stats
 ### Via Web Interface
 
 1. Navigate to `/knowledge-base/notes`
-2. Click **"+ New Note"**
-3. Choose "Persistent" (requires login) or "Ephemeral"
-4. Write content with markdown and wikilinks
-5. Add tags (comma-separated)
-6. Save
+2. Click **"+ New Note"** (requires login)
+3. Write content with markdown and wikilinks
+4. Add tags (comma-separated)
+5. Save
 
 ### Via API
 
 ```bash
-# Create persistent note (with auth)
+# Create note (with auth)
 curl -X POST http://localhost:8000/api/notes \
   -H "Authorization: Bearer YOUR_PASSKEY" \
   -H "Content-Type: application/json" \
@@ -370,16 +345,6 @@ curl -X POST http://localhost:8000/api/notes \
     "title": "Database Design Patterns",
     "content": "When designing relationships:\n\n1. [[graph-databases]]\n2. [[relational-models]]\n3. [[document-stores]]",
     "tags": ["database", "architecture"]
-  }'
-
-# Create ephemeral note (no auth, with session cookie)
-curl -X POST http://localhost:8000/api/notes \
-  -H "Content-Type: application/json" \
-  -H "Cookie: session_id=abc123" \
-  -d '{
-    "title": "Quick Thought",
-    "content": "This is a temporary note for testing.",
-    "tags": ["test"]
   }'
 ```
 
@@ -549,49 +514,21 @@ AI-generated summaries for notes are planned:
 └─────────────────────────────────────────────────────┘
 ```
 
-## Abuse Mitigation
+## Limits & Configuration
 
-### Rate Limiting
-
-Per-session limits for anonymous users:
-- **Create note**: 10/hour
-- **Search**: 60/hour
-- **AI requests**: 20/hour
-
-No limits for authenticated admin.
-
-### Content Filtering
+### Content Limits
 
 ```python
 # Maximum note size
 MAX_NOTE_LENGTH = 50000  # ~50KB
-
-# Per-session limits
-MAX_NOTES_PER_SESSION = 50
-MAX_EPHEMERAL_NOTES = 10000  # Total across all sessions
-MAX_EPHEMERAL_MEMORY_MB = 500
 ```
 
-### Memory Management
+### Rate Limiting
 
-Auto-eviction strategy:
-1. Remove notes from expired sessions first
-2. If still over limit, remove oldest notes
-3. Log evictions for monitoring
-
-🚧 **Admin controls (Planned)**:
-```bash
-# View stats (not yet implemented)
-GET /api/admin/stats
-
-# Clear all ephemeral notes (not yet implemented)
-DELETE /api/admin/ephemeral
-
-# Clear specific session (not yet implemented)
-DELETE /api/admin/ephemeral/{session_id}
-```
-
-**Current Status**: Admin authentication is done via Bearer token in the `Authorization` header.
+Rate limits protect the API:
+- **Create note**: 10/hour
+- **Search**: 60/hour
+- **AI requests**: 20/hour
 
 ## Testing
 
@@ -622,11 +559,8 @@ def test_broken_links():
     """Identify non-existent links."""
 
 # tests/integration/test_notes_api.py
-def test_create_persistent_note_requires_auth():
-    """Anonymous users cannot create persistent notes."""
-
-def test_ephemeral_note_lifecycle():
-    """Ephemeral notes expire with session."""
+def test_create_note_requires_auth():
+    """Creating notes requires authentication."""
 
 def test_backlinks_updated():
     """Creating link updates backlinks."""
@@ -714,15 +648,6 @@ test('filters graph by author')
 2. Check model is downloaded: `ollama pull mistral`
 3. Test Ollama directly: `ollama run mistral "test"`
 4. Review backend logs for connection errors
-
-### Ephemeral notes disappearing
-
-**Note**: Admin stats endpoint is not yet implemented.
-
-1. Check session cookie is set and valid
-2. Check backend logs for memory limit warnings
-3. Review auto-eviction logs
-4. Test with persistent note instead (requires auth)
 
 ## Related Documentation
 

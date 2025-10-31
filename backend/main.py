@@ -137,13 +137,7 @@ This API provides endpoints for managing a personal knowledge base with:
 Some endpoints require admin authentication:
 - Use the **Authorize** button (🔓) to add your Bearer token
 - Format: `Bearer your-admin-token-here`
-- Admin-only features: Create/update/delete persistent notes
-
-### Session Management
-
-For anonymous users (no Bearer token):
-- Include `X-Session-ID` header to create ephemeral notes
-- Ephemeral notes are session-specific and temporary
+- Admin-only features: Create/update/delete notes
 """,
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,  # Hide schemas by default

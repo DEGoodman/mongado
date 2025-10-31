@@ -41,17 +41,9 @@ op read "op://Dev/Mongado Admin Token/password"
 cat backend/.env | grep ADMIN_TOKEN
 ```
 
-### Session Management (Anonymous Users)
-
-For testing ephemeral notes without authentication:
-
-1. Generate a session ID: `curl http://localhost:8000/api/notes/generate-id`
-2. Add `X-Session-ID` header with your session ID when testing endpoints
-3. Ephemeral notes are only visible within the same session
-
 ## Common API Operations
 
-### Create a Persistent Note (Admin)
+### Create a Note (Admin)
 
 ```bash
 curl -X POST http://localhost:8000/api/notes \
@@ -64,27 +56,10 @@ curl -X POST http://localhost:8000/api/notes \
   }'
 ```
 
-### Create an Ephemeral Note (Visitor)
-
-```bash
-curl -X POST http://localhost:8000/api/notes \
-  -H "X-Session-ID: curious-elephant" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Temporary note for testing",
-    "tags": ["test"]
-  }'
-```
-
 ### List All Notes
 
 ```bash
-# As admin (sees all persistent notes)
 curl -H "Authorization: Bearer your-admin-token" \
-  http://localhost:8000/api/notes
-
-# As visitor (sees only your ephemeral notes)
-curl -H "X-Session-ID: curious-elephant" \
   http://localhost:8000/api/notes
 ```
 
