@@ -2,7 +2,7 @@
 id: 4
 title: "Weekly Department Update Template"
 url: ""
-tags: ["Operations"]
+tags: ["operations"]
 draft: false
 published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"

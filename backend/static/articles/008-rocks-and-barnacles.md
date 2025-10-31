@@ -1,7 +1,7 @@
 ---
 id: 8
 title: "Rocks & Barnacles: Surfacing Technical Debt"
-tags: ["Engineering Management", "Technical Debt", "Operations"]
+tags: ["engineering-management", "technical-debt", "operations"]
 draft: false
 published_date: "2025-10-24T10:00:00"
 created_at: "2025-10-24T10:00:00"

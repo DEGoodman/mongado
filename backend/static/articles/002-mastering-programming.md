@@ -2,7 +2,7 @@
 id: 2
 title: "Mastering Programming"
 url: "https://www.facebook.com/notes/kent-beck/mastering-programming/1184427814923414/"
-tags: ["Programming", "Software Development", "Career"]
+tags: ["programming", "software-development", "career"]
 draft: false
 published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"

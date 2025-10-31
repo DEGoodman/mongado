@@ -2,7 +2,7 @@
 id: 7
 title: "30-60-90 Day Framework for Engineering Leaders"
 url: ""
-tags: ["Management", "Leadership"]
+tags: ["management", "leadership"]
 draft: false
 published_date: "2025-10-24T10:00:00"
 created_at: "2025-10-24T10:00:00"

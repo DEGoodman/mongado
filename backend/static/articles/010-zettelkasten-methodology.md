@@ -99,11 +99,6 @@ My implementation combines Zettelkasten principles with modern tooling:
 - Graph visualization showing connections
 - Full-text search across all notes
 
-**Ephemeral Notes** (session-based):
-- Visitors can create notes without authentication
-- Temporary workspace for experimenting with ideas
-- Automatically cleaned up after session expires
-
 **Adjective-Noun IDs**:
 - Generated from 78 adjectives × 70 nouns = 5,460 combinations
 - Memorable: `wise-mountain`, `calm-eagle`, `curious-phoenix`
@@ -264,8 +259,7 @@ You can explore my Zettelkasten implementation:
 
 1. **Browse notes**: [mongado.com/knowledge-base/notes](https://mongado.com/knowledge-base/notes)
 2. **View the graph**: [mongado.com/knowledge-base/notes/graph](https://mongado.com/knowledge-base/notes/graph)
-3. **Create ephemeral notes**: No login required—experiment with wikilinks and see backlinks in action
-4. **Enable AI suggestions**: Toggle in settings, edit a note, click "Get Suggestions"
+3. **Enable AI suggestions**: Toggle in settings, edit a note, click "Get Suggestions"
 
 The code is open source: [github.com/DEGoodman/mongado](https://github.com/DEGoodman/mongado)
 
