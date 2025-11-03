@@ -1,4 +1,3 @@
-import ProjectTile from "@/components/ProjectTile";
 import { siteConfig } from "@/lib/site-config";
 
 export default function Home() {
@@ -64,35 +63,49 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Projects Section */}
-        <div className="mb-8">
-          <h2 className="mb-6 text-3xl font-bold text-gray-900">Projects</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            <ProjectTile
-              title="Knowledge Base"
-              description="Articles and atomic notes in one place. Long-form content alongside a Zettelkasten system with wikilinks, backlinks, and AI-powered search."
-              href="/knowledge-base"
-              icon="📚"
-            />
-            <ProjectTile
-              title="Bad Server"
-              description="A misbehaving server to test how your programming skills cope with unreliable environments."
-              href="https://github.com/DEGoodman/bad-server"
-              icon="🤖"
-            />
-            <ProjectTile
-              title="EVA"
-              description="Audio environmental visualizer built with Processing. Creates dynamic visual representations of sound and music in real-time."
-              href="https://github.com/DEGoodman/EVA"
-              icon="🎵"
-            />
-            <ProjectTile
-              title="Tagbar"
-              description="Instagram hashtag scraper and photo analyzer built with Python. Extract insights and analyze trends from social media content."
-              href="https://github.com/DEGoodman/tagbar"
-              icon="📊"
-            />
+        {/* Knowledge Base Hero Section */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-br from-orange-50 via-white to-gray-50 p-8 shadow-xl sm:p-12">
+          <div className="mb-6 text-4xl">📚</div>
+          <h2 className="mb-6 text-3xl font-bold text-gray-900 sm:text-4xl">
+            Explore My Knowledge Base
+          </h2>
+          <div className="prose prose-lg mb-8 max-w-none">
+            <p className="leading-relaxed text-gray-700">
+              A curated collection of engineering and leadership insights. Explore long-form
+              articles on topics I&apos;m passionate about alongside quick-reference notes and
+              interconnected thoughts following a Zettelkasten approach. From technical deep-dives
+              to frameworks like &quot;The 5 Dysfunctions of a Team&quot; and Daniel Pink&apos;s
+              motivation triad. It&apos;s part published blog, part digital garden.
+            </p>
           </div>
+          <div className="flex justify-center">
+            <a
+              href="/knowledge-base"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-xl"
+            >
+              Explore Knowledge Base
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        {/* Other Projects Link */}
+        <div className="mb-8 text-center">
+          <a
+            href={siteConfig.links.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-600 transition-colors hover:text-gray-900 hover:underline"
+          >
+            View more projects on GitHub →
+          </a>
         </div>
 
         {/* Footer note */}
