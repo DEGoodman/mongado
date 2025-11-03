@@ -1,0 +1,220 @@
+/**
+ * Individual Article View Styles
+ * Retro-modern design with orange/terracotta theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-primary-light 100%);
+}
+
+// ===== LOADING STATE =====
+.loadingContainer {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+
+  .loadingSkeleton {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+    .skeletonTitle {
+      height: 2rem;
+      width: 33.333333%;
+      margin-bottom: $spacing-4;
+      background-color: rgba(156, 163, 175, 0.2);
+      border-radius: $border-radius-md;
+    }
+
+    .skeletonContent {
+      height: 16rem;
+      margin-bottom: $spacing-4;
+      background-color: rgba(156, 163, 175, 0.2);
+      border-radius: $border-radius-md;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// ===== ERROR STATE =====
+.errorContainer {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+
+  .errorCard {
+    padding: $spacing-4;
+    background-color: rgba(254, 226, 226, 0.8);
+    border: $border-width-thin solid rgba(220, 38, 38, 0.3);
+    border-radius: $border-radius-md;
+
+    .errorTitle {
+      margin-bottom: $spacing-2;
+      font-weight: $font-weight-semibold;
+      color: #991b1b;
+    }
+
+    .errorMessage {
+      color: #dc2626;
+    }
+
+    .backLink {
+      display: inline-block;
+      margin-top: $spacing-4;
+      color: $color-primary;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+// ===== HEADER =====
+.header {
+  border-bottom: $border-default;
+  background-color: $color-bg-secondary;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: $spacing-6 $spacing-4;
+
+    @media (min-width: 640px) {
+      padding-left: $spacing-6;
+      padding-right: $spacing-6;
+    }
+
+    @media (min-width: 1024px) {
+      padding-left: $spacing-8;
+      padding-right: $spacing-8;
+    }
+
+    .headerTop {
+      margin-bottom: $spacing-8;
+      @include flex-between;
+    }
+
+    .badge {
+      margin-bottom: $spacing-4;
+    }
+
+    .title {
+      @include heading-h1;
+      margin-bottom: $spacing-6;
+
+      @media (min-width: 640px) {
+        font-size: $heading-h1-size;
+      }
+
+      @media (min-width: 1024px) {
+        font-size: calc($heading-h1-size * 1.2);
+      }
+    }
+
+    .metadata {
+      margin-bottom: $spacing-4;
+      @include stack($spacing-1);
+      @include text-secondary;
+
+      .metaItem {
+        @include flex-start;
+        gap: $spacing-2;
+      }
+    }
+
+    .tags {
+      margin-top: $spacing-4;
+    }
+  }
+}
+
+// ===== MAIN CONTENT =====
+.main {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+
+  @media (min-width: 640px) {
+    padding-left: $spacing-6;
+    padding-right: $spacing-6;
+  }
+
+  @media (min-width: 1024px) {
+    padding-left: $spacing-8;
+    padding-right: $spacing-8;
+  }
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-8;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.articleContent {
+  @media (min-width: 1024px) {
+    grid-column: span 3;
+  }
+
+  .articleCard {
+    @include card-elevated;
+    background-color: $color-bg-canvas;
+
+    .externalLink {
+      margin-top: $spacing-8;
+      padding-top: $spacing-6;
+      border-top: $border-default;
+
+      .linkTitle {
+        margin-bottom: $spacing-2;
+        @include text-secondary;
+        font-weight: $font-weight-semibold;
+      }
+
+      .linkUrl {
+        color: $color-primary;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .backLink {
+    display: inline-flex;
+    align-items: center;
+    margin-top: $spacing-8;
+    color: $color-primary;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $color-primary-hover;
+    }
+  }
+}
+
+.tocSidebar {
+  @media (min-width: 1024px) {
+    grid-column: span 1;
+  }
+}
