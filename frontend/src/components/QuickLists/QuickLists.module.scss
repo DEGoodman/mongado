@@ -1,0 +1,180 @@
+/**
+ * QuickLists Component Styles
+ * Color-coded collapsible sections for note categories
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.quickLists {
+  @include stack($spacing-lg);
+}
+
+// ===== SECTION BASE =====
+.section {
+  border-radius: $border-radius-card;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  .header {
+    @include flex-between;
+    padding: $spacing-4;
+    cursor: pointer;
+    user-select: none;
+    border: $border-width-thin solid;
+    transition: all 0.2s ease;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    .headerContent {
+      @include flex-start;
+      gap: $spacing-3;
+
+      .icon {
+        font-size: $font-size-xl;
+        line-height: 1;
+      }
+
+      .title {
+        @include heading-h3;
+        margin: 0;
+      }
+
+      .count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: $spacing-1 $spacing-2;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+        border-radius: $border-radius-full;
+        min-width: 2rem;
+      }
+    }
+
+    .chevron {
+      font-size: $font-size-lg;
+      transition: transform 0.2s ease;
+      line-height: 1;
+
+      &.expanded {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+
+    &.expanded {
+      max-height: 3000px; // Large enough for content
+    }
+
+    .notesList {
+      padding: $spacing-4;
+      @include stack($spacing-3);
+    }
+
+    .empty {
+      padding: $spacing-6 $spacing-4;
+      text-align: center;
+      @include text-secondary;
+    }
+  }
+}
+
+// ===== ORPHAN NOTES STYLING =====
+.orphans {
+  .header {
+    background-color: $color-orphan-bg;
+    border-color: $color-orphan-border;
+
+    .title {
+      color: $color-orphan-heading;
+    }
+
+    .count {
+      background-color: $color-orphan-text;
+      color: white;
+    }
+
+    &:hover {
+      background-color: $color-orphan-hover;
+    }
+  }
+}
+
+// ===== HUB NOTES STYLING =====
+.hubs {
+  .header {
+    background-color: $color-hub-bg;
+    border-color: $color-hub-border;
+
+    .title {
+      color: $color-hub-heading;
+    }
+
+    .count {
+      background-color: $color-hub-text;
+      color: white;
+    }
+
+    &:hover {
+      background-color: $color-hub-hover;
+    }
+  }
+}
+
+// ===== CENTRAL CONCEPTS STYLING =====
+.central {
+  .header {
+    background-color: $color-central-bg;
+    border-color: $color-central-border;
+
+    .title {
+      color: $color-central-heading;
+    }
+
+    .count {
+      background-color: $color-central-text;
+      color: white;
+    }
+
+    &:hover {
+      background-color: $color-central-hover;
+    }
+  }
+}
+
+// ===== NOTE CARD IN LIST =====
+.noteCard {
+  padding: $spacing-3;
+  background-color: $color-bg-canvas;
+  border: $border-default;
+  border-radius: $border-radius-md;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+
+  &:hover {
+    box-shadow: $shadow-card-sm;
+    transform: translateY(-1px);
+  }
+
+  .noteTitle {
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin-bottom: $spacing-1;
+  }
+
+  .noteId {
+    @include text-secondary;
+    font-size: $font-size-sm;
+    font-family: $font-family-mono;
+  }
+}
