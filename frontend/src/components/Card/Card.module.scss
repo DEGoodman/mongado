@@ -1,0 +1,71 @@
+/**
+ * Card Component Styles
+ * Retro-modern design with warm colors and subtle shadows
+ */
+
+@use '@/styles/design-tokens' as *;
+
+.card {
+  background-color: $color-bg-card;
+  border: $border-card;
+  border-radius: $border-radius-card;
+  padding: $card-padding-md;
+  transition: all 0.2s ease;
+
+  // ===== SIZES =====
+  &.sm {
+    padding: $card-padding-sm;
+  }
+
+  &.md {
+    padding: $card-padding-md;
+  }
+
+  &.lg {
+    padding: $card-padding-lg;
+  }
+
+  // ===== ELEVATED VARIANT =====
+  &.elevated {
+    background-color: $color-bg-canvas;
+    box-shadow: $shadow-card-sm;
+
+    &:hover {
+      box-shadow: $shadow-card-md;
+      transform: translateY(-2px);
+    }
+  }
+
+  // ===== INTERACTIVE VARIANT =====
+  // For clickable cards (links, buttons)
+  &.interactive {
+    cursor: pointer;
+
+    &:hover {
+      background-color: $color-bg-canvas;
+      box-shadow: $shadow-card-md;
+      transform: translateY(-2px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: $shadow-card-sm;
+    }
+
+    &:focus-visible {
+      outline: $border-width-medium solid $color-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  // ===== NO PADDING VARIANT =====
+  // Useful for cards with custom internal layout
+  &.noPadding {
+    padding: 0;
+  }
+
+  // ===== FULL WIDTH =====
+  &.fullWidth {
+    width: 100%;
+  }
+}

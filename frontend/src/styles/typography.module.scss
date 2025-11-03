@@ -1,0 +1,123 @@
+/**
+ * Typography Utility Classes
+ * Reusable typography styles for headings, body text, and links
+ */
+
+@use 'mixins' as *;
+@use 'design-tokens' as *;
+
+// ===== HEADINGS =====
+.h1 {
+  @include heading-h1;
+}
+
+.h2 {
+  @include heading-h2;
+}
+
+.h3 {
+  @include heading-h3;
+}
+
+.h4 {
+  @include heading-h4;
+}
+
+.h5 {
+  @include heading-h5;
+}
+
+.h6 {
+  @include heading-h6;
+}
+
+// ===== BODY TEXT =====
+.bodyText {
+  @include body-text;
+}
+
+.bodyTextSm {
+  @include body-text-sm;
+}
+
+.bodyTextLg {
+  @include body-text-lg;
+}
+
+// ===== SECONDARY TEXT =====
+.textSecondary {
+  @include text-secondary;
+}
+
+.textTertiary {
+  @include text-tertiary;
+}
+
+// ===== LINKS =====
+.link {
+  @include link-default;
+}
+
+.linkUnderlined {
+  @include link-underlined;
+}
+
+// ===== MONOSPACE =====
+.mono {
+  @include text-mono;
+}
+
+// ===== TEXT UTILITIES =====
+.truncate {
+  @include truncate;
+}
+
+.lineClamp2 {
+  @include line-clamp(2);
+}
+
+.lineClamp3 {
+  @include line-clamp(3);
+}
+
+// ===== FONT WEIGHTS =====
+.fontNormal {
+  font-weight: $font-weight-normal;
+}
+
+.fontMedium {
+  font-weight: $font-weight-medium;
+}
+
+.fontSemibold {
+  font-weight: $font-weight-semibold;
+}
+
+.fontBold {
+  font-weight: $font-weight-bold;
+}
+
+// ===== TEXT COLORS =====
+.textPrimary {
+  color: $color-text-primary;
+}
+
+.textHeading {
+  color: $color-text-heading;
+}
+
+.textSecondaryColor {
+  color: $color-text-secondary;
+}
+
+.textTertiaryColor {
+  color: $color-text-tertiary;
+}
+
+.textOrange {
+  color: $color-primary;
+}
+
+.textTerracotta {
+  color: $color-secondary;
+}
