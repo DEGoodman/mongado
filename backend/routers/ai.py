@@ -212,7 +212,7 @@ def create_ai_router(
         Returns empty suggestions if Ollama is unavailable.
         """
         # Get the note
-        note = notes_service.get_note(note_id, is_admin=True)
+        note = notes_service.get_note(note_id)
         if not note:
             raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
 
@@ -287,7 +287,7 @@ def create_ai_router(
         Returns empty suggestions if Ollama is unavailable or note not found.
         """
         # Get the current note
-        note = notes_service.get_note(note_id, is_admin=True)
+        note = notes_service.get_note(note_id)
         if not note:
             raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
 
