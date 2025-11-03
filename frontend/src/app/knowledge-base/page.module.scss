@@ -1,0 +1,348 @@
+/**
+ * Knowledge Base Landing Page Styles
+ * Retro-modern design with orange/terracotta theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-primary-light 100%);
+}
+
+// ===== HEADER =====
+.header {
+  border-bottom: $border-default;
+  background-color: $color-bg-canvas;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    @include container;
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
+    @include flex-between;
+
+    .nav {
+      @include flex-start;
+      gap: $spacing-4;
+
+      .homeLink {
+        @include link-default;
+        font-size: $font-size-sm;
+
+        &:hover {
+          color: $color-primary-hover;
+        }
+      }
+
+      .title {
+        @include heading-h1;
+        margin: 0;
+      }
+    }
+  }
+}
+
+// ===== MAIN =====
+.main {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+// ===== SEARCH SECTION =====
+.searchSection {
+  @include card-elevated;
+  margin-bottom: $spacing-8;
+
+  .searchTitle {
+    @include heading-h3;
+    margin-bottom: $spacing-4;
+  }
+
+  .searchForm {
+    @include stack($spacing-4);
+
+    .searchRow {
+      @include flex-start;
+      gap: $spacing-2;
+
+      .searchInput {
+        flex: 1;
+        padding: $spacing-3 $spacing-4;
+        border: $border-default;
+        border-radius: $border-radius-button;
+        font-size: $font-size-base;
+        font-family: $font-family-primary;
+        background-color: $color-bg-canvas;
+        color: $color-text-primary;
+        transition: all 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: $color-primary;
+          box-shadow: 0 0 0 2px rgba(230, 126, 66, 0.2);
+        }
+
+        &::placeholder {
+          color: $color-text-tertiary;
+        }
+      }
+
+      .clearButton {
+        padding: $spacing-3 $spacing-4;
+        border: $border-default;
+        border-radius: $border-radius-button;
+        background-color: $color-bg-card;
+        color: $color-text-primary;
+        font-family: $font-family-primary;
+        font-size: $font-size-base;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $color-bg-secondary;
+        }
+      }
+    }
+  }
+
+  .searchHint {
+    margin-top: $spacing-2;
+    @include text-secondary;
+  }
+
+  .searchError {
+    margin-top: $spacing-4;
+    padding: $spacing-4;
+    background-color: rgba(200, 80, 60, 0.1);
+    border: $border-width-thin solid rgba(200, 80, 60, 0.3);
+    border-radius: $border-radius-md;
+    @include text-secondary;
+    color: #c8503c;
+  }
+
+  // Results
+  .resultsSection {
+    margin-top: $spacing-6;
+    @include stack($spacing-3);
+
+    .resultsHeader {
+      @include text-secondary;
+      font-weight: $font-weight-semibold;
+    }
+
+    .resultCard {
+      display: block;
+      padding: $spacing-4;
+      border: $border-default;
+      border-radius: $border-radius-md;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: $color-primary;
+        background-color: $color-primary-light;
+      }
+
+      .resultMeta {
+        margin-bottom: $spacing-1;
+        @include flex-start;
+        gap: $spacing-2;
+
+        .resultType {
+          @include text-secondary;
+          font-weight: $font-weight-medium;
+        }
+
+        .resultScore {
+          @include text-tertiary;
+        }
+      }
+
+      .resultTitle {
+        margin-bottom: $spacing-2;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+
+        mark {
+          background-color: rgba(212, 167, 72, 0.3);
+          font-weight: $font-weight-semibold;
+        }
+      }
+
+      .resultContent {
+        @include text-secondary;
+        @include line-clamp(2);
+
+        mark {
+          background-color: rgba(212, 167, 72, 0.3);
+          font-weight: $font-weight-medium;
+        }
+      }
+    }
+  }
+
+  .noResults {
+    margin-top: $spacing-4;
+    text-align: center;
+    @include text-secondary;
+  }
+}
+
+// ===== CONTENT CARDS =====
+.contentGrid {
+  margin-bottom: $spacing-8;
+  display: grid;
+  gap: $spacing-6;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.contentCard {
+  @include card-elevated;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-card-lg;
+  }
+
+  &.articles {
+    background: linear-gradient(135deg, $color-primary-light 0%, $color-bg-canvas 100%);
+    border-color: rgba(230, 126, 66, 0.3);
+  }
+
+  &.notes {
+    background: linear-gradient(135deg, $color-secondary-light 0%, $color-bg-canvas 100%);
+    border-color: rgba(196, 98, 79, 0.3);
+  }
+
+  .cardBadge {
+    margin-bottom: $spacing-3;
+  }
+
+  .cardTitle {
+    @include heading-h2;
+    margin-bottom: $spacing-2;
+  }
+
+  .cardDescription {
+    margin-bottom: $spacing-4;
+    color: $color-text-secondary;
+  }
+
+  .cardActions {
+    @include flex-start;
+    gap: $spacing-3;
+  }
+
+  .cardButton {
+    padding: $spacing-2 $spacing-4;
+    border-radius: $border-radius-button;
+    font-weight: $font-weight-semibold;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &.primary {
+      background-color: $color-primary;
+      color: white;
+
+      &:hover {
+        background-color: $color-primary-hover;
+      }
+    }
+
+    &.secondary {
+      background-color: transparent;
+      color: $color-primary;
+      border: $border-width-thin solid $color-primary;
+
+      &:hover {
+        background-color: $color-primary-light;
+      }
+    }
+
+    &.notePrimary {
+      background-color: $color-secondary;
+      color: white;
+
+      &:hover {
+        background-color: $color-secondary-hover;
+      }
+    }
+
+    &.noteSecondary {
+      background-color: transparent;
+      color: $color-secondary;
+      border: $border-width-thin solid $color-secondary;
+
+      &:hover {
+        background-color: $color-secondary-light;
+      }
+    }
+  }
+}
+
+// ===== QUICK LISTS SECTION =====
+.quickListsSection {
+  margin-bottom: $spacing-8;
+
+  .quickListsTitle {
+    @include heading-h2;
+    margin-bottom: $spacing-6;
+    text-align: center;
+  }
+}
+
+// ===== INFO SECTION =====
+.infoSection {
+  @include card;
+  background: linear-gradient(135deg, $color-accent-blue-light 0%, $color-bg-canvas 100%);
+  border-color: rgba(107, 139, 158, 0.3);
+
+  .infoTitle {
+    @include heading-h3;
+    margin-bottom: $spacing-2;
+    color: $color-accent-blue-dark;
+  }
+
+  .infoGrid {
+    display: grid;
+    gap: $spacing-4;
+    grid-template-columns: 1fr;
+    @include text-secondary;
+    color: $color-accent-blue-dark;
+
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .infoItem {
+      strong {
+        font-weight: $font-weight-semibold;
+        color: $color-accent-blue-dark;
+      }
+
+      a {
+        text-decoration: underline;
+        color: $color-accent-blue-dark;
+
+        &:hover {
+          color: $color-accent-blue;
+        }
+      }
+    }
+
+    .infoItemFull {
+      @media (min-width: 768px) {
+        grid-column: span 2;
+      }
+    }
+  }
+}
