@@ -18,9 +18,14 @@ describe("Home Page", () => {
     expect(screen.getByText("Birmingham, AL")).toBeInTheDocument();
   });
 
-  it("shows GitHub link", () => {
+  it("shows GitHub links", () => {
     render(<Home />);
-    const githubLink = screen.getByRole("link", { name: /github/i });
-    expect(githubLink).toHaveAttribute("href", "https://github.com/DEGoodman");
+    // Should have both the social button and the projects link
+    const githubLinks = screen.getAllByRole("link", { name: /github/i });
+    expect(githubLinks.length).toBeGreaterThanOrEqual(2);
+    // Both should point to GitHub
+    githubLinks.forEach((link) => {
+      expect(link).toHaveAttribute("href", "https://github.com/DEGoodman");
+    });
   });
 });
