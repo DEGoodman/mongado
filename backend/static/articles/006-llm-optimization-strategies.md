@@ -1,17 +1,22 @@
 ---
 id: 6
-title: "LLM Performance Optimization: From Naive to Production"
+title: "Self-Hosted LLM Optimization: Production Under Resource Constraints"
 tags: ["ai", "performance", "architecture"]
 draft: false
-published_date: "2025-10-24T00:00:00"
+published_date: "2025-11-03T00:00:00"
 created_at: "2025-10-24T00:00:00"
+updated_at: "2025-11-03T00:00:00"
 ---
 
 ## Intro
 
-Local LLMs eliminate API costs and keep data in-house, but naive implementations are unusably slow. This document identifies the performance bottleneck (embedding generation) and presents four optimization levels with concrete tradeoffs.
+Third-party AI APIs (OpenAI, Anthropic) are fast and convenient, but self-hosting eliminates recurring costs, keeps data private, and forces you to understand what's actually happening under the hood. The tradeoff: you inherit the performance and infrastructure challenges.
 
-Lessons from building semantic search with Ollama: naive implementation took 30+ seconds per search. Optimized version: under 6 seconds.
+This document identifies the performance bottleneck (embedding generation) and presents four optimization levels tested on real production hardware—a 4GB DigitalOcean droplet with no GPU. Lessons learned from running semantic search and Q&A on Ollama under memory pressure.
+
+Context: Mongado runs entirely self-hosted. No external AI services, no high-end GPU servers. This constraint-driven approach revealed optimizations and pitfalls you won't find in documentation written for well-resourced production environments.
+
+Naive implementation: 90s timeouts and OOM crashes. Optimized: 45s stable Q&A, 5-10s semantic search.
 
 ## The Problem
 
@@ -162,11 +167,118 @@ CPU-only (Docker default):
 
 **Production recommendation:** Use GPU if available, but architect for CPU-only performance as baseline.
 
+## Production Reality: Memory Management
+
+Real-world deployment reveals constraints that theoretical optimization doesn't account for. Mongado runs on a 4GB DigitalOcean droplet—aggressive memory tuning was required to make LLMs work at all.
+
+**The Problem:**
+
+Ollama models have explicit memory requirements:
+- nomic-embed-text: 297 MB
+- llama3.2:1b: 1.8 GB (requires loading into RAM)
+- Server total: 3.8 GiB physical, ~1.0 GiB available after OS/services
+
+Result: OOM crashes when switching between embedding and chat models.
+
+**Solutions Applied:**
+
+1. **Neo4j Memory Tuning** (issue #60)
+   ```yaml
+   NEO4J_dbms_memory_heap_max__size=512m  # Down from default ~2.5GB
+   ```
+   Impact: Freed ~1.5GB RAM for Ollama operations
+
+2. **Ollama Model Unloading** (issue #59)
+   ```yaml
+   OLLAMA_MAX_LOADED_MODELS=1      # Only one model in memory at a time
+   OLLAMA_KEEP_ALIVE=0              # Prod: unload immediately after use
+   ```
+   Impact: Embedding model unloads completely before chat model loads
+
+3. **Swap Space** (issue #64)
+   ```bash
+   sudo fallocate -l 2G /swapfile
+   sudo sysctl vm.swappiness=10     # Prefer RAM but allow graceful swap
+   ```
+   Impact: Graceful performance degradation instead of OOM crash
+
+**Result:** 1.8GB chat model fits comfortably in 2.5GB available RAM. System stable under load.
+
+**Key Insight:** Resource tuning isn't optional at small scales. Optimization strategies only work if the system has memory to execute them.
+
+## The Critical Bug: Using Your Own Cache
+
+Having an optimization isn't enough—every code path must actually use it.
+
+**What Went Wrong:**
+
+Mongado implemented Level 2 optimization (persistent embeddings in Neo4j) but the Q&A endpoint wasn't using the cached embeddings. It regenerated all embeddings on every request.
+
+```python
+# WRONG (what we had)
+def ask_question(question):
+    # Regenerates ALL embeddings on every request
+    relevant_docs = ollama_client.semantic_search(question, all_resources)
+
+# RIGHT (after fix)
+def ask_question(question):
+    # Fetches cached embeddings from Neo4j
+    embeddings = neo4j.get_all_embeddings()
+    relevant_docs = ollama_client.semantic_search_with_precomputed_embeddings(
+        question, embeddings
+    )
+```
+
+**Impact:**
+- Before: 90s timeout, OOM crash (regenerating 26 embeddings × 30-60s each)
+- After: 45s stable (only query embedding generated, ~1-2s)
+- **~50% faster** by actually using the cache we built
+
+**Lesson:** Build the optimization, then verify every endpoint uses it. One missed code path negates the entire effort.
+
+## Environment-Specific Tuning
+
+Different environments need different tradeoffs. Don't use the same settings everywhere.
+
+| Setting | Dev | Prod | Why Different? |
+|---------|-----|------|----------------|
+| `OLLAMA_KEEP_ALIVE` | 5m | 0 | Dev: iteration speed; Prod: memory conservation |
+| Neo4j Heap | 512m | 512m | Same (small knowledge base in both) |
+| Swap Space | Optional | Required | Prod: uptime critical, graceful degradation |
+
+**Dev Optimization:**
+- Keep model loaded 5 minutes → fast iteration during development
+- First request: 2-3s (model load)
+- Subsequent requests (< 5min): <1s (model already loaded)
+
+**Prod Optimization:**
+- Unload immediately → maximize available RAM for concurrent requests
+- Every request: 2-3s model reload overhead
+- Prevents OOM when multiple requests arrive simultaneously
+
+**Tradeoff:** Dev prioritizes speed; Prod prioritizes stability and memory efficiency.
+
 ## Performance Numbers
 
-Mongado knowledge base (12 articles, 27 notes):
+Mongado knowledge base (12 articles, 27 notes) running on 4GB DigitalOcean droplet (CPU-only).
 
-**CPU-only performance (baseline):**
+**Production Performance (mongado.com):**
+
+Before optimizations:
+- Q&A request: 90s timeout → OOM crash
+- Root cause: Regenerating all 26 embeddings on every request
+- Memory: 1.0 GiB available, 1.8 GiB needed (OOM)
+- Error: "model requires more system memory than is available"
+
+After optimizations (Neo4j caching + memory tuning):
+- Q&A request: **45s stable**
+- Breakdown:
+  - Query embedding generation: 1-2s
+  - Fetch cached embeddings from Neo4j: <1s
+  - Load chat model + generate answer: 40-43s
+- Memory: 2.5 GiB available, 1.8 GiB needed (comfortable headroom)
+
+**Search Performance (CPU-only):**
 
 | Level | First Search | Subsequent | Startup | Notes |
 |-------|-------------|------------|---------|-------|
@@ -174,7 +286,7 @@ Mongado knowledge base (12 articles, 27 notes):
 | Memory cache | 18s | 10s | 0s | Lost on restart |
 | Neo4j persistent | 15-30s | 5-10s | 0s | Production baseline |
 
-**GPU-accelerated performance:**
+**GPU-accelerated performance (reference):**
 
 | Level | First Search | Subsequent | Startup | Notes |
 |-------|-------------|------------|---------|-------|
@@ -182,10 +294,11 @@ Mongado knowledge base (12 articles, 27 notes):
 | With warmup | 2-5s | 2-5s | 0s | Best case |
 
 **Key insights:**
-- GPU acceleration reduces search time by 3-6x
-- Persistent storage (Neo4j) + GPU delivers 5-10s searches consistently
-- Pre-warming model (via `/api/ollama/warmup`) eliminates cold-start penalty
-- CPU-only is usable but requires aggressive caching strategy
+- Resource tuning (Neo4j heap, Ollama unloading, swap) unlocked the performance optimizations
+- Using cached embeddings reduced Q&A from 90s timeout to 45s stable—but only after fixing the bug
+- GPU acceleration reduces search time by 3-6x (5-10s vs 15-30s)
+- CPU-only is usable with persistent embeddings, but requires memory management
+- Pre-warming model (via `/api/ollama/warmup`) eliminates cold-start penalty on GPU setups
 
 ## Implementation Notes
 
@@ -238,12 +351,18 @@ Significant complexity. Start simple.
 
 - Measure before optimizing. Know the bottleneck.
 - Cache with content hashes, not timestamps
+- **Verify every code path uses your optimization**—having the cache isn't enough if endpoints bypass it
+- Resource constraints (memory, CPU) determine which optimization levels are viable
+- Environment-specific tuning: dev prioritizes speed, prod prioritizes stability
 - Separate models for embeddings vs chat
 - In-memory cache > no cache (don't prematurely optimize)
 - Startup precomputation trades deploy time for query speed
 
 Fastest search = one that doesn't generate embeddings.
+Best optimization = one you actually use in all code paths.
 
 ---
 
-*Numbers from Mongado (Ollama/nomic-embed-text/M1 Mac). YMMV.*
+*Numbers from Mongado production (Ollama/nomic-embed-text/4GB DigitalOcean droplet, CPU-only). YMMV.*
+
+**Related Issues:** #57 (Q&A cached embeddings fix), #59 (Ollama model unloading), #60 (Neo4j memory tuning), #64 (Swap space setup)
