@@ -10,6 +10,7 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
+import styles from "./page.module.scss";
 
 interface Resource {
   id: number;
@@ -78,7 +79,7 @@ function ArticlesContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className={styles.container}>
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
@@ -86,61 +87,53 @@ function ArticlesContent() {
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mb-4">
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <div className={styles.breadcrumb}>
             <Breadcrumb section="articles" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Articles</h1>
+          <h1 className={styles.title}>Articles</h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className={styles.main}>
         {/* Tag Filter Banner */}
         {tagFilter && (
-          <div className="mb-6 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-blue-900">Filtering by tag:</span>
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-                #{tagFilter}
-              </span>
+          <div className={styles.tagFilterBanner}>
+            <div className={styles.filterInfo}>
+              <span className={styles.filterLabel}>Filtering by tag:</span>
+              <span className={styles.tagPill}>#{tagFilter}</span>
             </div>
-            <button
-              onClick={clearTagFilter}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-            >
+            <button onClick={clearTagFilter} className={styles.clearButton}>
               Clear filter
             </button>
           </div>
         )}
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className={styles.searchBar}>
           <input
             type="text"
             placeholder="Search articles..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={styles.searchInput}
           />
         </div>
 
         {/* Articles List */}
-        <div className="space-y-4">
+        <div className={styles.articlesList}>
           {isLoading ? (
-            <div className="py-12 text-center">
-              <p className="text-gray-500">Loading articles...</p>
+            <div className={styles.loadingState}>
+              <p>Loading articles...</p>
             </div>
           ) : filteredResources.length === 0 ? (
-            <div className="rounded-lg bg-white py-12 text-center shadow-md">
-              <p className="mb-2 text-gray-500">
+            <div className={styles.emptyState}>
+              <p className={styles.emptyMessage}>
                 {searchQuery ? "No articles match your search" : "No articles yet"}
               </p>
               {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-sm text-blue-600 hover:underline"
-                >
+                <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton}>
                   Clear search
                 </button>
               )}
@@ -158,13 +151,11 @@ function ArticlesContent() {
                 <Link
                   key={resource.id}
                   href={`/knowledge-base/articles/${resource.id}`}
-                  className="block rounded-lg bg-white p-6 shadow-md transition hover:shadow-lg"
+                  className={styles.articleCard}
                 >
-                  <div className="mb-3">
-                    <h3 className="mb-2 text-2xl font-semibold text-gray-900 hover:text-blue-600">
-                      {resource.title}
-                    </h3>
-                    <div className="text-sm text-gray-500">
+                  <div className={styles.articleHeader}>
+                    <h3 className={styles.articleTitle}>{resource.title}</h3>
+                    <div className={styles.articleMeta}>
                       {resource.updated_date &&
                       resource.updated_date !== resource.published_date ? (
                         <>
@@ -191,23 +182,20 @@ function ArticlesContent() {
                   </div>
 
                   {/* Preview */}
-                  <p className="mb-3 overflow-hidden break-words text-gray-700">
+                  <p className={styles.articlePreview}>
                     {preview}
                     {needsTruncation && "..."}
                   </p>
 
                   {/* Tags */}
                   {resource.tags.length > 0 && (
-                    <TagPillList
-                      tags={resource.tags}
-                      showHash
-                      onClick={handleTagClick}
-                      className="mt-4"
-                    />
+                    <div className={styles.articleTags}>
+                      <TagPillList tags={resource.tags} showHash onClick={handleTagClick} />
+                    </div>
                   )}
 
                   {/* Read more indicator */}
-                  <div className="mt-4 text-sm font-medium text-blue-600">Read more →</div>
+                  <div className={styles.readMore}>Read more →</div>
                 </Link>
               );
             })
@@ -222,15 +210,15 @@ export default function ArticlesPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-          <header className="border-b border-gray-200 bg-white shadow-sm">
-            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-              <h1 className="text-3xl font-bold text-gray-900">Articles</h1>
+        <div className={styles.container}>
+          <header className={styles.header}>
+            <div className={styles.headerContent}>
+              <h1 className={styles.title}>Articles</h1>
             </div>
           </header>
-          <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <div className="py-12 text-center">
-              <p className="text-gray-500">Loading articles...</p>
+          <main className={styles.main}>
+            <div className={styles.loadingState}>
+              <p>Loading articles...</p>
             </div>
           </main>
         </div>

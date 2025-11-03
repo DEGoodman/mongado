@@ -1,0 +1,196 @@
+/**
+ * Articles List Page Styles
+ * Retro-modern design with orange/terracotta theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-primary-light 100%);
+}
+
+// ===== HEADER =====
+.header {
+  border-bottom: $border-default;
+  background-color: $color-bg-canvas;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    @include container;
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
+
+    .breadcrumb {
+      margin-bottom: $spacing-4;
+    }
+
+    .title {
+      @include heading-h1;
+      margin: 0;
+    }
+  }
+}
+
+// ===== MAIN =====
+.main {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+// ===== TAG FILTER BANNER =====
+.tagFilterBanner {
+  margin-bottom: $spacing-6;
+  @include flex-between;
+  padding: $spacing-4;
+  background-color: $color-primary-light;
+  border: $border-width-thin solid rgba(230, 126, 66, 0.3);
+  border-radius: $border-radius-md;
+
+  .filterInfo {
+    @include flex-start;
+    gap: $spacing-2;
+
+    .filterLabel {
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+      color: $color-primary-dark; // Darker orange for better contrast
+    }
+
+    .tagPill {
+      display: inline-flex;
+      align-items: center;
+      padding: $spacing-1 $spacing-3;
+      background-color: rgba(230, 126, 66, 0.2);
+      border-radius: $border-radius-full;
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+      color: #a04a1c; // Darker orange for tag text
+    }
+  }
+
+  .clearButton {
+    @include text-secondary;
+    color: $color-primary;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: $color-primary-hover;
+      text-decoration: underline;
+    }
+  }
+}
+
+// ===== SEARCH BAR =====
+.searchBar {
+  margin-bottom: $spacing-6;
+
+  .searchInput {
+    width: 100%;
+    padding: $spacing-3 $spacing-4;
+    border: $border-default;
+    border-radius: $border-radius-button;
+    font-size: $font-size-base;
+    font-family: $font-family-primary;
+    background-color: $color-bg-canvas;
+    color: $color-text-primary;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 2px rgba(230, 126, 66, 0.2);
+    }
+
+    &::placeholder {
+      color: $color-text-tertiary;
+    }
+  }
+}
+
+// ===== ARTICLES LIST =====
+.articlesList {
+  @include stack($spacing-4);
+}
+
+.loadingState {
+  padding: $spacing-12 0;
+  text-align: center;
+  @include text-secondary;
+}
+
+.emptyState {
+  @include card-elevated;
+  padding: $spacing-12 0;
+  text-align: center;
+
+  .emptyMessage {
+    margin-bottom: $spacing-2;
+    @include text-secondary;
+  }
+
+  .clearSearchButton {
+    @include text-secondary;
+    color: $color-primary;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.articleCard {
+  @include card-elevated;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, $color-bg-canvas 0%, $color-primary-light 50%, $color-bg-canvas 100%);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-card-lg;
+
+    .articleTitle {
+      color: $color-primary;
+    }
+  }
+
+  .articleHeader {
+    margin-bottom: $spacing-3;
+
+    .articleTitle {
+      @include heading-h2;
+      margin-bottom: $spacing-2;
+      transition: color 0.2s ease;
+    }
+
+    .articleMeta {
+      @include text-secondary;
+    }
+  }
+
+  .articlePreview {
+    margin-bottom: $spacing-3;
+    color: $color-text-secondary;
+    overflow: hidden;
+    word-wrap: break-word;
+  }
+
+  .articleTags {
+    margin-top: $spacing-4;
+  }
+
+  .readMore {
+    margin-top: $spacing-4;
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+    color: $color-primary;
+  }
+}
