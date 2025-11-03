@@ -350,7 +350,7 @@ export default function NoteDetailPage() {
             <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
               {/* Breadcrumb and Settings */}
               <div className="mb-6 flex items-center justify-between">
-                <Breadcrumb section="notes" />
+                <Breadcrumb section="notes" subsection="All notes" />
                 <SettingsDropdown />
               </div>
 
