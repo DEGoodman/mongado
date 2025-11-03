@@ -1597,6 +1597,21 @@ def generate_corpus() -> None:
         logger.error("❌ Neo4j is not available")
         sys.exit(1)
 
+    # Safety check: confirm before clearing
+    with neo4j.driver.session(database=neo4j.database) as session:
+        result = session.run("MATCH (n:Note) RETURN count(n) AS count")
+        existing_count = result.single()["count"]
+
+    if existing_count > 0:
+        logger.warning(f"⚠️  WARNING: {existing_count} notes currently exist in Neo4j")
+        logger.warning("⚠️  This script will DELETE ALL EXISTING NOTES")
+        logger.warning("⚠️  Press Ctrl+C now to cancel, or Enter to continue...")
+        try:
+            input()
+        except KeyboardInterrupt:
+            logger.info("\n✓ Cancelled. No notes were deleted.")
+            sys.exit(0)
+
     # Clear existing notes
     logger.info("Clearing existing notes...")
     with neo4j.driver.session(database=neo4j.database) as session:
