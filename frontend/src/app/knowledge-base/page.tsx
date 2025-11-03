@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
+import Badge from "@/components/Badge";
+import { typographyClasses } from "@/lib/typography";
 import { logger } from "@/lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -140,9 +142,7 @@ export default function KnowledgeBasePage() {
               <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
                 ← Home
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
-                Knowledge Base
-              </h1>
+              <h1 className={typographyClasses.title}>Knowledge Base</h1>
             </div>
             <SettingsDropdown />
           </div>
@@ -236,8 +236,10 @@ export default function KnowledgeBasePage() {
         {/* Content Type Cards */}
         <div className="mb-8 grid gap-6 md:grid-cols-2">
           {/* Articles Card */}
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-4 text-4xl">📚</div>
+          <div className="rounded-lg border border-blue-200 bg-blue-50/30 p-6 shadow-md transition-shadow hover:shadow-lg">
+            <div className="mb-3">
+              <Badge type="article" />
+            </div>
             <h3 className="mb-2 text-2xl font-bold text-gray-900">Articles</h3>
             <p className="mb-4 text-gray-600">
               Long-form curated content. Professional essays and deep dives into topics like SaaS
@@ -254,8 +256,10 @@ export default function KnowledgeBasePage() {
           </div>
 
           {/* Notes Card */}
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-4 text-4xl">📝</div>
+          <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-6 shadow-md transition-shadow hover:shadow-lg">
+            <div className="mb-3">
+              <Badge type="note" />
+            </div>
             <h3 className="mb-2 text-2xl font-bold text-gray-900">Notes</h3>
             <p className="mb-4 text-gray-600">
               Atomic ideas, connected. A Zettelkasten-inspired system with wikilinks, backlinks, and
@@ -264,13 +268,13 @@ export default function KnowledgeBasePage() {
             <div className="flex gap-3">
               <Link
                 href="/knowledge-base/notes"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                className="rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
               >
                 Browse Notes →
               </Link>
               <Link
                 href="/knowledge-base/notes/graph"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50"
+                className="rounded-lg border border-purple-300 px-4 py-2 text-purple-700 transition-colors hover:bg-purple-50"
               >
                 View Graph →
               </Link>
