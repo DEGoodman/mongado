@@ -149,7 +149,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        stats = repair_note_links(dry_run=args.dry_run)
+        repair_note_links(dry_run=args.dry_run)
         logger.info("\nRepair completed successfully!")
     except Exception as e:
         logger.error("Repair failed: %s", e, exc_info=True)
