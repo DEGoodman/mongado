@@ -27,6 +27,7 @@
   @include card-elevated;
   margin-bottom: $spacing-8;
   text-align: center;
+  background-color: #ffffff; // Clean white background
 
   .header {
     margin-bottom: $spacing-8;
@@ -121,7 +122,7 @@
 .kbSection {
   @include card-elevated;
   margin-bottom: $spacing-8;
-  background: linear-gradient(135deg, $color-bg-canvas 0%, $color-bg-secondary 100%); // Very subtle grey gradient
+  background-color: #ffffff; // Clean white background
 
   .kbIcon {
     font-size: 3rem;
