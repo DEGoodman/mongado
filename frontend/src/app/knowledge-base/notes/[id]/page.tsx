@@ -245,6 +245,26 @@ export default function NoteDetailPage() {
     setShowPostSaveSuggestions(false);
   };
 
+  const handlePrewarmAndOpenSuggestions = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    setAiPrewarming(true);
+
+    try {
+      // Pre-warm Ollama model
+      await fetch(`${API_URL}/api/ollama/warmup`, {
+        method: "POST",
+      });
+      logger.info("Ollama model pre-warmed for suggestions");
+    } catch (err) {
+      logger.error("Failed to pre-warm Ollama", err);
+      // Continue anyway - warmup will happen on first suggestion request
+    } finally {
+      setAiPrewarming(false);
+      // Open suggestions panel
+      setShowPostSaveSuggestions(true);
+    }
+  };
+
   const handleDelete = async () => {
     // Check authentication before deleting
     if (!isAuthenticated()) {
