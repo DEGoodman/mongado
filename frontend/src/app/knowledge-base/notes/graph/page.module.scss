@@ -65,11 +65,11 @@
   .errorTitle {
     margin-bottom: $spacing-2;
     font-weight: $font-weight-semibold;
-    color: #991b1b;
+    color: $color-error-text;
   }
 
   .errorMessage {
-    color: #dc2626;
+    color: $color-error-border;
     margin-bottom: $spacing-4;
   }
 

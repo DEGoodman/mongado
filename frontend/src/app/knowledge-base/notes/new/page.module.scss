@@ -105,7 +105,7 @@
         }
 
         &.error {
-          color: #dc2626;
+          color: $color-error-border;
         }
       }
     }
@@ -220,6 +220,6 @@
   margin-bottom: $spacing-4;
 
   .errorMessage {
-    color: #dc2626;
+    color: $color-error-border;
   }
 }

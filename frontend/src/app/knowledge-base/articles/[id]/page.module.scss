@@ -61,11 +61,11 @@
     .errorTitle {
       margin-bottom: $spacing-2;
       font-weight: $font-weight-semibold;
-      color: #991b1b;
+      color: $color-error-text;
     }
 
     .errorMessage {
-      color: #dc2626;
+      color: $color-error-border;
     }
 
     .backLink {
@@ -175,7 +175,7 @@
 
   .articleCard {
     @include card-elevated;
-    background-color: #ffffff; // Clean white background
+    background-color: $color-surface-elevated;
 
     .externalLink {
       margin-top: $spacing-8;

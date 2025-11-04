@@ -151,7 +151,7 @@
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
-  background-color: #ffffff; // Clean white background
+  background-color: $color-surface-elevated;
 
   &:hover {
     .articleTitle {

@@ -66,11 +66,11 @@
     .errorTitle {
       margin-bottom: $spacing-2;
       font-weight: $font-weight-semibold;
-      color: #991b1b;
+      color: $color-error-text;
     }
 
     .errorMessage {
-      color: #dc2626;
+      color: $color-error-border;
     }
   }
 }
@@ -250,7 +250,7 @@
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
-  background-color: #ffffff; // Clean white background
+  background-color: $color-surface-elevated;
 
   &:hover {
     border-color: $color-secondary;
