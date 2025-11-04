@@ -1,6 +1,6 @@
 /**
  * Notes List Page Styles
- * Retro-modern design with terracotta/purple theme
+ * Matches production Tailwind design with blue/purple theme
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Light blue background
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
 }
 
 // ===== LOADING STATE =====
@@ -114,16 +114,16 @@
       .randomButton {
         padding: $spacing-2 $spacing-4;
         border-radius: $border-radius-button;
-        border: $border-width-thin solid $color-secondary;
-        background-color: $color-bg-canvas;
-        color: $color-secondary;
+        border: $border-width-thin solid $blue-600;
+        background-color: $white;
+        color: $blue-600;
         font-family: $font-family-primary;
         font-weight: $font-weight-medium;
         cursor: pointer;
         transition: all 0.2s ease;
 
         &:hover:not(:disabled) {
-          background-color: $color-secondary-light;
+          background-color: $blue-50;
         }
 
         &:disabled {
@@ -135,14 +135,14 @@
       .newNoteButton {
         padding: $spacing-2 $spacing-4;
         border-radius: $border-radius-button;
-        background-color: $color-secondary;
+        background-color: $blue-600;
         color: white;
         font-weight: $font-weight-medium;
         text-decoration: none;
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: $color-secondary-hover;
+          background-color: $blue-700;
         }
       }
     }
@@ -154,8 +154,8 @@
   margin-bottom: $spacing-6;
   @include flex-between;
   padding: $spacing-4;
-  background-color: $color-secondary-light;
-  border: $border-width-thin solid rgba(196, 98, 79, 0.3);
+  background-color: $purple-50;
+  border: $border-width-thin solid $purple-200;
   border-radius: $border-radius-md;
 
   .filterInfo {
@@ -165,30 +165,30 @@
     .filterLabel {
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $color-secondary;
+      color: $purple-900;
     }
 
     .tagPill {
       display: inline-flex;
       align-items: center;
       padding: $spacing-1 $spacing-3;
-      background-color: rgba(196, 98, 79, 0.2);
+      background-color: $purple-100;
       border-radius: $border-radius-full;
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $color-secondary;
+      color: $purple-800;
     }
   }
 
   .clearButton {
     @include text-secondary;
-    color: $color-secondary;
+    color: $purple-600;
     cursor: pointer;
     text-decoration: none;
     transition: all 0.2s ease;
 
     &:hover {
-      color: $color-secondary-hover;
+      color: $purple-800;
       text-decoration: underline;
     }
   }
@@ -229,7 +229,7 @@
     margin-top: $spacing-6;
     padding: $spacing-2 $spacing-4;
     border-radius: $border-radius-button;
-    background-color: $color-secondary;
+    background-color: $blue-600;
     color: white;
     @include text-secondary;
     font-weight: $font-weight-medium;
@@ -238,7 +238,7 @@
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: $color-secondary-hover;
+      background-color: $blue-700;
       box-shadow: $shadow-button-hover;
     }
   }
