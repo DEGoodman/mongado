@@ -1,0 +1,55 @@
+/**
+ * Design Tokens: Spacing
+ * Generous spacing scale for retro-modern breathing room
+ */
+
+// ===== SPACING SCALE =====
+// Base unit: 4px
+$spacing-1: 0.25rem; // 4px
+$spacing-2: 0.5rem; // 8px
+$spacing-3: 0.75rem; // 12px
+$spacing-4: 1rem; // 16px
+$spacing-5: 1.25rem; // 20px
+$spacing-6: 1.5rem; // 24px
+$spacing-8: 2rem; // 32px
+$spacing-10: 2.5rem; // 40px
+$spacing-12: 3rem; // 48px
+$spacing-16: 4rem; // 64px
+$spacing-20: 5rem; // 80px
+$spacing-24: 6rem; // 96px
+
+// ===== SEMANTIC SPACING =====
+// Component internal spacing
+$spacing-xs: $spacing-1; // 4px - tight spacing
+$spacing-sm: $spacing-2; // 8px - small spacing
+$spacing-md: $spacing-4; // 16px - medium spacing
+$spacing-lg: $spacing-6; // 24px - large spacing
+$spacing-xl: $spacing-8; // 32px - extra large spacing
+$spacing-2xl: $spacing-12; // 48px - section spacing
+$spacing-3xl: $spacing-16; // 64px - page section spacing
+
+// ===== COMPONENT-SPECIFIC SPACING =====
+// Container padding
+$container-padding-mobile: $spacing-4; // 16px
+$container-padding-tablet: $spacing-6; // 24px
+$container-padding-desktop: $spacing-8; // 32px
+
+// Card padding
+$card-padding-sm: $spacing-3; // 12px
+$card-padding-md: $spacing-4; // 16px
+$card-padding-lg: $spacing-6; // 24px
+
+// Button padding
+$button-padding-y-sm: $spacing-1; // 4px
+$button-padding-x-sm: $spacing-3; // 12px
+$button-padding-y-md: $spacing-2; // 8px
+$button-padding-x-md: $spacing-4; // 16px
+$button-padding-y-lg: $spacing-3; // 12px
+$button-padding-x-lg: $spacing-6; // 24px
+
+// Gap spacing (for flex/grid)
+$gap-xs: $spacing-1; // 4px
+$gap-sm: $spacing-2; // 8px
+$gap-md: $spacing-4; // 16px
+$gap-lg: $spacing-6; // 24px
+$gap-xl: $spacing-8; // 32px

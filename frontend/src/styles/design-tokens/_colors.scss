@@ -1,0 +1,79 @@
+/**
+ * Design Tokens: Colors
+ * Retro-Modern UI Redesign - Warm neutrals with orange/terracotta accents
+ */
+
+// ===== WARM NEUTRALS (FOUNDATION) =====
+$color-bg-canvas: #fafaf8; // Main background
+$color-bg-secondary: #f5f5f2; // Secondary background
+$color-bg-card: #eeeeea; // Card backgrounds
+$color-border: #e5e5e0; // Borders, dividers
+$color-text-secondary: #8b8b82; // Secondary text
+$color-text-tertiary: #b8b8b0; // Placeholder text
+$color-text-primary: #2d2d28; // Primary text (warm black)
+$color-text-heading: #3d3d35; // H1-H2 (slightly softer)
+
+// ===== ORANGE SPECTRUM (PRIMARY ACCENT) =====
+$color-primary: #e67e42; // Main CTA, primary links
+$color-primary-hover: #f39552; // Hover state
+$color-primary-active: #d96d32; // Active/pressed state
+$color-primary-light: #ffe5d4; // Light tint for backgrounds
+$color-primary-dark: #c95d28; // Dark orange for text
+
+// ===== TERRACOTTA (SECONDARY ACCENT) =====
+$color-secondary: #c4624f; // Secondary actions, note differentiation
+$color-secondary-hover: #d97763; // Hover state
+$color-secondary-light: #ffe8e3; // Light tint for backgrounds
+
+// ===== RETRO ACCENTS (SELECTIVE USE) =====
+$color-accent-mustard: #d4a748; // Warnings, orphan notes
+$color-accent-mustard-light: #fff4d6; // Light mustard background
+$color-accent-mustard-border: #e8d89b; // Mustard border
+$color-accent-mustard-dark: #8b7a2d; // Dark mustard text
+
+$color-accent-sage: #7b9e7a; // Success states
+$color-accent-sage-light: #e8f2e8; // Light sage background
+
+$color-accent-blue: #6b8b9e; // Info, hub notes, backlinks
+$color-accent-blue-light: #e3ebf0; // Light blue background
+$color-accent-blue-border: #c5d5e0; // Blue border
+$color-accent-blue-dark: #4a6b7e; // Dark blue text
+
+// ===== GREYS (DISABLED & SUBTLE) =====
+$color-disabled-bg: #d4d4ce;
+$color-disabled-text: #b8b8b0;
+
+// ===== SEMANTIC COLORS =====
+// Success
+$color-success: $color-accent-sage;
+$color-success-bg: $color-accent-sage-light;
+
+// Warning
+$color-warning: $color-accent-mustard;
+$color-warning-bg: $color-accent-mustard-light;
+
+// Info
+$color-info: $color-accent-blue;
+$color-info-bg: $color-accent-blue-light;
+
+// ===== QUICK LISTS COLORS =====
+// Orphan Notes
+$color-orphan-bg: $color-accent-mustard-light;
+$color-orphan-border: $color-accent-mustard-border;
+$color-orphan-heading: $color-accent-mustard-dark;
+$color-orphan-text: $color-accent-mustard;
+$color-orphan-hover: #fff0c0;
+
+// Hub Notes
+$color-hub-bg: $color-accent-blue-light;
+$color-hub-border: $color-accent-blue-border;
+$color-hub-heading: $color-accent-blue-dark;
+$color-hub-text: $color-accent-blue;
+$color-hub-hover: #d8e5ec;
+
+// Central Concepts
+$color-central-bg: $color-secondary-light;
+$color-central-border: #f5d0c8;
+$color-central-heading: #8b4436;
+$color-central-text: $color-secondary;
+$color-central-hover: #ffddd5;

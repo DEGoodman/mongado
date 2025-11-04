@@ -1,0 +1,48 @@
+/**
+ * Design Tokens: Shadows
+ * Retro-inspired warm-toned shadows (orange/charcoal blend)
+ */
+
+// ===== BASE SHADOW COLORS =====
+// Using warm orange tints instead of pure grey
+$shadow-color-warm: rgba(230, 126, 66, 0.08); // Orange tint
+$shadow-color-warm-md: rgba(230, 126, 66, 0.12); // Medium orange tint
+$shadow-color-warm-lg: rgba(230, 126, 66, 0.16); // Strong orange tint
+$shadow-color-charcoal: rgba(45, 45, 40, 0.12); // Warm charcoal
+$shadow-color-charcoal-md: rgba(45, 45, 40, 0.15); // Medium charcoal
+$shadow-color-charcoal-lg: rgba(45, 45, 40, 0.2); // Strong charcoal
+
+// ===== CARD SHADOWS =====
+// Subtle shadow for resting cards
+$shadow-card-sm: 0 2px 8px $shadow-color-warm;
+
+// Medium shadow for hover/elevated cards
+$shadow-card-md: 0 4px 16px $shadow-color-warm-md;
+
+// Large shadow for modals/popovers
+$shadow-card-lg: 0 8px 24px $shadow-color-warm-lg;
+
+// ===== BUTTON SHADOWS =====
+$shadow-button: 0 1px 3px $shadow-color-charcoal;
+$shadow-button-hover: 0 2px 6px $shadow-color-charcoal-md;
+$shadow-button-active: inset 0 2px 4px $shadow-color-charcoal;
+
+// ===== DROPDOWN/POPOVER SHADOWS =====
+$shadow-dropdown: 0 4px 20px $shadow-color-charcoal-md;
+$shadow-popover: 0 8px 32px $shadow-color-charcoal-lg;
+
+// ===== DUAL-TONE SHADOWS (Warm + Cool) =====
+// Combines orange warmth with charcoal depth for retro feel
+$shadow-dual-sm: 0 2px 4px $shadow-color-warm, 0 2px 8px $shadow-color-charcoal;
+$shadow-dual-md: 0 4px 8px $shadow-color-warm-md, 0 4px 16px $shadow-color-charcoal;
+$shadow-dual-lg: 0 8px 16px $shadow-color-warm-lg, 0 8px 24px $shadow-color-charcoal-md;
+
+// ===== FOCUS SHADOWS =====
+// For keyboard navigation
+$shadow-focus: 0 0 0 2px $shadow-color-warm-lg;
+$shadow-focus-primary: 0 0 0 2px rgba(230, 126, 66, 0.3); // Orange focus ring
+
+// ===== INSET SHADOWS =====
+// For inputs and pressed states
+$shadow-inset: inset 0 2px 4px rgba(45, 45, 40, 0.06);
+$shadow-inset-strong: inset 0 2px 6px rgba(45, 45, 40, 0.1);

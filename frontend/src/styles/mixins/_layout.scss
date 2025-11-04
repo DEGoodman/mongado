@@ -1,0 +1,129 @@
+/**
+ * Layout Mixins
+ * Reusable layout patterns for containers, cards, and sections
+ */
+
+@use '../design-tokens' as *;
+
+// ===== CONTAINER =====
+@mixin container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $container-padding-mobile;
+  padding-right: $container-padding-mobile;
+
+  @media (min-width: 768px) {
+    padding-left: $container-padding-tablet;
+    padding-right: $container-padding-tablet;
+  }
+
+  @media (min-width: 1024px) {
+    padding-left: $container-padding-desktop;
+    padding-right: $container-padding-desktop;
+  }
+}
+
+// ===== CARD =====
+@mixin card {
+  background-color: $color-bg-card;
+  border: $border-card;
+  border-radius: $border-radius-card;
+  padding: $card-padding-md;
+  transition: all 0.2s ease;
+}
+
+@mixin card-sm {
+  @include card;
+  padding: $card-padding-sm;
+}
+
+@mixin card-lg {
+  @include card;
+  padding: $card-padding-lg;
+}
+
+@mixin card-elevated {
+  @include card;
+  background-color: $color-bg-canvas;
+  box-shadow: $shadow-card-md;
+
+  &:hover {
+    box-shadow: $shadow-card-lg;
+    transform: translateY(-2px);
+  }
+}
+
+// ===== SECTION =====
+@mixin section {
+  padding-top: $spacing-2xl;
+  padding-bottom: $spacing-2xl;
+
+  @media (min-width: 768px) {
+    padding-top: $spacing-3xl;
+    padding-bottom: $spacing-3xl;
+  }
+}
+
+@mixin section-compact {
+  padding-top: $spacing-lg;
+  padding-bottom: $spacing-lg;
+
+  @media (min-width: 768px) {
+    padding-top: $spacing-xl;
+    padding-bottom: $spacing-xl;
+  }
+}
+
+// ===== FLEX UTILITIES =====
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// ===== GRID UTILITIES =====
+@mixin grid-auto-fill($min-width: 250px, $gap: $gap-md) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($min-width, 1fr));
+  gap: $gap;
+}
+
+@mixin grid-auto-fit($min-width: 250px, $gap: $gap-md) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax($min-width, 1fr));
+  gap: $gap;
+}
+
+// ===== STACK (VERTICAL SPACING) =====
+@mixin stack($gap: $spacing-md) {
+  display: flex;
+  flex-direction: column;
+  gap: $gap;
+}
+
+// ===== CLUSTER (HORIZONTAL SPACING) =====
+@mixin cluster($gap: $spacing-md) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $gap;
+  align-items: center;
+}

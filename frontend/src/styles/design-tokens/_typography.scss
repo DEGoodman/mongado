@@ -1,0 +1,83 @@
+/**
+ * Design Tokens: Typography
+ * Modern-retro hybrid font system with generous spacing
+ */
+
+// ===== FONT FAMILIES =====
+// Primary font stack - modern-retro hybrid
+$font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+  'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+
+// Alternative: DM Sans (uncomment to use)
+// $font-family-primary: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+// Monospace for code
+$font-family-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Dank Mono',
+  'Source Code Pro', monospace;
+
+// ===== FONT SIZES =====
+$font-size-xs: 0.75rem; // 12px
+$font-size-sm: 0.875rem; // 14px
+$font-size-base: 1rem; // 16px
+$font-size-lg: 1.125rem; // 18px
+$font-size-xl: 1.25rem; // 20px
+$font-size-2xl: 1.5rem; // 24px
+$font-size-3xl: 1.875rem; // 30px
+$font-size-4xl: 2.25rem; // 36px
+$font-size-5xl: 3rem; // 48px
+
+// ===== FONT WEIGHTS =====
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// ===== LINE HEIGHTS =====
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.6;
+$line-height-loose: 1.7;
+
+// ===== LETTER SPACING =====
+// Retro feel - slightly increased letter spacing on headings
+$letter-spacing-tight: -0.01em;
+$letter-spacing-normal: 0;
+$letter-spacing-wide: 0.01em;
+$letter-spacing-wider: 0.02em;
+
+// ===== HEADING SIZES =====
+$heading-h1-size: $font-size-4xl;
+$heading-h1-weight: $font-weight-bold;
+$heading-h1-line-height: $line-height-tight;
+$heading-h1-letter-spacing: $letter-spacing-wide;
+
+$heading-h2-size: $font-size-3xl;
+$heading-h2-weight: $font-weight-bold;
+$heading-h2-line-height: $line-height-tight;
+$heading-h2-letter-spacing: $letter-spacing-wide;
+
+$heading-h3-size: $font-size-2xl;
+$heading-h3-weight: $font-weight-semibold;
+$heading-h3-line-height: $line-height-normal;
+$heading-h3-letter-spacing: $letter-spacing-normal;
+
+$heading-h4-size: $font-size-xl;
+$heading-h4-weight: $font-weight-semibold;
+$heading-h4-line-height: $line-height-normal;
+$heading-h4-letter-spacing: $letter-spacing-normal;
+
+$heading-h5-size: $font-size-lg;
+$heading-h5-weight: $font-weight-medium;
+$heading-h5-line-height: $line-height-normal;
+$heading-h5-letter-spacing: $letter-spacing-normal;
+
+$heading-h6-size: $font-size-base;
+$heading-h6-weight: $font-weight-medium;
+$heading-h6-line-height: $line-height-normal;
+$heading-h6-letter-spacing: $letter-spacing-normal;
+
+// ===== BODY TEXT =====
+$body-size: $font-size-base;
+$body-weight: $font-weight-normal;
+$body-line-height: $line-height-relaxed; // 1.6 for breathing room
+$body-letter-spacing: $letter-spacing-normal;

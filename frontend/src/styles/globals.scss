@@ -1,0 +1,185 @@
+/**
+ * Global Styles
+ * Base styles, CSS reset, and typography for the retro-modern UI
+ */
+
+@use 'design-tokens' as *;
+@use 'mixins' as *;
+
+// ===== CSS RESET =====
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: $font-family-primary;
+  font-size: $body-size;
+  font-weight: $body-weight;
+  line-height: $body-line-height;
+  color: $color-text-primary;
+  background-color: $color-bg-canvas;
+  min-height: 100vh;
+}
+
+// ===== HEADINGS =====
+h1 {
+  @include heading-h1;
+  margin-bottom: $spacing-lg;
+}
+
+h2 {
+  @include heading-h2;
+  margin-bottom: $spacing-md;
+}
+
+h3 {
+  @include heading-h3;
+  margin-bottom: $spacing-md;
+}
+
+h4 {
+  @include heading-h4;
+  margin-bottom: $spacing-sm;
+}
+
+h5 {
+  @include heading-h5;
+  margin-bottom: $spacing-sm;
+}
+
+h6 {
+  @include heading-h6;
+  margin-bottom: $spacing-sm;
+}
+
+// ===== PARAGRAPH & TEXT =====
+p {
+  margin-bottom: $spacing-md;
+}
+
+strong,
+b {
+  font-weight: $font-weight-semibold;
+}
+
+em,
+i {
+  font-style: italic;
+}
+
+small {
+  @include text-secondary;
+}
+
+// ===== LINKS =====
+a {
+  @include link-default;
+}
+
+// ===== LISTS =====
+ul,
+ol {
+  margin-bottom: $spacing-md;
+  padding-left: $spacing-6;
+}
+
+li {
+  margin-bottom: $spacing-1;
+}
+
+// ===== CODE & PRE =====
+code {
+  @include text-mono;
+  padding: $spacing-1 $spacing-2;
+  background-color: $color-bg-secondary;
+  border-radius: $border-radius-sm;
+  color: $color-text-primary;
+}
+
+pre {
+  @include text-mono;
+  padding: $spacing-4;
+  background-color: $color-bg-secondary;
+  border-radius: $border-radius-md;
+  overflow-x: auto;
+  margin-bottom: $spacing-md;
+
+  code {
+    padding: 0;
+    background-color: transparent;
+  }
+}
+
+// ===== HORIZONTAL RULE =====
+hr {
+  border: none;
+  border-top: $border-divider;
+  margin: $spacing-xl 0;
+}
+
+// ===== BLOCKQUOTE =====
+blockquote {
+  padding-left: $spacing-4;
+  border-left: 3px solid $color-primary;
+  color: $color-text-secondary;
+  font-style: italic;
+  margin: $spacing-lg 0;
+}
+
+// ===== IMAGES =====
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// ===== BUTTONS & INPUTS RESET =====
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+// ===== FOCUS STYLES =====
+:focus {
+  outline: 2px solid $color-primary;
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid $color-primary;
+  outline-offset: 2px;
+}
+
+// ===== SELECTION =====
+::selection {
+  background-color: $color-primary-light;
+  color: $color-text-primary;
+}
+
+// ===== SCROLLBAR =====
+body,
+html {
+  @include scrollbar-custom;
+}
