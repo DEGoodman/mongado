@@ -1,0 +1,225 @@
+/**
+ * New Note Page Styles
+ * Retro-modern design with terracotta/purple theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-secondary-light 100%);
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+.main {
+  @include container;
+  max-width: 56rem;
+}
+
+// ===== HEADER =====
+.header {
+  margin-bottom: $spacing-6;
+
+  .headerTop {
+    margin-bottom: $spacing-4;
+    @include flex-between;
+
+    .breadcrumbs {
+      @include flex-start;
+      gap: $spacing-4;
+
+      .breadcrumbLink {
+        @include text-secondary;
+        color: $color-secondary;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .title {
+    @include heading-h1;
+    margin-bottom: $spacing-2;
+  }
+
+  .subtitle {
+    color: $color-text-secondary;
+  }
+}
+
+// ===== FORM =====
+.formSection {
+  @include stack($spacing-4);
+
+  .formField {
+    .label {
+      display: block;
+      margin-bottom: $spacing-1;
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+    }
+
+    .input {
+      width: 100%;
+      padding: $spacing-2 $spacing-3;
+      border: $border-default;
+      border-radius: $border-radius-button;
+      font-family: $font-family-primary;
+      background-color: $color-bg-canvas;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: $color-secondary;
+        box-shadow: 0 0 0 2px rgba(196, 98, 79, 0.2);
+      }
+
+      &::placeholder {
+        color: $color-text-tertiary;
+      }
+    }
+
+    .hint {
+      margin-top: $spacing-1;
+      @include text-tertiary;
+    }
+
+    .charCount {
+      text-align: right;
+      @include text-tertiary;
+
+      .count {
+        font-weight: $font-weight-medium;
+
+        &.good {
+          color: #059669;
+        }
+
+        &.warning {
+          color: #d97706;
+        }
+
+        &.error {
+          color: #dc2626;
+        }
+      }
+    }
+  }
+}
+
+// ===== ACTIONS =====
+.actions {
+  @include flex-start;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+  padding-top: $spacing-4;
+
+  .button {
+    padding: $spacing-2 $spacing-6;
+    border-radius: $border-radius-button;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  .saveButton {
+    background-color: $color-secondary;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: $color-secondary-hover;
+    }
+  }
+
+  .cancelButton {
+    background-color: transparent;
+    color: $color-text-primary;
+    border: $border-width-thin solid $color-border;
+
+    &:hover:not(:disabled) {
+      background-color: $color-bg-secondary;
+    }
+  }
+
+  .aiButton {
+    background-color: rgba(107, 139, 158, 0.1);
+    color: $color-accent-blue;
+    border: $border-width-thin solid $color-accent-blue;
+
+    &:hover:not(:disabled) {
+      background-color: $color-accent-blue-light;
+    }
+  }
+}
+
+// ===== TIPS/WARNINGS =====
+.tipBox {
+  padding: $spacing-4;
+  border-radius: $border-radius-md;
+  border: $border-width-thin solid rgba(107, 139, 158, 0.3);
+  background-color: $color-accent-blue-light;
+  margin-bottom: $spacing-4;
+
+  .tipHeader {
+    @include flex-between;
+
+    .tipTitle {
+      @include text-secondary;
+      font-weight: $font-weight-semibold;
+      color: $color-accent-blue-dark;
+      margin-bottom: $spacing-1;
+    }
+
+    .dismissButton {
+      margin-left: $spacing-4;
+      color: rgba(107, 139, 158, 0.5);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: $color-accent-blue;
+      }
+
+      svg {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+    }
+  }
+
+  .tipContent {
+    @include text-secondary;
+    color: $color-accent-blue-dark;
+  }
+
+  .tipExamples {
+    @include text-tertiary;
+    color: $color-accent-blue-dark;
+  }
+}
+
+.errorBox {
+  padding: $spacing-4;
+  border-radius: $border-radius-md;
+  border: $border-width-thin solid rgba(220, 38, 38, 0.3);
+  background-color: rgba(254, 226, 226, 0.8);
+  margin-bottom: $spacing-4;
+
+  .errorMessage {
+    color: #dc2626;
+  }
+}
