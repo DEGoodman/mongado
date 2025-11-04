@@ -1,0 +1,298 @@
+/**
+ * Form Element Mixins
+ * Reusable patterns for inputs, selects, textareas, etc.
+ */
+
+@use '../design-tokens' as *;
+
+// ============================================================================
+// BASE INPUT
+// ============================================================================
+
+@mixin input-base {
+  width: 100%;
+  padding: $spacing-3 $spacing-4;
+  border: $border-width-thin solid $color-input-border;
+  border-radius: $border-radius-button;
+  font-size: $font-size-base;
+  font-family: $font-family-primary;
+  background-color: $color-input-bg;
+  color: $color-input-text;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: $color-input-placeholder;
+  }
+
+  &:hover:not(:disabled):not(:focus) {
+    border-color: $color-input-border-hover;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: 0 0 0 2px rgba($color-input-border-focus, 0.2);
+  }
+
+  &:disabled {
+    background-color: $color-input-disabled-bg;
+    color: $color-input-disabled-text;
+    cursor: not-allowed;
+  }
+}
+
+// ============================================================================
+// SPECIFIC FORM ELEMENTS
+// ============================================================================
+
+/**
+ * Text input
+ * Standard single-line text input
+ */
+@mixin input-text {
+  @include input-base;
+}
+
+/**
+ * Textarea
+ * Multi-line text input
+ */
+@mixin input-textarea {
+  @include input-base;
+  min-height: 8rem;
+  resize: vertical;
+  font-family: $font-family-primary;
+  line-height: $line-height-relaxed;
+}
+
+/**
+ * Select dropdown
+ * Styled select element
+ */
+@mixin input-select {
+  @include input-base;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right $spacing-2 center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: $spacing-8;
+  cursor: pointer;
+}
+
+/**
+ * Checkbox
+ * Custom styled checkbox
+ */
+@mixin input-checkbox {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: $border-width-thin solid $color-input-border;
+  border-radius: $border-radius-sm;
+  background-color: $color-input-bg;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    border-color: $color-input-border-hover;
+  }
+
+  &:checked {
+    background-color: $color-interactive-primary;
+    border-color: $color-interactive-primary;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 6px;
+      height: 10px;
+      border: solid $white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  }
+
+  &:disabled {
+    background-color: $color-input-disabled-bg;
+    cursor: not-allowed;
+  }
+}
+
+/**
+ * Radio button
+ * Custom styled radio
+ */
+@mixin input-radio {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: $border-width-thin solid $color-input-border;
+  border-radius: $border-radius-full;
+  background-color: $color-input-bg;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    border-color: $color-input-border-hover;
+  }
+
+  &:checked {
+    border-color: $color-interactive-primary;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 10px;
+      height: 10px;
+      border-radius: $border-radius-full;
+      background-color: $color-interactive-primary;
+    }
+  }
+
+  &:disabled {
+    background-color: $color-input-disabled-bg;
+    cursor: not-allowed;
+  }
+}
+
+// ============================================================================
+// FORM FIELD GROUPS
+// ============================================================================
+
+/**
+ * Form field wrapper
+ * Container for label + input + error
+ */
+@mixin form-field {
+  @include stack($spacing-2);
+
+  .fieldLabel {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    margin-bottom: $spacing-1;
+
+    .required {
+      color: $color-error-border;
+      margin-left: $spacing-1;
+    }
+  }
+
+  .fieldHint {
+    @include text-tertiary;
+    font-size: $font-size-sm;
+  }
+
+  .fieldError {
+    @include text-secondary;
+    font-size: $font-size-sm;
+    color: $color-error-text;
+  }
+
+  &.hasError {
+    input,
+    textarea,
+    select {
+      border-color: $color-error-border;
+
+      &:focus {
+        box-shadow: 0 0 0 2px rgba($color-error-border, 0.2);
+      }
+    }
+  }
+}
+
+/**
+ * Checkbox/Radio field
+ * Horizontal layout with label beside input
+ */
+@mixin form-field-inline {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  cursor: pointer;
+
+  input {
+    cursor: pointer;
+  }
+
+  label {
+    cursor: pointer;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+
+  &:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    input,
+    label {
+      cursor: not-allowed;
+    }
+  }
+}
+
+// ============================================================================
+// SEARCH INPUTS
+// ============================================================================
+
+/**
+ * Search input
+ * Input with search icon
+ */
+@mixin input-search {
+  @include input-base;
+  padding-left: $spacing-10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+  background-position: left $spacing-3 center;
+  background-repeat: no-repeat;
+  background-size: 1.25rem 1.25rem;
+}
+
+// ============================================================================
+// VALIDATION STATES
+// ============================================================================
+
+/**
+ * Input success state
+ */
+@mixin input-success {
+  border-color: $color-success-border;
+
+  &:focus {
+    box-shadow: 0 0 0 2px rgba($color-success-border, 0.2);
+  }
+}
+
+/**
+ * Input error state
+ */
+@mixin input-error {
+  border-color: $color-error-border;
+
+  &:focus {
+    box-shadow: 0 0 0 2px rgba($color-error-border, 0.2);
+  }
+}
+
+/**
+ * Input warning state
+ */
+@mixin input-warning {
+  border-color: $color-warning-border;
+
+  &:focus {
+    box-shadow: 0 0 0 2px rgba($color-warning-border, 0.2);
+  }
+}

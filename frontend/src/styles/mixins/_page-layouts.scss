@@ -1,0 +1,335 @@
+/**
+ * Page Layout Templates
+ * Common page structure patterns for consistency
+ */
+
+@use '../design-tokens' as *;
+
+// ============================================================================
+// PAGE CONTAINERS
+// ============================================================================
+
+/**
+ * Standard page layout
+ * Full-height container with background
+ */
+@mixin page-container {
+  min-height: 100vh;
+  background: $color-page-bg;
+}
+
+/**
+ * Centered page layout
+ * For auth, errors, simple pages
+ */
+@mixin page-container-centered {
+  @include page-container;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-12 $spacing-4;
+}
+
+// ============================================================================
+// CONTENT AREAS
+// ============================================================================
+
+/**
+ * Main content wrapper
+ * Standard max-width content area
+ */
+@mixin page-main {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+
+  @media (min-width: 768px) {
+    padding-top: $spacing-12;
+    padding-bottom: $spacing-12;
+  }
+}
+
+/**
+ * Narrow content wrapper
+ * For reading/article content
+ */
+@mixin page-main-narrow {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+
+  @media (min-width: 640px) {
+    padding-left: $spacing-6;
+    padding-right: $spacing-6;
+  }
+
+  @media (min-width: 1024px) {
+    padding-left: $spacing-8;
+    padding-right: $spacing-8;
+  }
+}
+
+/**
+ * Wide content wrapper
+ * For dashboards, grids
+ */
+@mixin page-main-wide {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+
+  @media (min-width: 640px) {
+    padding-left: $spacing-6;
+    padding-right: $spacing-6;
+  }
+
+  @media (min-width: 1024px) {
+    padding-left: $spacing-8;
+    padding-right: $spacing-8;
+  }
+}
+
+// ============================================================================
+// HEADERS
+// ============================================================================
+
+/**
+ * Page header
+ * Standard header with border and shadow
+ */
+@mixin page-header {
+  border-bottom: $border-default;
+  background-color: $color-surface-elevated;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    @include container;
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
+  }
+}
+
+/**
+ * Article/Note header
+ * Narrow header for content pages
+ */
+@mixin page-header-narrow {
+  border-bottom: $border-default;
+  background-color: $color-surface-secondary;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: $spacing-6 $spacing-4;
+
+    @media (min-width: 640px) {
+      padding-left: $spacing-6;
+      padding-right: $spacing-6;
+    }
+
+    @media (min-width: 1024px) {
+      padding-left: $spacing-8;
+      padding-right: $spacing-8;
+    }
+  }
+}
+
+/**
+ * Header top row
+ * Breadcrumb + actions
+ */
+@mixin header-top {
+  margin-bottom: $spacing-6;
+  @include flex-between;
+  gap: $spacing-4;
+}
+
+/**
+ * Header metadata row
+ * Date, author, etc.
+ */
+@mixin header-meta {
+  @include stack($spacing-1);
+  @include text-secondary;
+
+  .metaItem {
+    @include flex-start;
+    gap: $spacing-2;
+  }
+}
+
+// ============================================================================
+// CONTENT GRIDS
+// ============================================================================
+
+/**
+ * Two-column layout
+ * Main content + sidebar
+ */
+@mixin layout-two-column {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-8;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 3fr 1fr;
+  }
+
+  .mainContent {
+    min-width: 0; // Prevent grid blowout
+  }
+
+  .sidebar {
+    @media (min-width: 1024px) {
+      position: sticky;
+      top: $spacing-8;
+      max-height: calc(100vh - #{$spacing-16});
+      overflow-y: auto;
+    }
+  }
+}
+
+/**
+ * Three-column grid
+ * For content + editor + suggestions
+ */
+@mixin layout-three-column {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-6;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 2fr 1fr;
+
+    &.withPanel {
+      grid-template-columns: 2fr 1fr 1fr;
+    }
+  }
+}
+
+/**
+ * Auto-fit grid
+ * For card grids, project tiles, etc.
+ */
+@mixin layout-grid-auto($min-width: 300px) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-6;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(auto-fit, minmax($min-width, 1fr));
+  }
+}
+
+// ============================================================================
+// LOADING & ERROR STATES
+// ============================================================================
+
+/**
+ * Loading skeleton
+ * Pulsing placeholder content
+ */
+@mixin loading-skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .skeletonBox {
+    background-color: $neutral-200;
+    border-radius: $border-radius-md;
+  }
+}
+
+/**
+ * Empty state layout
+ * Centered message with icon
+ */
+@mixin layout-empty-state {
+  @include container;
+  padding: $spacing-16 $spacing-4;
+  text-align: center;
+
+  .emptyIcon {
+    font-size: 4rem;
+    margin-bottom: $spacing-6;
+    opacity: 0.3;
+  }
+
+  .emptyTitle {
+    @include heading-h2;
+    margin-bottom: $spacing-3;
+  }
+
+  .emptyMessage {
+    @include text-secondary;
+    margin-bottom: $spacing-6;
+    max-width: 32rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .emptyActions {
+    @include flex-center;
+    gap: $spacing-3;
+  }
+}
+
+/**
+ * Error state layout
+ * Similar to empty but with error styling
+ */
+@mixin layout-error-state {
+  @include layout-empty-state;
+
+  .errorIcon {
+    color: $color-error-text;
+  }
+
+  .errorTitle {
+    color: $color-error-text;
+  }
+}
+
+// ============================================================================
+// RESPONSIVE UTILITIES
+// ============================================================================
+
+/**
+ * Mobile-first visibility
+ */
+@mixin show-on-mobile {
+  display: block;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+@mixin hide-on-mobile {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}
+
+/**
+ * Responsive spacing
+ * Smaller on mobile, larger on desktop
+ */
+@mixin spacing-responsive($property, $mobile, $desktop) {
+  #{$property}: $mobile;
+
+  @media (min-width: 768px) {
+    #{$property}: $desktop;
+  }
+}
