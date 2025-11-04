@@ -74,7 +74,10 @@ function QuickListsSection({
             {count}
           </span>
         </div>
-        <span className={`${styles.chevron} ${isExpanded ? styles.expanded : ""}`} aria-hidden="true">
+        <span
+          className={`${styles.chevron} ${isExpanded ? styles.expanded : ""}`}
+          aria-hidden="true"
+        >
           ▼
         </span>
       </div>
@@ -88,7 +91,11 @@ function QuickListsSection({
         ) : (
           <div className={styles.notesList}>
             {notes.map((note) => (
-              <Link key={note.id} href={`/knowledge-base/notes/${note.id}`} className={styles.noteCard}>
+              <Link
+                key={note.id}
+                href={`/knowledge-base/notes/${note.id}`}
+                className={styles.noteCard}
+              >
                 <div className={styles.noteTitle}>{note.title || note.id}</div>
                 <div className={styles.noteId}>
                   {note.id}

@@ -148,12 +148,7 @@ function NotesContent() {
         {/* Notes list */}
         {filteredNotes.length === 0 ? (
           <div className={styles.emptyState}>
-            <svg
-              className={styles.emptyIcon}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className={styles.emptyIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -170,7 +165,11 @@ function NotesContent() {
         ) : (
           <div className={styles.notesList}>
             {filteredNotes.map((note) => (
-              <Link key={note.id} href={`/knowledge-base/notes/${note.id}`} className={styles.noteCard}>
+              <Link
+                key={note.id}
+                href={`/knowledge-base/notes/${note.id}`}
+                className={styles.noteCard}
+              >
                 <div className={styles.noteCardContent}>
                   <div className={styles.noteInfo}>
                     {/* Note ID and title */}

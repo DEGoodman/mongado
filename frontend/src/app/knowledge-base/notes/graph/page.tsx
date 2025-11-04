@@ -365,16 +365,10 @@ export default function NotesGraphPage() {
               </div>
             )}
             <div className={styles.actions}>
-              <Link
-                href={`/knowledge-base/notes/${selectedNode.id}`}
-                className={styles.viewButton}
-              >
+              <Link href={`/knowledge-base/notes/${selectedNode.id}`} className={styles.viewButton}>
                 View note
               </Link>
-              <button
-                onClick={() => setSelectedNode(null)}
-                className={styles.deselectButton}
-              >
+              <button onClick={() => setSelectedNode(null)} className={styles.deselectButton}>
                 Deselect
               </button>
             </div>

@@ -163,11 +163,7 @@ export default function KnowledgeBasePage() {
                 autoFocus
               />
               {searchResults.length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className={styles.clearButton}
-                >
+                <button type="button" onClick={clearSearch} className={styles.clearButton}>
                   Clear
                 </button>
               )}
@@ -179,11 +175,7 @@ export default function KnowledgeBasePage() {
           </p>
 
           {/* Search Error */}
-          {searchError && (
-            <div className={styles.searchError}>
-              {searchError}
-            </div>
-          )}
+          {searchError && <div className={styles.searchError}>{searchError}</div>}
 
           {/* Search Results */}
           {searchResults.length > 0 && (
@@ -207,9 +199,7 @@ export default function KnowledgeBasePage() {
                       <span className={styles.resultType}>
                         {result.type === "article" ? "📚 Article" : "📝 Note"}
                       </span>
-                      <span className={styles.resultScore}>
-                        Score: {result.score.toFixed(1)}
-                      </span>
+                      <span className={styles.resultScore}>Score: {result.score.toFixed(1)}</span>
                     </div>
                     <h4 className={styles.resultTitle}>
                       {highlightText(result.title, searchQuery)}
@@ -225,9 +215,7 @@ export default function KnowledgeBasePage() {
 
           {/* No Results */}
           {!isSearching && searchResults.length === 0 && hasSearched && !searchError && (
-            <div className={styles.noResults}>
-              No results found for &quot;{searchQuery}&quot;
-            </div>
+            <div className={styles.noResults}>No results found for &quot;{searchQuery}&quot;</div>
           )}
         </div>
 
@@ -310,11 +298,7 @@ export default function KnowledgeBasePage() {
             </div>
             <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
               <strong>API Access:</strong> Programmatic access available via the{" "}
-              <a
-                href="https://api.mongado.com/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href="https://api.mongado.com/docs" target="_blank" rel="noopener noreferrer">
                 interactive API documentation
               </a>{" "}
               for scripting, backups, and bulk operations.

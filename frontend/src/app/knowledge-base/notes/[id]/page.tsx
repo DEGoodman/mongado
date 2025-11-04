@@ -389,12 +389,16 @@ export default function NoteDetailPage() {
               {/* Metadata */}
               <div className={styles.meta}>
                 <span>
-                  📝 Created <time dateTime={String(note.created_at)}>{formatNoteDate(note.created_at)}</time>
+                  📝 Created{" "}
+                  <time dateTime={String(note.created_at)}>{formatNoteDate(note.created_at)}</time>
                 </span>
                 <span>by {note.author}</span>
                 {note.updated_at !== note.created_at && (
                   <span>
-                    Edited <time dateTime={String(note.updated_at)}>{formatNoteDate(note.updated_at)}</time>
+                    Edited{" "}
+                    <time dateTime={String(note.updated_at)}>
+                      {formatNoteDate(note.updated_at)}
+                    </time>
                   </span>
                 )}
               </div>
@@ -409,13 +413,22 @@ export default function NoteDetailPage() {
               {/* Actions */}
               {!isEditing && (
                 <div className={styles.actions}>
-                  <button onClick={() => setIsEditing(true)} className={`${styles.button} ${styles.editButton}`}>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className={`${styles.button} ${styles.editButton}`}
+                  >
                     Edit
                   </button>
-                  <button onClick={handleDelete} className={`${styles.button} ${styles.deleteButton}`}>
+                  <button
+                    onClick={handleDelete}
+                    className={`${styles.button} ${styles.deleteButton}`}
+                  >
                     Delete
                   </button>
-                  <Link href="/knowledge-base/notes/graph" className={`${styles.button} ${styles.viewGraphButton}`}>
+                  <Link
+                    href="/knowledge-base/notes/graph"
+                    className={`${styles.button} ${styles.viewGraphButton}`}
+                  >
                     View Graph
                   </Link>
                   {aiAvailable && (
@@ -498,18 +511,18 @@ export default function NoteDetailPage() {
                         disabled={saving}
                         className={styles.cancelButton}
                       >
-                      Cancel
-                    </button>
-                    {settings.aiMode !== "off" && aiAvailable && (
-                      <button
-                        onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
-                        className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
-                      >
-                        {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                        Cancel
                       </button>
-                    )}
+                      {settings.aiMode !== "off" && aiAvailable && (
+                        <button
+                          onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
+                          className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
+                        >
+                          {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
                 </div>
 
                 {/* AI Suggestions Panel */}
@@ -570,9 +583,7 @@ export default function NoteDetailPage() {
                       className={styles.linkItem}
                     >
                       <code className={styles.linkId}>{backlink.id}</code>
-                      {backlink.title && (
-                        <div className={styles.linkTitle}>{backlink.title}</div>
-                      )}
+                      {backlink.title && <div className={styles.linkTitle}>{backlink.title}</div>}
                     </Link>
                   ))}
                 </div>

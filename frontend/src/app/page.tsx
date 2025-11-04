@@ -87,11 +87,7 @@ export default function Home() {
 
         {/* Other Projects Link */}
         <div className={styles.projectsLink}>
-          <a
-            href={siteConfig.links.github}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href={siteConfig.links.github} target="_blank" rel="noopener noreferrer">
             View more projects on GitHub →
           </a>
         </div>
