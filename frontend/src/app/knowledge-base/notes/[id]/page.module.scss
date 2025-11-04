@@ -189,7 +189,7 @@
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: darken($color-accent-blue, 10%);
+        background-color: #5a7a8d; // Darkened version of $color-accent-blue
       }
 
       &.prewarming {
