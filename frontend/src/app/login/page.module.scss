@@ -1,0 +1,150 @@
+/**
+ * Login Page Styles
+ * Retro-modern design with terracotta/purple theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-secondary-light 100%);
+  padding: $spacing-12 $spacing-4;
+}
+
+.formCard {
+  width: 100%;
+  max-width: 28rem;
+  @include card-elevated;
+  padding: $spacing-8;
+}
+
+// ===== HEADER =====
+.header {
+  margin-bottom: $spacing-8;
+  text-align: center;
+
+  .title {
+    @include heading-h1;
+    margin-bottom: $spacing-2;
+  }
+
+  .subtitle {
+    @include text-secondary;
+    color: $color-text-secondary;
+  }
+}
+
+// ===== FORM =====
+.form {
+  @include stack($spacing-6);
+}
+
+.inputGroup {
+  .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .input {
+    width: 100%;
+    padding: $spacing-2 $spacing-3;
+    border: $border-default;
+    border-radius: $border-radius-button;
+    font-family: $font-family-primary;
+    background-color: $color-bg-canvas;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: $color-secondary;
+      box-shadow: 0 0 0 2px rgba(196, 98, 79, 0.2);
+    }
+
+    &::placeholder {
+      color: $color-text-tertiary;
+    }
+
+    &:disabled {
+      background-color: $color-bg-secondary;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+}
+
+// ===== ERROR MESSAGE =====
+.errorBox {
+  padding: $spacing-4;
+  background-color: rgba(254, 226, 226, 0.8);
+  border: $border-width-thin solid rgba(220, 38, 38, 0.3);
+  border-radius: $border-radius-md;
+  @include flex-start;
+  gap: $spacing-3;
+
+  .errorIcon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #f87171;
+  }
+
+  .errorMessage {
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+    color: #991b1b;
+  }
+}
+
+// ===== BUTTON =====
+.submitButton {
+  width: 100%;
+  padding: $spacing-2 $spacing-4;
+  background-color: $color-secondary;
+  color: white;
+  border: none;
+  border-radius: $border-radius-button;
+  font-family: $font-family-primary;
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: $color-secondary-hover;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(196, 98, 79, 0.3);
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// ===== BACK LINK =====
+.backLink {
+  display: block;
+  text-align: center;
+  @include text-secondary;
+  color: $color-secondary;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
