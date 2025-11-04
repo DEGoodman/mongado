@@ -490,6 +490,7 @@ export default function NoteDetailPage() {
                     )}
                   </div>
                 </div>
+                </div>
 
                 {/* AI Suggestions Panel */}
                 {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
