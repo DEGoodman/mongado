@@ -16,15 +16,15 @@ This document identifies the performance bottleneck (embedding generation) and p
 
 Context: Mongado runs entirely self-hosted. No external AI services, no high-end GPU servers. This constraint-driven approach revealed optimizations and pitfalls you won't find in documentation written for well-resourced production environments.
 
-Naive implementation: 90s timeouts and OOM crashes. Optimized: 45s stable Q&A, 5-10s semantic search.
+The naive implementation resulted in 90s timeouts and OOM crashes. After optimization, the system delivers 45s stable Q&A and 5-10s semantic search.
 
 ## The Problem
 
-Naive approach: generate embeddings on every search
+The naive approach generates embeddings on every search.
 
-- 40 document corpus requires 41 embeddings per search (1 query + 40 documents)
-- Result: 15-30+ seconds per query
-- Users won't wait. Feature is broken.
+- A 40 document corpus requires 41 embeddings per search (1 query + 40 documents)
+- This results in 15-30+ seconds per query
+- Users won't wait for this. The feature is effectively broken.
 
 ## Optimization Levels
 
@@ -32,9 +32,9 @@ Four approaches ordered by complexity. Pick the simplest that meets requirements
 
 ### Level 1: In-Memory Caching
 
-Cache embeddings in RAM with content hash as key.
+This level caches embeddings in RAM with content hash as key.
 
-Performance: 15-20s (first), 8-12s (subsequent)
+Performance: 15-20s for first search, 8-12s for subsequent searches.
 
 Tradeoffs:
 - Simple (< 10 lines of code)
@@ -42,13 +42,13 @@ Tradeoffs:
 - No benefit for first search
 - Doesn't scale beyond ~100 documents
 
-When to use: small static corpus, infrequent deploys
+When to use: Best for small static corpus with infrequent deploys.
 
 ### Level 2: Persistent Storage (Mongado's Production Choice)
 
-Store embeddings in database. Use content hash to detect changes and skip regeneration.
+This level stores embeddings in a database and uses content hash to detect changes and skip regeneration.
 
-Performance: 15-20s (first run), 5-10s (production)
+Performance: 15-20s for first run, 5-10s in production.
 
 **Mongado uses Neo4j for embedding persistence:**
 - Embeddings stored directly on Article and Note nodes
@@ -63,7 +63,7 @@ Tradeoffs:
 - Requires database integration
 - Still slow on cold start (first search after deploy)
 
-When to use: production systems, dynamic content, multi-instance deployments
+When to use: Best for production systems, dynamic content, and multi-instance deployments.
 
 Database options:
 - PostgreSQL + pgvector: good default, familiar tooling
@@ -72,10 +72,10 @@ Database options:
 
 ### Level 3: Startup Precomputation
 
-Generate all embeddings during application startup. Check content hashes, only regenerate if changed.
+This level generates all embeddings during application startup. It checks content hashes and only regenerates embeddings if content changed.
 
-Performance: 5-6s (every search, even first)
-Startup cost: 2-5 min (one-time per deploy)
+Performance: 5-6s for every search, even the first one.
+Startup cost: 2-5 minutes one-time cost per deploy.
 
 **Configuration option (disabled by default in Mongado):**
 - Manual trigger via admin endpoint: `POST /api/admin/sync-embeddings`
@@ -88,7 +88,7 @@ Tradeoffs:
 - Slower startup (acceptable for batch deploys, but annoying in development)
 - Not suitable for real-time user content
 
-When to use: production systems with acceptable startup delays
+When to use: Best for production systems with acceptable startup delays.
 
 **Alternative approach:** Prefer lazy generation (on article creation) over startup batch processing.
 
@@ -98,9 +98,9 @@ Notes:
 
 ### Level 4: Write-Time Generation
 
-Generate embeddings when content is created/updated, not during search.
+This level generates embeddings when content is created or updated, not during search.
 
-Performance: 5-15s (write), 5-6s (search)
+Performance: 5-15s for writes, 5-6s for searches.
 
 Tradeoffs:
 - Fast startup
@@ -109,9 +109,9 @@ Tradeoffs:
 - Requires async processing for good UX
 - Added complexity (background jobs, failure handling)
 
-When to use: frequent content updates, user-generated platforms
+When to use: Best for platforms with frequent content updates and user-generated content.
 
-Async options: Celery, RQ, Dramatiq, message queues
+Async options include Celery, RQ, Dramatiq, and message queues.
 
 ## Model Selection
 
@@ -123,11 +123,11 @@ Async options: Celery, RQ, Dramatiq, message queues
 | all-minilm | 384 | 1-2s | Fair | Speed over accuracy |
 | mxbai-embed-large | 1024 | 8-12s | Excellent | High-precision needs |
 
-Start with `nomic-embed-text` (speed/quality sweet spot).
+Start with `nomic-embed-text` as it offers the best speed/quality sweet spot.
 
 ### Chat Models
 
-With persistent embeddings, search is fast. Can afford larger chat models:
+With persistent embeddings, search is fast enough that you can afford larger chat models:
 
 | Model | Speed | Use Case |
 |-------|-------|----------|
@@ -135,11 +135,11 @@ With persistent embeddings, search is fast. Can afford larger chat models:
 | qwen2.5 | 5-10s | Instruction following |
 | mistral | 5-10s | Balanced |
 
-Architecture: separate models for separate tasks
+This architecture uses separate models for separate tasks:
 - Embeddings: nomic-embed-text (fast)
 - Chat: llama3.2 (better reasoning)
 
-Only practical after persistent embeddings. Otherwise search is bottleneck.
+This approach is only practical after implementing persistent embeddings. Otherwise search remains the bottleneck.
 
 ## Hardware Considerations: GPU vs CPU
 
@@ -169,7 +169,7 @@ CPU-only (Docker default):
 
 ## Production Reality: Memory Management
 
-Real-world deployment reveals constraints that theoretical optimization doesn't account for. Mongado runs on a 4GB DigitalOcean droplet—aggressive memory tuning was required to make LLMs work at all.
+Real-world deployment reveals constraints that theoretical optimization doesn't account for. Mongado runs on a 4GB DigitalOcean droplet, where aggressive memory tuning was required to make LLMs work at all.
 
 **The Problem:**
 
@@ -178,7 +178,7 @@ Ollama models have explicit memory requirements:
 - llama3.2:1b: 1.8 GB (requires loading into RAM)
 - Server total: 3.8 GiB physical, ~1.0 GiB available after OS/services
 
-Result: OOM crashes when switching between embedding and chat models.
+The result was OOM crashes when switching between embedding and chat models.
 
 **Solutions Applied:**
 
@@ -186,29 +186,29 @@ Result: OOM crashes when switching between embedding and chat models.
    ```yaml
    NEO4J_dbms_memory_heap_max__size=512m  # Down from default ~2.5GB
    ```
-   Impact: Freed ~1.5GB RAM for Ollama operations
+   This freed approximately 1.5GB RAM for Ollama operations.
 
 2. **Ollama Model Unloading** (issue #59)
    ```yaml
    OLLAMA_MAX_LOADED_MODELS=1      # Only one model in memory at a time
    OLLAMA_KEEP_ALIVE=0              # Prod: unload immediately after use
    ```
-   Impact: Embedding model unloads completely before chat model loads
+   This ensures the embedding model unloads completely before the chat model loads.
 
 3. **Swap Space** (issue #64)
    ```bash
    sudo fallocate -l 2G /swapfile
    sudo sysctl vm.swappiness=10     # Prefer RAM but allow graceful swap
    ```
-   Impact: Graceful performance degradation instead of OOM crash
+   This enables graceful performance degradation instead of OOM crashes.
 
-**Result:** 1.8GB chat model fits comfortably in 2.5GB available RAM. System stable under load.
+**Result:** The 1.8GB chat model now fits comfortably in 2.5GB available RAM, and the system remains stable under load.
 
 **Key Insight:** Resource tuning isn't optional at small scales. Optimization strategies only work if the system has memory to execute them.
 
 ## The Critical Bug: Using Your Own Cache
 
-Having an optimization isn't enough—every code path must actually use it.
+Having an optimization isn't enough. Every code path must actually use it.
 
 **What Went Wrong:**
 
@@ -247,16 +247,16 @@ Different environments need different tradeoffs. Don't use the same settings eve
 | Swap Space | Optional | Required | Prod: uptime critical, graceful degradation |
 
 **Dev Optimization:**
-- Keep model loaded 5 minutes → fast iteration during development
+- Keep model loaded for 5 minutes to enable fast iteration during development
 - First request: 2-3s (model load)
 - Subsequent requests (< 5min): <1s (model already loaded)
 
 **Prod Optimization:**
-- Unload immediately → maximize available RAM for concurrent requests
+- Unload immediately to maximize available RAM for concurrent requests
 - Every request: 2-3s model reload overhead
 - Prevents OOM when multiple requests arrive simultaneously
 
-**Tradeoff:** Dev prioritizes speed; Prod prioritizes stability and memory efficiency.
+**Tradeoff:** Development prioritizes iteration speed while production prioritizes stability and memory efficiency.
 
 ## Performance Numbers
 
@@ -265,7 +265,7 @@ Mongado knowledge base (12 articles, 27 notes) running on 4GB DigitalOcean dropl
 **Production Performance (mongado.com):**
 
 Before optimizations:
-- Q&A request: 90s timeout → OOM crash
+- Q&A request: 90s timeout leading to OOM crash
 - Root cause: Regenerating all 26 embeddings on every request
 - Memory: 1.0 GiB available, 1.8 GiB needed (OOM)
 - Error: "model requires more system memory than is available"
@@ -295,7 +295,7 @@ After optimizations (Neo4j caching + memory tuning):
 
 **Key insights:**
 - Resource tuning (Neo4j heap, Ollama unloading, swap) unlocked the performance optimizations
-- Using cached embeddings reduced Q&A from 90s timeout to 45s stable—but only after fixing the bug
+- Using cached embeddings reduced Q&A from 90s timeout to 45s stable, but only after fixing the bug
 - GPU acceleration reduces search time by 3-6x (5-10s vs 15-30s)
 - CPU-only is usable with persistent embeddings, but requires memory management
 - Pre-warming model (via `/api/ollama/warmup`) eliminates cold-start penalty on GPU setups
@@ -304,15 +304,15 @@ After optimizations (Neo4j caching + memory tuning):
 
 ### Content Hashing
 
-Use SHA256 to detect changed content and skip regeneration.
+Use SHA256 to detect changed content and skip regeneration when content is unchanged.
 
 ### Model Versioning
 
-Track model + version per embedding. On model upgrade, know what to regenerate.
+Track the model name and version for each embedding. This allows you to know which embeddings to regenerate when upgrading models.
 
 ### Graceful Degradation
 
-Fallback to text search when Ollama unavailable.
+Implement fallback to text search when Ollama is unavailable.
 
 ### Storage Considerations
 
@@ -325,7 +325,7 @@ Embedding dimensions affect storage:
 
 ## When to Optimize
 
-Don't optimize until you have a problem. Progression above = months of iteration.
+Don't optimize until you have a problem. The progression described above represents months of iteration.
 
 Approach:
 1. MVP: naive implementation (test if users want feature)
@@ -345,21 +345,21 @@ For corpora > 10k documents:
 - Re-ranking
 - GPU acceleration
 
-Significant complexity. Start simple.
+These add significant complexity. Start simple and only add complexity when needed.
 
 ## Key Takeaways
 
 - Measure before optimizing. Know the bottleneck.
 - Cache with content hashes, not timestamps
-- **Verify every code path uses your optimization**—having the cache isn't enough if endpoints bypass it
+- **Verify every code path uses your optimization.** Having the cache isn't enough if endpoints bypass it.
 - Resource constraints (memory, CPU) determine which optimization levels are viable
-- Environment-specific tuning: dev prioritizes speed, prod prioritizes stability
-- Separate models for embeddings vs chat
-- In-memory cache > no cache (don't prematurely optimize)
+- Environment-specific tuning: development prioritizes speed, production prioritizes stability
+- Use separate models for embeddings versus chat
+- In-memory cache is better than no cache (don't prematurely optimize)
 - Startup precomputation trades deploy time for query speed
 
-Fastest search = one that doesn't generate embeddings.
-Best optimization = one you actually use in all code paths.
+The fastest search is one that doesn't generate embeddings.
+The best optimization is one you actually use in all code paths.
 
 ---
 
