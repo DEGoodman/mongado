@@ -165,7 +165,7 @@
     .filterLabel {
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $color-secondary-dark;
+      color: $color-secondary;
     }
 
     .tagPill {
@@ -176,7 +176,7 @@
       border-radius: $border-radius-full;
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $color-secondary-dark;
+      color: $color-secondary;
     }
   }
 
