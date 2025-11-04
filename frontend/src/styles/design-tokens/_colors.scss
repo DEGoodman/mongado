@@ -1,80 +1,249 @@
 /**
  * Design Tokens: Colors
- * Retro-Modern UI Redesign - Warm neutrals with orange/terracotta accents
+ * Two-tier system for easy theming and dark mode support
+ *
+ * Tier 1: Base Palette (actual color values)
+ * Tier 2: Semantic Tokens (purpose-based, references Tier 1)
  */
 
-// ===== WARM NEUTRALS (FOUNDATION) =====
-$color-bg-canvas: #fafaf8; // Main background
-$color-bg-secondary: #f5f5f2; // Secondary background
-$color-bg-card: #eeeeea; // Card backgrounds
-$color-bg-cool: #eff6ff; // Cool blue-grey for page backgrounds - matches article view
-$color-border: #e5e5e0; // Borders, dividers
-$color-text-secondary: #8b8b82; // Secondary text
-$color-text-tertiary: #b8b8b0; // Placeholder text
-$color-text-primary: #2d2d28; // Primary text (warm black)
-$color-text-heading: #3d3d35; // H1-H2 (slightly softer)
+// ============================================================================
+// TIER 1: BASE PALETTE
+// ============================================================================
+// These are the actual color values. Change these to swap the entire theme.
 
-// ===== ORANGE SPECTRUM (PRIMARY ACCENT) =====
-$color-primary: #e67e42; // Main CTA, primary links
-$color-primary-hover: #f39552; // Hover state
-$color-primary-active: #d96d32; // Active/pressed state
-$color-primary-light: #ffe5d4; // Light tint for backgrounds
-$color-primary-dark: #c95d28; // Dark orange for text
+// Neutrals
+$neutral-50: #fafaf8;   // Lightest
+$neutral-100: #f5f5f2;
+$neutral-200: #eeeeea;
+$neutral-300: #e5e5e0;
+$neutral-400: #d4d4ce;
+$neutral-500: #b8b8b0;
+$neutral-600: #8b8b82;
+$neutral-700: #3d3d35;
+$neutral-800: #2d2d28;
+$neutral-900: #1a1a16;  // Darkest
 
-// ===== TERRACOTTA (SECONDARY ACCENT) =====
-$color-secondary: #c4624f; // Secondary actions, note differentiation
-$color-secondary-hover: #d97763; // Hover state
-$color-secondary-light: #ffe8e3; // Light tint for backgrounds
+// Orange (Primary)
+$orange-50: #ffe5d4;
+$orange-100: #ffd4ba;
+$orange-500: #e67e42;
+$orange-600: #d96d32;
+$orange-700: #c95d28;
+$orange-800: #a04a1c;
 
-// ===== RETRO ACCENTS (SELECTIVE USE) =====
-$color-accent-mustard: #d4a748; // Warnings, orphan notes
-$color-accent-mustard-light: #fff4d6; // Light mustard background
-$color-accent-mustard-border: #e8d89b; // Mustard border
-$color-accent-mustard-dark: #8b7a2d; // Dark mustard text
+// Terracotta (Secondary)
+$terracotta-50: #ffe8e3;
+$terracotta-100: #ffddd5;
+$terracotta-500: #c4624f;
+$terracotta-600: #d97763;
+$terracotta-700: #8b4436;
 
-$color-accent-sage: #7b9e7a; // Success states
-$color-accent-sage-light: #e8f2e8; // Light sage background
+// Mustard (Accents)
+$mustard-50: #fff4d6;
+$mustard-100: #fff0c0;
+$mustard-200: #e8d89b;
+$mustard-500: #d4a748;
+$mustard-600: #9b6b28;
+$mustard-700: #8b7a2d;
 
-$color-accent-blue: #6b8b9e; // Info, hub notes, backlinks
-$color-accent-blue-light: #e3ebf0; // Light blue background
-$color-accent-blue-border: #c5d5e0; // Blue border
-$color-accent-blue-dark: #4a6b7e; // Dark blue text
+// Sage (Success)
+$sage-50: #e8f2e8;
+$sage-500: #7b9e7a;
 
-// ===== GREYS (DISABLED & SUBTLE) =====
-$color-disabled-bg: #d4d4ce;
-$color-disabled-text: #b8b8b0;
+// Blue (Info/Links)
+$blue-50: #eff6ff;
+$blue-100: #e3ebf0;
+$blue-200: #d8e5ec;
+$blue-300: #c5d5e0;
+$blue-500: #6b8b9e;
+$blue-600: #5a7a8d;
+$blue-700: #4a6b7e;
 
-// ===== SEMANTIC COLORS =====
+// Reds (Errors/Warnings)
+$red-50: #fef2f2;
+$red-100: #fee2e2;
+$red-500: #dc2626;
+$red-600: #c8503c;
+$red-700: #991b1b;
+$red-800: #7f1d1d;
+
+// Greens (Success)
+$green-500: #059669;
+
+// Amber (Warnings)
+$amber-500: #d97706;
+
+// White/Black
+$white: #ffffff;
+$black: #000000;
+
+// ============================================================================
+// TIER 2: SEMANTIC TOKENS
+// ============================================================================
+// These define the PURPOSE of colors. Change mappings to swap themes.
+
+// === PAGE STRUCTURE ===
+$color-page-bg: $blue-50;                    // Main page background
+$color-page-bg-alt: $neutral-100;            // Alternative page background
+
+// === SURFACES (Cards, Panels) ===
+$color-surface-default: $white;              // Default card/surface background
+$color-surface-secondary: $neutral-50;       // Secondary surfaces
+$color-surface-tertiary: $neutral-100;       // Tertiary surfaces
+$color-surface-elevated: $white;             // Elevated cards (with shadow)
+$color-surface-hover: $neutral-50;           // Surface hover state
+
+// === TEXT ===
+$color-text-primary: $neutral-800;           // Primary text
+$color-text-secondary: $neutral-600;         // Secondary text (less emphasis)
+$color-text-tertiary: $neutral-500;          // Tertiary text (subtle)
+$color-text-heading: $neutral-700;           // Headings
+$color-text-disabled: $neutral-500;          // Disabled text
+$color-text-inverse: $white;                 // Text on dark backgrounds
+
+// === BORDERS ===
+$color-border-default: $neutral-300;         // Default borders
+$color-border-subtle: $neutral-200;          // Subtle borders
+$color-border-strong: $neutral-400;          // Strong borders
+$color-border-hover: $neutral-400;           // Border on hover
+
+// === INTERACTIVE ELEMENTS ===
+// Primary Actions (Main CTAs)
+$color-interactive-primary: $orange-500;           // Primary button, main links
+$color-interactive-primary-hover: $orange-600;     // Primary hover
+$color-interactive-primary-active: $orange-700;    // Primary active/pressed
+$color-interactive-primary-text: $white;           // Text on primary buttons
+
+// Secondary Actions
+$color-interactive-secondary: $terracotta-500;     // Secondary buttons
+$color-interactive-secondary-hover: $terracotta-600;
+$color-interactive-secondary-text: $white;
+
+// Tertiary Actions (Ghost, subtle)
+$color-interactive-tertiary: $neutral-700;         // Tertiary buttons
+$color-interactive-tertiary-hover: $neutral-800;
+$color-interactive-tertiary-bg: $neutral-100;
+
+// Links
+$color-link-default: $orange-500;            // Default link color
+$color-link-hover: $orange-600;              // Link hover
+$color-link-visited: $terracotta-500;        // Visited links
+
+// === SEMANTIC STATES ===
 // Success
-$color-success: $color-accent-sage;
-$color-success-bg: $color-accent-sage-light;
+$color-success-bg: $sage-50;
+$color-success-border: $sage-500;
+$color-success-text: $sage-500;
 
 // Warning
-$color-warning: $color-accent-mustard;
-$color-warning-bg: $color-accent-mustard-light;
+$color-warning-bg: $mustard-50;
+$color-warning-border: $mustard-200;
+$color-warning-text: $mustard-600;
+
+// Error
+$color-error-bg: $red-50;
+$color-error-border: $red-500;
+$color-error-text: $red-700;
 
 // Info
-$color-info: $color-accent-blue;
-$color-info-bg: $color-accent-blue-light;
+$color-info-bg: $blue-100;
+$color-info-border: $blue-300;
+$color-info-text: $blue-700;
 
-// ===== QUICK LISTS COLORS =====
+// === FORM ELEMENTS ===
+$color-input-bg: $white;
+$color-input-border: $neutral-300;
+$color-input-border-hover: $neutral-400;
+$color-input-border-focus: $orange-500;
+$color-input-text: $neutral-800;
+$color-input-placeholder: $neutral-500;
+$color-input-disabled-bg: $neutral-100;
+$color-input-disabled-text: $neutral-500;
+
+// === BADGES ===
+$color-badge-article-bg: $orange-50;
+$color-badge-article-text: $orange-700;
+$color-badge-note-bg: $terracotta-50;
+$color-badge-note-text: $terracotta-700;
+
+// === QUICK LISTS (Note Categories) ===
 // Orphan Notes
-$color-orphan-bg: $color-accent-mustard-light;
-$color-orphan-border: $color-accent-mustard-border;
-$color-orphan-heading: $color-accent-mustard-dark;
-$color-orphan-text: $color-accent-mustard;
-$color-orphan-hover: #fff0c0;
+$color-orphan-bg: $mustard-50;
+$color-orphan-border: $mustard-200;
+$color-orphan-text: $mustard-500;
+$color-orphan-heading: $mustard-700;
+$color-orphan-hover: $mustard-100;
 
 // Hub Notes
-$color-hub-bg: $color-accent-blue-light;
-$color-hub-border: $color-accent-blue-border;
-$color-hub-heading: $color-accent-blue-dark;
-$color-hub-text: $color-accent-blue;
-$color-hub-hover: #d8e5ec;
+$color-hub-bg: $blue-100;
+$color-hub-border: $blue-300;
+$color-hub-text: $blue-500;
+$color-hub-heading: $blue-700;
+$color-hub-hover: $blue-200;
 
-// Central Concepts
-$color-central-bg: $color-secondary-light;
-$color-central-border: #f5d0c8;
-$color-central-heading: #8b4436;
-$color-central-text: $color-secondary;
-$color-central-hover: #ffddd5;
+// Central Concept Notes
+$color-central-bg: $terracotta-50;
+$color-central-border: $terracotta-100;
+$color-central-text: $terracotta-500;
+$color-central-heading: $terracotta-700;
+$color-central-hover: $terracotta-100;
+
+// === SOCIAL LINKS ===
+$color-social-github-bg: $neutral-800;
+$color-social-github-bg-hover: $neutral-900;
+$color-social-github-text: $white;
+
+$color-social-linkedin-bg: $blue-500;
+$color-social-linkedin-bg-hover: $blue-600;
+$color-social-linkedin-text: $white;
+
+$color-social-email-bg: $white;
+$color-social-email-bg-hover: $neutral-100;
+$color-social-email-text: $neutral-800;
+$color-social-email-border: $neutral-300;
+
+// === DISABLED STATES ===
+$color-disabled-bg: $neutral-400;
+$color-disabled-text: $neutral-500;
+
+// ============================================================================
+// BACKWARD COMPATIBILITY ALIASES
+// ============================================================================
+// Keep these for now to avoid breaking existing code
+// TODO: Phase these out over time
+
+$color-bg-canvas: $color-surface-secondary;
+$color-bg-secondary: $color-surface-tertiary;
+$color-bg-card: $color-surface-default;
+$color-bg-cool: $color-page-bg;
+$color-border: $color-border-default;
+$color-text-secondary: $neutral-600;
+$color-text-tertiary: $neutral-500;
+$color-text-primary: $neutral-800;
+$color-text-heading: $neutral-700;
+$color-primary: $color-interactive-primary;
+$color-primary-hover: $color-interactive-primary-hover;
+$color-primary-active: $color-interactive-primary-active;
+$color-primary-light: $orange-50;
+$color-primary-dark: $orange-700;
+$color-secondary: $color-interactive-secondary;
+$color-secondary-hover: $color-interactive-secondary-hover;
+$color-secondary-light: $terracotta-50;
+$color-accent-mustard: $mustard-500;
+$color-accent-mustard-light: $mustard-50;
+$color-accent-mustard-border: $mustard-200;
+$color-accent-mustard-dark: $mustard-700;
+$color-accent-sage: $sage-500;
+$color-accent-sage-light: $sage-50;
+$color-accent-blue: $blue-500;
+$color-accent-blue-light: $blue-100;
+$color-accent-blue-border: $blue-300;
+$color-accent-blue-dark: $blue-700;
+$color-disabled-bg: $neutral-400;
+$color-disabled-text: $neutral-500;
+$color-success: $color-success-text;
+$color-success-bg: $sage-50;
+$color-warning: $color-warning-text;
+$color-warning-bg: $mustard-50;
+$color-info: $color-info-text;
+$color-info-bg: $blue-100;
