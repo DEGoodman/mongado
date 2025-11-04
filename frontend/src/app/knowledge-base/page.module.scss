@@ -1,6 +1,6 @@
 /**
  * Knowledge Base Landing Page Styles
- * Retro-modern design with orange/terracotta theme
+ * Matches production Tailwind design with blue/purple theme
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Cool grey for contrast with warm cards
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
 }
 
 // ===== HEADER =====
@@ -75,14 +75,14 @@
         border-radius: $border-radius-button;
         font-size: $font-size-base;
         font-family: $font-family-primary;
-        background-color: $color-bg-canvas;
+        background-color: $white;
         color: $color-text-primary;
         transition: all 0.2s ease;
 
         &:focus {
           outline: none;
-          border-color: $color-primary;
-          box-shadow: 0 0 0 2px rgba(230, 126, 66, 0.2);
+          border-color: $color-input-border-focus;
+          box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
         }
 
         &::placeholder {
@@ -116,11 +116,11 @@
   .searchError {
     margin-top: $spacing-4;
     padding: $spacing-4;
-    background-color: rgba(200, 80, 60, 0.1);
-    border: $border-width-thin solid rgba(200, 80, 60, 0.3);
+    background-color: $color-error-bg;
+    border: $border-width-thin solid $color-error-border;
     border-radius: $border-radius-md;
     @include text-secondary;
-    color: #c8503c;
+    color: $color-error-text;
   }
 
   // Results
@@ -168,7 +168,7 @@
         color: $color-text-primary;
 
         mark {
-          background-color: rgba(212, 167, 72, 0.3);
+          background-color: $yellow-200;
           font-weight: $font-weight-semibold;
         }
       }
@@ -178,7 +178,7 @@
         @include line-clamp(2);
 
         mark {
-          background-color: rgba(212, 167, 72, 0.3);
+          background-color: $yellow-200;
           font-weight: $font-weight-medium;
         }
       }
@@ -209,13 +209,13 @@
   transition: all 0.2s ease;
 
   &.articles {
-    background: linear-gradient(135deg, rgba(230, 126, 66, 0.08) 0%, $color-bg-canvas 100%);
-    border-color: rgba(230, 126, 66, 0.2);
+    background-color: rgba($blue-50, 0.3);
+    border-color: $blue-200;
   }
 
   &.notes {
-    background: linear-gradient(135deg, rgba(196, 98, 79, 0.08) 0%, $color-bg-canvas 100%);
-    border-color: rgba(196, 98, 79, 0.2);
+    background-color: rgba($purple-50, 0.3);
+    border-color: $purple-200;
   }
 
   .cardBadge {
@@ -298,13 +298,13 @@
 // ===== INFO SECTION =====
 .infoSection {
   @include card;
-  background: linear-gradient(135deg, rgba(107, 139, 158, 0.08) 0%, $color-bg-canvas 100%);
-  border-color: rgba(107, 139, 158, 0.2);
+  background-color: $blue-50;
+  border-color: $blue-200;
 
   .infoTitle {
     @include heading-h3;
     margin-bottom: $spacing-2;
-    color: $color-accent-blue-dark;
+    color: $blue-900;
   }
 
   .infoGrid {
@@ -312,7 +312,7 @@
     gap: $spacing-4;
     grid-template-columns: 1fr;
     @include text-secondary;
-    color: $color-accent-blue-dark;
+    color: $blue-800;
 
     @media (min-width: 768px) {
       grid-template-columns: repeat(2, 1fr);
@@ -321,15 +321,15 @@
     .infoItem {
       strong {
         font-weight: $font-weight-semibold;
-        color: $color-accent-blue-dark;
+        color: $blue-900;
       }
 
       a {
         text-decoration: underline;
-        color: $color-accent-blue-dark;
+        color: $blue-700;
 
         &:hover {
-          color: $color-accent-blue;
+          color: $blue-600;
         }
       }
     }
