@@ -415,7 +415,7 @@ export default function NoteDetailPage() {
                   <button onClick={handleDelete} className={`${styles.button} ${styles.deleteButton}`}>
                     Delete
                   </button>
-                  <Link href={`/knowledge-base/notes/${noteId}/graph`} className={`${styles.button} ${styles.viewGraphButton}`}>
+                  <Link href="/knowledge-base/notes/graph" className={`${styles.button} ${styles.viewGraphButton}`}>
                     View Graph
                   </Link>
                   {aiAvailable && (
