@@ -5,14 +5,14 @@ tags: ["ai", "performance", "architecture"]
 draft: false
 published_date: "2025-11-03T00:00:00"
 created_at: "2025-10-24T00:00:00"
-updated_at: "2025-11-03T00:00:00"
+updated_at: "2025-11-04T00:00:00"
 ---
 
 ## Intro
 
 Third-party AI APIs (OpenAI, Anthropic) are fast and convenient, but self-hosting eliminates recurring costs, keeps data private, and forces you to understand what's actually happening under the hood. The tradeoff: you inherit the performance and infrastructure challenges.
 
-This document identifies the performance bottleneck (embedding generation) and presents four optimization levels tested on real production hardware—a 4GB DigitalOcean droplet with no GPU. Lessons learned from running semantic search and Q&A on Ollama under memory pressure.
+This document identifies the performance bottleneck (embedding generation) and presents four optimization levels tested on real production hardware: a 4GB DigitalOcean droplet with no GPU. Lessons learned from running semantic search and Q&A on Ollama under memory pressure.
 
 Context: Mongado runs entirely self-hosted. No external AI services, no high-end GPU servers. This constraint-driven approach revealed optimizations and pitfalls you won't find in documentation written for well-resourced production environments.
 
