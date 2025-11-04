@@ -1,0 +1,205 @@
+/**
+ * Button Variant Mixins
+ * Reusable button patterns for consistent interactions
+ */
+
+@use '../design-tokens' as *;
+
+// ============================================================================
+// BASE BUTTON
+// ============================================================================
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-2;
+  padding: $spacing-3 $spacing-6;
+  border-radius: $border-radius-button;
+  font-weight: $font-weight-semibold;
+  font-family: $font-family-primary;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ============================================================================
+// SIZE VARIANTS
+// ============================================================================
+
+@mixin button-sm {
+  padding: $spacing-2 $spacing-4;
+  font-size: $font-size-sm;
+}
+
+@mixin button-md {
+  padding: $spacing-3 $spacing-6;
+  font-size: $font-size-base;
+}
+
+@mixin button-lg {
+  padding: $spacing-4 $spacing-8;
+  font-size: $font-size-lg;
+}
+
+// ============================================================================
+// STYLE VARIANTS
+// ============================================================================
+
+/**
+ * Primary button
+ * Main CTAs and important actions
+ */
+@mixin button-primary {
+  @include button-base;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  box-shadow: $shadow-button;
+
+  &:hover:not(:disabled) {
+    background-color: $color-interactive-primary-hover;
+    box-shadow: $shadow-button-hover;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $color-interactive-primary-active;
+  }
+}
+
+/**
+ * Secondary button
+ * Alternative actions
+ */
+@mixin button-secondary {
+  @include button-base;
+  background-color: $color-interactive-secondary;
+  color: $color-interactive-secondary-text;
+  box-shadow: $shadow-button;
+
+  &:hover:not(:disabled) {
+    background-color: $color-interactive-secondary-hover;
+    box-shadow: $shadow-button-hover;
+  }
+}
+
+/**
+ * Tertiary button
+ * Subtle actions, less emphasis
+ */
+@mixin button-tertiary {
+  @include button-base;
+  background-color: $color-interactive-tertiary-bg;
+  color: $color-interactive-tertiary;
+  border: $border-default;
+
+  &:hover:not(:disabled) {
+    background-color: $color-surface-hover;
+    color: $color-interactive-tertiary-hover;
+  }
+}
+
+/**
+ * Ghost button
+ * Transparent, minimal visual weight
+ */
+@mixin button-ghost {
+  @include button-base;
+  background-color: transparent;
+  color: $color-interactive-primary;
+
+  &:hover:not(:disabled) {
+    background-color: $color-interactive-tertiary-bg;
+  }
+}
+
+/**
+ * Danger/Delete button
+ * Destructive actions
+ */
+@mixin button-danger {
+  @include button-base;
+  background-color: transparent;
+  color: $color-error-border;
+  border: $border-width-thin solid $color-error-border;
+
+  &:hover:not(:disabled) {
+    background-color: $color-error-bg;
+  }
+}
+
+// ============================================================================
+// SPECIAL VARIANTS
+// ============================================================================
+
+/**
+ * Icon button
+ * Button with icon, minimal padding
+ */
+@mixin button-icon {
+  @include button-base;
+  padding: $spacing-2;
+  aspect-ratio: 1;
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+/**
+ * Link-styled button
+ * Looks like a link but behaves like a button
+ */
+@mixin button-link {
+  @include button-base;
+  background-color: transparent;
+  color: $color-link-default;
+  padding: 0;
+  font-weight: $font-weight-normal;
+
+  &:hover:not(:disabled) {
+    color: $color-link-hover;
+    text-decoration: underline;
+  }
+}
+
+/**
+ * Social button base
+ * For social media login/share buttons
+ */
+@mixin button-social {
+  @include button-base;
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// Specific social platform variants
+@mixin button-github {
+  @include button-social;
+  background-color: $color-social-github-bg;
+  color: $color-social-github-text;
+
+  &:hover:not(:disabled) {
+    background-color: $color-social-github-bg-hover;
+  }
+}
+
+@mixin button-linkedin {
+  @include button-social;
+  background-color: $color-social-linkedin-bg;
+  color: $color-social-linkedin-text;
+
+  &:hover:not(:disabled) {
+    background-color: $color-social-linkedin-bg-hover;
+  }
+}
