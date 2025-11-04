@@ -7,18 +7,18 @@
 @use '@/styles/mixins' as *;
 
 .quickLists {
-  @include stack($spacing-lg);
+  @include stack($spacing-4);
 }
 
 // ===== SECTION BASE =====
 .section {
-  border-radius: $border-radius-card;
+  border-radius: $border-radius-md;
   overflow: hidden;
   transition: all 0.2s ease;
 
   .header {
     @include flex-between;
-    padding: $spacing-4;
+    padding: $spacing-3 $spacing-4;
     cursor: pointer;
     user-select: none;
     border: $border-width-thin solid;
@@ -30,15 +30,16 @@
 
     .headerContent {
       @include flex-start;
-      gap: $spacing-3;
+      gap: $spacing-2;
 
       .icon {
-        font-size: $font-size-xl;
+        font-size: $font-size-lg;
         line-height: 1;
       }
 
       .title {
-        @include heading-h3;
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
         margin: 0;
       }
 
@@ -46,16 +47,16 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: $spacing-1 $spacing-2;
-        font-size: $font-size-sm;
+        padding: 0.125rem $spacing-2;
+        font-size: $font-size-xs;
         font-weight: $font-weight-semibold;
         border-radius: $border-radius-full;
-        min-width: 2rem;
+        min-width: 1.75rem;
       }
     }
 
     .chevron {
-      font-size: $font-size-lg;
+      font-size: $font-size-base;
       transition: transform 0.2s ease;
       line-height: 1;
 
@@ -75,14 +76,15 @@
     }
 
     .notesList {
-      padding: $spacing-4;
-      @include stack($spacing-3);
+      padding: $spacing-3;
+      @include stack($spacing-2);
     }
 
     .empty {
-      padding: $spacing-6 $spacing-4;
+      padding: $spacing-4 $spacing-3;
       text-align: center;
       @include text-secondary;
+      font-size: $font-size-sm;
     }
   }
 }
@@ -152,10 +154,10 @@
 
 // ===== NOTE CARD IN LIST =====
 .noteCard {
-  padding: $spacing-3;
+  padding: $spacing-2 $spacing-3;
   background-color: $color-bg-canvas;
   border: $border-default;
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-sm;
   transition: all 0.2s ease;
   text-decoration: none;
   color: inherit;
@@ -163,18 +165,20 @@
 
   &:hover {
     box-shadow: $shadow-card-sm;
-    transform: translateY(-1px);
+    transform: none; // No movement on hover
+    border-color: $color-border;
   }
 
   .noteTitle {
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-medium;
+    font-size: $font-size-base;
     color: $color-text-primary;
     margin-bottom: $spacing-1;
   }
 
   .noteId {
     @include text-secondary;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-family: $font-family-mono;
   }
 }

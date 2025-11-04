@@ -6,7 +6,6 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import Badge from "@/components/Badge";
-import { QuickLists } from "@/components/QuickLists";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
 
@@ -279,12 +278,6 @@ export default function KnowledgeBasePage() {
               </Link>
             </div>
           </div>
-        </div>
-
-        {/* Quick Lists Section */}
-        <div className={styles.quickListsSection}>
-          <h2 className={styles.quickListsTitle}>📊 Note Categories</h2>
-          <QuickLists />
         </div>
 
         {/* Info Section */}

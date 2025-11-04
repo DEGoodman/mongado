@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-primary-light 100%);
+  background: $color-bg-cool; // Cool grey for contrast with warm cards
 }
 
 // ===== HEADER =====
@@ -55,6 +55,10 @@
 .searchSection {
   @include card-elevated;
   margin-bottom: $spacing-8;
+
+  &:hover {
+    transform: none; // Override card-elevated transform, keep shadow only
+  }
 
   .searchTitle {
     @include heading-h3;
@@ -209,18 +213,17 @@
   transition: all 0.2s ease;
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: $shadow-card-lg;
+    transform: none; // No movement on hover, shadow only
   }
 
   &.articles {
-    background: linear-gradient(135deg, $color-primary-light 0%, $color-bg-canvas 100%);
-    border-color: rgba(230, 126, 66, 0.3);
+    background: linear-gradient(135deg, rgba(230, 126, 66, 0.08) 0%, $color-bg-canvas 100%);
+    border-color: rgba(230, 126, 66, 0.2);
   }
 
   &.notes {
-    background: linear-gradient(135deg, $color-secondary-light 0%, $color-bg-canvas 100%);
-    border-color: rgba(196, 98, 79, 0.3);
+    background: linear-gradient(135deg, rgba(196, 98, 79, 0.08) 0%, $color-bg-canvas 100%);
+    border-color: rgba(196, 98, 79, 0.2);
   }
 
   .cardBadge {
@@ -303,8 +306,8 @@
 // ===== INFO SECTION =====
 .infoSection {
   @include card;
-  background: linear-gradient(135deg, $color-accent-blue-light 0%, $color-bg-canvas 100%);
-  border-color: rgba(107, 139, 158, 0.3);
+  background: linear-gradient(135deg, rgba(107, 139, 158, 0.08) 0%, $color-bg-canvas 100%);
+  border-color: rgba(107, 139, 158, 0.2);
 
   .infoTitle {
     @include heading-h3;
