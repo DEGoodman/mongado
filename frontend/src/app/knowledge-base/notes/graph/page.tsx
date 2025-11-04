@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import { logger } from "@/lib/logger";
+import styles from "./page.module.scss";
 
 interface GraphNode {
   id: string;
@@ -256,10 +257,12 @@ export default function NotesGraphPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="mb-4 h-8 w-1/3 rounded bg-gray-200"></div>
-          <div className="h-96 rounded bg-gray-200"></div>
+      <div className={styles.container}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSkeleton}>
+            <div className={styles.skeletonTitle}></div>
+            <div className={styles.skeletonGraph}></div>
+          </div>
         </div>
       </div>
     );
@@ -267,16 +270,15 @@ export default function NotesGraphPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <h2 className="mb-2 font-semibold text-red-800">Error</h2>
-          <p className="text-red-600">{error}</p>
-          <Link
-            href="/knowledge-base/notes"
-            className="mt-4 inline-block text-blue-600 hover:underline"
-          >
-            ← Back to notes
-          </Link>
+      <div className={styles.container}>
+        <div className={styles.errorContainer}>
+          <div className={styles.errorCard}>
+            <h2 className={styles.errorTitle}>Error</h2>
+            <p className={styles.errorMessage}>{error}</p>
+            <Link href="/knowledge-base/notes" className={styles.backLink}>
+              ← Back to notes
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -284,100 +286,94 @@ export default function NotesGraphPage() {
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
-            ← Back to notes
-          </Link>
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
-          <p className="text-gray-600">
-            No notes to visualize yet. Create some notes to see the graph!
-          </p>
-          <Link
-            href="/knowledge-base/notes/new"
-            className="mt-4 inline-block rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-          >
-            Create your first note
-          </Link>
+      <div className={styles.container}>
+        <div className={styles.emptyContainer}>
+          <div className={styles.emptyCard}>
+            <Link href="/knowledge-base/notes" className={styles.backLink}>
+              ← Back to notes
+            </Link>
+            <p className={styles.emptyMessage}>
+              No notes to visualize yet. Create some notes to see the graph!
+            </p>
+            <Link href="/knowledge-base/notes/new" className={styles.createButton}>
+              Create your first note
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className={styles.container}>
+      <div className={styles.main}>
         {/* Header */}
-        <div className="mb-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex gap-4">
-              <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
+        <div className={styles.header}>
+          <div className={styles.headerTop}>
+            <div className={styles.breadcrumbs}>
+              <Link href="/knowledge-base" className={styles.breadcrumbLink}>
                 ← Knowledge Base
               </Link>
-              <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
+              <Link href="/knowledge-base/notes" className={styles.breadcrumbLink}>
                 All notes
               </Link>
             </div>
             <SettingsDropdown />
           </div>
 
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">Notes Graph</h1>
-          <p className="text-gray-600">
+          <h1 className={styles.title}>Notes Graph</h1>
+          <p className={styles.stats}>
             {graphData.count.nodes} notes · {graphData.count.edges} connections
           </p>
         </div>
 
         {/* Graph visualization */}
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className={styles.graphCard}>
           <canvas
             ref={canvasRef}
             width={1200}
             height={700}
             onClick={handleCanvasClick}
             onMouseMove={handleCanvasMouseMove}
-            className="w-full"
+            className={styles.canvas}
           />
 
-          <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-blue-600"></div>
+          <div className={styles.legend}>
+            <div className={styles.legendItem}>
+              <div className={styles.legendDot}></div>
               <span>Notes</span>
             </div>
-            <div className="ml-auto text-gray-500">Click a node to select · Hover to see title</div>
+            <div className={styles.instructions}>Click a node to select · Hover to see title</div>
           </div>
         </div>
 
         {/* Selected node details */}
         {selectedNode && (
-          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <h3 className="mb-2 font-semibold text-blue-900">{selectedNode.title}</h3>
-            <div className="mb-3 flex items-center gap-4 text-sm text-blue-700">
-              <code className="rounded bg-blue-100 px-2 py-1">{selectedNode.id}</code>
+          <div className={styles.selectedNodePanel}>
+            <h3 className={styles.nodeTitle}>{selectedNode.title}</h3>
+            <div className={styles.nodeMeta}>
+              <code className={styles.nodeId}>{selectedNode.id}</code>
               <span>by {selectedNode.author}</span>
             </div>
             {selectedNode.tags.length > 0 && (
-              <div className="mb-3 flex gap-2">
+              <div className={styles.nodeTags}>
                 {selectedNode.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700"
-                  >
+                  <span key={tag} className={styles.tag}>
                     {tag}
                   </span>
                 ))}
               </div>
             )}
-            <div className="flex gap-3">
+            <div className={styles.actions}>
               <Link
                 href={`/knowledge-base/notes/${selectedNode.id}`}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                className={styles.viewButton}
               >
                 View note
               </Link>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="rounded-lg border border-blue-300 px-4 py-2 text-sm text-blue-700 hover:bg-blue-100"
+                className={styles.deselectButton}
               >
                 Deselect
               </button>

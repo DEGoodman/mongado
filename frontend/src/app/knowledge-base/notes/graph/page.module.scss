@@ -1,0 +1,276 @@
+/**
+ * Notes Graph View Styles
+ * Retro-modern design with terracotta/purple theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-secondary-light 100%);
+}
+
+.main {
+  @include container;
+  max-width: 80rem;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+// ===== LOADING & ERROR STATES =====
+.loadingContainer,
+.errorContainer,
+.emptyContainer {
+  @extend .main;
+}
+
+.loadingSkeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  .skeletonTitle {
+    height: 2rem;
+    width: 33%;
+    margin-bottom: $spacing-4;
+    background-color: rgba(156, 163, 175, 0.2);
+    border-radius: $border-radius-md;
+  }
+
+  .skeletonGraph {
+    height: 24rem;
+    background-color: rgba(156, 163, 175, 0.2);
+    border-radius: $border-radius-md;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.errorCard,
+.emptyCard {
+  @include card-elevated;
+  padding: $spacing-4;
+}
+
+.errorCard {
+  background-color: rgba(254, 226, 226, 0.8);
+  border: $border-width-thin solid rgba(220, 38, 38, 0.3);
+
+  .errorTitle {
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-semibold;
+    color: #991b1b;
+  }
+
+  .errorMessage {
+    color: #dc2626;
+    margin-bottom: $spacing-4;
+  }
+
+  .backLink {
+    display: inline-block;
+    margin-top: $spacing-4;
+    color: $color-secondary;
+    text-decoration: none;
+    @include text-secondary;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.emptyCard {
+  background-color: $color-bg-secondary;
+  border: $border-width-thin solid $color-border;
+  padding: $spacing-8;
+  text-align: center;
+
+  .backLink {
+    display: inline-block;
+    margin-bottom: $spacing-6;
+    color: $color-secondary;
+    @include text-secondary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .emptyMessage {
+    color: $color-text-secondary;
+    margin-bottom: $spacing-4;
+  }
+
+  .createButton {
+    display: inline-block;
+    margin-top: $spacing-4;
+    padding: $spacing-2 $spacing-4;
+    background-color: $color-secondary;
+    color: white;
+    border-radius: $border-radius-button;
+    font-weight: $font-weight-medium;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: $color-secondary-hover;
+    }
+  }
+}
+
+// ===== HEADER =====
+.header {
+  margin-bottom: $spacing-6;
+
+  .headerTop {
+    margin-bottom: $spacing-4;
+    @include flex-between;
+
+    .breadcrumbs {
+      @include flex-start;
+      gap: $spacing-4;
+
+      .breadcrumbLink {
+        @include text-secondary;
+        color: $color-secondary;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .title {
+    @include heading-h1;
+    margin-bottom: $spacing-2;
+  }
+
+  .stats {
+    color: $color-text-secondary;
+  }
+}
+
+// ===== GRAPH VISUALIZATION =====
+.graphCard {
+  @include card-elevated;
+  background-color: $color-bg-canvas;
+  padding: $spacing-4;
+
+  .canvas {
+    width: 100%;
+  }
+
+  .legend {
+    margin-top: $spacing-4;
+    @include flex-between;
+    @include text-secondary;
+    color: $color-text-secondary;
+
+    .legendItem {
+      @include flex-start;
+      gap: $spacing-2;
+
+      .legendDot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: $color-accent-blue;
+      }
+    }
+
+    .instructions {
+      color: $color-text-tertiary;
+    }
+  }
+}
+
+// ===== SELECTED NODE PANEL =====
+.selectedNodePanel {
+  margin-top: $spacing-6;
+  padding: $spacing-4;
+  background-color: $color-accent-blue-light;
+  border: $border-width-thin solid rgba(107, 139, 158, 0.3);
+  border-radius: $border-radius-md;
+
+  .nodeTitle {
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-semibold;
+    color: $color-accent-blue-dark;
+  }
+
+  .nodeMeta {
+    margin-bottom: $spacing-3;
+    @include flex-start;
+    gap: $spacing-4;
+    @include text-secondary;
+    color: $color-accent-blue-dark;
+
+    .nodeId {
+      padding: $spacing-1 $spacing-2;
+      background-color: rgba(107, 139, 158, 0.2);
+      border-radius: $border-radius-sm;
+      font-family: $font-family-mono;
+      @include text-secondary;
+    }
+  }
+
+  .nodeTags {
+    margin-bottom: $spacing-3;
+    @include flex-start;
+    gap: $spacing-2;
+    flex-wrap: wrap;
+
+    .tag {
+      padding: $spacing-1 $spacing-3;
+      background-color: rgba(107, 139, 158, 0.2);
+      border-radius: 9999px;
+      @include text-tertiary;
+      color: $color-accent-blue-dark;
+    }
+  }
+
+  .actions {
+    @include flex-start;
+    gap: $spacing-3;
+
+    .viewButton {
+      padding: $spacing-2 $spacing-4;
+      background-color: $color-accent-blue;
+      color: white;
+      border-radius: $border-radius-button;
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+      text-decoration: none;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #5a7a8d;
+      }
+    }
+
+    .deselectButton {
+      padding: $spacing-2 $spacing-4;
+      background-color: transparent;
+      color: $color-accent-blue-dark;
+      border: $border-width-thin solid rgba(107, 139, 158, 0.4);
+      border-radius: $border-radius-button;
+      @include text-secondary;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: rgba(107, 139, 158, 0.1);
+      }
+    }
+  }
+}
