@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-primary-light 100%);
+  background: $color-bg-cool; // Cool grey for contrast with warm cards
 }
 
 // ===== HEADER =====
@@ -45,8 +45,8 @@
   margin-bottom: $spacing-6;
   @include flex-between;
   padding: $spacing-4;
-  background-color: $color-primary-light;
-  border: $border-width-thin solid rgba(230, 126, 66, 0.3);
+  background-color: rgba(230, 126, 66, 0.08);
+  border: $border-width-thin solid rgba(230, 126, 66, 0.2);
   border-radius: $border-radius-md;
 
   .filterInfo {
@@ -151,10 +151,10 @@
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
-  background: linear-gradient(135deg, $color-bg-canvas 0%, $color-primary-light 50%, $color-bg-canvas 100%);
+  background-color: #ffffff; // Clean white background
 
   &:hover {
-    transform: translateY(-2px);
+    transform: none; // No movement on hover, shadow only
     box-shadow: $shadow-card-lg;
 
     .articleTitle {
