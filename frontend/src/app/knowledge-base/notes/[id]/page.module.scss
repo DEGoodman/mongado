@@ -9,7 +9,7 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-secondary-light 100%);
+  background: $color-bg-cool; // Light blue background
 }
 
 // ===== LOADING & ERROR STATES =====
