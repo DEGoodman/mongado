@@ -1,6 +1,6 @@
 /**
  * Articles List Page Styles
- * Retro-modern design with orange/terracotta theme
+ * Matches production Tailwind design with blue theme
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Cool grey for contrast with warm cards
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
 }
 
 // ===== HEADER =====
@@ -45,8 +45,8 @@
   margin-bottom: $spacing-6;
   @include flex-between;
   padding: $spacing-4;
-  background-color: rgba(230, 126, 66, 0.08);
-  border: $border-width-thin solid rgba(230, 126, 66, 0.2);
+  background-color: $blue-50;
+  border: $border-width-thin solid $blue-200;
   border-radius: $border-radius-md;
 
   .filterInfo {
@@ -56,30 +56,30 @@
     .filterLabel {
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $color-primary-dark; // Darker orange for better contrast
+      color: $blue-900;
     }
 
     .tagPill {
       display: inline-flex;
       align-items: center;
       padding: $spacing-1 $spacing-3;
-      background-color: rgba(230, 126, 66, 0.2);
+      background-color: $blue-100;
       border-radius: $border-radius-full;
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: #a04a1c; // Darker orange for tag text
+      color: $blue-800;
     }
   }
 
   .clearButton {
     @include text-secondary;
-    color: $color-primary;
+    color: $blue-600;
     cursor: pointer;
     text-decoration: none;
     transition: all 0.2s ease;
 
     &:hover {
-      color: $color-primary-hover;
+      color: $blue-800;
       text-decoration: underline;
     }
   }
@@ -96,14 +96,14 @@
     border-radius: $border-radius-button;
     font-size: $font-size-base;
     font-family: $font-family-primary;
-    background-color: $color-bg-canvas;
+    background-color: $white;
     color: $color-text-primary;
     transition: all 0.2s ease;
 
     &:focus {
       outline: none;
-      border-color: $color-primary;
-      box-shadow: 0 0 0 2px rgba(230, 126, 66, 0.2);
+      border-color: $color-input-border-focus;
+      box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
     }
 
     &::placeholder {
@@ -135,7 +135,7 @@
 
   .clearSearchButton {
     @include text-secondary;
-    color: $color-primary;
+    color: $blue-600;
     cursor: pointer;
     text-decoration: none;
 
@@ -155,7 +155,7 @@
 
   &:hover {
     .articleTitle {
-      color: $color-primary;
+      color: $blue-600;
     }
   }
 
@@ -188,6 +188,6 @@
     margin-top: $spacing-4;
     @include text-secondary;
     font-weight: $font-weight-medium;
-    color: $color-primary;
+    color: $blue-600;
   }
 }
