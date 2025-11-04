@@ -1,6 +1,6 @@
 /**
  * Home Page Styles
- * Retro-modern design with warm colors
+ * Matches production Tailwind design
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Cool grey for contrast with warm cards
+  background: linear-gradient(to bottom right, $blue-50 0%, $white 50%, $indigo-50 100%);
 }
 
 .main {
@@ -35,10 +35,8 @@
     .title {
       @include heading-h1;
       margin-bottom: $spacing-4;
-      background: linear-gradient(135deg, $color-primary 0%, $color-secondary 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: $neutral-900;
+      font-size: clamp(3rem, 5vw, 3.75rem); // Match production sm:text-6xl
     }
 
     .subtitle {
@@ -122,7 +120,7 @@
 .kbSection {
   @include card-elevated;
   margin-bottom: $spacing-8;
-  background-color: $color-surface-elevated;
+  background: linear-gradient(to bottom right, $orange-50 0%, $white 50%, $gray-50 100%);
 
   .kbIcon {
     font-size: 3rem;
@@ -133,6 +131,7 @@
   .kbTitle {
     @include heading-h2;
     margin-bottom: $spacing-6;
+    color: $neutral-900;
   }
 
   .kbDescription {
@@ -157,7 +156,7 @@
     font-weight: $font-weight-semibold;
     text-decoration: none;
     color: white;
-    background: linear-gradient(135deg, $color-primary 0%, $color-primary-hover 100%);
+    background: linear-gradient(to right, $orange-500, $orange-600);
     box-shadow: $shadow-card-md;
     transition: all 0.2s ease;
 
@@ -167,7 +166,7 @@
     }
 
     &:hover {
-      background: linear-gradient(135deg, $color-primary-hover 0%, $color-primary-active 100%);
+      background: linear-gradient(to right, $orange-600, $orange-700);
       box-shadow: $shadow-card-lg;
       transform: translateY(-2px);
     }

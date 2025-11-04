@@ -80,6 +80,17 @@ $amber-100: #fef3c7;
 $amber-500: #f59e0b;
 $amber-600: #d97706;
 
+// Orange - Tailwind orange scale (for KB CTA)
+$orange-50: #fff7ed;
+$orange-100: #ffedd5;
+$orange-500: #f97316;
+$orange-600: #ea580c;
+$orange-700: #c2410c;
+
+// Gray (additional shades) - Tailwind gray scale
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+
 // White/Black
 $white: #ffffff;
 $black: #000000;
@@ -204,17 +215,17 @@ $color-central-heading: $purple-700;
 $color-central-hover: $purple-100;
 
 // === SOCIAL LINKS ===
-$color-social-github-bg: $neutral-800;
-$color-social-github-bg-hover: $neutral-900;
+$color-social-github-bg: $neutral-900;
+$color-social-github-bg-hover: $neutral-800;
 $color-social-github-text: $white;
 
-$color-social-linkedin-bg: $blue-500;
-$color-social-linkedin-bg-hover: $blue-600;
+$color-social-linkedin-bg: $blue-600;
+$color-social-linkedin-bg-hover: $blue-700;
 $color-social-linkedin-text: $white;
 
-$color-social-email-bg: $white;
-$color-social-email-bg-hover: $neutral-100;
-$color-social-email-text: $neutral-800;
+$color-social-email-bg: $gray-100;
+$color-social-email-bg-hover: $neutral-200;
+$color-social-email-text: $neutral-900;
 $color-social-email-border: $neutral-300;
 
 // === DISABLED STATES ===
