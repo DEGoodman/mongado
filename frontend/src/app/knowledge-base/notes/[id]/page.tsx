@@ -27,6 +27,7 @@ import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
+import styles from "./page.module.scss";
 
 export default function NoteDetailPage() {
   const params = useParams();
@@ -305,11 +306,12 @@ export default function NoteDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="mb-4 h-8 w-1/3 rounded bg-gray-200"></div>
-          <div className="mb-4 h-64 rounded bg-gray-200"></div>
-          <div className="h-32 rounded bg-gray-200"></div>
+      <div className={styles.container}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSkeleton}>
+            <div className={styles.skeletonHeader}></div>
+            <div className={styles.skeletonContent}></div>
+          </div>
         </div>
       </div>
     );
@@ -317,16 +319,15 @@ export default function NoteDetailPage() {
 
   if (error && !note) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <h2 className="mb-2 font-semibold text-red-800">Error</h2>
-          <p className="text-red-600">{error}</p>
-          <Link
-            href="/knowledge-base/notes"
-            className="mt-4 inline-block text-blue-600 hover:underline"
-          >
-            ← Back to notes
-          </Link>
+      <div className={styles.container}>
+        <div className={styles.errorContainer}>
+          <div className={styles.errorCard}>
+            <h2 className={styles.errorTitle}>Error</h2>
+            <p className={styles.errorMessage}>{error}</p>
+            <Link href="/knowledge-base/notes" className={styles.backLink}>
+              ← Back to notes
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -335,92 +336,77 @@ export default function NoteDetailPage() {
   if (!note) return null;
 
   return (
-    <div>
+    <div className={styles.container}>
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
       {/* AI Button */}
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
-      <div className="container mx-auto max-w-6xl px-4 py-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className={styles.main}>
+        <div className={styles.contentGrid}>
           {/* Main content */}
-          <div className="lg:col-span-2">
+          <div className={styles.mainContent}>
             {/* Header */}
-            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
+            <div className={styles.header}>
               {/* Breadcrumb and Settings */}
-              <div className="mb-6 flex items-center justify-between">
+              <div className={styles.headerTop}>
                 <Breadcrumb section="notes" subsection="All notes" />
                 <SettingsDropdown />
               </div>
 
-              {/* Note ID - shown only in edit mode or as subtle metadata */}
-              {isEditing && (
-                <div className="mb-4">
-                  <span className="text-xs text-gray-400">
-                    ID: <code className="font-mono">{note.id}</code>
-                  </span>
-                </div>
-              )}
-
               {/* Content Type Badge */}
-              <div className="mb-4">
+              <div className={styles.badge}>
                 <Badge type="note" />
               </div>
 
-              {/* Title and Actions */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h1 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
-                    {note.title || "Untitled Note"}
-                  </h1>
+              {/* Title and metadata */}
+              <div className={styles.titleRow}>
+                <code className={styles.noteId}>{note.id}</code>
+                <h1 className={styles.noteTitle}>{note.title || "Untitled Note"}</h1>
+              </div>
 
-                  {/* Metadata */}
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-2">
-                      <span aria-hidden="true">📝</span>
-                      <span>
-                        Created{" "}
-                        <time dateTime={String(note.created_at)}>
-                          {formatNoteDate(note.created_at)}
-                        </time>
-                      </span>
-                    </span>
-                    <span>by {note.author}</span>
-                    {note.updated_at !== note.created_at && (
-                      <span>
-                        Edited{" "}
-                        <time dateTime={String(note.updated_at)}>
-                          {formatNoteDate(note.updated_at)}
-                        </time>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                {!isEditing && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
+              {/* Metadata */}
+              <div className={styles.meta}>
+                <span>
+                  📝 Created <time dateTime={String(note.created_at)}>{formatNoteDate(note.created_at)}</time>
+                </span>
+                <span>by {note.author}</span>
+                {note.updated_at !== note.created_at && (
+                  <span>
+                    Edited <time dateTime={String(note.updated_at)}>{formatNoteDate(note.updated_at)}</time>
+                  </span>
                 )}
               </div>
 
               {/* Tags */}
               {note.tags.length > 0 && !isEditing && (
-                <div className="mt-4">
+                <div className={styles.tags}>
                   <TagPillList tags={note.tags} onClick={handleTagClick} />
+                </div>
+              )}
+
+              {/* Actions */}
+              {!isEditing && (
+                <div className={styles.actions}>
+                  <button onClick={() => setIsEditing(true)} className={`${styles.button} ${styles.editButton}`}>
+                    Edit
+                  </button>
+                  <button onClick={handleDelete} className={`${styles.button} ${styles.deleteButton}`}>
+                    Delete
+                  </button>
+                  <Link href={`/knowledge-base/notes/${noteId}/graph`} className={`${styles.button} ${styles.viewGraphButton}`}>
+                    View Graph
+                  </Link>
+                  {aiAvailable && (
+                    <button
+                      onClick={handlePrewarmAndOpenSuggestions}
+                      className={`${styles.button} ${styles.aiSuggestionsButton} ${aiPrewarming ? styles.prewarming : ""}`}
+                      disabled={aiPrewarming}
+                    >
+                      {aiPrewarming ? "Preparing AI..." : "AI Suggestions"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -478,19 +464,20 @@ export default function NoteDetailPage() {
                     />
                   </div>
 
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => handleSave()}
-                      disabled={saving || !editContent.trim()}
-                      className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {saving ? "Saving..." : "Save Changes"}
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      disabled={saving}
-                      className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50"
-                    >
+                  <div className={styles.saveActions}>
+                    <div className={styles.actionsLeft}>
+                      <button
+                        onClick={() => handleSave()}
+                        disabled={saving || !editContent.trim()}
+                        className={styles.saveButton}
+                      >
+                        {saving ? "Saving..." : "Save Changes"}
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                        className={styles.cancelButton}
+                      >
                       Cancel
                     </button>
                     {settings.aiMode !== "off" && aiAvailable && (
@@ -530,20 +517,20 @@ export default function NoteDetailPage() {
           </div>
 
           {/* Sidebar - Links and Backlinks */}
-          <div className="space-y-6">
+          <div className={styles.sidebar}>
             {/* Outbound Links */}
             {outboundLinks.length > 0 && (
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <h3 className="mb-3 font-semibold text-gray-900">Links ({outboundLinks.length})</h3>
-                <div className="space-y-2">
+              <div className={styles.sidebarSection}>
+                <h3 className={styles.sectionTitle}>Links ({outboundLinks.length})</h3>
+                <div className={styles.linksList}>
                   {outboundLinks.map((link) => (
                     <Link
                       key={link.id}
                       href={`/knowledge-base/notes/${link.id}`}
-                      className="block rounded p-2 hover:bg-gray-50"
+                      className={styles.linkItem}
                     >
-                      <code className="text-sm text-blue-600">{link.id}</code>
-                      {link.title && <div className="text-sm text-gray-700">{link.title}</div>}
+                      <code className={styles.linkId}>{link.id}</code>
+                      {link.title && <div className={styles.linkTitle}>{link.title}</div>}
                     </Link>
                   ))}
                 </div>
@@ -552,18 +539,18 @@ export default function NoteDetailPage() {
 
             {/* Backlinks */}
             {backlinks.length > 0 && (
-              <div className="rounded-lg border border-gray-200 bg-white p-4">
-                <h3 className="mb-3 font-semibold text-gray-900">Backlinks ({backlinks.length})</h3>
-                <div className="space-y-2">
+              <div className={styles.sidebarSection}>
+                <h3 className={styles.sectionTitle}>Backlinks ({backlinks.length})</h3>
+                <div className={styles.linksList}>
                   {backlinks.map((backlink) => (
                     <Link
                       key={backlink.id}
                       href={`/knowledge-base/notes/${backlink.id}`}
-                      className="block rounded p-2 hover:bg-gray-50"
+                      className={styles.linkItem}
                     >
-                      <code className="text-sm text-blue-600">{backlink.id}</code>
+                      <code className={styles.linkId}>{backlink.id}</code>
                       {backlink.title && (
-                        <div className="text-sm text-gray-700">{backlink.title}</div>
+                        <div className={styles.linkTitle}>{backlink.title}</div>
                       )}
                     </Link>
                   ))}
@@ -573,10 +560,9 @@ export default function NoteDetailPage() {
 
             {/* No links message */}
             {outboundLinks.length === 0 && backlinks.length === 0 && (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
-                <p className="text-sm text-gray-600">
-                  No links yet. Use <code className="rounded bg-gray-200 px-1">[[note-id]]</code> to
-                  connect notes
+              <div className={styles.sidebarSection}>
+                <p className={styles.emptyMessage}>
+                  No links yet. Use <code>[[note-id]]</code> to connect notes
                 </p>
               </div>
             )}
