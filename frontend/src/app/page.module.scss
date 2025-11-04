@@ -28,10 +28,6 @@
   margin-bottom: $spacing-8;
   text-align: center;
 
-  &:hover {
-    transform: none; // Override card-elevated transform, keep shadow only
-  }
-
   .header {
     margin-bottom: $spacing-8;
 
@@ -126,10 +122,6 @@
   @include card-elevated;
   margin-bottom: $spacing-8;
   background: linear-gradient(135deg, $color-bg-canvas 0%, $color-bg-secondary 100%); // Very subtle grey gradient
-
-  &:hover {
-    transform: none; // Override card-elevated transform, keep shadow only
-  }
 
   .kbIcon {
     font-size: 3rem;

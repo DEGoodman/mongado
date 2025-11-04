@@ -154,9 +154,6 @@
   background-color: #ffffff; // Clean white background
 
   &:hover {
-    transform: none; // No movement on hover, shadow only
-    box-shadow: $shadow-card-lg;
-
     .articleTitle {
       color: $color-primary;
     }

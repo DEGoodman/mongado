@@ -51,7 +51,7 @@
 
   &:hover {
     box-shadow: $shadow-card-lg;
-    transform: translateY(-2px);
+    // No transform - cards stay in place, shadow only
   }
 }
 

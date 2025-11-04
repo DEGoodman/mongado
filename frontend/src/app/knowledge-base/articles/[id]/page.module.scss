@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, $color-bg-secondary 0%, $color-primary-light 100%);
+  background: $color-bg-cool; // Light blue background matching other pages
 }
 
 // ===== LOADING STATE =====
@@ -175,7 +175,7 @@
 
   .articleCard {
     @include card-elevated;
-    background-color: $color-bg-canvas;
+    background-color: #ffffff; // Clean white background
 
     .externalLink {
       margin-top: $spacing-8;

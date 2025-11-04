@@ -56,10 +56,6 @@
   @include card-elevated;
   margin-bottom: $spacing-8;
 
-  &:hover {
-    transform: none; // Override card-elevated transform, keep shadow only
-  }
-
   .searchTitle {
     @include heading-h3;
     margin-bottom: $spacing-4;
@@ -211,10 +207,6 @@
 .contentCard {
   @include card-elevated;
   transition: all 0.2s ease;
-
-  &:hover {
-    transform: none; // No movement on hover, shadow only
-  }
 
   &.articles {
     background: linear-gradient(135deg, rgba(230, 126, 66, 0.08) 0%, $color-bg-canvas 100%);
