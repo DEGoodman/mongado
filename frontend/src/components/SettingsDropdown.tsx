@@ -7,6 +7,7 @@ import { useSettings } from "@/hooks/useSettings";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
 import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
+import styles from "./SettingsDropdown.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -75,28 +76,25 @@ export default function SettingsDropdown() {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className={styles.container}>
       {/* Sign In link when not authenticated */}
       {!isUserAuthenticated && (
-        <Link
-          href="/login"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
-        >
+        <Link href="/login" className={styles.signInLink}>
           Sign In
         </Link>
       )}
 
       {/* Settings dropdown */}
-      <div className="relative" ref={dropdownRef}>
+      <div className={styles.dropdownWrapper} ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-700 transition-colors hover:bg-gray-100"
+          className={styles.settingsButton}
           aria-label="Settings"
         >
-          <span className="text-lg">⚙️</span>
-          <span className="text-sm font-medium">Settings</span>
+          <span className={styles.icon}>⚙️</span>
+          <span className={styles.label}>Settings</span>
           <svg
-            className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`${styles.chevron} ${isOpen ? styles.open : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -106,49 +104,37 @@ export default function SettingsDropdown() {
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg">
-            <div className="p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">AI Suggestions</h3>
-                {isWarmingUp && <span className="text-xs text-gray-500">Warming up...</span>}
+          <div className={styles.dropdown}>
+            <div className={styles.dropdownContent}>
+              <div className={styles.header}>
+                <h3 className={styles.title}>AI Suggestions</h3>
+                {isWarmingUp && <span className={styles.warmupIndicator}>Warming up...</span>}
               </div>
 
               {/* Segmented Control */}
-              <div className="flex rounded-lg bg-gray-100 p-1">
+              <div className={styles.segmentedControl}>
                 <button
                   onClick={() => handleModeChange("off")}
-                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
-                    settings.aiMode === "off"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`${styles.segmentButton} ${settings.aiMode === "off" ? styles.active : styles.inactive}`}
                 >
                   Off
                 </button>
                 <button
                   onClick={() => handleModeChange("on-demand")}
-                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
-                    settings.aiMode === "on-demand"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`${styles.segmentButton} ${settings.aiMode === "on-demand" ? styles.active : styles.inactive}`}
                 >
                   On-demand
                 </button>
                 <button
                   onClick={() => handleModeChange("real-time")}
-                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
-                    settings.aiMode === "real-time"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`${styles.segmentButton} ${settings.aiMode === "real-time" ? styles.active : styles.inactive}`}
                 >
                   Automatic
                 </button>
               </div>
 
               {/* Mode descriptions */}
-              <div className="mt-3 text-xs text-gray-600">
+              <div className={styles.modeDescription}>
                 {settings.aiMode === "off" && (
                   <p>No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.</p>
                 )}
@@ -168,11 +154,8 @@ export default function SettingsDropdown() {
 
               {/* Logout section */}
               {isUserAuthenticated && (
-                <div className="mt-4 border-t border-gray-200 pt-3">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                  >
+                <div className={styles.logoutSection}>
+                  <button onClick={handleLogout} className={styles.logoutButton}>
                     Sign Out
                   </button>
                 </div>

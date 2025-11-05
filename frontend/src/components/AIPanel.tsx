@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import styles from "./AIPanel.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
@@ -265,21 +266,26 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex h-full max-h-dvh w-full flex-col border-l border-gray-200 bg-white shadow-lg md:inset-auto md:right-0 md:top-0 md:h-screen md:w-96">
+    <div className={styles.panel}>
       {/* Header */}
-      <div className="border-b border-gray-200 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
-          <div className="flex items-center gap-2">
+      <div className={styles.header}>
+        <div className={styles.headerTop}>
+          <h2 className={styles.title}>AI Assistant</h2>
+          <div className={styles.headerActions}>
             {/* Settings Dropdown - Only in Development */}
             {IS_DEVELOPMENT && (
-              <div className="settings-dropdown relative">
+              <div className={styles.settingsDropdown}>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="text-gray-400 transition hover:text-gray-600"
+                  className={styles.settingsButton}
                   aria-label="Settings"
                 >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className={styles.settingsIcon}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -295,18 +301,18 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                   </svg>
                 </button>
                 {showSettings && (
-                  <div className="absolute right-0 top-8 z-10 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-                    <div className="mb-2 text-xs font-medium text-gray-700">Developer Settings</div>
-                    <label className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600">Force CPU Mode</span>
+                  <div className={styles.settingsPanel}>
+                    <div className={styles.settingsTitle}>Developer Settings</div>
+                    <label className={styles.settingsOption}>
+                      <span className={styles.label}>Force CPU Mode</span>
                       <input
                         type="checkbox"
                         checked={forceCpuMode}
                         onChange={(e) => setForceCpuMode(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        className={styles.checkbox}
                       />
                     </label>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className={styles.settingsDescription}>
                       Simulates CPU-only environment for testing production performance on
                       GPU-enabled machines.
                     </p>
@@ -314,12 +320,13 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                 )}
               </div>
             )}
-            <button
-              onClick={onClose}
-              className="text-gray-400 transition hover:text-gray-600"
-              aria-label="Close AI panel"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={onClose} className={styles.closeButton} aria-label="Close AI panel">
+              <svg
+                className={styles.closeIcon}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -331,24 +338,16 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
           </div>
         </div>
         {/* Mode Switcher - Search first (faster) */}
-        <div className="flex gap-2">
+        <div className={styles.modeSwitcher}>
           <button
             onClick={() => handleModeChange("search")}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
-              mode === "search"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+            className={`${styles.modeButton} ${mode === "search" ? styles.active : styles.inactive}`}
           >
             🔍 Search
           </button>
           <button
             onClick={() => handleModeChange("chat")}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
-              mode === "chat"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+            className={`${styles.modeButton} ${mode === "chat" ? styles.active : styles.inactive}`}
           >
             💬 Chat
           </button>
@@ -356,24 +355,21 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
       </div>
 
       {/* Messages */}
-      <div
-        className="flex-1 space-y-4 overflow-y-auto p-4"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
+      <div className={styles.messagesContainer} style={{ WebkitOverflowScrolling: "touch" }}>
         {messages.length === 0 && (
-          <div className="mt-8 text-center text-gray-500">
+          <div className={styles.emptyState}>
             {mode === "chat" ? (
               <>
-                <p className="text-sm font-medium">💬 Conversational Q&A</p>
-                <p className="mt-2 text-xs">
+                <p className={styles.emptyTitle}>💬 Conversational Q&A</p>
+                <p className={styles.emptyDescription}>
                   Ask questions like &quot;What is systems thinking?&quot; I&apos;ll search your
                   knowledge base and provide answers with context. For finding related content, use
                   the Search tab.
                 </p>
                 {hasGPU === false && (
-                  <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-left">
-                    <p className="text-xs font-medium text-yellow-800">⚠️ Performance Notice</p>
-                    <p className="mt-1 text-xs text-yellow-700">
+                  <div className={styles.performanceNotice}>
+                    <p className={styles.noticeTitle}>⚠️ Performance Notice</p>
+                    <p className={styles.noticeDescription}>
                       This feature is under active development and currently running on CPU-only
                       infrastructure. Response times may be 60-120 seconds. For faster results, use
                       the Search tab.
@@ -383,8 +379,8 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
               </>
             ) : (
               <>
-                <p className="text-sm font-medium">🔍 AI Semantic Search</p>
-                <p className="mt-2 text-xs">
+                <p className={styles.emptyTitle}>🔍 AI Semantic Search</p>
+                <p className={styles.emptyDescription}>
                   Find conceptually related content using AI embeddings. Discovers connections even
                   without exact keyword matches. Fast with pre-computed embeddings. For keyword
                   search, use the main search box.
@@ -397,18 +393,16 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`${styles.messageWrapper} ${message.role === "user" ? styles.user : styles.assistant}`}
           >
             <div
-              className={`max-w-[85%] rounded-lg p-3 ${
-                message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
-              }`}
+              className={`${styles.message} ${message.role === "user" ? styles.userMessage : styles.assistantMessage}`}
             >
-              <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+              <p className={styles.messageContent}>{message.content}</p>
 
               {/* Sources */}
               {message.sources && message.sources.length > 0 && (
-                <div className="mt-3 space-y-2">
+                <div className={styles.sources}>
                   {message.sources.map((source, idx) => {
                     const resourcePath =
                       source.type === "article"
@@ -418,13 +412,10 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                           : null;
 
                     return (
-                      <div
-                        key={`${source.id}-${idx}`}
-                        className="rounded border border-gray-200 bg-white p-2"
-                      >
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-blue-600">
+                      <div key={`${source.id}-${idx}`} className={styles.sourceCard}>
+                        <div className={styles.sourceHeader}>
+                          <div className={styles.sourceInfo}>
+                            <span className={styles.sourceTitle}>
                               {source.type === "article"
                                 ? "📚"
                                 : source.type === "note"
@@ -433,9 +424,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                               {source.title || `Document ${source.id}`}
                             </span>
                             {source.score && (
-                              <span className="text-xs text-gray-400">
-                                {source.score.toFixed(3)}
-                              </span>
+                              <span className={styles.sourceScore}>{source.score.toFixed(3)}</span>
                             )}
                           </div>
                           {resourcePath && (
@@ -443,13 +432,13 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                               href={resourcePath}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline"
+                              className={styles.sourceLink}
                             >
                               View →
                             </a>
                           )}
                         </div>
-                        <div className="line-clamp-2 text-xs text-gray-600">{source.content}</div>
+                        <div className={styles.sourceContent}>{source.content}</div>
                       </div>
                     );
                   })}
@@ -460,47 +449,37 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
         ))}
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="rounded-lg bg-gray-100 p-3">
-              <div className="flex gap-1">
-                <div className="h-2 w-2 animate-bounce rounded-full bg-gray-400"></div>
-                <div
-                  className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
+          <div className={styles.loadingWrapper}>
+            <div className={styles.loadingBubble}>
+              <div className={styles.loadingDots}>
+                <div className={styles.loadingDot}></div>
+                <div className={styles.loadingDot}></div>
+                <div className={styles.loadingDot}></div>
               </div>
             </div>
           </div>
         )}
 
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className={styles.messagesEnd} />
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className={styles.inputArea}>
         {messages.length > 0 && (
-          <button onClick={handleClear} className="mb-2 text-xs text-gray-500 hover:text-gray-700">
+          <button onClick={handleClear} className={styles.clearButton}>
             Clear {mode === "chat" ? "conversation" : "results"}
           </button>
         )}
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        <form onSubmit={handleSubmit} className={styles.inputForm}>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={mode === "chat" ? "Ask a question..." : "Search query..."}
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={styles.input}
             disabled={loading}
           />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading || !input.trim()} className={styles.submitButton}>
             {loading ? "..." : mode === "chat" ? "Send" : "Search"}
           </button>
         </form>

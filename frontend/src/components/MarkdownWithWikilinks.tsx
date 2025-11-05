@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import type { Components } from "react-markdown";
+import styles from "./MarkdownWithWikilinks.module.scss";
 
 interface MarkdownWithWikilinksProps {
   content: string | null | undefined;
@@ -14,8 +15,8 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
   // Handle null/undefined content
   if (!content) {
     return (
-      <div className="prose prose-sm max-w-none sm:prose lg:prose-lg">
-        <p className="italic text-gray-500">No content</p>
+      <div className={`${styles.container} prose prose-sm`}>
+        <p className={styles.emptyState}>No content</p>
       </div>
     );
   }
@@ -41,11 +42,7 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
         const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
         if (match) {
           return (
-            <Link
-              key={i}
-              href={`/knowledge-base/notes/${match[1]}`}
-              className="inline-block rounded bg-blue-50 px-1 font-mono text-sm text-blue-600 no-underline hover:underline"
-            >
+            <Link key={i} href={`/knowledge-base/notes/${match[1]}`} className={styles.wikilink}>
               {part}
             </Link>
           );
@@ -67,7 +64,7 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
   };
 
   return (
-    <div className="prose prose-sm max-w-none overflow-x-auto">
+    <div className={`${styles.container} prose prose-sm`}>
       <style jsx global>{`
         /* Fix table overflow in all browsers */
         .prose table {

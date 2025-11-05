@@ -1,0 +1,35 @@
+/**
+ * AIButton Component Styles
+ * Floating action button for AI assistant
+ * Matches production Tailwind design with blue theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.aiButton {
+  position: fixed;
+  bottom: max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom)));
+  right: 1.5rem;
+  z-index: 40;
+  @include flex-center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: $border-radius-full;
+  background-color: $blue-600;
+  color: $white;
+  box-shadow: $shadow-card-lg;
+  border: none;
+  cursor: pointer;
+  @include transition-default;
+
+  &:hover {
+    transform: scale(1.1);
+    background-color: $blue-700;
+  }
+
+  .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}

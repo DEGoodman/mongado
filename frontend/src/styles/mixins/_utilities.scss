@@ -1,0 +1,212 @@
+/**
+ * Utility Mixins
+ * Reusable utilities for hover, focus, transitions, and common patterns
+ */
+
+@use '../design-tokens' as *;
+
+// ===== TRANSITIONS =====
+@mixin transition-default {
+  transition: all 0.2s ease;
+}
+
+@mixin transition-fast {
+  transition: all 0.15s ease;
+}
+
+@mixin transition-slow {
+  transition: all 0.3s ease;
+}
+
+@mixin transition-colors {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+// ===== HOVER STATES =====
+@mixin hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-card-md;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@mixin hover-scale {
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+@mixin hover-underline {
+  position: relative;
+  text-decoration: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: currentColor;
+    transition: width 0.2s ease;
+  }
+
+  &:hover::after {
+    width: 100%;
+  }
+}
+
+// ===== FOCUS STATES =====
+@mixin focus-outline {
+  outline: 2px solid $color-primary;
+  outline-offset: 2px;
+}
+
+@mixin focus-ring {
+  box-shadow: $shadow-focus-primary;
+  outline: none;
+}
+
+@mixin focus-visible {
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    @include focus-outline;
+  }
+}
+
+// ===== DISABLED STATE =====
+@mixin disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  background-color: $color-disabled-bg;
+  color: $color-disabled-text;
+}
+
+// ===== TRUNCATE TEXT =====
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin line-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ===== VISUALLY HIDDEN (SR-ONLY) =====
+@mixin sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// ===== RESET BUTTON =====
+@mixin reset-button {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+// ===== RESET LIST =====
+@mixin reset-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+// ===== SCROLLBAR STYLING =====
+@mixin scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: $color-border $color-bg-secondary;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $color-bg-secondary;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $color-border;
+    border-radius: $border-radius-full;
+
+    &:hover {
+      background-color: $color-text-secondary;
+    }
+  }
+}
+
+// ===== COMPONENT PATTERNS =====
+// Mixins for common component patterns identified during SCSS migration
+
+// Floating element (AIButton, Toast, modals)
+@mixin floating-element($z-index: 40) {
+  position: fixed;
+  z-index: $z-index;
+  box-shadow: $shadow-card-lg;
+}
+
+// Dropdown/popover panel
+@mixin dropdown-panel {
+  position: absolute;
+  z-index: 50;
+  border: $border-default;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  box-shadow: $shadow-card-lg;
+}
+
+// Interactive element with hover state
+@mixin interactive-hover($bg: $blue-50, $text: $blue-700) {
+  @include transition-default;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background-color: $bg;
+    color: $text;
+  }
+}
+
+// Modal/panel base overlay
+@mixin modal-base {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba($black, 0.5);
+}

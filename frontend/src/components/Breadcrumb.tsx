@@ -4,6 +4,7 @@
  */
 
 import Link from "next/link";
+import styles from "./Breadcrumb.module.scss";
 
 interface BreadcrumbProps {
   section: "articles" | "notes";
@@ -26,35 +27,32 @@ export default function Breadcrumb({ section, subsection, className = "" }: Brea
   const config = sectionConfig[section];
 
   return (
-    <nav aria-label="Breadcrumb" className={`text-sm ${className}`}>
-      <ol className="flex items-center gap-2">
+    <nav aria-label="Breadcrumb" className={`${styles.breadcrumb} ${className}`}>
+      <ol className={styles.list}>
         {/* Knowledge Base root */}
         <li>
-          <Link
-            href="/knowledge-base"
-            className="text-blue-600 hover:text-blue-800 hover:underline"
-          >
+          <Link href="/knowledge-base" className={styles.link}>
             ← Knowledge Base
           </Link>
         </li>
 
         {/* Section (Articles or Notes) */}
-        <li className="flex items-center gap-2">
-          <span className="text-gray-400" aria-hidden="true">
+        <li className={styles.listItem}>
+          <span className={styles.separator} aria-hidden="true">
             /
           </span>
-          <Link href={config.href} className="text-blue-600 hover:text-blue-800 hover:underline">
+          <Link href={config.href} className={styles.link}>
             {config.label}
           </Link>
         </li>
 
         {/* Subsection (optional, e.g., "All notes") */}
         {subsection && (
-          <li className="flex items-center gap-2">
-            <span className="text-gray-400" aria-hidden="true">
+          <li className={styles.listItem}>
+            <span className={styles.separator} aria-hidden="true">
               &gt;
             </span>
-            <span className="text-gray-600">{subsection}</span>
+            <span className={styles.subsection}>{subsection}</span>
           </li>
         )}
       </ol>

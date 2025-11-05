@@ -1,0 +1,55 @@
+/**
+ * Toast Component Styles
+ * Notification toast with slide-up animation
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.toast {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 50;
+  @include animate-slide-in-bottom;
+}
+
+.toastContent {
+  @include flex-start;
+  gap: $spacing-3;
+  padding: $spacing-3 $spacing-4;
+  border-radius: $border-radius-md;
+  background-color: $green-600;
+  color: $white;
+  box-shadow: $shadow-card-lg;
+}
+
+.icon {
+  font-size: $font-size-lg;
+  line-height: 1;
+}
+
+.message {
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+.closeButton {
+  margin-left: $spacing-2;
+  color: $green-100;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  @include transition-colors;
+
+  &:hover {
+    color: $white;
+  }
+
+  .closeIcon {
+    width: 1rem;
+    height: 1rem;
+  }
+}

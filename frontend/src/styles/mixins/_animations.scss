@@ -1,0 +1,183 @@
+/**
+ * Animation Keyframes
+ * Reusable animations for components
+ */
+
+// ===== FADE ANIMATIONS =====
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+// ===== SLIDE ANIMATIONS =====
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutToTop {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutToBottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+// ===== SCALE ANIMATIONS =====
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+// ===== COMBINED ANIMATIONS =====
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// ===== UTILITY MIXINS FOR ANIMATIONS =====
+@mixin animate-fade-in($duration: 0.3s, $timing: ease-out) {
+  animation: fadeIn $duration $timing;
+}
+
+@mixin animate-slide-in-right($duration: 0.3s, $timing: ease-out) {
+  animation: slideInFromRight $duration $timing;
+}
+
+@mixin animate-slide-in-left($duration: 0.3s, $timing: ease-out) {
+  animation: slideInFromLeft $duration $timing;
+}
+
+@mixin animate-slide-in-bottom($duration: 0.3s, $timing: ease-out) {
+  animation: slideInFromBottom $duration $timing;
+}
+
+@mixin animate-slide-in-top($duration: 0.3s, $timing: ease-out) {
+  animation: slideInFromTop $duration $timing;
+}
+
+@mixin animate-scale-in($duration: 0.3s, $timing: ease-out) {
+  animation: scaleIn $duration $timing;
+}

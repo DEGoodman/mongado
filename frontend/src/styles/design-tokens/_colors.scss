@@ -1,0 +1,266 @@
+/**
+ * Design Tokens: Colors
+ * Two-tier system for easy theming and dark mode support
+ *
+ * Tier 1: Base Palette (actual color values)
+ * Tier 2: Semantic Tokens (purpose-based, references Tier 1)
+ */
+
+// ============================================================================
+// TIER 1: BASE PALETTE (Tailwind Colors)
+// ============================================================================
+// These are the actual color values matching Tailwind's default palette.
+// Change these to swap the entire theme.
+
+// Grays (Neutrals) - Tailwind gray scale
+$neutral-50: #f9fafb;   // Lightest
+$neutral-100: #f3f4f6;
+$neutral-200: #e5e7eb;
+$neutral-300: #d1d5db;
+$neutral-400: #9ca3af;
+$neutral-500: #6b7280;
+$neutral-600: #4b5563;
+$neutral-700: #374151;
+$neutral-800: #1f2937;
+$neutral-900: #111827;  // Darkest
+
+// Blues (Primary) - Tailwind blue scale
+$blue-50: #eff6ff;
+$blue-100: #dbeafe;
+$blue-200: #bfdbfe;
+$blue-300: #93c5fd;
+$blue-400: #60a5fa;
+$blue-500: #3b82f6;
+$blue-600: #2563eb;
+$blue-700: #1d4ed8;
+$blue-800: #1e40af;
+$blue-900: #1e3a8a;
+
+// Indigos - Tailwind indigo scale
+$indigo-50: #eef2ff;
+$indigo-100: #e0e7ff;
+$indigo-200: #c7d2fe;
+
+// Purples (Secondary) - Tailwind purple scale
+$purple-50: #faf5ff;
+$purple-100: #f3e8ff;
+$purple-200: #e9d5ff;
+$purple-300: #d8b4fe;
+$purple-500: #a855f7;
+$purple-600: #9333ea;
+$purple-700: #7e22ce;
+$purple-800: #6b21a8;
+$purple-900: #581c87;
+
+// Greens (Success) - Tailwind green scale
+$green-50: #f0fdf4;
+$green-100: #dcfce7;
+$green-500: #22c55e;
+$green-600: #16a34a;
+$green-700: #15803d;
+
+// Reds (Errors) - Tailwind red scale
+$red-50: #fef2f2;
+$red-100: #fee2e2;
+$red-200: #fecaca;
+$red-500: #ef4444;
+$red-600: #dc2626;
+$red-700: #b91c1c;
+$red-800: #991b1b;
+
+// Yellows (Highlights/Search) - Tailwind yellow scale
+$yellow-50: #fefce8;
+$yellow-100: #fef9c3;
+$yellow-200: #fef08a;
+$yellow-300: #fde047;
+
+// Amber (Warnings) - Tailwind amber scale
+$amber-50: #fffbeb;
+$amber-100: #fef3c7;
+$amber-500: #f59e0b;
+$amber-600: #d97706;
+
+// Orange - Tailwind orange scale (for KB CTA)
+$orange-50: #fff7ed;
+$orange-100: #ffedd5;
+$orange-500: #f97316;
+$orange-600: #ea580c;
+$orange-700: #c2410c;
+
+// Gray (additional shades) - Tailwind gray scale
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+
+// White/Black
+$white: #ffffff;
+$black: #000000;
+
+// ============================================================================
+// TIER 2: SEMANTIC TOKENS
+// ============================================================================
+// These define the PURPOSE of colors. Change mappings to swap themes.
+
+// === PAGE STRUCTURE ===
+// Match Tailwind's gradient: bg-gradient-to-br from-blue-50 to-indigo-50
+$color-page-bg: $blue-50;                    // Main page background
+$color-page-bg-gradient-start: $blue-50;     // Gradient start
+$color-page-bg-gradient-end: $indigo-50;     // Gradient end
+$color-page-bg-alt: $neutral-100;            // Alternative page background
+
+// === SURFACES (Cards, Panels) ===
+$color-surface-default: $white;              // Default card/surface background
+$color-surface-secondary: $neutral-50;       // Secondary surfaces
+$color-surface-tertiary: $neutral-100;       // Tertiary surfaces
+$color-surface-elevated: $white;             // Elevated cards (with shadow)
+$color-surface-hover: $neutral-50;           // Surface hover state
+
+// === TEXT ===
+$color-text-primary: $neutral-800;           // Primary text
+$color-text-secondary: $neutral-600;         // Secondary text (less emphasis)
+$color-text-tertiary: $neutral-500;          // Tertiary text (subtle)
+$color-text-heading: $neutral-700;           // Headings
+$color-text-disabled: $neutral-500;          // Disabled text
+$color-text-inverse: $white;                 // Text on dark backgrounds
+
+// === BORDERS ===
+$color-border-default: $neutral-300;         // Default borders
+$color-border-subtle: $neutral-200;          // Subtle borders
+$color-border-strong: $neutral-400;          // Strong borders
+$color-border-hover: $neutral-400;           // Border on hover
+
+// === INTERACTIVE ELEMENTS ===
+// Primary Actions (Main CTAs) - Blue theme matching Tailwind
+$color-interactive-primary: $blue-600;             // Primary button, main links
+$color-interactive-primary-hover: $blue-700;       // Primary hover
+$color-interactive-primary-active: $blue-800;      // Primary active/pressed
+$color-interactive-primary-text: $white;           // Text on primary buttons
+
+// Secondary Actions - Purple for secondary elements
+$color-interactive-secondary: $purple-600;         // Secondary buttons
+$color-interactive-secondary-hover: $purple-700;
+$color-interactive-secondary-text: $white;
+
+// Tertiary Actions (Ghost, subtle)
+$color-interactive-tertiary: $neutral-700;         // Tertiary buttons
+$color-interactive-tertiary-hover: $neutral-800;
+$color-interactive-tertiary-bg: $neutral-100;
+
+// Links - Blue matching Tailwind text-blue-600/hover:text-blue-800
+$color-link-default: $blue-600;              // Default link color
+$color-link-hover: $blue-800;                // Link hover (darker on hover)
+$color-link-visited: $purple-700;            // Visited links
+
+// === SEMANTIC STATES ===
+// Success - Tailwind green
+$color-success-bg: $green-50;
+$color-success-border: $green-500;
+$color-success-text: $green-600;
+
+// Warning - Tailwind amber/yellow
+$color-warning-bg: $amber-50;
+$color-warning-border: $amber-500;
+$color-warning-text: $amber-600;
+
+// Error - Tailwind red
+$color-error-bg: $red-50;
+$color-error-border: $red-500;
+$color-error-text: $red-700;
+
+// Info - Tailwind blue
+$color-info-bg: $blue-50;
+$color-info-border: $blue-200;
+$color-info-text: $blue-700;
+
+// === FORM ELEMENTS ===
+$color-input-bg: $white;
+$color-input-border: $neutral-300;
+$color-input-border-hover: $neutral-400;
+$color-input-border-focus: $blue-500;            // Blue focus ring
+$color-input-text: $neutral-800;
+$color-input-placeholder: $neutral-500;
+$color-input-disabled-bg: $neutral-100;
+$color-input-disabled-text: $neutral-500;
+
+// === BADGES ===
+// Articles: blue (matching Tailwind: bg-blue-50 text-blue-700 border-blue-200)
+$color-badge-article-bg: $blue-50;
+$color-badge-article-text: $blue-700;
+$color-badge-article-border: $blue-200;
+
+// Notes: purple (matching Tailwind: bg-purple-50 text-purple-700 border-purple-200)
+$color-badge-note-bg: $purple-50;
+$color-badge-note-text: $purple-700;
+$color-badge-note-border: $purple-200;
+
+// === QUICK LISTS (Note Categories) ===
+// Orphan Notes - Yellow/amber for attention
+$color-orphan-bg: $yellow-50;
+$color-orphan-border: $yellow-200;
+$color-orphan-text: $amber-600;
+$color-orphan-heading: $amber-600;
+$color-orphan-hover: $yellow-100;
+
+// Hub Notes - Blue for info/connections
+$color-hub-bg: $blue-50;
+$color-hub-border: $blue-200;
+$color-hub-text: $blue-600;
+$color-hub-heading: $blue-700;
+$color-hub-hover: $blue-100;
+
+// Central Concept Notes - Purple for important concepts
+$color-central-bg: $purple-50;
+$color-central-border: $purple-200;
+$color-central-text: $purple-600;
+$color-central-heading: $purple-700;
+$color-central-hover: $purple-100;
+
+// === SOCIAL LINKS ===
+$color-social-github-bg: $neutral-900;
+$color-social-github-bg-hover: $neutral-800;
+$color-social-github-text: $white;
+
+$color-social-linkedin-bg: $blue-600;
+$color-social-linkedin-bg-hover: $blue-700;
+$color-social-linkedin-text: $white;
+
+$color-social-email-bg: $gray-100;
+$color-social-email-bg-hover: $neutral-200;
+$color-social-email-text: $neutral-900;
+$color-social-email-border: $neutral-300;
+
+// === DISABLED STATES ===
+$color-disabled-bg: $neutral-400;
+$color-disabled-text: $neutral-500;
+
+// ============================================================================
+// BACKWARD COMPATIBILITY ALIASES
+// ============================================================================
+// Keep these for now to avoid breaking existing code
+// TODO: Phase these out over time
+
+$color-bg-canvas: $color-surface-secondary;
+$color-bg-secondary: $color-surface-tertiary;
+$color-bg-card: $color-surface-default;
+$color-bg-cool: $color-page-bg;
+$color-border: $color-border-default;
+$color-primary: $color-interactive-primary;
+$color-primary-hover: $color-interactive-primary-hover;
+$color-primary-active: $color-interactive-primary-active;
+$color-primary-light: $blue-50;
+$color-primary-dark: $blue-700;
+$color-secondary: $color-interactive-secondary;
+$color-secondary-hover: $color-interactive-secondary-hover;
+$color-secondary-light: $purple-50;
+$color-accent-blue: $blue-600;
+$color-accent-blue-light: $blue-50;
+$color-accent-blue-border: $blue-200;
+$color-accent-blue-dark: $blue-700;
+$color-accent-purple: $purple-600;
+$color-accent-purple-light: $purple-50;
+$color-accent-purple-border: $purple-200;
+$color-accent-purple-dark: $purple-700;
+$color-disabled-bg: $neutral-400;
+$color-disabled-text: $neutral-500;
+$color-success: $color-success-text;
+$color-warning: $color-warning-text;
+$color-info: $color-info-text;

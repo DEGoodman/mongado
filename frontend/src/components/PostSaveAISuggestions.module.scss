@@ -1,0 +1,195 @@
+/**
+ * PostSaveAISuggestions Component Styles
+ * Modal showing AI-suggested related notes after saving
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+// Modal overlay
+.overlay {
+  @include modal-base;
+}
+
+// Modal content box
+.modal {
+  max-width: 32rem; // 512px
+  padding: $spacing-6;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  box-shadow: $shadow-popover;
+}
+
+// Header
+.header {
+  @include flex-between;
+  margin-bottom: $spacing-4;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $neutral-900;
+}
+
+.closeButton {
+  color: $neutral-400;
+  @include transition-colors;
+
+  &:hover {
+    color: $neutral-600;
+  }
+
+  .closeIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+// Loading state
+.loadingContainer {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 4px solid $blue-600;
+  border-right-color: transparent;
+  border-radius: $border-radius-full;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  margin-top: $spacing-2;
+  @include text-secondary;
+  color: $neutral-600;
+}
+
+// Error state
+.errorBanner {
+  margin-bottom: $spacing-4;
+  padding: $spacing-3;
+  border: $border-width-thin solid $red-200;
+  border-radius: $border-radius-md;
+  @include text-secondary;
+  background-color: $red-50;
+  color: $red-600;
+}
+
+// Empty state
+.emptyContainer {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.emptyTitle {
+  color: $neutral-600;
+}
+
+.emptySubtitle {
+  margin-top: $spacing-2;
+  @include text-secondary;
+  color: $neutral-500;
+}
+
+// Suggestions list
+.suggestionsList {
+  @include stack($spacing-3);
+}
+
+.suggestionCard {
+  padding: $spacing-3;
+  border: $border-width-thin solid $neutral-200;
+  border-radius: $border-radius-md;
+  @include transition-default;
+
+  &:hover {
+    border-color: $blue-300;
+    background-color: $blue-50;
+  }
+}
+
+.suggestionHeader {
+  @include flex-between;
+  margin-bottom: $spacing-2;
+  align-items: flex-start;
+}
+
+.suggestionMeta {
+  flex: 1;
+}
+
+.suggestionTopRow {
+  @include flex-start;
+  gap: $spacing-2;
+}
+
+.suggestionNoteId {
+  padding: $spacing-1 $spacing-2;
+  border-radius: $border-radius-sm;
+  @include text-secondary;
+  background-color: $neutral-100;
+  color: $neutral-700;
+  font-family: monospace;
+}
+
+.suggestionConfidence {
+  @include text-tertiary;
+  color: $neutral-500;
+}
+
+.suggestionTitle {
+  margin-top: $spacing-1;
+  font-weight: $font-weight-medium;
+  color: $neutral-900;
+}
+
+.suggestionAction {
+  margin-left: $spacing-2;
+  padding: $spacing-2 $spacing-3;
+  white-space: nowrap;
+  border-radius: $border-radius-sm;
+  @include text-secondary;
+  background-color: $blue-600;
+  color: $white;
+  @include transition-default;
+
+  &:hover {
+    background-color: $blue-700;
+  }
+}
+
+.suggestionReason {
+  @include text-secondary;
+  color: $neutral-600;
+}
+
+// Footer
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-3;
+  margin-top: $spacing-6;
+}
+
+.footerButton {
+  padding: $spacing-2 $spacing-4;
+  border: $border-width-thin solid $neutral-300;
+  border-radius: $border-radius-md;
+  color: $neutral-700;
+  @include transition-default;
+
+  &:hover {
+    background-color: $neutral-50;
+  }
+}

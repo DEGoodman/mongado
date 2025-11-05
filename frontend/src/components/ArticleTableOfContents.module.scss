@@ -1,0 +1,56 @@
+/**
+ * ArticleTableOfContents Component Styles
+ * Sticky sidebar navigation for article headings
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.toc {
+  position: sticky;
+  top: 2rem;
+  padding: $spacing-6;
+  border: $border-default;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  box-shadow: $shadow-card-sm;
+}
+
+.title {
+  margin-bottom: $spacing-4;
+  @include text-secondary;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $neutral-700;
+}
+
+.list {
+  @include stack($spacing-2);
+  @include text-secondary;
+}
+
+.listItem {
+  @include transition-colors;
+}
+
+.link {
+  display: block;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $border-radius-sm;
+  color: $neutral-600;
+  text-decoration: none;
+  @include transition-default;
+
+  &:hover {
+    background-color: $blue-50;
+    color: $blue-700;
+  }
+
+  &.active {
+    background-color: $blue-50;
+    font-weight: $font-weight-medium;
+    color: $blue-700;
+  }
+}

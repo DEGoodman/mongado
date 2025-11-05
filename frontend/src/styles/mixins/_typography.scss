@@ -1,0 +1,139 @@
+/**
+ * Typography Mixins
+ * Reusable typography styles for headings, body text, and links
+ */
+
+@use '../design-tokens' as *;
+
+// ===== HEADING MIXINS =====
+@mixin heading-h1 {
+  font-size: $heading-h1-size;
+  font-weight: $heading-h1-weight;
+  line-height: $heading-h1-line-height;
+  letter-spacing: $heading-h1-letter-spacing;
+  color: $color-text-heading;
+}
+
+@mixin heading-h2 {
+  font-size: $heading-h2-size;
+  font-weight: $heading-h2-weight;
+  line-height: $heading-h2-line-height;
+  letter-spacing: $heading-h2-letter-spacing;
+  color: $color-text-heading;
+}
+
+@mixin heading-h3 {
+  font-size: $heading-h3-size;
+  font-weight: $heading-h3-weight;
+  line-height: $heading-h3-line-height;
+  letter-spacing: $heading-h3-letter-spacing;
+  color: $color-text-primary;
+}
+
+@mixin heading-h4 {
+  font-size: $heading-h4-size;
+  font-weight: $heading-h4-weight;
+  line-height: $heading-h4-line-height;
+  letter-spacing: $heading-h4-letter-spacing;
+  color: $color-text-primary;
+}
+
+@mixin heading-h5 {
+  font-size: $heading-h5-size;
+  font-weight: $heading-h5-weight;
+  line-height: $heading-h5-line-height;
+  letter-spacing: $heading-h5-letter-spacing;
+  color: $color-text-primary;
+}
+
+@mixin heading-h6 {
+  font-size: $heading-h6-size;
+  font-weight: $heading-h6-weight;
+  line-height: $heading-h6-line-height;
+  letter-spacing: $heading-h6-letter-spacing;
+  color: $color-text-primary;
+}
+
+// ===== BODY TEXT MIXINS =====
+@mixin body-text {
+  font-size: $body-size;
+  font-weight: $body-weight;
+  line-height: $body-line-height;
+  letter-spacing: $body-letter-spacing;
+  color: $color-text-primary;
+}
+
+@mixin body-text-sm {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-relaxed;
+  color: $color-text-primary;
+}
+
+@mixin body-text-lg {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-relaxed;
+  color: $color-text-primary;
+}
+
+// ===== SECONDARY TEXT =====
+@mixin text-secondary {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-normal;
+  color: $color-text-secondary;
+}
+
+@mixin text-tertiary {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-normal;
+  color: $color-text-tertiary;
+}
+
+// ===== LINK STYLES =====
+@mixin link-default {
+  color: $color-primary;
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: $color-primary-hover;
+    text-decoration: underline;
+  }
+
+  &:active,
+  &:focus {
+    color: $color-primary-active;
+  }
+
+  &:visited {
+    color: $color-secondary;
+  }
+}
+
+@mixin link-underlined {
+  color: $color-primary;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+
+  &:hover {
+    color: $color-primary-hover;
+    text-decoration-color: $color-primary-hover;
+  }
+
+  &:active,
+  &:focus {
+    color: $color-primary-active;
+  }
+}
+
+// ===== MONOSPACE =====
+@mixin text-mono {
+  font-family: $font-family-mono;
+  font-size: 0.9em;
+  letter-spacing: $letter-spacing-tight;
+}

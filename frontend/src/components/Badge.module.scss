@@ -1,0 +1,37 @@
+/**
+ * Badge Component Styles
+ * Retro-modern design with orange (articles) and terracotta (notes) colors
+ */
+
+@use '@/styles/design-tokens' as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-1;
+  padding: $spacing-1 $spacing-2;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  border-radius: $border-radius-tag;
+  border: $border-width-thin solid;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  // Article badge - Orange
+  &[data-type='article'] {
+    background-color: $color-primary-light;
+    color: $color-primary-dark;
+    border-color: rgba(230, 126, 66, 0.2);
+  }
+
+  // Note badge - Terracotta
+  &[data-type='note'] {
+    background-color: $color-secondary-light;
+    color: $color-secondary;
+    border-color: rgba(196, 98, 79, 0.2);
+  }
+
+  // Icon styling
+  .icon {
+    line-height: 1;
+  }
+}

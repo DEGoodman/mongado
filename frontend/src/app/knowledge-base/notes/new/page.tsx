@@ -14,6 +14,7 @@ import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
+import styles from "./page.module.scss";
 
 export default function NewNotePage() {
   const router = useRouter();
@@ -233,200 +234,200 @@ export default function NewNotePage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className={styles.container}>
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
       {/* AI Button */}
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
-      {/* Header */}
-      <div className="mb-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex gap-4">
-            <Link href="/knowledge-base" className="text-sm text-blue-600 hover:underline">
-              ← Knowledge Base
-            </Link>
-            <Link href="/knowledge-base/notes" className="text-sm text-blue-600 hover:underline">
-              All notes
-            </Link>
-          </div>
-          <SettingsDropdown />
-        </div>
-        <h1 className="mb-2 text-3xl font-bold text-gray-900">Create New Note</h1>
-        <p className="text-gray-600">Add a new note to your Zettelkasten knowledge base</p>
-      </div>
-
-      {/* First-Person Voice Reminder */}
-      {showFirstPersonReminder && (
-        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h4 className="mb-1 text-sm font-semibold text-blue-900">
-                💭 Zettelkasten Tip: Write in first person
-              </h4>
-              <p className="mb-2 text-sm text-blue-800">
-                Capture YOUR understanding, not objective facts. This makes notes more memorable and
-                personal.
-              </p>
-              <div className="text-xs text-blue-700">
-                <span className="font-medium">❌ Avoid:</span> &quot;DORA metrics measure deployment
-                performance&quot;
-                <br />
-                <span className="font-medium">✓ Better:</span> &quot;I use DORA metrics to identify
-                bottlenecks in my team&apos;s pipeline&quot;
-              </div>
+      <div className={styles.main}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div className={styles.headerTop}>
+            <div className={styles.breadcrumbs}>
+              <Link href="/knowledge-base" className={styles.breadcrumbLink}>
+                ← Knowledge Base
+              </Link>
+              <Link href="/knowledge-base/notes" className={styles.breadcrumbLink}>
+                All notes
+              </Link>
             </div>
-            <button
-              onClick={() => setShowFirstPersonReminder(false)}
-              className="ml-4 text-blue-400 hover:text-blue-600"
-              aria-label="Dismiss"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+            <SettingsDropdown />
           </div>
+          <h1 className={styles.title}>Create New Note</h1>
+          <p className={styles.subtitle}>Add a new note to your Zettelkasten knowledge base</p>
         </div>
-      )}
 
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-red-600">{error}</p>
-        </div>
-      )}
-
-      {/* Form */}
-      <div className={`grid gap-6 ${aiSuggestionsOpen ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
-        {/* Editor Column */}
-        <div className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}>
-          {/* Title (optional) */}
-          <div>
-            <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
-              Title (optional)
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="What's the ONE idea this note captures?"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
-              &quot;Team Culture Concepts&quot;
-            </p>
-          </div>
-
-          {/* Tags (optional) */}
-          <div>
-            <label htmlFor="tags" className="mb-1 block text-sm font-medium text-gray-700">
-              Tags (optional)
-            </label>
-            <input
-              id="tags"
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="Comma-separated tags (e.g., idea, research, todo)"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Content */}
-          <div>
-            <div className="mb-2 flex items-start justify-between">
-              <label className="block text-sm font-medium text-gray-700">Content *</label>
-              <div className="text-right text-xs text-gray-500">
-                <span
-                  className={
-                    content.length >= 300 && content.length <= 500
-                      ? "font-medium text-green-600"
-                      : ""
-                  }
-                >
-                  {content.length} chars
-                </span>
-                {content.length > 0 && content.length < 300 && (
-                  <span className="ml-2 text-gray-400">• Brief - good for atomic notes</span>
-                )}
-                {content.length >= 300 && content.length <= 500 && (
-                  <span className="ml-2 text-green-600">• ✓ Good length for atomic note</span>
-                )}
-                {content.length > 500 && content.length <= 1000 && (
-                  <span className="ml-2 text-yellow-600">• Getting long - single idea?</span>
-                )}
-                {content.length > 1000 && (
-                  <span className="ml-2 text-orange-600">
-                    • Consider splitting into multiple notes
-                  </span>
-                )}
+        {/* First-Person Voice Reminder */}
+        {showFirstPersonReminder && (
+          <div className={styles.tipBox}>
+            <div className={styles.tipHeader}>
+              <div>
+                <h4 className={styles.tipTitle}>💭 Zettelkasten Tip: Write in first person</h4>
+                <p className={styles.tipContent}>
+                  Capture YOUR understanding, not objective facts. This makes notes more memorable
+                  and personal.
+                </p>
+                <div className={styles.tipExamples}>
+                  <span className="font-medium">❌ Avoid:</span> &quot;DORA metrics measure
+                  deployment performance&quot;
+                  <br />
+                  <span className="font-medium">✓ Better:</span> &quot;I use DORA metrics to
+                  identify bottlenecks in my team&apos;s pipeline&quot;
+                </div>
               </div>
-            </div>
-            <NoteEditor
-              content={content}
-              onChange={setContent}
-              allNotes={allNotes}
-              placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
-              onNoteClick={(noteId) => {
-                // Open note in new tab
-                window.open(`/knowledge-base/notes/${noteId}`, "_blank");
-              }}
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
-              concepts, consider creating separate notes.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3 pt-4">
-            <button
-              onClick={() => handleSave()}
-              disabled={saving || !content.trim()}
-              className="rounded-lg bg-blue-600 px-6 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {saving ? "Saving..." : "Save Note"}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={saving}
-              className="rounded-lg border border-gray-300 px-6 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            {settings.aiMode !== "off" && aiAvailable && (
               <button
-                onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
-                className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
+                onClick={() => setShowFirstPersonReminder(false)}
+                className={styles.dismissButton}
+                aria-label="Dismiss"
               >
-                {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* AI Suggestions Panel */}
-        {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
-          <div className="lg:col-span-1">
-            <AISuggestionsPanel
-              noteId="new-note-temp-id"
-              mode={settings.aiMode}
-              content={content}
-              isOpen={aiSuggestionsOpen}
-              onClose={() => setAiSuggestionsOpen(false)}
-              onAddTag={handleAddTag}
-              onInsertLink={handleInsertLink}
-            />
+            </div>
           </div>
         )}
+
+        {/* Error message */}
+        {error && (
+          <div className={styles.errorBox}>
+            <p className={styles.errorMessage}>{error}</p>
+          </div>
+        )}
+
+        {/* Form */}
+        <div className={`grid gap-6 ${aiSuggestionsOpen ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
+          {/* Editor Column */}
+          <div className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}>
+            {/* Title (optional) */}
+            <div>
+              <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
+                Title (optional)
+              </label>
+              <input
+                id="title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What's the ONE idea this note captures?"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
+                &quot;Team Culture Concepts&quot;
+              </p>
+            </div>
+
+            {/* Tags (optional) */}
+            <div>
+              <label htmlFor="tags" className="mb-1 block text-sm font-medium text-gray-700">
+                Tags (optional)
+              </label>
+              <input
+                id="tags"
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="Comma-separated tags (e.g., idea, research, todo)"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Content */}
+            <div>
+              <div className="mb-2 flex items-start justify-between">
+                <label className="block text-sm font-medium text-gray-700">Content *</label>
+                <div className="text-right text-xs text-gray-500">
+                  <span
+                    className={
+                      content.length >= 300 && content.length <= 500
+                        ? "font-medium text-green-600"
+                        : ""
+                    }
+                  >
+                    {content.length} chars
+                  </span>
+                  {content.length > 0 && content.length < 300 && (
+                    <span className="ml-2 text-gray-400">• Brief - good for atomic notes</span>
+                  )}
+                  {content.length >= 300 && content.length <= 500 && (
+                    <span className="ml-2 text-green-600">• ✓ Good length for atomic note</span>
+                  )}
+                  {content.length > 500 && content.length <= 1000 && (
+                    <span className="ml-2 text-yellow-600">• Getting long - single idea?</span>
+                  )}
+                  {content.length > 1000 && (
+                    <span className="ml-2 text-orange-600">
+                      • Consider splitting into multiple notes
+                    </span>
+                  )}
+                </div>
+              </div>
+              <NoteEditor
+                content={content}
+                onChange={setContent}
+                allNotes={allNotes}
+                placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
+                onNoteClick={(noteId) => {
+                  // Open note in new tab
+                  window.open(`/knowledge-base/notes/${noteId}`, "_blank");
+                }}
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
+                concepts, consider creating separate notes.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className={styles.actions}>
+              <button
+                onClick={() => handleSave()}
+                disabled={saving || !content.trim()}
+                className={`${styles.button} ${styles.saveButton}`}
+              >
+                {saving ? "Saving..." : "Save Note"}
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={saving}
+                className={`${styles.button} ${styles.cancelButton}`}
+              >
+                Cancel
+              </button>
+              {settings.aiMode !== "off" && aiAvailable && (
+                <button
+                  onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
+                  className={`${styles.button} ${styles.aiButton}`}
+                >
+                  {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* AI Suggestions Panel */}
+          {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
+            <div className="lg:col-span-1">
+              <AISuggestionsPanel
+                noteId="new-note-temp-id"
+                mode={settings.aiMode}
+                content={content}
+                isOpen={aiSuggestionsOpen}
+                onClose={() => setAiSuggestionsOpen(false)}
+                onAddTag={handleAddTag}
+                onInsertLink={handleInsertLink}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Atomicity Warning Modal */}

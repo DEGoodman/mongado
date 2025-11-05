@@ -12,6 +12,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
 import { logger } from "@/lib/logger";
+import styles from "./page.module.scss";
 
 interface Article {
   id: number;
@@ -69,11 +70,11 @@ export default function ArticleDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="mb-4 h-8 w-1/3 rounded bg-gray-200"></div>
-            <div className="mb-4 h-64 rounded bg-gray-200"></div>
+      <div className={styles.container}>
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSkeleton}>
+            <div className={styles.skeletonTitle}></div>
+            <div className={styles.skeletonContent}></div>
           </div>
         </div>
       </div>
@@ -82,15 +83,12 @@ export default function ArticleDetailPage() {
 
   if (error || !article) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <h2 className="mb-2 font-semibold text-red-800">Error</h2>
-            <p className="text-red-600">{error || "Article not found"}</p>
-            <Link
-              href="/knowledge-base/articles"
-              className="mt-4 inline-block text-blue-600 hover:underline"
-            >
+      <div className={styles.container}>
+        <div className={styles.errorContainer}>
+          <div className={styles.errorCard}>
+            <h2 className={styles.errorTitle}>Error</h2>
+            <p className={styles.errorMessage}>{error || "Article not found"}</p>
+            <Link href="/knowledge-base/articles" className={styles.backLink}>
               ← Back to articles
             </Link>
           </div>
@@ -100,7 +98,7 @@ export default function ArticleDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className={styles.container}>
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
@@ -108,27 +106,25 @@ export default function ArticleDetailPage() {
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       {/* Header */}
-      <header className="border-b border-gray-200 bg-gray-50 shadow-sm">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
           {/* Breadcrumb and Settings */}
-          <div className="mb-8 flex items-center justify-between">
+          <div className={styles.headerTop}>
             <Breadcrumb section="articles" />
             <SettingsDropdown />
           </div>
 
           {/* Content Type Badge */}
-          <div className="mb-4">
+          <div className={styles.badge}>
             <Badge type="article" />
           </div>
 
           {/* Title */}
-          <h1 className="mb-6 text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
-            {article.title}
-          </h1>
+          <h1 className={styles.title}>{article.title}</h1>
 
           {/* Metadata */}
-          <div className="mb-4 flex flex-col gap-1 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
+          <div className={styles.metadata}>
+            <div className={styles.metaItem}>
               <span aria-hidden="true">📅</span>
               <span>
                 Published{" "}
@@ -145,7 +141,7 @@ export default function ArticleDetailPage() {
               </span>
             </div>
             {article.updated_date && article.updated_date !== article.published_date && (
-              <div className="flex items-center gap-2">
+              <div className={styles.metaItem}>
                 <span aria-hidden="true">✏️</span>
                 <span>
                   Last updated{" "}
@@ -163,17 +159,19 @@ export default function ArticleDetailPage() {
 
           {/* Tags */}
           {article.tags.length > 0 && (
-            <TagPillList tags={article.tags} showHash onClick={handleTagClick} className="mt-4" />
+            <div className={styles.tags}>
+              <TagPillList tags={article.tags} showHash onClick={handleTagClick} />
+            </div>
           )}
         </div>
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+      <main className={styles.main}>
+        <div className={styles.contentGrid}>
           {/* Main Article Content */}
-          <div className="lg:col-span-3">
-            <article className="rounded-lg bg-white p-8 shadow-md">
+          <div className={styles.articleContent}>
+            <article className={styles.articleCard}>
               {article.content_type === "markdown" || article.content_type === undefined ? (
                 <MarkdownWithWikilinks content={article.content} />
               ) : (
@@ -183,13 +181,13 @@ export default function ArticleDetailPage() {
               )}
 
               {article.url && (
-                <div className="mt-8 border-t pt-6">
-                  <h3 className="mb-2 text-sm font-semibold text-gray-700">External Link</h3>
+                <div className={styles.externalLink}>
+                  <h3 className={styles.linkTitle}>External Link</h3>
                   <a
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className={styles.linkUrl}
                   >
                     {article.url}
                   </a>
@@ -198,18 +196,13 @@ export default function ArticleDetailPage() {
             </article>
 
             {/* Back to articles */}
-            <div className="mt-8">
-              <Link
-                href="/knowledge-base/articles"
-                className="inline-flex items-center text-blue-600 hover:text-blue-800"
-              >
-                ← Back to all articles
-              </Link>
-            </div>
+            <Link href="/knowledge-base/articles" className={styles.backLink}>
+              ← Back to all articles
+            </Link>
           </div>
 
           {/* Table of Contents Sidebar */}
-          <div className="lg:col-span-1">
+          <div className={styles.tocSidebar}>
             {(article.content_type === "markdown" || article.content_type === undefined) && (
               <ArticleTableOfContents content={article.content} />
             )}

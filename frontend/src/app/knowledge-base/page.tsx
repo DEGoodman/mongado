@@ -6,8 +6,8 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import Badge from "@/components/Badge";
-import { typographyClasses } from "@/lib/typography";
 import { logger } from "@/lib/logger";
+import styles from "./page.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -127,7 +127,7 @@ export default function KnowledgeBasePage() {
   }, [searchQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className={styles.container}>
       {/* AI Panel */}
       <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
 
@@ -135,62 +135,52 @@ export default function KnowledgeBasePage() {
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
-                ← Home
-              </Link>
-              <h1 className={typographyClasses.title}>Knowledge Base</h1>
-            </div>
-            <SettingsDropdown />
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <div className={styles.nav}>
+            <Link href="/" className={styles.homeLink}>
+              ← Home
+            </Link>
+            <h1 className={styles.title}>Knowledge Base</h1>
           </div>
+          <SettingsDropdown />
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className={styles.main}>
         {/* Search Section */}
-        <div className="mb-8 rounded-lg bg-white p-8 shadow-md">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">🔍 Search Everything</h2>
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="flex gap-2">
+        <div className={styles.searchSection}>
+          <h2 className={styles.searchTitle}>🔍 Search Everything</h2>
+          <form onSubmit={handleSearch} className={styles.searchForm}>
+            <div className={styles.searchRow}>
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search articles and notes..."
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={styles.searchInput}
                 autoFocus
               />
               {searchResults.length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="rounded-lg border border-gray-300 px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
-                >
+                <button type="button" onClick={clearSearch} className={styles.clearButton}>
                   Clear
                 </button>
               )}
             </div>
           </form>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className={styles.searchHint}>
             Live search enabled - results appear as you type. For AI-powered semantic search, use
             the AI Assistant.
           </p>
 
           {/* Search Error */}
-          {searchError && (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-              {searchError}
-            </div>
-          )}
+          {searchError && <div className={styles.searchError}>{searchError}</div>}
 
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <div className="mt-6 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-700">
+            <div className={styles.resultsSection}>
+              <h3 className={styles.resultsHeader}>
                 Found {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
               </h3>
               {searchResults.map((result) => {
@@ -203,20 +193,18 @@ export default function KnowledgeBasePage() {
                   <Link
                     key={`${result.type}-${result.id}`}
                     href={resourcePath}
-                    className="block rounded-lg border border-gray-200 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
+                    className={styles.resultCard}
                   >
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-500">
+                    <div className={styles.resultMeta}>
+                      <span className={styles.resultType}>
                         {result.type === "article" ? "📚 Article" : "📝 Note"}
                       </span>
-                      <span className="text-xs text-gray-400">
-                        Score: {result.score.toFixed(1)}
-                      </span>
+                      <span className={styles.resultScore}>Score: {result.score.toFixed(1)}</span>
                     </div>
-                    <h4 className="mb-2 font-semibold text-gray-900">
+                    <h4 className={styles.resultTitle}>
                       {highlightText(result.title, searchQuery)}
                     </h4>
-                    <p className="line-clamp-2 text-sm text-gray-600">
+                    <p className={styles.resultContent}>
                       {highlightText(result.content.substring(0, 200), searchQuery)}
                     </p>
                   </Link>
@@ -227,28 +215,26 @@ export default function KnowledgeBasePage() {
 
           {/* No Results */}
           {!isSearching && searchResults.length === 0 && hasSearched && !searchError && (
-            <div className="mt-4 text-center text-sm text-gray-500">
-              No results found for &quot;{searchQuery}&quot;
-            </div>
+            <div className={styles.noResults}>No results found for &quot;{searchQuery}&quot;</div>
           )}
         </div>
 
         {/* Content Type Cards */}
-        <div className="mb-8 grid gap-6 md:grid-cols-2">
+        <div className={styles.contentGrid}>
           {/* Articles Card */}
-          <div className="rounded-lg border border-blue-200 bg-blue-50/30 p-6 shadow-md transition-shadow hover:shadow-lg">
-            <div className="mb-3">
+          <div className={`${styles.contentCard} ${styles.articles}`}>
+            <div className={styles.cardBadge}>
               <Badge type="article" />
             </div>
-            <h3 className="mb-2 text-2xl font-bold text-gray-900">Articles</h3>
-            <p className="mb-4 text-gray-600">
+            <h3 className={styles.cardTitle}>Articles</h3>
+            <p className={styles.cardDescription}>
               Long-form curated content. Professional essays and deep dives into topics like SaaS
               billing, engineering management, and SRE practices.
             </p>
-            <div className="flex gap-3">
+            <div className={styles.cardActions}>
               <Link
                 href="/knowledge-base/articles"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                className={`${styles.cardButton} ${styles.primary}`}
               >
                 Browse Articles →
               </Link>
@@ -256,25 +242,25 @@ export default function KnowledgeBasePage() {
           </div>
 
           {/* Notes Card */}
-          <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-6 shadow-md transition-shadow hover:shadow-lg">
-            <div className="mb-3">
+          <div className={`${styles.contentCard} ${styles.notes}`}>
+            <div className={styles.cardBadge}>
               <Badge type="note" />
             </div>
-            <h3 className="mb-2 text-2xl font-bold text-gray-900">Notes</h3>
-            <p className="mb-4 text-gray-600">
+            <h3 className={styles.cardTitle}>Notes</h3>
+            <p className={styles.cardDescription}>
               Atomic ideas, connected. A Zettelkasten-inspired system with wikilinks, backlinks, and
               graph visualization for building your personal knowledge graph.
             </p>
-            <div className="flex gap-3">
+            <div className={styles.cardActions}>
               <Link
                 href="/knowledge-base/notes"
-                className="rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
+                className={`${styles.cardButton} ${styles.notePrimary}`}
               >
                 Browse Notes →
               </Link>
               <Link
                 href="/knowledge-base/notes/graph"
-                className="rounded-lg border border-purple-300 px-4 py-2 text-purple-700 transition-colors hover:bg-purple-50"
+                className={`${styles.cardButton} ${styles.noteSecondary}`}
               >
                 View Graph →
               </Link>
@@ -283,41 +269,36 @@ export default function KnowledgeBasePage() {
         </div>
 
         {/* Info Section */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-          <h3 className="mb-2 text-lg font-semibold text-blue-900">💡 How to Use</h3>
-          <div className="grid gap-4 text-sm text-blue-800 md:grid-cols-2">
-            <div>
+        <div className={styles.infoSection}>
+          <h3 className={styles.infoTitle}>💡 How to Use</h3>
+          <div className={styles.infoGrid}>
+            <div className={styles.infoItem}>
               <strong>Articles</strong> are long-form, polished content for deep exploration of
               topics.
             </div>
-            <div>
+            <div className={styles.infoItem}>
               <strong>Notes</strong> are atomic ideas that can be linked together using
               [[wikilinks]].
             </div>
-            <div>
+            <div className={styles.infoItem}>
               Both systems support cross-linking - reference notes from articles and vice versa.
             </div>
-            <div className="md:col-span-2">
+            <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
               <strong>Fast Text Search:</strong> Use the search box above for instant keyword
               matching. Best when you know exact terms or want quick results.
             </div>
-            <div className="md:col-span-2">
+            <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
               <strong>AI Semantic Search:</strong> Use the AI Assistant&apos;s Search tab to find
               conceptually related content, even without exact keyword matches. Takes longer but
               discovers connections.
             </div>
-            <div className="md:col-span-2">
+            <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
               <strong>Chat with AI:</strong> Use the AI Assistant&apos;s Chat tab to ask questions
               and get answers with context from your knowledge base.
             </div>
-            <div className="md:col-span-2">
+            <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
               <strong>API Access:</strong> Programmatic access available via the{" "}
-              <a
-                href="https://api.mongado.com/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-blue-600"
-              >
+              <a href="https://api.mongado.com/docs" target="_blank" rel="noopener noreferrer">
                 interactive API documentation
               </a>{" "}
               for scripting, backups, and bulk operations.

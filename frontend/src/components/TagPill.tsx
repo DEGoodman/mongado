@@ -3,6 +3,8 @@
  * Replaces inconsistent tag rendering with unified pill design
  */
 
+import styles from "./TagPill.module.scss";
+
 interface TagPillProps {
   tag: string;
   showHash?: boolean; // Whether to show # prefix (for articles)
@@ -19,14 +21,11 @@ export default function TagPill({ tag, showHash = false, onClick, className = ""
     }
   };
 
-  const baseClasses = `inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700 transition ${className}`;
-  const interactiveClasses = onClick
-    ? "cursor-pointer hover:bg-blue-100 hover:text-blue-800"
-    : "hover:bg-gray-200";
+  const pillClasses = `${styles.tagPill} ${onClick ? styles.interactive : styles.static} ${className}`;
 
   return (
-    <span className={`${baseClasses} ${interactiveClasses}`} onClick={handleClick}>
-      {showHash && <span className="mr-0.5">#</span>}
+    <span className={pillClasses} onClick={handleClick}>
+      {showHash && <span className={styles.hash}>#</span>}
       {tag}
     </span>
   );
@@ -54,15 +53,11 @@ export function TagPillList({
   const remainingCount = maxVisible && tags.length > maxVisible ? tags.length - maxVisible : 0;
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
+    <div className={`${styles.tagPillList} ${className}`}>
       {visibleTags.map((tag) => (
         <TagPill key={tag} tag={tag} showHash={showHash} onClick={onClick} />
       ))}
-      {remainingCount > 0 && (
-        <span className="inline-flex items-center text-sm text-gray-500">
-          +{remainingCount} more
-        </span>
-      )}
+      {remainingCount > 0 && <span className={styles.remainingCount}>+{remainingCount} more</span>}
     </div>
   );
 }

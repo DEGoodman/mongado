@@ -126,6 +126,39 @@ Links are automatically parsed and stored as graph relationships.
         central = notes_service.get_central_notes(min_backlinks=min_backlinks)
         return {"notes": central, "count": len(central)}
 
+    @router.get("/quick-lists", response_model=dict[str, Any])
+    async def get_quick_lists(
+        min_hub_links: int = 3, min_central_backlinks: int = 3
+    ) -> dict[str, Any]:
+        """Get categorized quick lists for knowledge base navigation.
+
+        Returns three categories of notes:
+        - orphans: Isolated notes needing integration (0 links, 0 backlinks)
+        - hubs: Entry point notes with many outbound links (3+ links)
+        - central_concepts: Highly referenced core concept notes (3+ backlinks)
+
+        Args:
+            min_hub_links: Minimum outbound links for hub notes (default: 3)
+            min_central_backlinks: Minimum backlinks for central notes (default: 3)
+
+        Returns:
+            Dict with orphans, hubs, and central_concepts arrays plus counts
+        """
+        orphans = notes_service.get_orphan_notes()
+        hubs = notes_service.get_hub_notes(min_links=min_hub_links)
+        central = notes_service.get_central_notes(min_backlinks=min_central_backlinks)
+
+        return {
+            "orphans": orphans,
+            "hubs": hubs,
+            "central_concepts": central,
+            "counts": {
+                "orphans": len(orphans),
+                "hubs": len(hubs),
+                "central_concepts": len(central),
+            },
+        }
+
     @router.get("/{note_id}", response_model=dict[str, Any])
     async def get_note(note_id: str) -> dict[str, Any]:
         """Get a specific note by ID."""

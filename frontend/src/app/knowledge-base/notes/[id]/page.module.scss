@@ -1,0 +1,337 @@
+/**
+ * Individual Note View Styles
+ * Matches production Tailwind design with blue theme
+ * Supports view and edit modes, AI features, links/backlinks
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+}
+
+// ===== LOADING & ERROR STATES =====
+.loadingContainer,
+.errorContainer {
+  @include container;
+  max-width: 72rem;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+.loadingSkeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  .skeletonHeader {
+    height: 4rem;
+    margin-bottom: $spacing-4;
+    background-color: rgba(156, 163, 175, 0.2);
+    border-radius: $border-radius-md;
+  }
+
+  .skeletonContent {
+    height: 20rem;
+    background-color: rgba(156, 163, 175, 0.2);
+    border-radius: $border-radius-md;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.errorCard {
+  padding: $spacing-4;
+  background-color: rgba(254, 226, 226, 0.8);
+  border: $border-width-thin solid rgba(220, 38, 38, 0.3);
+  border-radius: $border-radius-md;
+
+  .errorTitle {
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-semibold;
+    color: $color-error-text;
+  }
+
+  .errorMessage {
+    color: $color-error-border;
+    margin-bottom: $spacing-4;
+  }
+
+  .backLink {
+    color: $blue-600;
+    text-decoration: none;
+
+    &:hover {
+      color: $blue-700;
+      text-decoration: underline;
+    }
+  }
+}
+
+// ===== MAIN LAYOUT =====
+.main {
+  @include container;
+  max-width: 72rem;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-8;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 20rem;
+  }
+}
+
+// ===== HEADER =====
+.header {
+  margin-bottom: $spacing-6;
+
+  .headerTop {
+    margin-bottom: $spacing-4;
+    @include flex-between;
+  }
+
+  .badge {
+    margin-bottom: $spacing-4;
+  }
+
+  .titleRow {
+    margin-bottom: $spacing-4;
+
+    .noteId {
+      padding: $spacing-1 $spacing-2;
+      background-color: rgba(196, 98, 79, 0.1);
+      border-radius: $border-radius-sm;
+      font-family: $font-family-mono;
+      @include text-secondary;
+      color: $color-secondary;
+    }
+
+    .noteTitle {
+      @include heading-h2;
+      margin-top: $spacing-2;
+    }
+  }
+
+  .meta {
+    margin-bottom: $spacing-4;
+    @include flex-start;
+    gap: $spacing-4;
+    @include text-secondary;
+  }
+
+  .tags {
+    margin-bottom: $spacing-4;
+  }
+
+  .actions {
+    @include flex-start;
+    gap: $spacing-2;
+    flex-wrap: wrap;
+
+    .button {
+      padding: $spacing-2 $spacing-3;
+      border-radius: $border-radius-button;
+      font-family: $font-family-primary;
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+
+    .editButton {
+      background-color: $blue-600;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background-color: $blue-700;
+      }
+    }
+
+    .deleteButton {
+      background-color: transparent;
+      color: $color-error-border;
+      border: $border-width-thin solid $color-error-border;
+
+      &:hover:not(:disabled) {
+        background-color: rgba(220, 38, 38, 0.1);
+      }
+    }
+
+    .aiSuggestionsButton {
+      background-color: $blue-600;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background-color: $blue-700;
+      }
+
+      &.prewarming {
+        opacity: 0.7;
+      }
+    }
+  }
+}
+
+// ===== MAIN CONTENT =====
+.mainContent {
+  .noteCard {
+    @include card-elevated;
+    background-color: $color-bg-canvas;
+  }
+
+  .zeroLinksWarning {
+    margin-bottom: $spacing-4;
+    padding: $spacing-3;
+    background-color: rgba(212, 167, 72, 0.1);
+    border: $border-width-thin solid rgba(212, 167, 72, 0.3);
+    border-radius: $border-radius-md;
+    @include text-secondary;
+    color: #9b6b28;
+  }
+
+  .backLink {
+    display: inline-flex;
+    margin-top: $spacing-4;
+    color: $blue-600;
+    text-decoration: none;
+    @include text-secondary;
+
+    &:hover {
+      color: $blue-700;
+      text-decoration: underline;
+    }
+  }
+}
+
+// ===== SIDEBAR =====
+.sidebar {
+  .sidebarSection {
+    @include card;
+    margin-bottom: $spacing-4;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .sectionTitle {
+      @include heading-h4;
+      margin-bottom: $spacing-3;
+      color: $purple-600;
+    }
+
+    .linksList {
+      @include stack($spacing-2);
+
+      .linkItem {
+        display: block;
+        padding: $spacing-2 $spacing-3;
+        background-color: $color-bg-secondary;
+        border-radius: $border-radius-sm;
+        text-decoration: none;
+        color: $color-text-primary;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $purple-50;
+          color: $purple-600;
+        }
+
+        .linkId {
+          font-family: $font-family-mono;
+          @include text-tertiary;
+        }
+
+        .linkTitle {
+          font-weight: $font-weight-medium;
+          @include text-secondary;
+        }
+
+        .linkPreview {
+          @include text-tertiary;
+          @include line-clamp(1);
+        }
+      }
+    }
+
+    .emptyMessage {
+      @include text-secondary;
+      font-style: italic;
+    }
+  }
+}
+
+// ===== EDIT MODE =====
+.saveActions {
+  @include flex-between;
+  margin-bottom: $spacing-4;
+  padding: $spacing-3;
+  background-color: $blue-50;
+  border-radius: $border-radius-md;
+  border: $border-width-thin solid $blue-200;
+
+  .actionsLeft {
+    @include flex-start;
+    gap: $spacing-2;
+
+    .saveButton {
+      padding: $spacing-2 $spacing-4;
+      background-color: $blue-600;
+      color: white;
+      border: none;
+      border-radius: $border-radius-button;
+      font-weight: $font-weight-semibold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background-color: $blue-700;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+
+    .cancelButton {
+      padding: $spacing-2 $spacing-4;
+      background-color: transparent;
+      color: $color-text-primary;
+      border: $border-width-thin solid $color-border;
+      border-radius: $border-radius-button;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background-color: $color-bg-secondary;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+  }
+
+  .helpText {
+    @include text-tertiary;
+  }
+}

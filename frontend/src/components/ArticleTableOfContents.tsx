@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import styles from "./ArticleTableOfContents.module.scss";
 
 interface TocItem {
   id: string;
@@ -63,22 +64,18 @@ export default function ArticleTableOfContents({ content }: ArticleTableOfConten
   }
 
   return (
-    <nav className="sticky top-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Table of Contents
-      </h3>
-      <ul className="space-y-2 text-sm">
+    <nav className={styles.toc}>
+      <h3 className={styles.title}>Table of Contents</h3>
+      <ul className={styles.list}>
         {tocItems.map((item) => (
           <li
             key={item.id}
             style={{ paddingLeft: `${(item.level - 2) * 0.75}rem` }}
-            className="transition-colors"
+            className={styles.listItem}
           >
             <a
               href={`#${item.id}`}
-              className={`block rounded px-2 py-1 transition-colors hover:bg-blue-50 hover:text-blue-700 ${
-                activeId === item.id ? "bg-blue-50 font-medium text-blue-700" : "text-gray-600"
-              }`}
+              className={`${styles.link} ${activeId === item.id ? styles.active : ""}`}
               onClick={(e) => {
                 e.preventDefault();
                 const element = document.getElementById(item.id);

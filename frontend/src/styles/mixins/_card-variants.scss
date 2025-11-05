@@ -1,0 +1,315 @@
+/**
+ * Card Variant Mixins
+ * Reusable card patterns for consistent styling across the app
+ */
+
+@use '../design-tokens' as *;
+
+// ============================================================================
+// BASE CARD MIXINS (Building blocks)
+// ============================================================================
+
+@mixin card-base {
+  background-color: $color-surface-elevated;
+  border: $border-card;
+  border-radius: $border-radius-card;
+  padding: $card-padding-md;
+  transition: all 0.2s ease;
+}
+
+@mixin card-elevated-base {
+  @include card-base;
+  box-shadow: $shadow-card-md;
+
+  &:hover {
+    box-shadow: $shadow-card-lg;
+    // No transform - cards stay in place, shadow only
+  }
+}
+
+// ============================================================================
+// CONTENT CARDS (Articles, Notes, etc.)
+// ============================================================================
+
+/**
+ * Standard content card pattern
+ * Used for article cards, note cards, etc.
+ * Clickable with hover states
+ */
+@mixin content-card {
+  @include card-elevated-base;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+
+  .cardTitle {
+    @include heading-h2;
+    margin-bottom: $spacing-2;
+    transition: color 0.2s ease;
+  }
+
+  .cardMeta {
+    @include text-secondary;
+    margin-bottom: $spacing-3;
+  }
+
+  .cardContent {
+    @include text-secondary;
+    margin-bottom: $spacing-3;
+  }
+
+  &:hover .cardTitle {
+    color: $color-interactive-primary;
+  }
+}
+
+/**
+ * Article card variant
+ * Specific styling for article listings
+ */
+@mixin article-card {
+  @include content-card;
+
+  .articleHeader {
+    margin-bottom: $spacing-3;
+
+    .articleTitle {
+      @include heading-h2;
+      margin-bottom: $spacing-2;
+      transition: color 0.2s ease;
+    }
+
+    .articleMeta {
+      @include text-secondary;
+    }
+  }
+
+  .articlePreview {
+    margin-bottom: $spacing-3;
+    color: $color-text-secondary;
+    overflow: hidden;
+    word-wrap: break-word;
+  }
+
+  .articleTags {
+    margin-top: $spacing-4;
+  }
+
+  .readMore {
+    margin-top: $spacing-4;
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+    color: $color-interactive-primary;
+  }
+}
+
+/**
+ * Note card variant
+ * Specific styling for note listings
+ */
+@mixin note-card {
+  @include content-card;
+
+  &:hover {
+    border-color: $color-interactive-secondary;
+  }
+
+  .noteHeader {
+    margin-bottom: $spacing-2;
+
+    .noteId {
+      @include text-tertiary;
+      font-family: $font-family-mono;
+      font-size: $font-size-sm;
+      margin-bottom: $spacing-1;
+    }
+
+    .noteTitle {
+      @include heading-h3;
+      margin-bottom: $spacing-2;
+    }
+  }
+
+  .notePreview {
+    @include text-secondary;
+    @include line-clamp(2);
+    margin-bottom: $spacing-2;
+  }
+
+  .noteMeta {
+    @include flex-between;
+    @include text-tertiary;
+    font-size: $font-size-sm;
+  }
+}
+
+// ============================================================================
+// HERO/FEATURE CARDS
+// ============================================================================
+
+/**
+ * Hero card pattern
+ * Large, centered cards for landing pages
+ */
+@mixin hero-card {
+  @include card-elevated-base;
+  text-align: center;
+  padding: $card-padding-lg;
+
+  .heroHeader {
+    margin-bottom: $spacing-8;
+
+    .heroTitle {
+      @include heading-h1;
+      margin-bottom: $spacing-4;
+    }
+
+    .heroSubtitle {
+      font-size: $font-size-xl;
+      color: $color-text-secondary;
+      margin-bottom: $spacing-2;
+    }
+
+    .heroMeta {
+      @include text-secondary;
+    }
+  }
+
+  .heroContent {
+    max-width: 48rem;
+    margin: 0 auto;
+    font-size: $font-size-lg;
+    line-height: $line-height-relaxed;
+    color: $color-text-secondary;
+  }
+
+  .heroActions {
+    margin-top: $spacing-8;
+    @include flex-center;
+    gap: $spacing-4;
+  }
+}
+
+/**
+ * Feature card pattern
+ * Medium cards showcasing features/content types
+ */
+@mixin feature-card {
+  @include card-elevated-base;
+  padding: $card-padding-lg;
+
+  .featureBadge {
+    margin-bottom: $spacing-3;
+  }
+
+  .featureIcon {
+    font-size: 3rem;
+    margin-bottom: $spacing-6;
+    line-height: 1;
+  }
+
+  .featureTitle {
+    @include heading-h2;
+    margin-bottom: $spacing-4;
+  }
+
+  .featureDescription {
+    margin-bottom: $spacing-6;
+    color: $color-text-secondary;
+    max-width: 56rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .featureActions {
+    @include flex-center;
+    gap: $spacing-3;
+  }
+}
+
+// ============================================================================
+// UTILITY/SYSTEM CARDS
+// ============================================================================
+
+/**
+ * Error card pattern
+ * For error states and messages
+ */
+@mixin error-card {
+  @include card-base;
+  background-color: $color-error-bg;
+  border-color: $color-error-border;
+
+  .errorTitle {
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-semibold;
+    color: $color-error-text;
+  }
+
+  .errorMessage {
+    color: $color-error-text;
+  }
+
+  .errorActions {
+    margin-top: $spacing-4;
+  }
+}
+
+/**
+ * Empty state card
+ * For no results, empty lists, etc.
+ */
+@mixin empty-state-card {
+  @include card-elevated-base;
+  padding: $spacing-12 $spacing-4;
+  text-align: center;
+
+  .emptyIcon {
+    font-size: 3rem;
+    margin-bottom: $spacing-4;
+    opacity: 0.5;
+  }
+
+  .emptyMessage {
+    @include text-secondary;
+    margin-bottom: $spacing-4;
+  }
+
+  .emptyActions {
+    margin-top: $spacing-6;
+  }
+}
+
+/**
+ * Form card pattern
+ * For forms and input collections
+ */
+@mixin form-card {
+  @include card-elevated-base;
+  max-width: 28rem;
+  padding: $card-padding-lg;
+
+  .formHeader {
+    margin-bottom: $spacing-6;
+    text-align: center;
+
+    .formTitle {
+      @include heading-h2;
+      margin-bottom: $spacing-2;
+    }
+
+    .formDescription {
+      @include text-secondary;
+    }
+  }
+
+  .formBody {
+    @include stack($spacing-4);
+  }
+
+  .formActions {
+    margin-top: $spacing-6;
+    @include stack($spacing-3);
+  }
+}

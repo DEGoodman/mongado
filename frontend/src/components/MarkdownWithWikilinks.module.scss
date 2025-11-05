@@ -1,0 +1,39 @@
+/**
+ * MarkdownWithWikilinks Component Styles
+ * Markdown renderer with wikilink support
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+// Main prose container
+.container {
+  max-width: none;
+  overflow-x: auto;
+  @include text-secondary;
+  line-height: 1.6;
+}
+
+// Empty state
+.emptyState {
+  @include text-secondary;
+  font-style: italic;
+  color: $neutral-500;
+}
+
+// Wikilink styling
+.wikilink {
+  display: inline-block;
+  padding: 0 $spacing-1;
+  border-radius: $border-radius-sm;
+  @include text-secondary;
+  background-color: $blue-50;
+  color: $blue-600;
+  text-decoration: none;
+  font-family: monospace;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
