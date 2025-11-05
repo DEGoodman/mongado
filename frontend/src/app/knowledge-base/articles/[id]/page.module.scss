@@ -1,6 +1,6 @@
 /**
  * Individual Article View Styles
- * Retro-modern design with orange/terracotta theme
+ * Matches production Tailwind design with blue theme
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Light blue background matching other pages
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
 }
 
 // ===== LOADING STATE =====
