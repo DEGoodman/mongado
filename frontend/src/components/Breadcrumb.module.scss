@@ -1,0 +1,40 @@
+/**
+ * Breadcrumb Component Styles
+ * Matches production Tailwind design with blue theme
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.breadcrumb {
+  @include text-secondary;
+}
+
+.list {
+  @include flex-start;
+  gap: $spacing-2;
+}
+
+.listItem {
+  @include flex-start;
+  gap: $spacing-2;
+}
+
+.link {
+  color: $blue-600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: $blue-800;
+    text-decoration: underline;
+  }
+}
+
+.separator {
+  color: $neutral-400;
+}
+
+.subsection {
+  color: $neutral-600;
+}
