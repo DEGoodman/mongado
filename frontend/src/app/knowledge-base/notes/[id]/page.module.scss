@@ -175,16 +175,6 @@
       }
     }
 
-    .viewGraphButton {
-      background-color: transparent;
-      color: $blue-600;
-      border: $border-width-thin solid $blue-600;
-
-      &:hover:not(:disabled) {
-        background-color: $blue-50;
-      }
-    }
-
     .aiSuggestionsButton {
       background-color: $blue-600;
       color: white;

@@ -425,12 +425,6 @@ export default function NoteDetailPage() {
                   >
                     Delete
                   </button>
-                  <Link
-                    href="/knowledge-base/notes/graph"
-                    className={`${styles.button} ${styles.viewGraphButton}`}
-                  >
-                    View Graph
-                  </Link>
                   {aiAvailable && (
                     <button
                       onClick={handlePrewarmAndOpenSuggestions}

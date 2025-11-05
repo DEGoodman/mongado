@@ -115,7 +115,7 @@ export default function QuickLists() {
   const [data, setData] = useState<QuickListsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["orphans"]));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function fetchQuickLists() {

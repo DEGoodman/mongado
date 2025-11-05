@@ -196,6 +196,7 @@
 
 // ===== NOTES LIST =====
 .notesList {
+  margin-top: $spacing-8;
   @include stack($spacing-4);
 }
 
