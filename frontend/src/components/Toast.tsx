@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import styles from "./Toast.module.scss";
 
 interface ToastProps {
   message: string;
@@ -23,16 +24,12 @@ export default function Toast({ message, isVisible, onClose, duration = 4000 }: 
   if (!isVisible) return null;
 
   return (
-    <div className="animate-slide-up fixed bottom-4 right-4 z-50">
-      <div className="flex items-center gap-3 rounded-lg bg-green-600 px-4 py-3 text-white shadow-lg">
-        <span className="text-lg">✨</span>
-        <span className="text-sm font-medium">{message}</span>
-        <button
-          onClick={onClose}
-          className="ml-2 text-green-200 transition-colors hover:text-white"
-          aria-label="Close"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className={styles.toast}>
+      <div className={styles.toastContent}>
+        <span className={styles.icon}>✨</span>
+        <span className={styles.message}>{message}</span>
+        <button onClick={onClose} className={styles.closeButton} aria-label="Close">
+          <svg className={styles.closeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
