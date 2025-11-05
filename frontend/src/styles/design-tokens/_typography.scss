@@ -4,12 +4,12 @@
  */
 
 // ===== FONT FAMILIES =====
-// Primary font stack - 80's retro geometric sans
-$font-family-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-  'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+// Primary font stack - 80's retro geometric sans (uses CSS variable from next/font)
+$font-family-primary: var(--font-space-grotesk), -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  'Roboto', 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
 
-// Monospace for code - retro terminal feel
-$font-family-mono: 'Space Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code',
+// Monospace for code - retro terminal feel (uses CSS variable from next/font)
+$font-family-mono: var(--font-space-mono), 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code',
   'Source Code Pro', monospace;
 
 // ===== FONT SIZES =====
