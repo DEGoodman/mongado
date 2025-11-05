@@ -1,3 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * Global Styles
+ *
+ * This project uses SCSS modules for component styling.
+ * See frontend/src/styles/ for the design system:
+ * - _design-tokens.scss: Colors, spacing, typography
+ * - _mixins.scss: Reusable patterns and utilities
+ * - _animations.scss: Animation keyframes
+ */
