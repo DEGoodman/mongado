@@ -1,17 +1,15 @@
 "use client";
 
+import styles from "./AIButton.module.scss";
+
 interface AIButtonProps {
   onClick: () => void;
 }
 
 export default function AIButton({ onClick }: AIButtonProps) {
   return (
-    <button
-      onClick={onClick}
-      className="fixed bottom-[max(1.5rem,calc(1.5rem+env(safe-area-inset-bottom)))] right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all hover:scale-110 hover:bg-blue-700"
-      aria-label="Open AI Assistant"
-    >
-      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <button onClick={onClick} className={styles.aiButton} aria-label="Open AI Assistant">
+      <svg className={styles.icon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
