@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import styles from "./PostSaveAISuggestions.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -72,16 +73,12 @@ export default function PostSaveAISuggestions({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-w-lg rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">✨ AI found related notes</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            aria-label="Close"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <h3 className={styles.title}>✨ AI found related notes</h3>
+          <button onClick={onClose} className={styles.closeButton} aria-label="Close">
+            <svg className={styles.closeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -93,64 +90,52 @@ export default function PostSaveAISuggestions({
         </div>
 
         {loading && (
-          <div className="py-8 text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-            <p className="mt-2 text-sm text-gray-600">Finding related notes...</p>
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner}></div>
+            <p className={styles.loadingText}>Finding related notes...</p>
           </div>
         )}
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
+        {error && <div className={styles.errorBanner}>{error}</div>}
 
         {!loading && !error && linkSuggestions.length === 0 && (
-          <div className="py-8 text-center">
-            <p className="text-gray-600">No related notes found.</p>
-            <p className="mt-2 text-sm text-gray-500">This note might be exploring a new topic!</p>
+          <div className={styles.emptyContainer}>
+            <p className={styles.emptyTitle}>No related notes found.</p>
+            <p className={styles.emptySubtitle}>This note might be exploring a new topic!</p>
           </div>
         )}
 
         {!loading && linkSuggestions.length > 0 && (
-          <div className="space-y-3">
+          <div className={styles.suggestionsList}>
             {linkSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-300 hover:bg-blue-50"
-              >
-                <div className="mb-2 flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <code className="rounded bg-gray-100 px-2 py-0.5 font-mono text-sm text-gray-700">
-                        {suggestion.note_id}
-                      </code>
-                      <span className="text-xs text-gray-500">
+              <div key={index} className={styles.suggestionCard}>
+                <div className={styles.suggestionHeader}>
+                  <div className={styles.suggestionMeta}>
+                    <div className={styles.suggestionTopRow}>
+                      <code className={styles.suggestionNoteId}>{suggestion.note_id}</code>
+                      <span className={styles.suggestionConfidence}>
                         {Math.round(suggestion.confidence * 100)}% match
                       </span>
                     </div>
                     {suggestion.title && (
-                      <p className="mt-1 font-medium text-gray-900">{suggestion.title}</p>
+                      <p className={styles.suggestionTitle}>{suggestion.title}</p>
                     )}
                   </div>
                   <button
                     onClick={() => handleInsertLink(suggestion.note_id)}
-                    className="ml-2 whitespace-nowrap rounded bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700"
+                    className={styles.suggestionAction}
                   >
                     + Add Link
                   </button>
                 </div>
-                <p className="text-sm text-gray-600">{suggestion.reason}</p>
+                <p className={styles.suggestionReason}>{suggestion.reason}</p>
               </div>
             ))}
           </div>
         )}
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50"
-          >
+        <div className={styles.footer}>
+          <button onClick={onClose} className={styles.footerButton}>
             {linkSuggestions.length > 0 ? "Done" : "Close"}
           </button>
         </div>
