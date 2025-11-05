@@ -1,6 +1,6 @@
 /**
  * Individual Note View Styles
- * Retro-modern design with terracotta/purple theme
+ * Matches production Tailwind design with blue theme
  * Supports view and edit modes, AI features, links/backlinks
  */
 
@@ -9,7 +9,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Light blue background
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
 }
 
 // ===== LOADING & ERROR STATES =====
@@ -65,10 +65,11 @@
   }
 
   .backLink {
-    color: $color-secondary;
+    color: $blue-600;
     text-decoration: none;
 
     &:hover {
+      color: $blue-700;
       text-decoration: underline;
     }
   }
@@ -156,11 +157,11 @@
     }
 
     .editButton {
-      background-color: $color-secondary;
+      background-color: $blue-600;
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: $color-secondary-hover;
+        background-color: $blue-700;
       }
     }
 
@@ -176,20 +177,20 @@
 
     .viewGraphButton {
       background-color: transparent;
-      color: $color-secondary;
-      border: $border-width-thin solid $color-secondary;
+      color: $blue-600;
+      border: $border-width-thin solid $blue-600;
 
       &:hover:not(:disabled) {
-        background-color: $color-secondary-light;
+        background-color: $blue-50;
       }
     }
 
     .aiSuggestionsButton {
-      background-color: $color-accent-blue;
+      background-color: $blue-600;
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: #5a7a8d; // Darkened version of $color-accent-blue
+        background-color: $blue-700;
       }
 
       &.prewarming {
@@ -219,11 +220,12 @@
   .backLink {
     display: inline-flex;
     margin-top: $spacing-4;
-    color: $color-secondary;
+    color: $blue-600;
     text-decoration: none;
     @include text-secondary;
 
     &:hover {
+      color: $blue-700;
       text-decoration: underline;
     }
   }
@@ -242,7 +244,7 @@
     .sectionTitle {
       @include heading-h4;
       margin-bottom: $spacing-3;
-      color: $color-secondary;
+      color: $purple-600;
     }
 
     .linksList {
@@ -258,8 +260,8 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: $color-secondary-light;
-          color: $color-secondary;
+          background-color: $purple-50;
+          color: $purple-600;
         }
 
         .linkId {
@@ -291,9 +293,9 @@
   @include flex-between;
   margin-bottom: $spacing-4;
   padding: $spacing-3;
-  background-color: rgba(196, 98, 79, 0.1);
+  background-color: $blue-50;
   border-radius: $border-radius-md;
-  border: $border-width-thin solid rgba(196, 98, 79, 0.3);
+  border: $border-width-thin solid $blue-200;
 
   .actionsLeft {
     @include flex-start;
@@ -301,7 +303,7 @@
 
     .saveButton {
       padding: $spacing-2 $spacing-4;
-      background-color: $color-secondary;
+      background-color: $blue-600;
       color: white;
       border: none;
       border-radius: $border-radius-button;
@@ -310,7 +312,7 @@
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background-color: $color-secondary-hover;
+        background-color: $blue-700;
       }
 
       &:disabled {
