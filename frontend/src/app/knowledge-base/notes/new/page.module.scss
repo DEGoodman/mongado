@@ -1,6 +1,6 @@
 /**
  * New Note Page Styles
- * Retro-modern design with terracotta/purple theme
+ * Matches production Tailwind design with blue theme
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,7 +8,7 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-cool; // Light blue background
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
   padding-top: $spacing-8;
   padding-bottom: $spacing-8;
 }
@@ -32,10 +32,11 @@
 
       .breadcrumbLink {
         @include text-secondary;
-        color: $color-secondary;
+        color: $blue-600;
         text-decoration: none;
 
         &:hover {
+          color: $blue-700;
           text-decoration: underline;
         }
       }
@@ -75,8 +76,8 @@
 
       &:focus {
         outline: none;
-        border-color: $color-secondary;
-        box-shadow: 0 0 0 2px rgba(196, 98, 79, 0.2);
+        border-color: $color-input-border-focus;
+        box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
       }
 
       &::placeholder {
@@ -134,11 +135,11 @@
   }
 
   .saveButton {
-    background-color: $color-secondary;
+    background-color: $blue-600;
     color: white;
 
     &:hover:not(:disabled) {
-      background-color: $color-secondary-hover;
+      background-color: $blue-700;
     }
   }
 
@@ -153,12 +154,12 @@
   }
 
   .aiButton {
-    background-color: rgba(107, 139, 158, 0.1);
-    color: $color-accent-blue;
-    border: $border-width-thin solid $color-accent-blue;
+    background-color: $blue-50;
+    color: $blue-600;
+    border: $border-width-thin solid $blue-200;
 
     &:hover:not(:disabled) {
-      background-color: $color-accent-blue-light;
+      background-color: $blue-100;
     }
   }
 }
@@ -167,8 +168,8 @@
 .tipBox {
   padding: $spacing-4;
   border-radius: $border-radius-md;
-  border: $border-width-thin solid rgba(107, 139, 158, 0.3);
-  background-color: $color-accent-blue-light;
+  border: $border-width-thin solid $blue-200;
+  background-color: $blue-50;
   margin-bottom: $spacing-4;
 
   .tipHeader {
@@ -177,13 +178,13 @@
     .tipTitle {
       @include text-secondary;
       font-weight: $font-weight-semibold;
-      color: $color-accent-blue-dark;
+      color: $blue-900;
       margin-bottom: $spacing-1;
     }
 
     .dismissButton {
       margin-left: $spacing-4;
-      color: rgba(107, 139, 158, 0.5);
+      color: $blue-400;
       cursor: pointer;
       background: none;
       border: none;
@@ -191,7 +192,7 @@
       transition: color 0.2s ease;
 
       &:hover {
-        color: $color-accent-blue;
+        color: $blue-600;
       }
 
       svg {
@@ -203,12 +204,12 @@
 
   .tipContent {
     @include text-secondary;
-    color: $color-accent-blue-dark;
+    color: $blue-800;
   }
 
   .tipExamples {
     @include text-tertiary;
-    color: $color-accent-blue-dark;
+    color: $blue-700;
   }
 }
 
