@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
-import "./globals.css";
+import "@/styles/globals.scss";
 import { siteConfig } from "@/lib/site-config";
 
 // Load Space Grotesk font
