@@ -23,7 +23,7 @@
 .link {
   color: $blue-600;
   text-decoration: none;
-  transition: color 0.2s ease;
+  @include transition-colors;
 
   &:hover {
     color: $blue-800;

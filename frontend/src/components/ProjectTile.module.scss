@@ -14,7 +14,7 @@
   background-color: $white;
   box-shadow: $shadow-card-md;
   transform: translateY(0);
-  transition: all 0.3s ease;
+  @include transition-slow;
 
   &:hover {
     transform: translateY(-4px);
@@ -52,7 +52,7 @@
   font-size: $font-size-xl;
   font-weight: $font-weight-bold;
   color: $neutral-900;
-  transition: color 0.2s ease;
+  @include transition-colors;
 }
 
 .description {
@@ -65,5 +65,5 @@
   width: 1.5rem;
   height: 1.5rem;
   color: $neutral-400;
-  transition: color 0.2s ease;
+  @include transition-colors;
 }

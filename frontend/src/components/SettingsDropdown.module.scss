@@ -22,7 +22,7 @@
   font-weight: $font-weight-medium;
   color: $blue-600;
   text-decoration: none;
-  transition: all 0.2s ease;
+  @include transition-default;
 
   &:hover {
     background-color: $blue-50;
@@ -43,7 +43,7 @@
   border: none;
   color: $neutral-700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  @include transition-default;
 
   &:hover {
     background-color: $neutral-100;
@@ -119,7 +119,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  @include transition-default;
 
   &.active {
     background-color: $white;
@@ -160,7 +160,7 @@
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  @include transition-colors;
 
   &:hover {
     background-color: $red-50;

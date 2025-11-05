@@ -21,7 +21,7 @@
   box-shadow: $shadow-card-lg;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  @include transition-default;
 
   &:hover {
     transform: scale(1.1);

@@ -29,7 +29,7 @@
       .title {
         @include text-secondary;
         font-weight: $font-weight-medium;
-        color: $green-800;
+        color: $green-700;
       }
 
       .description {
@@ -44,15 +44,16 @@
       padding: $spacing-1 $spacing-3;
       border-radius: $border-radius-sm;
       background-color: $green-100;
-      color: $green-800;
+      color: $green-700;
       @include text-tertiary;
       font-weight: $font-weight-medium;
       cursor: pointer;
       border: none;
-      transition: background-color 0.2s ease;
+      @include transition-colors;
 
       &:hover {
-        background-color: $green-200;
+        background-color: $green-100;
+        filter: brightness(0.95);
       }
     }
   }
@@ -62,7 +63,7 @@
 .bannerWarning {
   margin-bottom: $spacing-4;
   padding: $spacing-4;
-  border-left: 4px solid $yellow-400;
+  border-left: 4px solid $yellow-300;
   background-color: $yellow-50;
 
   .content {
@@ -74,7 +75,7 @@
       height: 1.25rem;
       margin-right: $spacing-3;
       margin-top: 0.125rem; // 2px to align with text
-      color: $yellow-400;
+      color: $yellow-300;
     }
 
     .textContent {
@@ -83,13 +84,13 @@
       .title {
         @include text-secondary;
         font-weight: $font-weight-medium;
-        color: $yellow-800;
+        color: $neutral-900;
       }
 
       .description {
         margin-top: $spacing-1;
         @include text-tertiary;
-        color: $yellow-700;
+        color: $neutral-700;
       }
 
       .divider {
@@ -100,15 +101,15 @@
 
       .loginPrompt {
         @include text-tertiary;
-        color: $yellow-700;
+        color: $neutral-700;
 
         .loginLink {
           font-weight: $font-weight-medium;
           text-decoration: underline;
-          color: $yellow-700;
+          color: $neutral-700;
 
           &:hover {
-            color: $yellow-900;
+            color: $neutral-900;
           }
         }
       }
@@ -129,6 +130,6 @@
 
   &.unauthenticated {
     background-color: $yellow-100;
-    color: $yellow-800;
+    color: $neutral-900;
   }
 }

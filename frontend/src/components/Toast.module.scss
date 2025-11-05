@@ -7,23 +7,12 @@
 @use '@/styles/design-tokens' as *;
 @use '@/styles/mixins' as *;
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 .toast {
   position: fixed;
   bottom: 1rem;
   right: 1rem;
   z-index: 50;
-  animation: slideUp 0.3s ease-out;
+  @include animate-slide-in-bottom;
 }
 
 .toastContent {
@@ -53,7 +42,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  transition: color 0.2s ease;
+  @include transition-colors;
 
   &:hover {
     color: $white;

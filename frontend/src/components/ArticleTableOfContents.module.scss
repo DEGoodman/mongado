@@ -32,7 +32,7 @@
 }
 
 .listItem {
-  transition: color 0.2s ease;
+  @include transition-colors;
 }
 
 .link {
@@ -41,7 +41,7 @@
   border-radius: $border-radius-sm;
   color: $neutral-600;
   text-decoration: none;
-  transition: all 0.2s ease;
+  @include transition-default;
 
   &:hover {
     background-color: $blue-50;
