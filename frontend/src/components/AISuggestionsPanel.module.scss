@@ -28,7 +28,7 @@
   width: 100%;
   overflow-y: auto;
   background-color: $white;
-  box-shadow: $shadow-card-xl;
+  box-shadow: $shadow-popover;
 
   // Tablet: max width
   @media (min-width: 640px) {

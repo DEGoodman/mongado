@@ -19,7 +19,7 @@
   &:hover {
     transform: translateY(-4px);
     border-color: $blue-400;
-    box-shadow: $shadow-card-xl;
+    box-shadow: $shadow-popover;
 
     .title {
       color: $blue-600;
