@@ -1,0 +1,134 @@
+/**
+ * AuthStatusBanner Component Styles
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+// Success (authenticated) state
+.bannerSuccess {
+  margin-bottom: $spacing-4;
+  padding: $spacing-3;
+  border-left: 4px solid $green-500;
+  background-color: $green-50;
+
+  .content {
+    @include flex-start;
+
+    .icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      margin-right: $spacing-3;
+      color: $green-500;
+    }
+
+    .textContent {
+      flex: 1;
+
+      .title {
+        @include text-secondary;
+        font-weight: $font-weight-medium;
+        color: $green-800;
+      }
+
+      .description {
+        margin-top: 0.125rem; // 2px
+        @include text-tertiary;
+        color: $green-700;
+      }
+    }
+
+    .logoutButton {
+      margin-left: $spacing-3;
+      padding: $spacing-1 $spacing-3;
+      border-radius: $border-radius-sm;
+      background-color: $green-100;
+      color: $green-800;
+      @include text-tertiary;
+      font-weight: $font-weight-medium;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: $green-200;
+      }
+    }
+  }
+}
+
+// Warning (unauthenticated) state
+.bannerWarning {
+  margin-bottom: $spacing-4;
+  padding: $spacing-4;
+  border-left: 4px solid $yellow-400;
+  background-color: $yellow-50;
+
+  .content {
+    @include flex-start;
+    align-items: flex-start;
+
+    .icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      margin-right: $spacing-3;
+      margin-top: 0.125rem; // 2px to align with text
+      color: $yellow-400;
+    }
+
+    .textContent {
+      flex: 1;
+
+      .title {
+        @include text-secondary;
+        font-weight: $font-weight-medium;
+        color: $yellow-800;
+      }
+
+      .description {
+        margin-top: $spacing-1;
+        @include text-tertiary;
+        color: $yellow-700;
+      }
+
+      .divider {
+        margin-top: $spacing-3;
+        padding-top: $spacing-3;
+        border-top: $border-width-thin solid $yellow-200;
+      }
+
+      .loginPrompt {
+        @include text-tertiary;
+        color: $yellow-700;
+
+        .loginLink {
+          font-weight: $font-weight-medium;
+          text-decoration: underline;
+          color: $yellow-700;
+
+          &:hover {
+            color: $yellow-900;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Compact indicator variant
+.indicator {
+  padding: $spacing-1 $spacing-3;
+  text-align: center;
+  @include text-tertiary;
+
+  &.authenticated {
+    background-color: $green-500;
+    color: $white;
+  }
+
+  &.unauthenticated {
+    background-color: $yellow-100;
+    color: $yellow-800;
+  }
+}
