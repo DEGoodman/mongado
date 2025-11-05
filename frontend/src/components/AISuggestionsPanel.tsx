@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { logger } from "@/lib/logger";
 import type { AiMode } from "@/lib/settings";
 import Toast from "@/components/Toast";
+import styles from "./AISuggestionsPanel.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const DEBOUNCE_MS = 5000; // 5 second debounce for automatic mode
@@ -184,43 +185,46 @@ export default function AISuggestionsPanel({
   return (
     <>
       {/* Backdrop for tablet/mobile */}
-      <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={onClose} />
+      <div className={styles.backdrop} onClick={onClose} />
 
       {/* Panel container - responsive positioning */}
-      <div className="fixed bottom-0 right-0 top-0 z-50 w-full overflow-y-auto bg-white shadow-xl sm:max-w-md lg:static lg:z-auto lg:max-w-none lg:shadow-none">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm lg:shadow-none">
+      <div className={styles.panel}>
+        <div className={styles.panelContent}>
           {/* Header with close button for mobile/tablet */}
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">✨ AI Suggestions</h3>
+          <div className={styles.header}>
+            <div className={styles.headerLeft}>
+              <h3 className={styles.title}>✨ AI Suggestions</h3>
               {mode === "real-time" && (
-                <div className="mt-1 flex items-center gap-2">
-                  {loading && (
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-                  )}
-                  <span className="text-xs text-green-700">Automatic mode</span>
+                <div className={styles.modeIndicator}>
+                  {loading && <div className={styles.autoIndicatorDot}></div>}
+                  <span className={styles.autoIndicatorLabel}>Automatic mode</span>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className={styles.headerActions}>
               {isOutdated && !loading && (
                 <button
                   onClick={fetchSuggestions}
-                  className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  className={styles.refreshButton}
                   title="Content has changed - refresh suggestions"
                 >
-                  <span>🔄</span>
-                  <span className="hidden sm:inline">Refresh</span>
+                  <span className={styles.refreshIcon}>🔄</span>
+                  <span className={styles.refreshLabel}>Refresh</span>
                 </button>
               )}
               {/* Close button for mobile/tablet */}
               {onClose && (
                 <button
                   onClick={onClose}
-                  className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+                  className={styles.closeButton}
                   aria-label="Close suggestions"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className={styles.closeIcon}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -235,26 +239,23 @@ export default function AISuggestionsPanel({
 
           {/* Loading State */}
           {loading && (
-            <div className="space-y-4">
-              <div className="rounded-lg bg-blue-50 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
-                  <p className="text-sm text-blue-900">{loadingStatus}</p>
+            <div className={styles.loadingContainer}>
+              <div className={styles.loadingBanner}>
+                <div className={styles.loadingContent}>
+                  <div className={styles.spinner}></div>
+                  <p className={styles.loadingText}>{loadingStatus}</p>
                 </div>
               </div>
 
               {/* Skeleton UI */}
-              <div className="space-y-4">
-                <div>
-                  <div className="mb-3 h-4 w-32 animate-pulse rounded bg-gray-200"></div>
-                  <div className="space-y-2">
+              <div className={styles.skeletonContainer}>
+                <div className={styles.skeletonSection}>
+                  <div className={styles.skeletonHeader}></div>
+                  <div className={styles.skeletonCards}>
                     {[1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="animate-pulse rounded-lg border border-gray-200 bg-gray-50 p-4"
-                      >
-                        <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
-                        <div className="h-3 w-full rounded bg-gray-200"></div>
+                      <div key={i} className={styles.skeletonCard}>
+                        <div className={styles.skeletonTitle}></div>
+                        <div className={styles.skeletonDescription}></div>
                       </div>
                     ))}
                   </div>
@@ -264,15 +265,11 @@ export default function AISuggestionsPanel({
           )}
 
           {/* Error State */}
-          {error && !loading && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && !loading && <div className={styles.errorBanner}>{error}</div>}
 
           {/* Empty State */}
           {!loading && !hasAnySuggestions && !error && (
-            <p className="text-sm leading-relaxed text-gray-500">
+            <p className={styles.emptyState}>
               {mode === "on-demand"
                 ? "No suggestions yet. Click the button above to generate AI recommendations."
                 : "Suggestions will appear automatically as you type."}
@@ -281,35 +278,32 @@ export default function AISuggestionsPanel({
 
           {/* Outdated Warning */}
           {isOutdated && !loading && hasAnySuggestions && (
-            <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+            <div className={styles.outdatedBanner}>
               ⚠️ Suggestions may be outdated - content has changed since generation.
             </div>
           )}
 
           {/* Tag Suggestions */}
           {!loading && tagSuggestions.length > 0 && (
-            <div className="mb-6">
-              <h4 className="mb-3 text-sm font-semibold text-gray-700">🏷️ Suggested Tags</h4>
-              <div className="space-y-3">
+            <div className={styles.suggestionsSection}>
+              <h4 className={styles.sectionTitle}>🏷️ Suggested Tags</h4>
+              <div className={styles.suggestionsList}>
                 {tagSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
-                  >
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <span className="font-medium text-gray-900">{suggestion.tag}</span>
+                  <div key={index} className={styles.suggestionCard}>
+                    <div className={styles.suggestionHeader}>
+                      <span className={styles.suggestionTitle}>{suggestion.tag}</span>
                       <button
                         onClick={() => {
                           onAddTag(suggestion.tag);
                           // Remove from current suggestions (optimistic UI)
                           setTagSuggestions((prev) => prev.filter((_, i) => i !== index));
                         }}
-                        className="flex-shrink-0 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                        className={styles.suggestionAction}
                       >
                         Add
                       </button>
                     </div>
-                    <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
+                    <p className={styles.suggestionReason}>{suggestion.reason}</p>
                   </div>
                 ))}
               </div>
@@ -318,18 +312,15 @@ export default function AISuggestionsPanel({
 
           {/* Link Suggestions */}
           {!loading && linkSuggestions.length > 0 && (
-            <div>
-              <h4 className="mb-3 text-sm font-semibold text-gray-700">🔗 Suggested Links</h4>
-              <div className="space-y-3">
+            <div className={styles.suggestionsSection}>
+              <h4 className={styles.sectionTitle}>🔗 Suggested Links</h4>
+              <div className={styles.suggestionsList}>
                 {linkSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50"
-                  >
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1 font-medium text-gray-900">{suggestion.title}</div>
-                        <code className="text-xs text-gray-500">{suggestion.note_id}</code>
+                  <div key={index} className={styles.suggestionCard}>
+                    <div className={styles.suggestionHeader}>
+                      <div className={styles.suggestionMeta}>
+                        <div className={styles.suggestionSubtitle}>{suggestion.title}</div>
+                        <code className={styles.suggestionNoteId}>{suggestion.note_id}</code>
                       </div>
                       <button
                         onClick={() => {
@@ -337,12 +328,12 @@ export default function AISuggestionsPanel({
                           // Remove from current suggestions (optimistic UI)
                           setLinkSuggestions((prev) => prev.filter((_, i) => i !== index));
                         }}
-                        className="flex-shrink-0 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                        className={styles.suggestionAction}
                       >
                         Insert
                       </button>
                     </div>
-                    <p className="text-xs leading-relaxed text-gray-600">{suggestion.reason}</p>
+                    <p className={styles.suggestionReason}>{suggestion.reason}</p>
                   </div>
                 ))}
               </div>
