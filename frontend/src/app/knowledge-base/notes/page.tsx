@@ -11,6 +11,7 @@ import AIButton from "@/components/AIButton";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
+import QuickLists from "@/components/QuickLists/QuickLists";
 import styles from "./page.module.scss";
 
 function NotesContent() {
@@ -144,6 +145,9 @@ function NotesContent() {
             </button>
           </div>
         )}
+
+        {/* Quick Lists - Special Note Categories */}
+        {!tagFilter && <QuickLists />}
 
         {/* Notes list */}
         {filteredNotes.length === 0 ? (
