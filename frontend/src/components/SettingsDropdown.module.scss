@@ -1,0 +1,168 @@
+/**
+ * SettingsDropdown Component Styles
+ * Settings menu with AI mode selector and authentication
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  @include flex-start;
+  gap: $spacing-3;
+}
+
+// Sign In link
+.signInLink {
+  @include flex-start;
+  gap: $spacing-2;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-md;
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  color: $blue-600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $blue-50;
+  }
+}
+
+// Settings button and dropdown wrapper
+.dropdownWrapper {
+  position: relative;
+}
+
+.settingsButton {
+  @include flex-start;
+  gap: $spacing-2;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-md;
+  background: none;
+  border: none;
+  color: $neutral-700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $neutral-100;
+  }
+
+  .icon {
+    font-size: $font-size-lg;
+    line-height: 1;
+  }
+
+  .label {
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+  }
+
+  .chevron {
+    width: 1rem;
+    height: 1rem;
+    transition: transform 0.2s ease;
+
+    &.open {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+// Dropdown panel
+.dropdown {
+  position: absolute;
+  right: 0;
+  z-index: 50;
+  margin-top: $spacing-2;
+  width: 20rem;
+  border: $border-default;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  box-shadow: $shadow-card-lg;
+}
+
+.dropdownContent {
+  padding: $spacing-4;
+}
+
+.header {
+  margin-bottom: $spacing-3;
+  @include flex-between;
+
+  .title {
+    font-weight: $font-weight-semibold;
+    color: $neutral-900;
+  }
+
+  .warmupIndicator {
+    @include text-tertiary;
+    color: $neutral-500;
+  }
+}
+
+// Segmented control
+.segmentedControl {
+  display: flex;
+  padding: 0.25rem;
+  border-radius: $border-radius-md;
+  background-color: $neutral-100;
+}
+
+.segmentButton {
+  flex: 1;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-sm;
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.active {
+    background-color: $white;
+    color: $neutral-900;
+    box-shadow: $shadow-button;
+  }
+
+  &.inactive {
+    color: $neutral-600;
+
+    &:hover {
+      color: $neutral-900;
+    }
+  }
+}
+
+.modeDescription {
+  margin-top: $spacing-3;
+  @include text-tertiary;
+  color: $neutral-600;
+}
+
+// Logout section
+.logoutSection {
+  margin-top: $spacing-4;
+  padding-top: $spacing-3;
+  border-top: $border-width-thin solid $neutral-200;
+}
+
+.logoutButton {
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-sm;
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  color: $red-600;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: $red-50;
+  }
+}
