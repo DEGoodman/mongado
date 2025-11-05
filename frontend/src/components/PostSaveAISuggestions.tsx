@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { logger } from "@/lib/logger";
 import styles from "./PostSaveAISuggestions.module.scss";
 
@@ -30,14 +30,7 @@ export default function PostSaveAISuggestions({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch suggestions when modal opens
-  useEffect(() => {
-    if (isOpen && noteId) {
-      fetchSuggestions();
-    }
-  }, [isOpen, noteId]);
-
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -63,7 +56,14 @@ export default function PostSaveAISuggestions({
     } finally {
       setLoading(false);
     }
-  };
+  }, [noteId]);
+
+  // Fetch suggestions when modal opens
+  useEffect(() => {
+    if (isOpen && noteId) {
+      fetchSuggestions();
+    }
+  }, [isOpen, noteId, fetchSuggestions]);
 
   const handleInsertLink = (linkNoteId: string) => {
     onInsertLink(linkNoteId);
