@@ -6,6 +6,7 @@ import { markdown } from "@codemirror/lang-markdown";
 import { EditorView } from "@codemirror/view";
 import { logger } from "@/lib/logger";
 import { Note } from "@/lib/api/notes";
+import styles from "./NoteEditor.module.scss";
 
 interface NoteEditorProps {
   content: string;
@@ -116,11 +117,8 @@ export default function NoteEditor({
   }, [showAutocomplete, filteredNotes, selectedIndex, insertWikilink]);
 
   return (
-    <div className="relative">
-      <div
-        className="resize overflow-auto overflow-hidden rounded-md border border-gray-300 bg-white"
-        style={{ minHeight: "400px", resize: "both" }}
-      >
+    <div className={styles.container}>
+      <div className={styles.editorWrapper} style={{ minHeight: "400px", resize: "both" }}>
         <CodeMirror
           value={content}
           height="400px"
@@ -155,12 +153,10 @@ export default function NoteEditor({
         {/* Autocomplete dropdown */}
         {showAutocomplete && filteredNotes.length > 0 && (
           <div
-            className="fixed z-50 max-h-60 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-xl"
+            className={styles.autocomplete}
             style={{
               top: `${autocompletePosition.top}px`,
               left: `${autocompletePosition.left}px`,
-              width: "320px",
-              maxWidth: "calc(100vw - 2rem)",
             }}
           >
             {filteredNotes.slice(0, 10).map((note, index) => (
@@ -168,26 +164,19 @@ export default function NoteEditor({
                 key={note.id}
                 type="button"
                 onClick={() => insertWikilink(note.id)}
-                className={`w-full border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-blue-50 ${
-                  index === selectedIndex ? "bg-blue-50" : ""
-                }`}
+                className={`${styles.autocompleteItem} ${index === selectedIndex ? styles.selected : ""}`}
               >
-                <div className="mb-1 font-mono text-xs text-blue-600">{note.id}</div>
-                {note.title && (
-                  <div className="mb-1 text-sm font-medium text-gray-900">{note.title}</div>
-                )}
+                <div className={styles.autocompleteNoteId}>{note.id}</div>
+                {note.title && <div className={styles.autocompleteTitle}>{note.title}</div>}
                 {note.tags && note.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className={styles.autocompleteTags}>
                     {note.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-                      >
+                      <span key={tag} className={styles.autocompleteTag}>
                         {tag}
                       </span>
                     ))}
                     {note.tags.length > 3 && (
-                      <span className="text-xs text-gray-400">+{note.tags.length - 3}</span>
+                      <span className={styles.autocompleteOverflow}>+{note.tags.length - 3}</span>
                     )}
                   </div>
                 )}
@@ -198,14 +187,14 @@ export default function NoteEditor({
       </div>
 
       {/* Help text */}
-      <div className="mt-2 text-xs text-gray-500">
-        Type <code className="rounded bg-gray-100 px-1">[[</code> to link to other notes. Use arrow
-        keys and Enter to select from autocomplete. Supports{" "}
+      <div className={styles.helpText}>
+        Type <code className={styles.helpCode}>[[</code> to link to other notes. Use arrow keys and
+        Enter to select from autocomplete. Supports{" "}
         <a
           href="https://www.markdownguide.org/basic-syntax/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className={styles.helpLink}
         >
           Markdown syntax
         </a>

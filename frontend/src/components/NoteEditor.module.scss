@@ -1,0 +1,113 @@
+/**
+ * NoteEditor Component Styles
+ * Markdown editor with wikilink autocomplete
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+// Main container
+.container {
+  position: relative;
+}
+
+// Editor wrapper (resizable)
+.editorWrapper {
+  min-height: 400px;
+  resize: both;
+  overflow: hidden;
+  overflow: auto;
+  border: $border-width-thin solid $neutral-300;
+  border-radius: $border-radius-md;
+  background-color: $white;
+}
+
+// Autocomplete dropdown
+.autocomplete {
+  position: fixed;
+  z-index: 50;
+  max-height: 15rem; // 240px
+  width: 320px;
+  max-width: calc(100vw - 2rem);
+  overflow-y: auto;
+  border: $border-width-thin solid $neutral-300;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  box-shadow: $shadow-card-xl;
+}
+
+.autocompleteItem {
+  width: 100%;
+  padding: $spacing-3 $spacing-4;
+  border-bottom: $border-width-thin solid $neutral-100;
+  text-align: left;
+  @include transition-colors;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: $blue-50;
+  }
+
+  &.selected {
+    background-color: $blue-50;
+  }
+}
+
+.autocompleteNoteId {
+  margin-bottom: $spacing-1;
+  @include text-tertiary;
+  color: $blue-600;
+  font-family: monospace;
+}
+
+.autocompleteTitle {
+  margin-bottom: $spacing-1;
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  color: $neutral-900;
+}
+
+.autocompleteTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-1;
+}
+
+.autocompleteTag {
+  padding: $spacing-half $spacing-2;
+  border-radius: $border-radius-full;
+  @include text-tertiary;
+  background-color: $neutral-100;
+  color: $neutral-600;
+}
+
+.autocompleteOverflow {
+  @include text-tertiary;
+  color: $neutral-400;
+}
+
+// Help text
+.helpText {
+  margin-top: $spacing-2;
+  @include text-tertiary;
+  color: $neutral-500;
+}
+
+.helpCode {
+  padding: 0 $spacing-1;
+  border-radius: $border-radius-sm;
+  background-color: $neutral-100;
+}
+
+.helpLink {
+  color: $blue-600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
