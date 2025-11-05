@@ -190,7 +190,7 @@
 .performanceNotice {
   margin-top: $spacing-4;
   padding: $spacing-3;
-  border: $border-width-thin solid $yellow-400;
+  border: $border-width-thin solid $yellow-200;
   border-radius: $border-radius-md;
   background-color: $yellow-50;
   text-align: left;
@@ -199,13 +199,13 @@
 .noticeTitle {
   @include text-tertiary;
   font-weight: $font-weight-medium;
-  color: $yellow-800;
+  color: $neutral-900;
 }
 
 .noticeDescription {
   margin-top: $spacing-1;
   @include text-tertiary;
-  color: $yellow-700;
+  color: $neutral-700;
 }
 
 // Message bubble
