@@ -1,0 +1,399 @@
+/**
+ * AIPanel Component Styles
+ * Sliding AI assistant panel with chat and search modes
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+// Main panel - slides in from right on desktop
+.panel {
+  @include floating-element(50);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 100dvh;
+  width: 100%;
+  height: 100%;
+  border-left: $border-default;
+  background-color: $white;
+
+  // Desktop: right-side panel (24rem = 384px)
+  @media (min-width: 768px) {
+    inset: auto;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    width: 24rem;
+  }
+}
+
+// ===== HEADER =====
+.header {
+  padding: $spacing-4;
+  border-bottom: $border-default;
+}
+
+.headerTop {
+  @include flex-between;
+  margin-bottom: $spacing-3;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $neutral-900;
+}
+
+.headerActions {
+  @include flex-start;
+  gap: $spacing-2;
+}
+
+// Settings button
+.settingsButton {
+  @include transition-colors;
+  color: $neutral-400;
+
+  &:hover {
+    color: $neutral-600;
+  }
+
+  .settingsIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// Settings dropdown
+.settingsDropdown {
+  position: relative;
+}
+
+.settingsPanel {
+  @include dropdown-panel;
+  right: 0;
+  top: 2rem;
+  width: 16rem;
+  padding: $spacing-3;
+}
+
+.settingsTitle {
+  margin-bottom: $spacing-2;
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  color: $neutral-700;
+}
+
+.settingsOption {
+  @include flex-between;
+
+  .label {
+    @include text-tertiary;
+    color: $neutral-600;
+  }
+
+  .checkbox {
+    width: 1rem;
+    height: 1rem;
+    border-radius: $border-radius-sm;
+    border-color: $neutral-300;
+    color: $blue-600;
+
+    &:focus {
+      @include focus-ring;
+    }
+  }
+}
+
+.settingsDescription {
+  margin-top: $spacing-2;
+  @include text-tertiary;
+  color: $neutral-500;
+}
+
+// Close button
+.closeButton {
+  @include transition-colors;
+  color: $neutral-400;
+
+  &:hover {
+    color: $neutral-600;
+  }
+
+  .closeIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// ===== MODE SWITCHER =====
+.modeSwitcher {
+  display: flex;
+  gap: $spacing-2;
+}
+
+.modeButton {
+  flex: 1;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-md;
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  @include transition-default;
+
+  &.active {
+    background-color: $blue-600;
+    color: $white;
+  }
+
+  &.inactive {
+    background-color: $neutral-100;
+    color: $neutral-700;
+
+    &:hover {
+      background-color: $neutral-200;
+    }
+  }
+}
+
+// ===== MESSAGES AREA =====
+.messagesContainer {
+  flex: 1;
+  padding: $spacing-4;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.messagesStack {
+  @include stack($spacing-4);
+}
+
+// Empty state
+.emptyState {
+  margin-top: 2rem;
+  text-align: center;
+  color: $neutral-500;
+}
+
+.emptyTitle {
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+.emptyDescription {
+  margin-top: $spacing-2;
+  @include text-tertiary;
+}
+
+// Performance notice banner
+.performanceNotice {
+  margin-top: $spacing-4;
+  padding: $spacing-3;
+  border: $border-width-thin solid $yellow-400;
+  border-radius: $border-radius-md;
+  background-color: $yellow-50;
+  text-align: left;
+}
+
+.noticeTitle {
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  color: $yellow-800;
+}
+
+.noticeDescription {
+  margin-top: $spacing-1;
+  @include text-tertiary;
+  color: $yellow-700;
+}
+
+// Message bubble
+.messageWrapper {
+  display: flex;
+
+  &.user {
+    justify-content: flex-end;
+  }
+
+  &.assistant {
+    justify-content: flex-start;
+  }
+}
+
+.message {
+  max-width: 85%;
+  padding: $spacing-3;
+  border-radius: $border-radius-md;
+
+  &.userMessage {
+    background-color: $blue-600;
+    color: $white;
+  }
+
+  &.assistantMessage {
+    background-color: $neutral-100;
+    color: $neutral-900;
+  }
+}
+
+.messageContent {
+  @include text-secondary;
+  white-space: pre-wrap;
+}
+
+// Sources
+.sources {
+  margin-top: $spacing-3;
+  @include stack($spacing-2);
+}
+
+.sourceCard {
+  padding: $spacing-2;
+  border: $border-width-thin solid $neutral-200;
+  border-radius: $border-radius-sm;
+  background-color: $white;
+}
+
+.sourceHeader {
+  @include flex-between;
+  gap: $spacing-2;
+  margin-bottom: $spacing-1;
+}
+
+.sourceInfo {
+  @include flex-start;
+  gap: $spacing-2;
+}
+
+.sourceTitle {
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  color: $blue-600;
+}
+
+.sourceScore {
+  @include text-tertiary;
+  color: $neutral-400;
+}
+
+.sourceLink {
+  @include text-tertiary;
+  color: $blue-600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.sourceContent {
+  @include text-tertiary;
+  @include line-clamp(2);
+  color: $neutral-600;
+}
+
+// Loading indicator
+.loadingWrapper {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.loadingBubble {
+  padding: $spacing-3;
+  border-radius: $border-radius-md;
+  background-color: $neutral-100;
+}
+
+.loadingDots {
+  display: flex;
+  gap: $spacing-1;
+}
+
+.loadingDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: $border-radius-full;
+  background-color: $neutral-400;
+  animation: bounce 1s infinite;
+
+  &:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+
+  &:nth-child(3) {
+    animation-delay: 0.2s;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.25rem);
+  }
+}
+
+.messagesEnd {
+  // Scroll anchor
+}
+
+// ===== INPUT AREA =====
+.inputArea {
+  padding: $spacing-4;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  border-top: $border-default;
+}
+
+.clearButton {
+  margin-bottom: $spacing-2;
+  @include text-tertiary;
+  color: $neutral-500;
+  @include transition-colors;
+
+  &:hover {
+    color: $neutral-700;
+  }
+}
+
+.inputForm {
+  display: flex;
+  gap: $spacing-2;
+}
+
+.input {
+  flex: 1;
+  padding: $spacing-2 $spacing-3;
+  border: $border-width-thin solid $neutral-300;
+  border-radius: $border-radius-md;
+  font-size: $font-size-base;
+
+  &:focus {
+    outline: none;
+    @include focus-ring;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.submitButton {
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-md;
+  @include text-secondary;
+  background-color: $blue-600;
+  color: $white;
+  @include transition-default;
+
+  &:hover:not(:disabled) {
+    background-color: $blue-700;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
