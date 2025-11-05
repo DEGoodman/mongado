@@ -303,7 +303,11 @@ export default function NewNotePage() {
         )}
 
         {/* Form */}
-        <div className={aiSuggestionsOpen ? styles.editorGrid + ' ' + styles.withSidebar : styles.editorGrid}>
+        <div
+          className={
+            aiSuggestionsOpen ? styles.editorGrid + " " + styles.withSidebar : styles.editorGrid
+          }
+        >
           {/* Editor Column */}
           <div className={styles.editorColumn}>
             {/* Title (optional) */}
@@ -348,7 +352,7 @@ export default function NewNotePage() {
                   <span
                     className={
                       content.length >= 300 && content.length <= 500
-                        ? styles.count + ' ' + styles.good
+                        ? styles.count + " " + styles.good
                         : styles.count
                     }
                   >
@@ -358,13 +362,17 @@ export default function NewNotePage() {
                     <span className={styles.hint}>• Brief - good for atomic notes</span>
                   )}
                   {content.length >= 300 && content.length <= 500 && (
-                    <span className={styles.hint + ' ' + styles.good}>• ✓ Good length for atomic note</span>
+                    <span className={styles.hint + " " + styles.good}>
+                      • ✓ Good length for atomic note
+                    </span>
                   )}
                   {content.length > 500 && content.length <= 1000 && (
-                    <span className={styles.hint + ' ' + styles.warning}>• Getting long - single idea?</span>
+                    <span className={styles.hint + " " + styles.warning}>
+                      • Getting long - single idea?
+                    </span>
                   )}
                   {content.length > 1000 && (
-                    <span className={styles.hint + ' ' + styles.error}>
+                    <span className={styles.hint + " " + styles.error}>
                       • Consider splitting into multiple notes
                     </span>
                   )}
@@ -432,9 +440,7 @@ export default function NewNotePage() {
       {showAtomicityWarning && atomicityIssues.length > 0 && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>
-              📋 Note might cover multiple topics
-            </h3>
+            <h3 className={styles.modalTitle}>📋 Note might cover multiple topics</h3>
             <p className={styles.modalText}>
               This note shows signs of covering more than one concept:
             </p>
