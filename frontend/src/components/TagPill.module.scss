@@ -1,0 +1,46 @@
+/**
+ * TagPill Component Styles
+ * Matches production Tailwind design
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.tagPill {
+  @include flex-center;
+  padding: $spacing-1 $spacing-3;
+  border-radius: $border-radius-full;
+  background-color: $neutral-100;
+  color: $neutral-700;
+  @include text-secondary;
+  transition: all 0.2s ease;
+
+  &.interactive {
+    cursor: pointer;
+
+    &:hover {
+      background-color: $blue-100;
+      color: $blue-800;
+    }
+  }
+
+  &.static:hover {
+    background-color: $neutral-200;
+  }
+}
+
+.hash {
+  margin-right: 0.125rem; // 2px = 0.5 Tailwind spacing
+}
+
+.tagPillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-2;
+}
+
+.remainingCount {
+  @include flex-center;
+  @include text-secondary;
+  color: $neutral-500;
+}
