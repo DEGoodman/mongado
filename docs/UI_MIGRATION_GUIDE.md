@@ -28,10 +28,25 @@ This project uses **SCSS Modules** for all component styling with a centralized 
 
 ```
 frontend/src/styles/
-├── _design-tokens.scss   # Colors, spacing, typography, shadows
-├── _mixins.scss          # Layout patterns, utilities, transitions
-├── _animations.scss      # Keyframe animations
-└── README.md            # Design system documentation
+├── design-tokens/          # Design token files
+│   ├── _borders.scss       # Border widths, styles, radii
+│   ├── _colors.scss        # Color palette
+│   ├── _shadows.scss       # Box shadows
+│   ├── _spacing.scss       # Spacing scale
+│   ├── _typography.scss    # Font sizes, weights, line heights
+│   └── _index.scss         # Re-exports all tokens
+├── mixins/                 # Mixin files
+│   ├── _animations.scss    # Keyframe animations
+│   ├── _button-variants.scss  # Button styling patterns
+│   ├── _card-variants.scss    # Card styling patterns
+│   ├── _form-elements.scss    # Form input patterns
+│   ├── _layout.scss        # Flexbox/grid utilities
+│   ├── _page-layouts.scss  # Page-level layouts
+│   ├── _typography.scss    # Typography mixins
+│   ├── _utilities.scss     # Transitions, states
+│   └── _index.scss         # Re-exports all mixins
+├── globals.scss            # Global styles
+└── typography.module.scss  # Typography component styles
 
 frontend/src/components/
 └── ComponentName.module.scss  # Component-specific styles
@@ -41,7 +56,7 @@ frontend/src/components/
 
 ### Design Tokens
 
-All design values are defined in `frontend/src/styles/_design-tokens.scss`:
+All design values are defined in `frontend/src/styles/design-tokens/` (organized by category):
 
 #### Color System
 
@@ -136,7 +151,7 @@ $shadow-popover: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 
 ### Mixins
 
-Reusable style patterns in `frontend/src/styles/_mixins.scss`:
+Reusable style patterns in `frontend/src/styles/mixins/` (organized by purpose):
 
 #### Layout Mixins
 
@@ -462,7 +477,7 @@ export function Card({ children }: { children: React.ReactNode }) {
 
 ### 4. Use Available Color Tokens Only
 
-Check `_design-tokens.scss` for available colors. Common mistakes:
+Check `design-tokens/_colors.scss` for available colors. Common mistakes:
 
 ```scss
 // ❌ These don't exist
@@ -549,7 +564,16 @@ color: $neutral-700; // Neutral fallback
 
 ## Resources
 
-- **Design Tokens**: `frontend/src/styles/_design-tokens.scss`
-- **Mixins**: `frontend/src/styles/_mixins.scss`
-- **Animations**: `frontend/src/styles/_animations.scss`
+- **Design Tokens**: `frontend/src/styles/design-tokens/`
+  - Colors: `_colors.scss`
+  - Spacing: `_spacing.scss`
+  - Typography: `_typography.scss`
+  - Borders: `_borders.scss`
+  - Shadows: `_shadows.scss`
+- **Mixins**: `frontend/src/styles/mixins/`
+  - Animations: `_animations.scss`
+  - Layout: `_layout.scss`
+  - Utilities: `_utilities.scss`
+  - Typography: `_typography.scss`
+  - Variants: `_button-variants.scss`, `_card-variants.scss`, `_form-elements.scss`, `_page-layouts.scss`
 - **Epic**: [#103](https://github.com/DEGoodman/mongado/issues/103)
