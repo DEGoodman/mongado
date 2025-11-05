@@ -1,6 +1,6 @@
 /**
  * Badge Component Styles
- * Retro-modern design with orange (articles) and terracotta (notes) colors
+ * Retro-modern design with blue (articles) and purple (notes) colors
  */
 
 @use '@/styles/design-tokens' as *;
@@ -16,18 +16,18 @@
   border: $border-width-thin solid;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 
-  // Article badge - Orange
+  // Article badge - Blue
   &[data-type='article'] {
-    background-color: $color-primary-light;
-    color: $color-primary-dark;
-    border-color: rgba(230, 126, 66, 0.2);
+    background-color: $color-badge-article-bg;
+    color: $color-badge-article-text;
+    border-color: $color-badge-article-border;
   }
 
-  // Note badge - Terracotta
+  // Note badge - Purple
   &[data-type='note'] {
-    background-color: $color-secondary-light;
-    color: $color-secondary;
-    border-color: rgba(196, 98, 79, 0.2);
+    background-color: $color-badge-note-bg;
+    color: $color-badge-note-text;
+    border-color: $color-badge-note-border;
   }
 
   // Icon styling

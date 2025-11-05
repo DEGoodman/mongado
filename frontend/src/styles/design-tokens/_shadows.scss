@@ -1,16 +1,16 @@
 /**
  * Design Tokens: Shadows
- * Retro-inspired warm-toned shadows (orange/charcoal blend)
+ * Neutral shadows (black/gray) for maximum theme flexibility
  */
 
 // ===== BASE SHADOW COLORS =====
-// Using warm orange tints instead of pure grey
-$shadow-color-warm: rgba(230, 126, 66, 0.08); // Orange tint
-$shadow-color-warm-md: rgba(230, 126, 66, 0.12); // Medium orange tint
-$shadow-color-warm-lg: rgba(230, 126, 66, 0.16); // Strong orange tint
-$shadow-color-charcoal: rgba(45, 45, 40, 0.12); // Warm charcoal
-$shadow-color-charcoal-md: rgba(45, 45, 40, 0.15); // Medium charcoal
-$shadow-color-charcoal-lg: rgba(45, 45, 40, 0.2); // Strong charcoal
+// Using neutral black/gray for universal theme compatibility
+$shadow-color-warm: rgba(0, 0, 0, 0.08); // Light shadow
+$shadow-color-warm-md: rgba(0, 0, 0, 0.12); // Medium shadow
+$shadow-color-warm-lg: rgba(0, 0, 0, 0.16); // Strong shadow
+$shadow-color-charcoal: rgba(0, 0, 0, 0.12); // Neutral gray
+$shadow-color-charcoal-md: rgba(0, 0, 0, 0.15); // Medium gray
+$shadow-color-charcoal-lg: rgba(0, 0, 0, 0.2); // Strong gray
 
 // ===== CARD SHADOWS =====
 // Subtle shadow for resting cards
@@ -31,8 +31,8 @@ $shadow-button-active: inset 0 2px 4px $shadow-color-charcoal;
 $shadow-dropdown: 0 4px 20px $shadow-color-charcoal-md;
 $shadow-popover: 0 8px 32px $shadow-color-charcoal-lg;
 
-// ===== DUAL-TONE SHADOWS (Warm + Cool) =====
-// Combines orange warmth with charcoal depth for retro feel
+// ===== DUAL-TONE SHADOWS =====
+// Combines light and dark shadows for depth
 $shadow-dual-sm: 0 2px 4px $shadow-color-warm, 0 2px 8px $shadow-color-charcoal;
 $shadow-dual-md: 0 4px 8px $shadow-color-warm-md, 0 4px 16px $shadow-color-charcoal;
 $shadow-dual-lg: 0 8px 16px $shadow-color-warm-lg, 0 8px 24px $shadow-color-charcoal-md;
@@ -40,7 +40,7 @@ $shadow-dual-lg: 0 8px 16px $shadow-color-warm-lg, 0 8px 24px $shadow-color-char
 // ===== FOCUS SHADOWS =====
 // For keyboard navigation
 $shadow-focus: 0 0 0 2px $shadow-color-warm-lg;
-$shadow-focus-primary: 0 0 0 2px rgba(230, 126, 66, 0.3); // Orange focus ring
+$shadow-focus-primary: 0 0 0 2px rgba(37, 99, 235, 0.3); // Blue focus ring (matches primary color)
 
 // ===== INSET SHADOWS =====
 // For inputs and pressed states

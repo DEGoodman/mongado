@@ -303,12 +303,12 @@ export default function NewNotePage() {
         )}
 
         {/* Form */}
-        <div className={`grid gap-6 ${aiSuggestionsOpen ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}>
+        <div className={aiSuggestionsOpen ? styles.editorGrid + ' ' + styles.withSidebar : styles.editorGrid}>
           {/* Editor Column */}
-          <div className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}>
+          <div className={styles.editorColumn}>
             {/* Title (optional) */}
             <div>
-              <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="title" className={styles.formLabel}>
                 Title (optional)
               </label>
               <input
@@ -317,9 +317,9 @@ export default function NewNotePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="What's the ONE idea this note captures?"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={styles.formInput}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className={styles.formHint}>
                 ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
                 &quot;Team Culture Concepts&quot;
               </p>
@@ -327,7 +327,7 @@ export default function NewNotePage() {
 
             {/* Tags (optional) */}
             <div>
-              <label htmlFor="tags" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="tags" className={styles.formLabel}>
                 Tags (optional)
               </label>
               <input
@@ -336,35 +336,35 @@ export default function NewNotePage() {
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="Comma-separated tags (e.g., idea, research, todo)"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={styles.formInput}
               />
             </div>
 
             {/* Content */}
             <div>
-              <div className="mb-2 flex items-start justify-between">
-                <label className="block text-sm font-medium text-gray-700">Content *</label>
-                <div className="text-right text-xs text-gray-500">
+              <div className={styles.charCountWrapper}>
+                <label className={styles.formLabel}>Content *</label>
+                <div className={styles.charCount}>
                   <span
                     className={
                       content.length >= 300 && content.length <= 500
-                        ? "font-medium text-green-600"
-                        : ""
+                        ? styles.count + ' ' + styles.good
+                        : styles.count
                     }
                   >
                     {content.length} chars
                   </span>
                   {content.length > 0 && content.length < 300 && (
-                    <span className="ml-2 text-gray-400">• Brief - good for atomic notes</span>
+                    <span className={styles.hint}>• Brief - good for atomic notes</span>
                   )}
                   {content.length >= 300 && content.length <= 500 && (
-                    <span className="ml-2 text-green-600">• ✓ Good length for atomic note</span>
+                    <span className={styles.hint + ' ' + styles.good}>• ✓ Good length for atomic note</span>
                   )}
                   {content.length > 500 && content.length <= 1000 && (
-                    <span className="ml-2 text-yellow-600">• Getting long - single idea?</span>
+                    <span className={styles.hint + ' ' + styles.warning}>• Getting long - single idea?</span>
                   )}
                   {content.length > 1000 && (
-                    <span className="ml-2 text-orange-600">
+                    <span className={styles.hint + ' ' + styles.error}>
                       • Consider splitting into multiple notes
                     </span>
                   )}
@@ -380,7 +380,7 @@ export default function NewNotePage() {
                   window.open(`/knowledge-base/notes/${noteId}`, "_blank");
                 }}
               />
-              <p className="mt-2 text-xs text-gray-500">
+              <p className={styles.formHint}>
                 💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
                 concepts, consider creating separate notes.
               </p>
@@ -415,47 +415,45 @@ export default function NewNotePage() {
 
           {/* AI Suggestions Panel */}
           {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
-            <div className="lg:col-span-1">
-              <AISuggestionsPanel
-                noteId="new-note-temp-id"
-                mode={settings.aiMode}
-                content={content}
-                isOpen={aiSuggestionsOpen}
-                onClose={() => setAiSuggestionsOpen(false)}
-                onAddTag={handleAddTag}
-                onInsertLink={handleInsertLink}
-              />
-            </div>
+            <AISuggestionsPanel
+              noteId="new-note-temp-id"
+              mode={settings.aiMode}
+              content={content}
+              isOpen={aiSuggestionsOpen}
+              onClose={() => setAiSuggestionsOpen(false)}
+              onAddTag={handleAddTag}
+              onInsertLink={handleInsertLink}
+            />
           )}
         </div>
       </div>
 
       {/* Atomicity Warning Modal */}
       {showAtomicityWarning && atomicityIssues.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-3 text-lg font-semibold text-gray-900">
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalTitle}>
               📋 Note might cover multiple topics
             </h3>
-            <p className="mb-4 text-gray-700">
+            <p className={styles.modalText}>
               This note shows signs of covering more than one concept:
             </p>
-            <ul className="mb-6 list-inside list-disc space-y-1 text-sm text-gray-700">
+            <ul className={styles.modalList}>
               {atomicityIssues.map((issue, index) => (
                 <li key={index}>{issue}</li>
               ))}
             </ul>
-            <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-gray-700">
-              <p className="font-medium">💡 Zettelkasten tip:</p>
-              <p className="mt-1">
+            <div className={styles.modalInfo}>
+              <p>💡 Zettelkasten tip:</p>
+              <p>
                 Atomic notes (one idea each) are easier to link and reuse. Consider splitting this
                 into separate notes.
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className={styles.modalActions}>
               <button
                 onClick={handleKeepAsIs}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+                className={`${styles.modalButton} ${styles.primary}`}
               >
                 Keep As-Is
               </button>
@@ -466,7 +464,7 @@ export default function NewNotePage() {
                     router.push(`/knowledge-base/notes/${savedNoteId}`);
                   }
                 }}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50"
+                className={`${styles.modalButton} ${styles.secondary}`}
               >
                 Edit Note
               </button>
@@ -477,30 +475,31 @@ export default function NewNotePage() {
 
       {/* Zero Links Warning Modal */}
       {showZeroLinksWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-3 text-lg font-semibold text-gray-900">💡 No connections found</h3>
-            <p className="mb-4 text-gray-700">
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalTitle}>💡 No connections found</h3>
+            <p className={styles.modalText}>
               This note has no connections to other notes. Zettelkasten works best when ideas link
               together.
             </p>
-            <p className="mb-4 text-sm text-gray-600">Consider:</p>
-            <ul className="mb-6 list-inside list-disc space-y-1 text-sm text-gray-600">
+            <p className={styles.modalText}>Consider:</p>
+            <ul className={styles.modalList}>
               <li>What concepts does this relate to?</li>
               <li>What led to this idea?</li>
               <li>Where might you apply this?</li>
             </ul>
-            <div className="flex gap-3">
+            <div className={styles.modalActions}>
               <button
                 onClick={handleGetAISuggestions}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+                className={`${styles.modalButton} ${styles.primary}`}
               >
                 Get AI Link Suggestions
               </button>
               <button
                 onClick={handleSaveAnyway}
                 disabled={saving}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                className={`${styles.modalButton} ${styles.secondary}`}
+                style={{ opacity: saving ? 0.5 : 1 }}
               >
                 Save Anyway
               </button>

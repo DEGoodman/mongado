@@ -37,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
-      <body className="bg-gray-50 antialiased">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

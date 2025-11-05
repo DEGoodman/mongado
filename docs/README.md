@@ -12,7 +12,6 @@ Documentation for the Mongado project - personal website and Knowledge Base.
 ### Planning & Status
 
 - **[GitHub Issues](https://github.com/DEGoodman/mongado/issues)** - ⭐ Active work tracking and planning
-- **[ROADMAP.md](ROADMAP.md)** - Historical roadmap (reference only, see GitHub Issues for active work)
 
 ### Deployment & Operations
 
@@ -72,7 +71,6 @@ See [TESTING.md](TESTING.md) for complete command reference.
 ```
 docs/
 ├── README.md                    # This file - documentation index
-├── ROADMAP.md                   # Historical roadmap (GitHub Issues is the active tracker)
 ├── ARCHITECTURE.md              # Backend architecture (Functional Core / Imperative Shell)
 ├── API.md                       # API documentation (Swagger/OpenAPI)
 ├── SETUP.md                     # Installation and 1Password configuration
@@ -87,12 +85,6 @@ docs/
 │   ├── NOTES.md                 # Notes/Zettelkasten guide
 │   └── BACKUP_RESTORE.md        # KB backup/restore procedures
 └── archive/                     # Historical documentation (reference only)
-    ├── PROJECT_STATUS.md        # Old status doc (Oct 2024)
-    ├── DEVELOPMENT_SETUP.md     # Old setup doc (Oct 2024)
-    ├── DNS_SETUP.md             # DNS setup notes (completed)
-    ├── EMBEDDING_STORAGE.md     # Embedding implementation design
-    ├── LOCAL_API_SUBDOMAIN.md   # Local API subdomain setup
-    └── LOCAL_DEV_OPTIMIZATION.md # Development optimizations
 ```
 
 ## External Resources

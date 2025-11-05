@@ -649,10 +649,186 @@ All components follow accessibility best practices:
 
 ---
 
+## Mixins Reference
+
+Reusable SCSS mixins for common styling patterns. Import with `@use '@/styles/mixins' as *;`
+
+**Files**: `frontend/src/styles/mixins/`
+
+### Typography Mixins
+
+| Mixin | Output | Usage |
+|-------|--------|-------|
+| `@include heading-h1` | H1 styles (36px, bold, wide spacing) | Large page headings |
+| `@include heading-h2` | H2 styles (30px, bold) | Section headings |
+| `@include heading-h3` | H3 styles (24px, semibold) | Subsection headings |
+| `@include heading-h4` | H4 styles (20px, semibold) | Small headings |
+| `@include heading-h5` | H5 styles (18px, medium) | Smallest headings |
+| `@include heading-h6` | H6 styles (16px, medium) | Eyebrow headings |
+| `@include body-text` | Default body (16px, 1.6 line-height) | Body paragraphs |
+| `@include body-text-sm` | Small body (14px) | Compact text |
+| `@include body-text-lg` | Large body (18px) | Emphasized text |
+| `@include text-secondary` | Secondary text (14px, gray-600) | Captions, metadata |
+| `@include text-tertiary` | Tertiary text (12px, gray-500) | Small labels |
+| `@include text-mono` | Monospace font (Space Mono) | Code, technical text |
+| `@include link-default` | Standard link (blue, hover underline) | Text links |
+| `@include link-underlined` | Always-underlined link | Emphasized links |
+
+**Example:**
+```scss
+.title {
+  @include heading-h2;
+  margin-bottom: $spacing-lg;
+}
+
+.description {
+  @include text-secondary;
+}
+```
+
+### Layout Mixins
+
+| Mixin | Output | Usage |
+|-------|--------|-------|
+| `@include container` | Responsive centered container (max-width 1200px) | Page wrapper |
+| `@include card` | Card styles (white bg, border, padding) | Card components |
+| `@include card-sm` | Small card (12px padding) | Compact cards |
+| `@include card-lg` | Large card (24px padding) | Spacious cards |
+| `@include card-elevated` | Elevated card (shadow) | Important cards |
+| `@include section` | Section spacing (responsive padding) | Page sections |
+| `@include section-compact` | Compact section spacing | Tight sections |
+| `@include flex-center` | Flexbox centered (both axes) | Centering content |
+| `@include flex-between` | Flexbox space-between | Nav bars, headers |
+| `@include flex-start` | Flexbox start alignment | Lists, menus |
+| `@include flex-column` | Flexbox column | Vertical stacks |
+| `@include stack($gap)` | Vertical stack with gap | Form fields, lists |
+| `@include cluster($gap)` | Horizontal wrap layout | Tag pills, buttons |
+| `@include grid-auto-fill($min, $gap)` | Auto-fill grid | Card grids |
+| `@include grid-auto-fit($min, $gap)` | Auto-fit grid | Responsive grids |
+
+**Example:**
+```scss
+.container {
+  @include container;
+}
+
+.header {
+  @include flex-between;
+  margin-bottom: $spacing-lg;
+}
+
+.cardGrid {
+  @include grid-auto-fill(300px, $gap-lg);
+}
+```
+
+### Utility Mixins
+
+| Mixin | Output | Usage |
+|-------|--------|-------|
+| `@include transition-default` | 0.2s ease transition (all) | Standard transitions |
+| `@include transition-fast` | 0.15s ease transition | Quick interactions |
+| `@include transition-slow` | 0.3s ease transition | Smooth movements |
+| `@include transition-colors` | Color-only transitions | Color changes |
+| `@include hover-lift` | Lift on hover (-2px, shadow) | Cards, buttons |
+| `@include hover-scale` | Scale on hover (1.02) | Icons, images |
+| `@include hover-underline` | Animated underline | Links |
+| `@include focus-outline` | Accessibility focus ring | Keyboard navigation |
+| `@include focus-ring` | Shadow-based focus | Custom focus |
+| `@include focus-visible` | Only visible when keyboard focused | Modern focus |
+| `@include disabled` | Disabled state (opacity, no-pointer) | Disabled elements |
+| `@include truncate` | Single-line ellipsis | Long text |
+| `@include line-clamp($lines)` | Multi-line ellipsis | Descriptions |
+| `@include sr-only` | Screen-reader only (visually hidden) | Accessibility |
+| `@include reset-button` | Remove button styles | Custom buttons |
+| `@include reset-list` | Remove list styles | Navigation lists |
+| `@include scrollbar-custom` | Styled scrollbar | Scrollable areas |
+| `@include floating-element($z)` | Fixed position with shadow | Modals, tooltips |
+| `@include dropdown-panel` | Dropdown/popover styles | Menus, selects |
+| `@include interactive-hover($bg, $text)` | Hover background/color | Interactive items |
+| `@include modal-base` | Modal overlay | Modals, dialogs |
+
+**Example:**
+```scss
+.button {
+  @include reset-button;
+  @include transition-default;
+  @include focus-visible;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.description {
+  @include line-clamp(3); // Show max 3 lines
+}
+
+.modal {
+  @include modal-base;
+}
+```
+
+### Animation Mixins
+
+| Mixin | Output | Usage |
+|-------|--------|-------|
+| `@include animate-fade-in($duration, $timing)` | Fade in animation | Appearing elements |
+| `@include animate-slide-in-right($duration, $timing)` | Slide from right | Panels, modals |
+| `@include animate-slide-in-left($duration, $timing)` | Slide from left | Panels |
+| `@include animate-slide-in-bottom($duration, $timing)` | Slide from bottom | Toasts |
+| `@include animate-slide-in-top($duration, $timing)` | Slide from top | Dropdowns |
+| `@include animate-scale-in($duration, $timing)` | Scale in animation | Popovers |
+
+**Available keyframes** (use with `animation` property):
+- `fadeIn`, `fadeOut`
+- `slideInFromRight`, `slideInFromLeft`, `slideInFromTop`, `slideInFromBottom`
+- `slideOutToRight`, `slideOutToLeft`, `slideOutToTop`, `slideOutToBottom`
+- `scaleIn`, `scaleOut`
+- `slideUp`, `slideDown`
+
+**Example:**
+```scss
+.toast {
+  @include animate-slide-in-bottom(0.3s, ease-out);
+}
+
+.panel {
+  animation: slideInFromRight 0.3s ease-out;
+}
+```
+
+### Mixin Import Pattern
+
+Always import mixins at the top of your SCSS file:
+
+```scss
+// Component.module.scss
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.component {
+  @include card;
+  @include stack($spacing-lg);
+
+  .heading {
+    @include heading-h2;
+  }
+
+  .description {
+    @include text-secondary;
+    @include line-clamp(2);
+  }
+}
+```
+
+---
+
 ## Resources
 
 - **Component Files**: `frontend/src/components/`
-- **Design Tokens**: `frontend/src/styles/design-tokens/`
+- **Design Tokens**: `frontend/src/styles/design-tokens/` - See `DESIGN_TOKENS.md`
 - **Mixins**: `frontend/src/styles/mixins/`
 - **Color Reference**: See `COLOR_PALETTE.md`
+- **Theme Customization**: See `THEME_CUSTOMIZATION.md`
 - **Migration Guide**: See `UI_MIGRATION_GUIDE.md`

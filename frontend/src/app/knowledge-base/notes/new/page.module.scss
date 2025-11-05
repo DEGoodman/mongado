@@ -224,3 +224,183 @@
     color: $color-error-border;
   }
 }
+
+// ===== FORM FIELDS =====
+.formLabel {
+  display: block;
+  margin-bottom: $spacing-1;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+}
+
+.formInput {
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  border: $border-default;
+  border-radius: $border-radius-button;
+  background-color: $white;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: 0 0 0 3px rgba($blue-500, 0.1);
+  }
+
+  &::placeholder {
+    color: $color-input-placeholder;
+  }
+}
+
+.formHint {
+  margin-top: $spacing-1;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+// ===== EDITOR GRID =====
+.editorGrid {
+  display: grid;
+  gap: $spacing-6;
+
+  &.withSidebar {
+    @media (min-width: 1024px) {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+}
+
+.editorColumn {
+  @include stack($spacing-4);
+}
+
+// ===== CHARACTER COUNT =====
+.charCountWrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: $spacing-2;
+}
+
+.charCount {
+  text-align: right;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+
+  .count {
+    &.good {
+      font-weight: $font-weight-medium;
+      color: $green-600;
+    }
+
+    &.warning {
+      color: $yellow-300;
+    }
+
+    &.error {
+      color: $orange-600;
+    }
+  }
+
+  .hint {
+    margin-left: $spacing-2;
+    color: $color-text-tertiary;
+  }
+}
+
+// ===== MODALS =====
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba($black, 0.5);
+}
+
+.modalContent {
+  max-width: 28rem;
+  padding: $spacing-6;
+  border-radius: $border-radius-lg;
+  background-color: $white;
+  box-shadow: $shadow-card-lg;
+}
+
+.modalTitle {
+  margin-bottom: $spacing-3;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.modalText {
+  margin-bottom: $spacing-4;
+  color: $color-text-secondary;
+}
+
+.modalList {
+  margin-bottom: $spacing-6;
+  padding-left: $spacing-5;
+  list-style-type: disc;
+  list-style-position: inside;
+
+  li {
+    margin-bottom: $spacing-1;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+}
+
+.modalInfo {
+  margin-bottom: $spacing-4;
+  padding: $spacing-3;
+  border-radius: $border-radius-md;
+  background-color: $blue-50;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+
+  p {
+    margin: 0;
+  }
+
+  p:first-child {
+    font-weight: $font-weight-medium;
+    margin-bottom: $spacing-1;
+  }
+}
+
+.modalActions {
+  display: flex;
+  gap: $spacing-3;
+
+  .modalButton {
+    flex: 1;
+    padding: $spacing-2 $spacing-4;
+    border-radius: $border-radius-button;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+
+    &.primary {
+      background-color: $blue-600;
+      color: $white;
+
+      &:hover {
+        background-color: $blue-700;
+      }
+    }
+
+    &.secondary {
+      background-color: transparent;
+      color: $color-text-secondary;
+      border: $border-width-thin solid $color-border;
+
+      &:hover {
+        background-color: $color-bg-secondary;
+      }
+    }
+  }
+}

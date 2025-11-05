@@ -9,8 +9,8 @@ import styles from "./Button.module.scss";
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Button variant
-   * - primary: Solid orange background (main CTAs)
-   * - secondary: Outlined orange border (secondary actions)
+   * - primary: Solid blue background (main CTAs)
+   * - secondary: Outlined blue border (secondary actions)
    * - tertiary: Grey background (tertiary actions)
    * - ghost: Transparent (subtle actions)
    */
