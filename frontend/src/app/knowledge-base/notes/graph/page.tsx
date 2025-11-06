@@ -329,7 +329,6 @@ export default function NotesGraphPage() {
       </div>
 
       <div className={styles.main}>
-
         {/* Graph visualization */}
         <div className={styles.graphCard}>
           <canvas

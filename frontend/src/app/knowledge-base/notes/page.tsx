@@ -135,7 +135,6 @@ function NotesContent() {
       </div>
 
       <div className={styles.main}>
-
         {/* Tag Filter Banner */}
         {tagFilter && (
           <div className={styles.tagFilterBanner}>

@@ -13,7 +13,13 @@ interface TagPillProps {
   className?: string;
 }
 
-export default function TagPill({ tag, showHash = false, onClick, variant, className = "" }: TagPillProps) {
+export default function TagPill({
+  tag,
+  showHash = false,
+  onClick,
+  variant,
+  className = "",
+}: TagPillProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
       e.preventDefault();
@@ -25,11 +31,7 @@ export default function TagPill({ tag, showHash = false, onClick, variant, class
   const pillClasses = `${styles.tagPill} ${onClick ? styles.interactive : styles.static} ${className}`;
 
   return (
-    <span
-      className={pillClasses}
-      onClick={handleClick}
-      data-variant={variant}
-    >
+    <span className={pillClasses} onClick={handleClick} data-variant={variant}>
       {showHash && <span className={styles.hash}>#</span>}
       {tag}
     </span>
