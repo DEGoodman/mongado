@@ -406,7 +406,7 @@ export default function NoteDetailPage() {
               {/* Tags */}
               {note.tags.length > 0 && !isEditing && (
                 <div className={styles.tags}>
-                  <TagPillList tags={note.tags} onClick={handleTagClick} />
+                  <TagPillList tags={note.tags} onClick={handleTagClick} variant="note" />
                 </div>
               )}
 

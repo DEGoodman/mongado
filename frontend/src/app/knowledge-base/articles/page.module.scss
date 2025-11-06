@@ -13,8 +13,14 @@
 
 // ===== HEADER =====
 .header {
-  border-bottom: $border-default;
-  background-color: $color-bg-canvas;
+  // Cool slate blue header zone (consistent across KB)
+  background: linear-gradient(
+    to bottom,
+    $slate-blue-200 0%,              // Bluer, more saturated top
+    $slate-blue-100 50%,             // Transition to lighter
+    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+  );
+  border-bottom: 1px solid $slate-blue-300;
   box-shadow: $shadow-card-sm;
 
   .headerContent {

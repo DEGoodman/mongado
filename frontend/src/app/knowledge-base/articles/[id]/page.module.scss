@@ -83,9 +83,18 @@
 
 // ===== HEADER =====
 .header {
-  border-bottom: $border-default;
-  background-color: $color-bg-secondary;
+  // Cool slate blue header zone (contrasts with warm content)
+  // Slightly bluer at top, more transparent at bottom for badge visibility
+  background: linear-gradient(
+    to bottom,
+    $slate-blue-200 0%,              // Bluer, more saturated top
+    $slate-blue-100 50%,             // Transition to lighter
+    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+  );
+  border-bottom: 1px solid $slate-blue-300;  // Refined 1px border
   box-shadow: $shadow-card-sm;
+  padding-top: $spacing-4;
+  padding-bottom: $spacing-4;
 
   .headerContent {
     max-width: 56rem;

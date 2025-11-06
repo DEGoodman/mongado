@@ -103,9 +103,9 @@ function NotesContent() {
       {/* AI Button */}
       {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
-      <div className={styles.main}>
-        {/* Header */}
-        <div className={styles.header}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
           <div className={styles.headerTop}>
             <Breadcrumb section="notes" />
             <SettingsDropdown />
@@ -132,6 +132,9 @@ function NotesContent() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className={styles.main}>
 
         {/* Tag Filter Banner */}
         {tagFilter && (

@@ -186,7 +186,7 @@ class Neo4jAdapter:
                 """
                 MATCH (n:Note {id: $id})
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                RETURN n, collect(target.id) AS links
                 """,
                 id=note_id,
             )
@@ -216,9 +216,9 @@ class Neo4jAdapter:
             result = session.run(
                 """
                 MATCH (n:Note)
-                WHERE n.id = $id OR n.note_id = $id
+                WHERE n.id = $id
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                RETURN n, collect(target.id) AS links
                 """,
                 id=note_id,
             )
@@ -260,7 +260,7 @@ class Neo4jAdapter:
                     """
                     MATCH (n:Note {author: $author})
                     OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                    RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                    RETURN n, collect(target.id) AS links
                     ORDER BY n.created_at DESC
                     """,
                     author=author,
@@ -270,7 +270,7 @@ class Neo4jAdapter:
                     """
                     MATCH (n:Note)
                     OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                    RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                    RETURN n, collect(target.id) AS links
                     ORDER BY n.created_at DESC
                     """
                 )
@@ -311,7 +311,7 @@ class Neo4jAdapter:
             result = session.run(
                 """
                 MATCH (n:Note)
-                WHERE n.id = $id OR n.note_id = $id
+                WHERE n.id = $id
                 SET n.content = $content,
                     n.title = $title,
                     n.tags = $tags,
@@ -354,7 +354,7 @@ class Neo4jAdapter:
             result = session.run(
                 """
                 MATCH (n:Note)
-                WHERE n.id = $id OR n.note_id = $id
+                WHERE n.id = $id
                 DETACH DELETE n
                 RETURN count(n) AS deleted
                 """,
@@ -380,10 +380,10 @@ class Neo4jAdapter:
             result = session.run(
                 """
                 MATCH (target:Note)
-                WHERE target.id = $id OR target.note_id = $id
+                WHERE target.id = $id
                 MATCH (source:Note)-[:LINKS_TO]->(target)
                 OPTIONAL MATCH (source)-[:LINKS_TO]->(other:Note)
-                RETURN source, collect(COALESCE(other.id, other.note_id)) AS links
+                RETURN source, collect(other.id) AS links
                 """,
                 id=note_id,
             )
@@ -412,10 +412,10 @@ class Neo4jAdapter:
             result = session.run(
                 """
                 MATCH (source:Note)
-                WHERE source.id = $id OR source.note_id = $id
+                WHERE source.id = $id
                 MATCH (source)-[:LINKS_TO]->(target:Note)
                 OPTIONAL MATCH (target)-[:LINKS_TO]->(other:Note)
-                RETURN target, collect(COALESCE(other.id, other.note_id)) AS links
+                RETURN target, collect(other.id) AS links
                 """,
                 id=note_id,
             )
@@ -442,7 +442,7 @@ class Neo4jAdapter:
                 """
                 MATCH (n:Note)
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                WITH n, collect(COALESCE(target.id, target.note_id)) AS links
+                WITH n, collect(target.id) AS links
                 ORDER BY rand()
                 LIMIT 1
                 RETURN n, links
@@ -473,7 +473,7 @@ class Neo4jAdapter:
                 MATCH (n:Note)
                 WHERE NOT (n)-[:LINKS_TO]->() AND NOT ()-[:LINKS_TO]->(n)
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                RETURN n, collect(target.id) AS links
                 ORDER BY n.created_at DESC
                 """
             )
@@ -501,7 +501,7 @@ class Neo4jAdapter:
                 MATCH (n:Note)
                 WHERE NOT (n)-[:LINKS_TO]->()
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(COALESCE(target.id, target.note_id)) AS links
+                RETURN n, collect(target.id) AS links
                 ORDER BY n.created_at DESC
                 """
             )
@@ -530,7 +530,7 @@ class Neo4jAdapter:
             result = session.run(
                 """
                 MATCH (n:Note)-[:LINKS_TO]->(target:Note)
-                WITH n, collect(COALESCE(target.id, target.note_id)) AS links
+                WITH n, collect(target.id) AS links
                 WHERE size(links) >= $min_links
                 RETURN n, links, size(links) AS link_count
                 ORDER BY link_count DESC, n.created_at DESC
@@ -566,7 +566,7 @@ class Neo4jAdapter:
                 WITH n, count(source) AS backlink_count
                 WHERE backlink_count >= $min_backlinks
                 OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                WITH n, backlink_count, collect(COALESCE(target.id, target.note_id)) AS links
+                WITH n, backlink_count, collect(target.id) AS links
                 RETURN n, links, backlink_count
                 ORDER BY backlink_count DESC, n.created_at DESC
                 """,
@@ -624,9 +624,9 @@ class Neo4jAdapter:
             session.run(
                 """
                 MATCH (source:Note)
-                WHERE source.id = $source_id OR source.note_id = $source_id
+                WHERE source.id = $source_id
                 MATCH (target:Note)
-                WHERE target.id = $target_id OR target.note_id = $target_id
+                WHERE target.id = $target_id
                 MERGE (source)-[:LINKS_TO]->(target)
                 """,
                 source_id=source_id,
@@ -643,7 +643,7 @@ class Neo4jAdapter:
         session.run(
             """
             MATCH (source:Note)
-            WHERE source.id = $source_id OR source.note_id = $source_id
+            WHERE source.id = $source_id
             MATCH (source)-[r:LINKS_TO]->()
             DELETE r
             """,

@@ -85,7 +85,22 @@
 
 // ===== HEADER =====
 .header {
-  margin-bottom: $spacing-8;
+  // Cool slate blue header zone (consistent across KB)
+  background: linear-gradient(
+    to bottom,
+    $slate-blue-200 0%,              // Bluer, more saturated top
+    $slate-blue-100 50%,             // Transition to lighter
+    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+  );
+  border-bottom: 1px solid $slate-blue-300;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    @include container;
+    max-width: 56rem;
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
+  }
 
   .headerTop {
     margin-bottom: $spacing-6;

@@ -160,7 +160,7 @@ export default function ArticleDetailPage() {
           {/* Tags */}
           {article.tags.length > 0 && (
             <div className={styles.tags}>
-              <TagPillList tags={article.tags} showHash onClick={handleTagClick} />
+              <TagPillList tags={article.tags} showHash onClick={handleTagClick} variant="article" />
             </div>
           )}
         </div>

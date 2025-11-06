@@ -306,9 +306,9 @@ export default function NotesGraphPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.main}>
-        {/* Header */}
-        <div className={styles.header}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
           <div className={styles.headerTop}>
             <div className={styles.breadcrumbs}>
               <Link href="/knowledge-base" className={styles.breadcrumbLink}>
@@ -326,6 +326,9 @@ export default function NotesGraphPage() {
             {graphData.count.nodes} notes · {graphData.count.edges} connections
           </p>
         </div>
+      </div>
+
+      <div className={styles.main}>
 
         {/* Graph visualization */}
         <div className={styles.graphCard}>

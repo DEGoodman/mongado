@@ -9,10 +9,11 @@ interface TagPillProps {
   tag: string;
   showHash?: boolean; // Whether to show # prefix (for articles)
   onClick?: (tag: string) => void; // Optional click handler for filtering
+  variant?: "article" | "note"; // Color variant for warm-cool theme
   className?: string;
 }
 
-export default function TagPill({ tag, showHash = false, onClick, className = "" }: TagPillProps) {
+export default function TagPill({ tag, showHash = false, onClick, variant, className = "" }: TagPillProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
       e.preventDefault();
@@ -24,7 +25,11 @@ export default function TagPill({ tag, showHash = false, onClick, className = ""
   const pillClasses = `${styles.tagPill} ${onClick ? styles.interactive : styles.static} ${className}`;
 
   return (
-    <span className={pillClasses} onClick={handleClick}>
+    <span
+      className={pillClasses}
+      onClick={handleClick}
+      data-variant={variant}
+    >
       {showHash && <span className={styles.hash}>#</span>}
       {tag}
     </span>
@@ -39,6 +44,7 @@ interface TagPillListProps {
   showHash?: boolean;
   maxVisible?: number; // Limit number of tags shown (with "+N more")
   onClick?: (tag: string) => void; // Optional click handler for filtering
+  variant?: "article" | "note"; // Color variant for warm-cool theme
   className?: string;
 }
 
@@ -47,6 +53,7 @@ export function TagPillList({
   showHash = false,
   maxVisible,
   onClick,
+  variant,
   className = "",
 }: TagPillListProps) {
   const visibleTags = maxVisible ? tags.slice(0, maxVisible) : tags;
@@ -55,7 +62,7 @@ export function TagPillList({
   return (
     <div className={`${styles.tagPillList} ${className}`}>
       {visibleTags.map((tag) => (
-        <TagPill key={tag} tag={tag} showHash={showHash} onClick={onClick} />
+        <TagPill key={tag} tag={tag} showHash={showHash} onClick={onClick} variant={variant} />
       ))}
       {remainingCount > 0 && <span className={styles.remainingCount}>+{remainingCount} more</span>}
     </div>

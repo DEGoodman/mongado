@@ -21,16 +21,22 @@ export default function ArticleTableOfContents({ content }: ArticleTableOfConten
     // Extract headings from markdown content
     const headingRegex = /^(#{2,4})\s+(.+)$/gm;
     const items: TocItem[] = [];
+    const idCounts = new Map<string, number>(); // Track duplicate IDs
     let match;
 
     while ((match = headingRegex.exec(content)) !== null) {
       const level = match[1].length; // Count # symbols
       const text = match[2].trim();
       // Create URL-friendly ID from heading text
-      const id = text
+      let baseId = text
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "")
         .replace(/\s+/g, "-");
+
+      // Handle duplicate IDs by appending a counter
+      const count = idCounts.get(baseId) || 0;
+      const id = count === 0 ? baseId : `${baseId}-${count}`;
+      idCounts.set(baseId, count + 1);
 
       items.push({ id, text, level });
     }

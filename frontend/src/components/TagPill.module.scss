@@ -1,6 +1,6 @@
 /**
  * TagPill Component Styles
- * Matches production Tailwind design
+ * Cool-toned tags with warm-cool theme integration
  */
 
 @use '@/styles/design-tokens' as *;
@@ -12,15 +12,55 @@
   border-radius: $border-radius-full;
   background-color: $neutral-100;
   color: $neutral-700;
+  border: $border-width-thin solid transparent;
   @include text-secondary;
   @include transition-default;
 
-  &.interactive {
+  // === ARTICLE TAGS (Dusty Blue) ===
+  &[data-variant='article'] {
+    background-color: $color-tag-article-bg;
+    color: $color-tag-article-text;
+    border-color: $color-tag-article-border;
+
+    &.interactive {
+      cursor: pointer;
+
+      &:hover {
+        background-color: $color-tag-article-hover-bg;
+        color: $color-tag-article-hover-text;
+        border-color: $color-tag-article-hover-border;
+        transform: translateY(-1px);
+        box-shadow: $shadow-card-sm;
+      }
+    }
+  }
+
+  // === NOTE TAGS (Teal) ===
+  &[data-variant='note'] {
+    background-color: $color-tag-note-bg;
+    color: $color-tag-note-text;
+    border-color: $color-tag-note-border;
+
+    &.interactive {
+      cursor: pointer;
+
+      &:hover {
+        background-color: $color-tag-note-hover-bg;
+        color: $color-tag-note-hover-text;
+        border-color: $color-tag-note-hover-border;
+        transform: translateY(-1px);
+        box-shadow: $shadow-card-sm;
+      }
+    }
+  }
+
+  // === DEFAULT (Neutral) ===
+  &.interactive:not([data-variant]) {
     cursor: pointer;
 
     &:hover {
-      background-color: $blue-100;
-      color: $blue-800;
+      background-color: $neutral-200;
+      color: $neutral-800;
     }
   }
 

@@ -12,18 +12,141 @@
 // These are the actual color values matching Tailwind's default palette.
 // Change these to swap the entire theme.
 
-// Grays (Neutrals) - Tailwind gray scale
-$neutral-50: #f9fafb;   // Lightest
-$neutral-100: #f3f4f6;
-$neutral-200: #e5e7eb;
-$neutral-300: #d1d5db;
-$neutral-400: #9ca3af;
-$neutral-500: #6b7280;
-$neutral-600: #4b5563;
-$neutral-700: #374151;
-$neutral-800: #1f2937;
-$neutral-900: #111827;  // Darkest
+// === NEUTRALS (Mixed Temperature Strategy) ===
+// Warm neutrals (50-300) for surfaces/backgrounds - inviting, cozy
+// Cool neutrals (400-900) for text/icons - professional, clear
 
+// WARM NEUTRALS (Beige/cream undertones)
+$neutral-warm-50: #FAFAF8;    // Warm cream (main page bg)
+$neutral-warm-100: #F5F5F2;   // Light warm grey
+$neutral-warm-200: #E5E5E0;   // Warm border
+$neutral-warm-300: #D4D4CE;   // Warm mid border
+
+// COOL NEUTRALS (Slate/blue undertones)
+$neutral-cool-400: #9CA3AF;   // Cool mid grey (standard Tailwind)
+$neutral-cool-500: #6B7280;   // Cool secondary text
+$neutral-cool-600: #4B5563;   // Cool dark text
+$neutral-cool-700: #374151;   // Cool heading
+$neutral-cool-800: #1F2937;   // Cool primary text (sharp, readable)
+$neutral-cool-900: #111827;   // Cool darkest
+
+// BALANCED NEUTRALS (Mix of both)
+// Surfaces = warm, Text = cool (best of both worlds)
+$neutral-50: $neutral-warm-50;     // Surfaces = warm
+$neutral-100: $neutral-warm-100;   // Surfaces = warm
+$neutral-200: $neutral-warm-200;   // Borders = warm
+$neutral-300: $neutral-warm-300;   // Borders = warm
+$neutral-400: $neutral-cool-400;   // Mid tones = cool
+$neutral-500: $neutral-cool-500;   // Text = cool (readable)
+$neutral-600: $neutral-cool-600;   // Text = cool
+$neutral-700: $neutral-cool-700;   // Headings = cool (sharp)
+$neutral-800: $neutral-cool-800;   // Body text = cool (legible)
+$neutral-900: $neutral-cool-900;   // Darkest = cool
+
+// === ORANGE (Primary - Warm) ===
+// Medium-dark orange - sophisticated, not loud
+$orange-50: #FFF7F0;      // Very light peach
+$orange-100: #FFE8D9;     // Light peach
+$orange-200: #FBD4BB;     // Soft orange
+$orange-300: #F4B28E;     // Light orange
+$orange-400: #EE9465;     // Medium light orange
+$orange-500: #E8773C;     // Medium orange
+$orange-600: #D96D32;     // PRIMARY CTA - main orange
+$orange-700: #C2532A;     // Hover state
+$orange-800: #9A4222;     // Active state
+$orange-900: #73311A;     // Darkest orange
+
+// === TERRACOTTA (Secondary - Warm) ===
+// Earthy, sophisticated
+$terracotta-50: #FFF5F2;     // Very light terracotta
+$terracotta-100: #FFE8E3;    // Light terracotta
+$terracotta-200: #F5D0C8;    // Soft terracotta
+$terracotta-300: #E6B4A8;    // Light terracotta
+$terracotta-400: #D99B8D;    // Medium light
+$terracotta-500: #D18573;    // Medium terracotta
+$terracotta-600: #C4624F;    // SECONDARY CTA
+$terracotta-700: #A8503E;    // Hover state
+$terracotta-800: #8B4436;    // Active state
+$terracotta-900: #6E3529;    // Darkest
+
+// === MUSTARD (Warm Accent - Warnings, Orphan Notes) ===
+$mustard-50: #FFF9E6;
+$mustard-100: #FFF4D6;
+$mustard-200: #F5E5B3;
+$mustard-300: #E8D89B;
+$mustard-400: #DCC878;
+$mustard-500: #D4A748;     // Main mustard
+$mustard-600: #B8903D;
+$mustard-700: #8B7A2D;
+$mustard-800: #6B5E22;
+
+// === TEAL (Cool Accent - Complements Orange) ===
+// Muted, sophisticated teal - provides cool balance
+$teal-50: #F0F9F7;       // Very light teal (almost white)
+$teal-100: #E0F2EE;      // Light teal background
+$teal-200: #B8DED6;      // Soft teal
+$teal-300: #8FCBC0;      // Light teal
+$teal-400: #6BB8AB;      // Medium light teal
+$teal-500: #4A9D8E;      // Medium teal
+$teal-600: #3A8A7D;      // MAIN TEAL - cool accent
+$teal-700: #2F6F65;      // Darker teal
+$teal-800: #25574F;      // Deep teal
+$teal-900: #1A403A;      // Darkest teal
+
+// === SLATE BLUE (Cool Secondary - Sophisticated) ===
+// Muted slate blue - professional, tech-focused
+$slate-blue-50: #F4F6F9;      // Very light slate
+$slate-blue-100: #E8ECF2;     // Light slate background
+$slate-blue-200: #CED6E3;     // Soft slate
+$slate-blue-300: #B0BDD1;     // Light slate
+$slate-blue-400: #91A4BF;     // Medium light slate
+$slate-blue-500: #7388A8;     // Medium slate
+$slate-blue-600: #5B6F8F;     // MAIN SLATE BLUE
+$slate-blue-700: #4A5A74;     // Darker slate
+$slate-blue-800: #3A465A;     // Deep slate
+$slate-blue-900: #2A3441;     // Darkest slate
+
+// === DUSTY BLUE (Cool Accent - Info, Hub Notes) ===
+// Cooler, more saturated than before
+$dusty-blue-50: #EEF4F9;      // Cool light blue (cooler than before)
+$dusty-blue-100: #DCE8F3;     // Light dusty blue
+$dusty-blue-200: #B8D1E6;     // Cool blue border
+$dusty-blue-300: #94BBDA;     // Light dusty blue
+$dusty-blue-400: #73A5CD;     // Medium light
+$dusty-blue-500: #5790BF;     // Medium dusty blue
+$dusty-blue-600: #4278A8;     // MAIN DUSTY BLUE (cooler)
+$dusty-blue-700: #355F84;     // Darker
+$dusty-blue-800: #284960;     // Deep blue
+$dusty-blue-900: #1C3343;     // Darkest
+
+// === SAGE GREEN (Warm-Cool Neutral - Success) ===
+// Sage is naturally balanced (warm + cool)
+$sage-50: #F2F7F2;
+$sage-100: #E8F2E8;
+$sage-200: #D4E5D3;
+$sage-300: #B8D4B7;
+$sage-400: #9CB89B;
+$sage-500: #7B9E7A;        // Main sage
+$sage-600: #6B8B6B;
+$sage-700: #5A7859;
+$sage-800: #476047;
+
+// === INDIGO (Page Background Gradient - Warm to Cool) ===
+// Updated to match slate-blue for warm-to-cool gradient
+$indigo-50: #F4F6F9;      // Cool slate (same as slate-blue-50)
+$indigo-100: #E8ECF2;     // Light cool slate
+$indigo-200: #DFE3EB;     // Slightly cooler
+
+// === RED (Error States) ===
+$red-50: #FEF2F2;
+$red-100: #FEE2E2;
+$red-200: #FECACA;
+$red-500: #EF4444;
+$red-600: #DC2626;
+$red-700: #B91C1C;
+$red-800: #991B1B;
+
+// === OLD COLOR SCALES (Keep for reference during migration) ===
 // Blues (Primary) - Tailwind blue scale
 $blue-50: #eff6ff;
 $blue-100: #dbeafe;
@@ -35,11 +158,6 @@ $blue-600: #2563eb;
 $blue-700: #1d4ed8;
 $blue-800: #1e40af;
 $blue-900: #1e3a8a;
-
-// Indigos - Tailwind indigo scale
-$indigo-50: #eef2ff;
-$indigo-100: #e0e7ff;
-$indigo-200: #c7d2fe;
 
 // Purples (Secondary) - Tailwind purple scale
 $purple-50: #faf5ff;
@@ -59,15 +177,6 @@ $green-500: #22c55e;
 $green-600: #16a34a;
 $green-700: #15803d;
 
-// Reds (Errors) - Tailwind red scale
-$red-50: #fef2f2;
-$red-100: #fee2e2;
-$red-200: #fecaca;
-$red-500: #ef4444;
-$red-600: #dc2626;
-$red-700: #b91c1c;
-$red-800: #991b1b;
-
 // Yellows (Highlights/Search) - Tailwind yellow scale
 $yellow-50: #fefce8;
 $yellow-100: #fef9c3;
@@ -79,13 +188,6 @@ $amber-50: #fffbeb;
 $amber-100: #fef3c7;
 $amber-500: #f59e0b;
 $amber-600: #d97706;
-
-// Orange - Tailwind orange scale (for KB CTA)
-$orange-50: #fff7ed;
-$orange-100: #ffedd5;
-$orange-500: #f97316;
-$orange-600: #ea580c;
-$orange-700: #c2410c;
 
 // Gray (additional shades) - Tailwind gray scale
 $gray-50: #f9fafb;
@@ -101,118 +203,189 @@ $black: #000000;
 // These define the PURPOSE of colors. Change mappings to swap themes.
 
 // === PAGE STRUCTURE ===
-// Match Tailwind's gradient: bg-gradient-to-br from-blue-50 to-indigo-50
-$color-page-bg: $blue-50;                    // Main page background
-$color-page-bg-gradient-start: $blue-50;     // Gradient start
-$color-page-bg-gradient-end: $indigo-50;     // Gradient end
-$color-page-bg-alt: $neutral-100;            // Alternative page background
+// Warm to Cool gradient - warm cream to cool slate
+$color-page-bg: $neutral-warm-50;                  // Main page background (warm cream)
+$color-page-bg-gradient-start: $neutral-warm-50;   // Gradient start (warm cream)
+$color-page-bg-gradient-end: $indigo-50;           // Gradient end (cool slate)
+$color-page-bg-alt: $neutral-100;                  // Alternative page background (warm)
 
 // === SURFACES (Cards, Panels) ===
-$color-surface-default: $white;              // Default card/surface background
-$color-surface-secondary: $neutral-50;       // Secondary surfaces
-$color-surface-tertiary: $neutral-100;       // Tertiary surfaces
-$color-surface-elevated: $white;             // Elevated cards (with shadow)
-$color-surface-hover: $neutral-50;           // Surface hover state
+$color-surface-default: $white;                    // Default card/surface background (neutral anchor)
+$color-surface-secondary: $neutral-warm-50;        // Secondary surfaces (warm cream - inviting)
+$color-surface-tertiary: $neutral-100;             // Tertiary surfaces (warm light grey)
+$color-surface-elevated: $white;                   // Elevated cards (white with warm shadow)
+$color-surface-hover: $neutral-warm-50;            // Surface hover state (warm)
+$color-surface-cool: $slate-blue-50;               // Cool surface variant (for contrast)
+$color-surface-hover-cool: $teal-50;               // Cool hover (alternative)
 
 // === TEXT ===
-$color-text-primary: $neutral-800;           // Primary text
-$color-text-secondary: $neutral-600;         // Secondary text (less emphasis)
-$color-text-tertiary: $neutral-500;          // Tertiary text (subtle)
-$color-text-heading: $neutral-700;           // Headings
-$color-text-disabled: $neutral-500;          // Disabled text
-$color-text-inverse: $white;                 // Text on dark backgrounds
+$color-text-primary: $neutral-cool-800;            // Primary text (cool dark grey - sharp, readable)
+$color-text-secondary: $neutral-cool-600;          // Secondary text (cool mid grey)
+$color-text-tertiary: $neutral-cool-500;           // Tertiary text (cool lighter grey)
+$color-text-heading: $neutral-cool-700;            // Headings (cool - clear hierarchy)
+$color-text-disabled: $neutral-cool-500;           // Disabled text
+$color-text-inverse: $white;                       // Text on dark backgrounds
+$color-text-warm: $neutral-warm-300;               // Warm text variant (for use on cool backgrounds)
 
 // === BORDERS ===
-$color-border-default: $neutral-300;         // Default borders
-$color-border-subtle: $neutral-200;          // Subtle borders
-$color-border-strong: $neutral-400;          // Strong borders
-$color-border-hover: $neutral-400;           // Border on hover
+$color-border-default: $neutral-warm-200;          // Default borders (warm - soft)
+$color-border-subtle: $neutral-warm-200;           // Subtle borders (warm)
+$color-border-strong: $neutral-cool-400;           // Strong borders (cool - more visible)
+$color-border-hover: $neutral-cool-400;            // Border hover (cool - more defined)
+$color-border-cool: $slate-blue-200;               // Cool border variant
 
 // === INTERACTIVE ELEMENTS ===
-// Primary Actions (Main CTAs) - Blue theme matching Tailwind
-$color-interactive-primary: $blue-600;             // Primary button, main links
-$color-interactive-primary-hover: $blue-700;       // Primary hover
-$color-interactive-primary-active: $blue-800;      // Primary active/pressed
+
+// === PRIMARY ACTIONS (Orange - Warm) ===
+$color-interactive-primary: $orange-600;           // Orange (warm) primary button
+$color-interactive-primary-hover: $orange-700;     // Orange hover
+$color-interactive-primary-active: $orange-800;    // Orange active
 $color-interactive-primary-text: $white;           // Text on primary buttons
+$color-interactive-primary-bg-subtle: $orange-50;  // Subtle primary background
+$color-interactive-primary-focus: $orange-600;     // Primary focus ring
 
-// Secondary Actions - Purple for secondary elements
-$color-interactive-secondary: $purple-600;         // Secondary buttons
-$color-interactive-secondary-hover: $purple-700;
+// === SECONDARY ACTIONS (Warm - Terracotta) ===
+$color-interactive-secondary: $terracotta-600;     // Terracotta (warm) secondary
+$color-interactive-secondary-hover: $terracotta-700;
+$color-interactive-secondary-active: $terracotta-800;
 $color-interactive-secondary-text: $white;
+$color-interactive-secondary-bg: $terracotta-50;
 
-// Tertiary Actions (Ghost, subtle)
-$color-interactive-tertiary: $neutral-700;         // Tertiary buttons
-$color-interactive-tertiary-hover: $neutral-800;
+// === SECONDARY COOL VARIANT (Cool - Teal) ===
+// Use for cool secondary actions (technical actions, code-related buttons)
+$color-interactive-secondary-cool: $teal-600;      // Teal (cool) secondary
+$color-interactive-secondary-cool-hover: $teal-700;
+$color-interactive-secondary-cool-active: $teal-800;
+$color-interactive-secondary-cool-text: $white;
+$color-interactive-secondary-cool-bg: $teal-50;
+
+// === TERTIARY ACTIONS (Neutral) ===
+$color-interactive-tertiary: $neutral-100;         // Warm light grey background
+$color-interactive-tertiary-hover: $neutral-200;   // Warm border grey
+$color-interactive-tertiary-active: $neutral-300;
+$color-interactive-tertiary-text: $neutral-cool-700; // Cool text for clarity
 $color-interactive-tertiary-bg: $neutral-100;
 
-// Links - Blue matching Tailwind text-blue-600/hover:text-blue-800
-$color-link-default: $blue-600;              // Default link color
-$color-link-hover: $blue-800;                // Link hover (darker on hover)
-$color-link-visited: $purple-700;            // Visited links
+// === GHOST ACTIONS (Warm) ===
+$color-interactive-ghost: transparent;
+$color-interactive-ghost-hover: $orange-50;        // Warm orange hover
+$color-interactive-ghost-text: $orange-600;        // Orange text
+$color-interactive-ghost-text-hover: $orange-700;
+
+// === LINKS (Warm primary, Cool variants) ===
+$color-link-default: $orange-600;                  // Orange (warm) default link
+$color-link-hover: $orange-700;                    // Orange hover
+$color-link-visited: $terracotta-700;              // Terracotta (warm) visited
+$color-link-active: $orange-800;                   // Orange active
+
+// Cool link variants (for cool sections like code docs)
+$color-link-cool: $teal-600;                       // Teal (cool) link
+$color-link-cool-hover: $teal-700;                 // Teal hover
+$color-link-cool-visited: $slate-blue-700;         // Slate blue (cool) visited
 
 // === SEMANTIC STATES ===
-// Success - Tailwind green
-$color-success-bg: $green-50;
-$color-success-border: $green-500;
-$color-success-text: $green-600;
 
-// Warning - Tailwind amber/yellow
-$color-warning-bg: $amber-50;
-$color-warning-border: $amber-500;
-$color-warning-text: $amber-600;
+// === SUCCESS (Sage - Balanced Warm-Cool) ===
+// Sage green naturally balances warm and cool
+$color-success-bg: $sage-100;
+$color-success-border: $sage-500;
+$color-success-text: $sage-600;
 
-// Error - Tailwind red
+// === WARNING (Mustard - Warm) ===
+$color-warning-bg: $mustard-100;
+$color-warning-border: $mustard-500;
+$color-warning-text: $mustard-700;
+
+// === ERROR (Red - Warm) ===
 $color-error-bg: $red-50;
 $color-error-border: $red-500;
 $color-error-text: $red-700;
 
-// Info - Tailwind blue
-$color-info-bg: $blue-50;
-$color-info-border: $blue-200;
-$color-info-text: $blue-700;
+// === INFO (Cool - Dusty Blue) ===
+$color-info-bg: $dusty-blue-100;                   // Cool blue
+$color-info-border: $dusty-blue-200;
+$color-info-text: $dusty-blue-700;
 
-// === FORM ELEMENTS ===
-$color-input-bg: $white;
-$color-input-border: $neutral-300;
-$color-input-border-hover: $neutral-400;
-$color-input-border-focus: $blue-500;            // Blue focus ring
-$color-input-text: $neutral-800;
-$color-input-placeholder: $neutral-500;
-$color-input-disabled-bg: $neutral-100;
-$color-input-disabled-text: $neutral-500;
+// === INFO COOL VARIANT (Slate Blue) ===
+// Use for very technical/structural info
+$color-info-cool-bg: $slate-blue-100;              // Cooler slate
+$color-info-cool-border: $slate-blue-200;
+$color-info-cool-text: $slate-blue-700;
 
 // === BADGES ===
-// Articles: blue (matching Tailwind: bg-blue-50 text-blue-700 border-blue-200)
-$color-badge-article-bg: $blue-50;
-$color-badge-article-text: $blue-700;
-$color-badge-article-border: $blue-200;
 
-// Notes: purple (matching Tailwind: bg-purple-50 text-purple-700 border-purple-200)
-$color-badge-note-bg: $purple-50;
-$color-badge-note-text: $purple-700;
-$color-badge-note-border: $purple-200;
+// === ARTICLE BADGES (Warm - Orange) ===
+$color-badge-article-bg: $orange-200;     // More saturated (was orange-100)
+$color-badge-article-text: $orange-700;
+$color-badge-article-border: $orange-300;  // Stronger border (was orange-200)
+
+// === NOTE BADGES (Warm - Terracotta) ===
+$color-badge-note-bg: $terracotta-200;     // More saturated (was terracotta-100)
+$color-badge-note-text: $terracotta-700;
+$color-badge-note-border: $terracotta-300;  // Stronger border (was terracotta-200)
+
+// === NOTE BADGES COOL VARIANT (Teal) ===
+// Alternative for cool sections
+$color-badge-note-cool-bg: $teal-100;
+$color-badge-note-cool-text: $teal-700;
+$color-badge-note-cool-border: $teal-200;
+
+// === TAGS ===
+
+// === ARTICLE TAGS (Cool - Dusty Blue) ===
+// Cool blue tags for articles - clearly interactive
+$color-tag-article-bg: $dusty-blue-100;
+$color-tag-article-text: $dusty-blue-700;
+$color-tag-article-border: $dusty-blue-300;
+$color-tag-article-hover-bg: $dusty-blue-200;
+$color-tag-article-hover-text: $dusty-blue-800;
+$color-tag-article-hover-border: $dusty-blue-400;
+
+// === NOTE TAGS (Cool - Teal) ===
+// Cool teal tags for notes - distinguishes from articles
+$color-tag-note-bg: $teal-100;
+$color-tag-note-text: $teal-700;
+$color-tag-note-border: $teal-300;
+$color-tag-note-hover-bg: $teal-200;
+$color-tag-note-hover-text: $teal-800;
+$color-tag-note-hover-border: $teal-400;
+
+// === FORM ELEMENTS ===
+// Strategy: Warm borders at rest, cool on hover (more defined), warm orange on focus (friendly)
+$color-input-bg: $white;
+$color-input-border: $neutral-warm-200;            // Warm border (soft)
+$color-input-border-hover: $neutral-cool-400;      // Cool hover (more visible)
+$color-input-border-focus: $orange-600;            // Orange focus (warm)
+$color-input-text: $neutral-cool-800;              // Cool text (readable)
+$color-input-placeholder: $neutral-cool-500;       // Cool placeholder
+$color-input-disabled-bg: $neutral-100;            // Warm disabled
+$color-input-disabled-text: $neutral-cool-500;
 
 // === QUICK LISTS (Note Categories) ===
-// Orphan Notes - Yellow/amber for attention
-$color-orphan-bg: $yellow-50;
-$color-orphan-border: $yellow-200;
-$color-orphan-text: $amber-600;
-$color-orphan-heading: $amber-600;
-$color-orphan-hover: $yellow-100;
 
-// Hub Notes - Blue for info/connections
-$color-hub-bg: $blue-50;
-$color-hub-border: $blue-200;
-$color-hub-text: $blue-600;
-$color-hub-heading: $blue-700;
-$color-hub-hover: $blue-100;
+// === ORPHAN NOTES (Warm - Mustard) ===
+// Semantic: "Attention needed" (warm, urgent)
+$color-orphan-bg: $mustard-100;
+$color-orphan-border: $mustard-200;
+$color-orphan-text: $mustard-500;
+$color-orphan-heading: $mustard-700;
+$color-orphan-hover: $mustard-50;
 
-// Central Concept Notes - Purple for important concepts
-$color-central-bg: $purple-50;
-$color-central-border: $purple-200;
-$color-central-text: $purple-600;
-$color-central-heading: $purple-700;
-$color-central-hover: $purple-100;
+// === HUB NOTES (Cool - Dusty Blue) ===
+// Semantic: "Structure/navigation" (cool, organized)
+$color-hub-bg: $dusty-blue-100;
+$color-hub-border: $dusty-blue-200;
+$color-hub-text: $dusty-blue-600;
+$color-hub-heading: $dusty-blue-700;
+$color-hub-hover: $dusty-blue-50;
+
+// === CENTRAL CONCEPT NOTES (Warm - Terracotta) ===
+// Semantic: "Foundation/importance" (warm, grounded)
+$color-central-bg: $terracotta-100;
+$color-central-border: $terracotta-200;
+$color-central-text: $terracotta-600;
+$color-central-heading: $terracotta-700;
+$color-central-hover: $terracotta-50;
 
 // === SOCIAL LINKS ===
 $color-social-github-bg: $neutral-900;
@@ -246,19 +419,19 @@ $color-border: $color-border-default;
 $color-primary: $color-interactive-primary;
 $color-primary-hover: $color-interactive-primary-hover;
 $color-primary-active: $color-interactive-primary-active;
-$color-primary-light: $blue-50;
-$color-primary-dark: $blue-700;
+$color-primary-light: $orange-50;  // Updated to orange
+$color-primary-dark: $orange-700;  // Updated to orange
 $color-secondary: $color-interactive-secondary;
 $color-secondary-hover: $color-interactive-secondary-hover;
-$color-secondary-light: $purple-50;
-$color-accent-blue: $blue-600;
-$color-accent-blue-light: $blue-50;
-$color-accent-blue-border: $blue-200;
-$color-accent-blue-dark: $blue-700;
-$color-accent-purple: $purple-600;
-$color-accent-purple-light: $purple-50;
-$color-accent-purple-border: $purple-200;
-$color-accent-purple-dark: $purple-700;
+$color-secondary-light: $terracotta-50;  // Updated to terracotta
+$color-accent-blue: $dusty-blue-600;     // Updated to dusty blue (cool accent)
+$color-accent-blue-light: $dusty-blue-50;
+$color-accent-blue-border: $dusty-blue-200;
+$color-accent-blue-dark: $dusty-blue-700;
+$color-accent-purple: $terracotta-600;   // Updated to terracotta (warm secondary)
+$color-accent-purple-light: $terracotta-50;
+$color-accent-purple-border: $terracotta-200;
+$color-accent-purple-dark: $terracotta-700;
 $color-disabled-bg: $neutral-400;
 $color-disabled-text: $neutral-500;
 $color-success: $color-success-text;

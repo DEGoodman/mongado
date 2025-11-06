@@ -95,7 +95,17 @@
 
 // ===== HEADER =====
 .header {
-  margin-bottom: $spacing-6;
+  // Cool slate blue header zone (contrasts with warm content)
+  // Slightly bluer at top, more transparent at bottom for badge visibility
+  background: linear-gradient(
+    to bottom,
+    $slate-blue-200 0%,              // Bluer, more saturated top
+    $slate-blue-100 50%,             // Transition to lighter
+    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+  );
+  border-bottom: 1px solid $slate-blue-300;  // Refined 1px border
+  padding: $spacing-3xl $spacing-2xl $spacing-xl;
+  margin-bottom: $spacing-2xl;
 
   .headerTop {
     margin-bottom: $spacing-4;
@@ -157,30 +167,32 @@
     }
 
     .editButton {
-      background-color: $blue-600;
+      background-color: $orange-600;        // Warm primary action
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: $blue-700;
+        background-color: $orange-700;
       }
     }
 
     .deleteButton {
       background-color: transparent;
-      color: $color-error-border;
-      border: $border-width-thin solid $color-error-border;
+      color: $red-600;                      // Red destructive action
+      border: 2px solid $red-600;           // Stronger outlined style
 
       &:hover:not(:disabled) {
-        background-color: rgba(220, 38, 38, 0.1);
+        background-color: $red-50;
+        border-color: $red-700;
+        color: $red-700;
       }
     }
 
     .aiSuggestionsButton {
-      background-color: $blue-600;
+      background-color: $teal-600;          // Cool technical action
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: $blue-700;
+        background-color: $teal-700;
       }
 
       &.prewarming {
@@ -210,12 +222,12 @@
   .backLink {
     display: inline-flex;
     margin-top: $spacing-4;
-    color: $blue-600;
+    color: $orange-600;                 // Warm orange link
     text-decoration: none;
     @include text-secondary;
 
     &:hover {
-      color: $blue-700;
+      color: $orange-700;
       text-decoration: underline;
     }
   }
@@ -234,7 +246,7 @@
     .sectionTitle {
       @include heading-h4;
       margin-bottom: $spacing-3;
-      color: $purple-600;
+      color: $terracotta-600;             // Warm terracotta instead of purple
     }
 
     .linksList {
@@ -250,8 +262,8 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: $purple-50;
-          color: $purple-600;
+          background-color: $terracotta-50;  // Warm terracotta hover
+          color: $terracotta-600;
         }
 
         .linkId {
@@ -283,9 +295,9 @@
   @include flex-between;
   margin-bottom: $spacing-4;
   padding: $spacing-3;
-  background-color: $blue-50;
+  background-color: $orange-50;           // Warm background for primary action area
   border-radius: $border-radius-md;
-  border: $border-width-thin solid $blue-200;
+  border: $border-width-thin solid $orange-200;
 
   .actionsLeft {
     @include flex-start;
@@ -293,7 +305,7 @@
 
     .saveButton {
       padding: $spacing-2 $spacing-4;
-      background-color: $blue-600;
+      background-color: $orange-600;      // Warm primary action
       color: white;
       border: none;
       border-radius: $border-radius-button;
@@ -302,7 +314,7 @@
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background-color: $blue-700;
+        background-color: $orange-700;
       }
 
       &:disabled {

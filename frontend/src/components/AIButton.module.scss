@@ -1,7 +1,7 @@
 /**
  * AIButton Component Styles
  * Floating action button for AI assistant
- * Matches production Tailwind design with blue theme
+ * Cool teal for technical AI features
  */
 
 @use '@/styles/design-tokens' as *;
@@ -16,7 +16,7 @@
   width: 3.5rem;
   height: 3.5rem;
   border-radius: $border-radius-full;
-  background-color: $blue-600;
+  background-color: $teal-600;          // Cool teal for AI/technical features
   color: $white;
   box-shadow: $shadow-card-lg;
   border: none;
@@ -25,7 +25,7 @@
 
   &:hover {
     transform: scale(1.1);
-    background-color: $blue-700;
+    background-color: $teal-700;
   }
 
   .icon {
