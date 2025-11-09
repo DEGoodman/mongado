@@ -66,11 +66,15 @@ export default function NotesGraphPage() {
 
         const data: GraphData = await response.json();
 
-        // Initialize node positions randomly
+        // Initialize node positions near center with some randomness
+        const centerX = 600; // Half of canvas width (1200)
+        const centerY = 350; // Half of canvas height (700)
+        const spread = 200; // Initial spread radius
+
         data.nodes = data.nodes.map((node) => ({
           ...node,
-          x: Math.random() * 800,
-          y: Math.random() * 600,
+          x: centerX + (Math.random() - 0.5) * spread,
+          y: centerY + (Math.random() - 0.5) * spread,
           vx: 0,
           vy: 0,
         }));
@@ -92,7 +96,7 @@ export default function NotesGraphPage() {
     fetchGraphData();
   }, []);
 
-  // Simple force simulation
+  // Force-directed graph simulation
   useEffect(() => {
     if (!graphData || !canvasRef.current) return;
 
@@ -105,67 +109,104 @@ export default function NotesGraphPage() {
     const nodes = graphData.nodes;
     const edges = graphData.edges;
 
+    // Simulation parameters
+    let alpha = 1.0; // Start high
+    const alphaDecay = 0.02; // Cooling rate
+    const alphaMin = 0.001; // Stop when alpha gets this low
+
     function animate() {
       if (!ctx) return;
 
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
 
-      // Apply forces
-      const alpha = 0.1;
+      // Only apply forces if simulation is still cooling
+      if (alpha > alphaMin) {
+        // Repulsion between all nodes (charge force)
+        const chargeStrength = 3000; // Increased for better spacing
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const dx = nodes[j].x! - nodes[i].x!;
+            const dy = nodes[j].y! - nodes[i].y!;
+            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(distSq) || 1;
 
-      // Repulsion between nodes
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[j].x! - nodes[i].x!;
-          const dy = nodes[j].y! - nodes[i].y!;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const force = 100 / (dist * dist);
+            // Stronger repulsion at close range
+            const force = (chargeStrength / distSq) * alpha;
 
-          nodes[i].vx = nodes[i].vx! - force * dx * alpha;
-          nodes[i].vy = nodes[i].vy! - force * dy * alpha;
-          nodes[j].vx = nodes[j].vx! + force * dx * alpha;
-          nodes[j].vy = nodes[j].vy! + force * dy * alpha;
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+
+            nodes[i].vx = nodes[i].vx! - fx;
+            nodes[i].vy = nodes[i].vy! - fy;
+            nodes[j].vx = nodes[j].vx! + fx;
+            nodes[j].vy = nodes[j].vy! + fy;
+          }
         }
+
+        // Attraction along edges (spring force)
+        const linkStrength = 0.3;
+        const linkDistance = 100;
+        edges.forEach((edge) => {
+          const source = nodes.find((n) => n.id === edge.source);
+          const target = nodes.find((n) => n.id === edge.target);
+          if (!source || !target) return;
+
+          const dx = target.x! - source.x!;
+          const dy = target.y! - source.y!;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+          // Spring force towards target distance
+          const force = (dist - linkDistance) * linkStrength * alpha;
+
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+
+          source.vx = source.vx! + fx;
+          source.vy = source.vy! + fy;
+          target.vx = target.vx! - fx;
+          target.vy = target.vy! - fy;
+        });
+
+        // Center gravity (weak pull toward center)
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const centerStrength = 0.05;
+        nodes.forEach((node) => {
+          const dx = centerX - node.x!;
+          const dy = centerY - node.y!;
+          node.vx = node.vx! + dx * centerStrength * alpha;
+          node.vy = node.vy! + dy * centerStrength * alpha;
+        });
+
+        // Cool down
+        alpha -= alphaDecay;
       }
 
-      // Attraction along edges
-      edges.forEach((edge) => {
-        const source = nodes.find((n) => n.id === edge.source);
-        const target = nodes.find((n) => n.id === edge.target);
-        if (!source || !target) return;
-
-        const dx = target.x! - source.x!;
-        const dy = target.y! - source.y!;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = dist * 0.01;
-
-        source.vx = source.vx! + force * dx * alpha;
-        source.vy = source.vy! + force * dy * alpha;
-        target.vx = target.vx! - force * dx * alpha;
-        target.vy = target.vy! - force * dy * alpha;
-      });
-
-      // Center force
-      const centerX = width / 2;
-      const centerY = height / 2;
+      // Update positions with velocity damping
+      const velocityDecay = 0.6;
       nodes.forEach((node) => {
-        const dx = centerX - node.x!;
-        const dy = centerY - node.y!;
-        node.vx = node.vx! + dx * 0.01 * alpha;
-        node.vy = node.vy! + dy * 0.01 * alpha;
-      });
-
-      // Update positions and apply damping
-      nodes.forEach((node) => {
-        node.vx = node.vx! * 0.92; // Increased from 0.85 for slower movement
-        node.vy = node.vy! * 0.92;
+        node.vx = node.vx! * velocityDecay;
+        node.vy = node.vy! * velocityDecay;
         node.x = node.x! + node.vx!;
         node.y = node.y! + node.vy!;
 
-        // Keep nodes within bounds
-        node.x = Math.max(30, Math.min(width - 30, node.x));
-        node.y = Math.max(30, Math.min(height - 30, node.y));
+        // Soft boundary with bounce-back instead of hard clamp
+        const margin = 50;
+        if (node.x! < margin) {
+          node.x = margin;
+          node.vx = node.vx! * -0.5;
+        } else if (node.x! > width - margin) {
+          node.x = width - margin;
+          node.vx = node.vx! * -0.5;
+        }
+        if (node.y! < margin) {
+          node.y = margin;
+          node.vy = node.vy! * -0.5;
+        } else if (node.y! > height - margin) {
+          node.y = height - margin;
+          node.vy = node.vy! * -0.5;
+        }
       });
 
       // Draw edges
