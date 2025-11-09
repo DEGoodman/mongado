@@ -533,8 +533,22 @@ export default function NotesGraphPage() {
           <div className={styles.legend}>
             {/* Selected node tags */}
             {selectedNode && selectedNode.tags.length > 0 && (
-              <div style={{ marginBottom: "12px", padding: "8px", backgroundColor: "#f8fafc", borderRadius: "8px" }}>
-                <div style={{ fontSize: "11px", fontWeight: 600, marginBottom: "6px", color: "#475569" }}>
+              <div
+                style={{
+                  marginBottom: "12px",
+                  padding: "8px",
+                  backgroundColor: "#f8fafc",
+                  borderRadius: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    marginBottom: "6px",
+                    color: "#475569",
+                  }}
+                >
                   Tags on "{selectedNode.title}":
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -586,7 +600,9 @@ export default function NotesGraphPage() {
 
             {/* Most common tags */}
             <div style={{ marginBottom: "12px" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#64748b" }}>
+              <div
+                style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#64748b" }}
+              >
                 Filter by tag (click to toggle):
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -652,7 +668,8 @@ export default function NotesGraphPage() {
               </div>
             </div>
             <div className={styles.instructions}>
-              Hover over nodes to see titles and connections · Larger nodes = hub notes with more links
+              Hover over nodes to see titles and connections · Larger nodes = hub notes with more
+              links
             </div>
           </div>
         </div>
