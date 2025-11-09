@@ -276,84 +276,118 @@ All configuration in `backend/config.py`:
 
 ## Common Commands
 
-**REMEMBER**: Always use `docker compose exec` to run commands in containers!
+**REMEMBER**: Use `make` commands for all operations - they automatically use docker-compose under the hood!
 
-### Docker (Primary Interface)
+### Quick Reference
 
 ```bash
-# Start/Stop Services
-docker compose up -d              # Start all services (detached)
-docker compose down               # Stop all services
-docker compose restart backend    # Restart specific service
-docker compose up -d --build      # Rebuild and start
-
-# View Logs
-docker compose logs -f backend    # Follow backend logs
-docker compose logs frontend      # View frontend logs
-docker compose logs               # All services
-
-# Execute Commands in Containers
-docker compose exec backend bash                    # Shell into backend
-docker compose exec frontend sh                     # Shell into frontend
-docker compose exec backend python manage.py        # Run Python script
-docker compose exec frontend npm run build          # Run npm command
-
-# Production
-docker compose -f docker-compose.prod.yml up -d --build
-docker compose -f docker-compose.prod.yml logs -f backend
+make help              # Show all available commands
+make up                # Start all services (detached, no more forgetting -d!)
+make down              # Stop all services
+make logs              # View all logs (follow mode)
+make status            # Show service status
 ```
 
-### Backend (Python 3.13) - via Docker
-
-**Run ALL backend commands through docker compose**:
+### Docker Operations
 
 ```bash
-# Testing
-docker compose exec backend pytest tests/                           # All tests
-docker compose exec backend pytest tests/unit/                      # Unit tests
-docker compose exec backend pytest tests/ --cov                     # With coverage
-docker compose exec backend pytest tests/unit/test_main.py::test_function_name -v  # Single test
-
-# Code Quality
-docker compose exec backend ruff check .                            # Lint
-docker compose exec backend ruff format .                           # Format
-docker compose exec backend mypy main.py                            # Type check
-
-# Other Commands
-docker compose exec backend python image_optimizer.py input.jpg output.webp 85 1200
-docker compose exec backend python -m backend.script_name           # Run script
-```
-
-**Make commands** (if you're already in the backend directory and need quick reference):
-```bash
-# These internally use docker compose exec
-make test             # docker compose exec backend pytest tests/
-make lint             # docker compose exec backend ruff check .
-make format           # docker compose exec backend ruff format .
-```
-
-### Frontend (Next.js 14 + TypeScript) - via Docker
-
-**Run ALL frontend commands through docker compose**:
-
-```bash
-# Testing
-docker compose exec frontend npm test                    # Unit tests
-docker compose exec frontend npm run test:ui             # Tests with UI
-docker compose exec frontend npm run test:e2e            # E2E tests
-docker compose exec frontend npm run test:all            # Full suite
-
-# Code Quality
-docker compose exec frontend npm run lint                # ESLint
-docker compose exec frontend npm run lint:fix            # ESLint with auto-fix
-docker compose exec frontend npm run type-check          # TypeScript
+# Start/Stop
+make up                       # Start all services (detached)
+make down                     # Stop all services
+make restart                  # Restart all services
+make restart-backend          # Restart backend only
+make restart-frontend         # Restart frontend only
 
 # Build
-docker compose exec frontend npm run build               # Production build
-docker compose exec frontend npm run build:analyze       # Bundle analysis
+make rebuild                  # Rebuild and start all services
+make rebuild-backend          # Rebuild backend only
+make rebuild-frontend         # Rebuild frontend only
 
-# Dependencies
-docker compose exec frontend npm install package-name    # Install new package
+# Logs
+make logs                     # Follow all logs
+make logs-backend             # Follow backend logs
+make logs-frontend            # Follow frontend logs
+make logs-neo4j              # Follow Neo4j logs
+
+# Shell Access
+make shell-backend           # Bash shell in backend container
+make shell-frontend          # Shell in frontend container
+
+# Database
+make db-shell                # Neo4j browser info
+```
+
+### Backend (Python 3.13)
+
+```bash
+# Testing
+make test-backend                  # All tests
+make test-backend-unit             # Unit tests only
+make test-backend-integration      # Integration tests only
+make test-backend-cov              # Tests with coverage
+make test-backend-watch            # Tests in watch mode
+
+# Code Quality
+make lint-backend                  # Lint with ruff
+make format-backend                # Format with ruff
+make typecheck-backend             # Type check with mypy
+make security                      # Security checks with bandit
+
+# For specific test files (use docker compose directly):
+docker compose exec backend pytest tests/unit/test_main.py::test_function_name -v
+
+# Other commands (use docker compose directly):
+docker compose exec backend python image_optimizer.py input.jpg output.webp 85 1200
+docker compose exec backend python -m backend.script_name
+```
+
+### Frontend (Next.js 14 + TypeScript)
+
+```bash
+# Testing
+make test-frontend             # Unit tests
+make test-frontend-ui          # Tests with UI
+make test-e2e                  # E2E tests
+
+# Code Quality
+make lint-frontend             # ESLint
+make lint-frontend-fix         # ESLint with auto-fix
+make typecheck-frontend        # TypeScript type check
+
+# Build
+make build-frontend            # Production build
+make build-frontend-analyze    # Bundle analysis
+
+# Dependencies (use docker compose directly):
+docker compose exec frontend npm install package-name
+```
+
+### Combined Operations
+
+```bash
+make test                      # All tests (backend + frontend)
+make test-all                  # Full test suite with coverage
+make lint                      # All linters
+make typecheck                 # All type checkers
+make ci                        # Full CI pipeline
+make ci-full                   # CI + E2E tests
+```
+
+### Production
+
+```bash
+make prod-up                   # Start production services
+make prod-down                 # Stop production services
+make prod-logs                 # View production logs
+make prod-logs-backend         # Backend production logs
+make prod-logs-frontend        # Frontend production logs
+```
+
+### Utilities
+
+```bash
+make clean                     # Clean generated files and stop containers
+make clean-volumes             # Clean everything including volumes (WARNING: deletes data)
 ```
 
 ## Type System
@@ -484,14 +518,16 @@ See existing tests for patterns.
 
 ## Before Committing
 
-**Backend:**
+**Quick check (both backend + frontend):**
 ```bash
-make ci  # lint + typecheck + security + tests
+make ci  # Runs lint, typecheck, security, and tests for both backend and frontend
 ```
 
-**Frontend:**
+**Or individually:**
 ```bash
-npm run test:all  # typecheck + lint + tests
+make ci              # Backend + frontend CI
+make test-all        # Full test suite with coverage
+make ci-full         # CI + E2E tests (comprehensive)
 ```
 
 ## Common Pitfalls
