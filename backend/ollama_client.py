@@ -22,7 +22,7 @@ class OllamaClient:
         self.chat_model = settings.ollama_chat_model
         self.model = settings.ollama_chat_model  # Backwards compatibility
         self.num_ctx = settings.ollama_num_ctx
-        self.client = None
+        self.client: Any | None = None
 
         # Embedding cache: {content_hash: embedding_vector}
         # This prevents regenerating embeddings for the same content
@@ -100,7 +100,7 @@ class OllamaClient:
         Returns:
             List of floats representing the embedding, or None if unavailable
         """
-        if not self.is_available():
+        if not self.is_available() or self.client is None:
             logger.debug("Ollama not available, skipping embedding generation")
             return None
 
@@ -117,7 +117,7 @@ class OllamaClient:
                 prompt=text,
                 options={"num_ctx": self.num_ctx}  # Use consistent context size
             )
-            embedding = response["embedding"]
+            embedding: list[float] = response["embedding"]
 
             # Cache the result
             if use_cache:
@@ -293,7 +293,7 @@ class OllamaClient:
         Returns:
             The answer as a string, or None if unavailable
         """
-        if not self.is_available():
+        if not self.is_available() or self.client is None:
             logger.debug("Ollama not available, cannot answer question")
             return None
 
@@ -352,7 +352,8 @@ Answer:"""
                     "num_predict": 512  # Limit response length for faster generation
                 }
             )
-            return response["response"]
+            answer: str = response["response"]
+            return answer
 
         except Exception as e:
             logger.error("Failed to answer question: %s", e)
@@ -368,7 +369,7 @@ Answer:"""
         Returns:
             A summary of the article, or None if unavailable
         """
-        if not self.is_available():
+        if not self.is_available() or self.client is None:
             logger.debug("Ollama not available, cannot summarize")
             return None
 
@@ -384,7 +385,8 @@ Summary:"""
                 prompt=prompt,
                 options={"num_ctx": self.num_ctx}
             )
-            return response["response"]
+            summary: str = response["response"]
+            return summary
 
         except Exception as e:
             logger.error("Failed to summarize article: %s", e)
@@ -401,7 +403,7 @@ Summary:"""
         Returns:
             True if warmup succeeded, False otherwise
         """
-        if not self.is_available():
+        if not self.is_available() or self.client is None:
             logger.debug("Ollama not available, skipping warmup")
             return False
 
@@ -456,7 +458,8 @@ Summary:"""
         if magnitude1 == 0 or magnitude2 == 0:
             return 0.0
 
-        return dot_product / (magnitude1 * magnitude2)
+        similarity: float = dot_product / (magnitude1 * magnitude2)
+        return similarity
 
 
 # Global instance

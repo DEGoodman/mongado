@@ -59,7 +59,7 @@ Links are automatically parsed and stored as graph relationships.
         _admin: AdminUser = Depends(verify_admin),
     ) -> dict[str, Any]:
         """Create a new note (admin only)."""
-        created_note = notes_service.create_note(
+        created_note: dict[str, Any] = notes_service.create_note(
             content=note.content,
             title=note.title,
             tags=note.tags,
@@ -77,7 +77,7 @@ Links are automatically parsed and stored as graph relationships.
     @router.get("/random", response_model=dict[str, Any])
     async def get_random_note() -> dict[str, Any]:
         """Get a random note for serendipitous discovery."""
-        note = notes_service.get_random_note()
+        note: dict[str, Any] | None = notes_service.get_random_note()
 
         if not note:
             raise HTTPException(status_code=404, detail="No notes available")
@@ -162,7 +162,7 @@ Links are automatically parsed and stored as graph relationships.
     @router.get("/{note_id}", response_model=dict[str, Any])
     async def get_note(note_id: str) -> dict[str, Any]:
         """Get a specific note by ID."""
-        note = notes_service.get_note(note_id)
+        note: dict[str, Any] | None = notes_service.get_note(note_id)
 
         if not note:
             raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
@@ -176,7 +176,7 @@ Links are automatically parsed and stored as graph relationships.
         _admin: AdminUser = Depends(verify_admin),
     ) -> dict[str, Any]:
         """Update a note (admin only)."""
-        updated = notes_service.update_note(
+        updated: dict[str, Any] | None = notes_service.update_note(
             note_id=note_id,
             content=note_update.content,
             title=note_update.title,

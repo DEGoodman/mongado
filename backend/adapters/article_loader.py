@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import frontmatter
+import frontmatter  # type: ignore[import-untyped]
 
 from config import get_settings
 
@@ -175,7 +175,7 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
     articles: list[dict[str, Any]] = []
 
     try:
-        import boto3
+        import boto3  # type: ignore[import-untyped]
 
         s3_client = boto3.client("s3")
 

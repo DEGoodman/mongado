@@ -198,11 +198,12 @@ def _format_bytes(size: int) -> str:
     Returns:
         Formatted string (e.g., "1.2 MB")
     """
+    size_float: float = float(size)
     for unit in ["B", "KB", "MB", "GB"]:
-        if size < 1024.0:
-            return f"{size:.1f} {unit}"
-        size /= 1024.0
-    return f"{size:.1f} TB"
+        if size_float < 1024.0:
+            return f"{size_float:.1f} {unit}"
+        size_float /= 1024.0
+    return f"{size_float:.1f} TB"
 
 
 def batch_optimize_directory(

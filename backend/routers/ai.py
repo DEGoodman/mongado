@@ -46,7 +46,8 @@ def _get_all_resources(get_static_articles: Any, get_user_resources_db: Any, not
         }
         normalized_notes.append(normalized_note)
 
-    return get_static_articles() + get_user_resources_db() + normalized_notes
+    result: list[dict[str, Any]] = get_static_articles() + get_user_resources_db() + normalized_notes
+    return result
 
 
 def create_ai_router(
@@ -254,7 +255,7 @@ def create_ai_router(
 
             # Parse JSON response using pure function
             suggestions_data = ai_core.parse_json_response(response, expected_type="array")
-            if not suggestions_data:
+            if not suggestions_data or not isinstance(suggestions_data, list):
                 return TagSuggestionsResponse(suggestions=[], count=0)
 
             # Convert to TagSuggestion models
@@ -265,6 +266,7 @@ def create_ai_router(
                     reason=s.get("reason", "")
                 )
                 for s in suggestions_data
+                if isinstance(s, dict)
             ]
 
             # Limit to top 4 suggestions
@@ -336,7 +338,7 @@ def create_ai_router(
 
             # Parse JSON response using pure function
             suggestions_data = ai_core.parse_json_response(response, expected_type="array")
-            if not suggestions_data:
+            if not suggestions_data or not isinstance(suggestions_data, list):
                 return LinkSuggestionsResponse(suggestions=[], count=0)
 
             # Convert to LinkSuggestion models and add titles
@@ -344,6 +346,8 @@ def create_ai_router(
             note_map = {n["id"]: n for n in candidate_notes}
 
             for s in suggestions_data:
+                if not isinstance(s, dict):
+                    continue
                 note_id_suggestion = s.get("note_id")
                 if note_id_suggestion and note_id_suggestion in note_map:
                     suggestions.append(

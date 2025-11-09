@@ -79,7 +79,7 @@ def _normalize_search_result(doc: dict[str, Any], score: float = 1.0) -> SearchR
     # Determine if this is an article or note
     is_note = "note_id" in doc
     resource_type = "note" if is_note else "article"
-    resource_id = doc.get("note_id") if is_note else doc.get("id")
+    resource_id: str | int = str(doc.get("note_id") if is_note else doc.get("id", ""))
 
     return SearchResult(
         id=resource_id,

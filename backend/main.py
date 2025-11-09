@@ -147,11 +147,11 @@ Some endpoints require admin authentication:
 
 # Add rate limiter to app state
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
 # Customize OpenAPI schema to add security definitions
-def custom_openapi():
+def custom_openapi() -> dict[str, Any]:
     """Customize OpenAPI schema with security definitions."""
     if app.openapi_schema:
         return app.openapi_schema
@@ -179,7 +179,7 @@ def custom_openapi():
     return app.openapi_schema
 
 
-app.openapi = custom_openapi
+app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 # Cache control middleware for static assets
@@ -188,7 +188,7 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         """Process request and add appropriate cache headers."""
-        response = await call_next(request)
+        response: Response = await call_next(request)
 
         # Static assets (images, icons, etc.) - cache for 1 year
         if request.url.path.startswith("/static/assets/"):
@@ -402,7 +402,9 @@ def get_resources() -> ResourceListResponse:
                 return parser.parse(created)
             except Exception:
                 return datetime.min
-        return created
+        if isinstance(created, datetime):
+            return created
+        return datetime.min
 
     sorted_resources = sorted(all_resources, key=get_sort_key, reverse=True)
     return ResourceListResponse(resources=sorted_resources)

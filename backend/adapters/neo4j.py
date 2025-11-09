@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Any
 
-from neo4j import GraphDatabase, Session
+from neo4j import Driver, GraphDatabase, Session
 from neo4j.exceptions import ServiceUnavailable
 
 from config import get_settings
@@ -22,7 +22,7 @@ class Neo4jAdapter:
         self.user = settings.neo4j_user
         self.password = settings.neo4j_password
         self.database = settings.neo4j_database
-        self.driver = None
+        self.driver: Driver | None = None
         self._available = False
 
         # Try to connect
@@ -734,7 +734,10 @@ class Neo4jAdapter:
                 created_at=created_at,
                 updated_at=updated_at,
             )
-            node = result.single()["a"]
+            record = result.single()
+            if not record:
+                raise RuntimeError(f"Failed to upsert article {article_id}")
+            node = record["a"]
             return self._node_to_dict(node)
 
     def get_article(self, article_id: str) -> dict[str, Any] | None:
