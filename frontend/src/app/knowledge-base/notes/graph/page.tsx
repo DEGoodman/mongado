@@ -15,6 +15,7 @@ interface GraphNode {
   y?: number;
   vx?: number;
   vy?: number;
+  degree?: number; // Number of connections
 }
 
 interface GraphEdge {
@@ -37,6 +38,7 @@ export default function NotesGraphPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
 
@@ -66,10 +68,18 @@ export default function NotesGraphPage() {
 
         const data: GraphData = await response.json();
 
-        // Initialize node positions near center with some randomness
+        // Calculate node degrees (connection counts)
+        const degreeMap = new Map<string, number>();
+        data.nodes.forEach((node) => degreeMap.set(node.id, 0));
+        data.edges.forEach((edge) => {
+          degreeMap.set(edge.source, (degreeMap.get(edge.source) || 0) + 1);
+          degreeMap.set(edge.target, (degreeMap.get(edge.target) || 0) + 1);
+        });
+
+        // Initialize node positions across the canvas
         const centerX = 600; // Half of canvas width (1200)
         const centerY = 350; // Half of canvas height (700)
-        const spread = 200; // Initial spread radius
+        const spread = 500; // Wide initial spread to encourage distribution
 
         data.nodes = data.nodes.map((node) => ({
           ...node,
@@ -77,6 +87,7 @@ export default function NotesGraphPage() {
           y: centerY + (Math.random() - 0.5) * spread,
           vx: 0,
           vy: 0,
+          degree: degreeMap.get(node.id) || 0,
         }));
 
         setGraphData(data);
@@ -96,6 +107,62 @@ export default function NotesGraphPage() {
     fetchGraphData();
   }, []);
 
+  // Get color palette for tags
+  const tagColorMap: Record<string, string> = {
+    ml: "#8b5cf6", // Purple for ML
+    testing: "#3b82f6", // Blue for testing
+    experimentation: "#10b981", // Green for experimentation
+    sre: "#f59e0b", // Orange for SRE
+    management: "#ef4444", // Red for management
+    saas: "#ec4899", // Pink for SaaS
+    writing: "#06b6d4", // Cyan for writing
+    productivity: "#84cc16", // Lime for productivity
+    "incident-management": "#dc2626", // Darker red
+    culture: "#7c3aed", // Violet
+    rollouts: "#0ea5e9", // Sky blue
+    "technical-debt": "#f97316", // Deep orange
+  };
+
+  // Generate color for any tag
+  const getTagColor = (tag: string): string => {
+    if (tagColorMap[tag.toLowerCase()]) {
+      return tagColorMap[tag.toLowerCase()];
+    }
+    // Generate consistent color based on tag name
+    let hash = 0;
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = hash % 360;
+    return `hsl(${hue}, 65%, 55%)`;
+  };
+
+  // Color palette for different tags
+  const getNodeColor = (node: GraphNode): string => {
+    if (!node.tags || node.tags.length === 0) {
+      return "#94a3b8"; // Gray for untagged
+    }
+
+    return getTagColor(node.tags[0]); // Use first tag
+  };
+
+  // Get most common tags from the graph
+  const getTopTags = (limit: number = 8): Array<{ tag: string; count: number; color: string }> => {
+    if (!graphData) return [];
+
+    const tagCounts = new Map<string, number>();
+    graphData.nodes.forEach((node) => {
+      node.tags.forEach((tag) => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      });
+    });
+
+    return Array.from(tagCounts.entries())
+      .map(([tag, count]) => ({ tag, count, color: getTagColor(tag) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  };
+
   // Force-directed graph simulation
   useEffect(() => {
     if (!graphData || !canvasRef.current) return;
@@ -111,11 +178,13 @@ export default function NotesGraphPage() {
 
     // Simulation parameters
     let alpha = 1.0; // Start high
-    const alphaDecay = 0.02; // Cooling rate
+    const alphaDecay = 0.01; // Moderate cooling speed
     const alphaMin = 0.001; // Stop when alpha gets this low
+    let frameCount = 0;
 
     function animate() {
       if (!ctx) return;
+      frameCount++;
 
       // Clear canvas
       ctx.clearRect(0, 0, width, height);
@@ -123,16 +192,18 @@ export default function NotesGraphPage() {
       // Only apply forces if simulation is still cooling
       if (alpha > alphaMin) {
         // Repulsion between all nodes (charge force)
-        const chargeStrength = 3000; // Increased for better spacing
+        const chargeStrength = 3000; // Very strong to spread nodes across canvas
+        const minDistance = 30; // Prevent nodes from getting too close
+
         for (let i = 0; i < nodes.length; i++) {
           for (let j = i + 1; j < nodes.length; j++) {
             const dx = nodes[j].x! - nodes[i].x!;
             const dy = nodes[j].y! - nodes[i].y!;
-            const distSq = dx * dx + dy * dy;
-            const dist = Math.sqrt(distSq) || 1;
+            const distSq = Math.max(dx * dx + dy * dy, minDistance * minDistance);
+            const dist = Math.sqrt(distSq);
 
-            // Stronger repulsion at close range
-            const force = (chargeStrength / distSq) * alpha;
+            // Repulsion force (inverse square law)
+            const force = Math.min((chargeStrength / distSq) * alpha, 15); // Higher cap for stronger push
 
             const fx = (dx / dist) * force;
             const fy = (dy / dist) * force;
@@ -145,8 +216,8 @@ export default function NotesGraphPage() {
         }
 
         // Attraction along edges (spring force)
-        const linkStrength = 0.3;
-        const linkDistance = 100;
+        const linkStrength = 0.1;
+        const linkDistance = 180; // Even longer links to spread out connected nodes
         edges.forEach((edge) => {
           const source = nodes.find((n) => n.id === edge.source);
           const target = nodes.find((n) => n.id === edge.target);
@@ -168,10 +239,10 @@ export default function NotesGraphPage() {
           target.vy = target.vy! - fy;
         });
 
-        // Center gravity (weak pull toward center)
+        // Center gravity (very weak pull toward center)
         const centerX = width / 2;
         const centerY = height / 2;
-        const centerStrength = 0.05;
+        const centerStrength = 0.003; // Minimal gravity to allow maximum spreading
         nodes.forEach((node) => {
           const dx = centerX - node.x!;
           const dy = centerY - node.y!;
@@ -179,72 +250,144 @@ export default function NotesGraphPage() {
           node.vy = node.vy! + dy * centerStrength * alpha;
         });
 
-        // Cool down
-        alpha -= alphaDecay;
+        // Cool down (ensure alpha doesn't go negative)
+        alpha = Math.max(alphaMin, alpha - alphaDecay);
       }
 
       // Update positions with velocity damping
-      const velocityDecay = 0.6;
+      const velocityDecay = 0.55; // Even less damping to allow nodes to spread
+
       nodes.forEach((node) => {
-        node.vx = node.vx! * velocityDecay;
-        node.vy = node.vy! * velocityDecay;
+        // Cap maximum velocity to prevent nodes from shooting off
+        const maxVelocity = 15; // Higher velocity to allow faster spreading
+        node.vx = Math.max(-maxVelocity, Math.min(maxVelocity, node.vx! * velocityDecay));
+        node.vy = Math.max(-maxVelocity, Math.min(maxVelocity, node.vy! * velocityDecay));
+
         node.x = node.x! + node.vx!;
         node.y = node.y! + node.vy!;
 
-        // Soft boundary with bounce-back instead of hard clamp
-        const margin = 50;
+        // Keep nodes strictly within bounds
+        const margin = 40;
+
         if (node.x! < margin) {
           node.x = margin;
-          node.vx = node.vx! * -0.5;
+          node.vx = Math.abs(node.vx!) * 0.5; // Bounce back
         } else if (node.x! > width - margin) {
           node.x = width - margin;
-          node.vx = node.vx! * -0.5;
+          node.vx = -Math.abs(node.vx!) * 0.5; // Bounce back
         }
         if (node.y! < margin) {
           node.y = margin;
-          node.vy = node.vy! * -0.5;
+          node.vy = Math.abs(node.vy!) * 0.5; // Bounce back
         } else if (node.y! > height - margin) {
           node.y = height - margin;
-          node.vy = node.vy! * -0.5;
+          node.vy = -Math.abs(node.vy!) * 0.5; // Bounce back
         }
       });
 
-      // Draw edges
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 1;
+      // Check if tag filtering is active
+      const isFiltering = selectedTags.size > 0;
+
+      // Draw edges (draw before nodes so nodes appear on top)
       edges.forEach((edge) => {
         const source = nodes.find((n) => n.id === edge.source);
         const target = nodes.find((n) => n.id === edge.target);
         if (!source || !target) return;
 
+        // Check if edge should be dimmed based on tag filter
+        const sourceMatches = !isFiltering || source.tags.some((tag) => selectedTags.has(tag));
+        const targetMatches = !isFiltering || target.tags.some((tag) => selectedTags.has(tag));
+        const isDimmed = isFiltering && !sourceMatches && !targetMatches;
+
+        // Check if edge connects hub nodes (high degree nodes)
+        const isHubEdge = (source.degree || 0) >= 5 || (target.degree || 0) >= 5;
+
+        // Highlight edges connected to hovered/selected nodes
+        const isHighlighted =
+          (selectedNode && (edge.source === selectedNode.id || edge.target === selectedNode.id)) ||
+          (hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode));
+
         ctx.beginPath();
         ctx.moveTo(source.x!, source.y!);
         ctx.lineTo(target.x!, target.y!);
+
+        if (isHighlighted) {
+          ctx.strokeStyle = "#3b82f6";
+          ctx.lineWidth = 3;
+          ctx.globalAlpha = 1;
+        } else if (isDimmed) {
+          ctx.strokeStyle = "#e2e8f0";
+          ctx.lineWidth = 0.5;
+          ctx.globalAlpha = 0.2;
+        } else if (isHubEdge) {
+          ctx.strokeStyle = "#64748b";
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.strokeStyle = "#cbd5e1";
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = 1;
+        }
         ctx.stroke();
+        ctx.globalAlpha = 1; // Reset
       });
 
       // Draw nodes
       nodes.forEach((node) => {
         const isSelected = selectedNode?.id === node.id;
         const isHovered = hoveredNode === node.id;
-        const radius = isSelected || isHovered ? 10 : 8; // Increased from 8/6 for easier clicking
+        const isHub = (node.degree || 0) >= 5;
+
+        // Check if node matches tag filter
+        const matchesFilter = !isFiltering || node.tags.some((tag) => selectedTags.has(tag));
+        const isDimmed = isFiltering && !matchesFilter;
+
+        // Scale radius based on degree (hub nodes are larger)
+        let baseRadius = 8;
+        if (isHub) baseRadius = 12;
+        const radius = isSelected || isHovered ? baseRadius + 2 : baseRadius;
+
+        // Get color based on tags
+        const nodeColor = getNodeColor(node);
+
+        // Set opacity for dimmed nodes
+        ctx.globalAlpha = isDimmed ? 0.15 : 1;
 
         // Node circle
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = "#3b82f6"; // Blue for all nodes
+        ctx.fillStyle = nodeColor;
         ctx.fill();
-        ctx.strokeStyle = isSelected ? "#1e40af" : "#e5e7eb";
-        ctx.lineWidth = isSelected ? 3 : 1;
+
+        // Border
+        if (isSelected) {
+          ctx.strokeStyle = "#1e40af";
+          ctx.lineWidth = 3;
+        } else if (isHub) {
+          ctx.strokeStyle = "#334155"; // Darker border for hubs
+          ctx.lineWidth = 2;
+        } else {
+          ctx.strokeStyle = "#e5e7eb";
+          ctx.lineWidth = 1;
+        }
         ctx.stroke();
 
-        // Node label
+        // Node label - only show on hover or selected
         if (isSelected || isHovered) {
           ctx.fillStyle = "#1f2937";
-          ctx.font = "12px sans-serif";
+          ctx.font = isHub ? "bold 12px sans-serif" : "12px sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(node.title, node.x!, node.y! - 12);
+
+          // Show degree count only when hovered/selected
+          if (node.degree && node.degree > 0) {
+            ctx.font = "10px sans-serif";
+            ctx.fillStyle = "#64748b";
+            ctx.fillText(`${node.degree} links`, node.x!, node.y! + 16);
+          }
         }
+
+        ctx.globalAlpha = 1; // Reset
       });
 
       animationRef.current = requestAnimationFrame(animate);
@@ -257,7 +400,7 @@ export default function NotesGraphPage() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [graphData, selectedNode, hoveredNode]);
+  }, [graphData, selectedNode, hoveredNode, selectedTags]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!graphData || !canvasRef.current) return;
@@ -267,11 +410,14 @@ export default function NotesGraphPage() {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    // Find clicked node
+    // Find clicked node (use larger radius for hub nodes)
     const clickedNode = graphData.nodes.find((node) => {
       const dx = x - node.x!;
       const dy = y - node.y!;
-      return Math.sqrt(dx * dx + dy * dy) < 12; // Increased from 10 to match larger nodes
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const isHub = (node.degree || 0) >= 5;
+      const clickRadius = isHub ? 14 : 10;
+      return dist < clickRadius;
     });
 
     setSelectedNode(clickedNode || null);
@@ -285,11 +431,14 @@ export default function NotesGraphPage() {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    // Find hovered node
+    // Find hovered node (use larger radius for hub nodes)
     const hoveredNode = graphData.nodes.find((node) => {
       const dx = x - node.x!;
       const dy = y - node.y!;
-      return Math.sqrt(dx * dx + dy * dy) < 12; // Increased from 10 to match larger nodes
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const isHub = (node.degree || 0) >= 5;
+      const hoverRadius = isHub ? 14 : 10;
+      return dist < hoverRadius;
     });
 
     setHoveredNode(hoveredNode?.id || null);
@@ -382,11 +531,129 @@ export default function NotesGraphPage() {
           />
 
           <div className={styles.legend}>
-            <div className={styles.legendItem}>
-              <div className={styles.legendDot}></div>
-              <span>Notes</span>
+            {/* Selected node tags */}
+            {selectedNode && selectedNode.tags.length > 0 && (
+              <div style={{ marginBottom: "12px", padding: "8px", backgroundColor: "#f8fafc", borderRadius: "8px" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, marginBottom: "6px", color: "#475569" }}>
+                  Tags on "{selectedNode.title}":
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {selectedNode.tags.map((tag) => {
+                    const isActive = selectedTags.has(tag);
+                    const color = getTagColor(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => {
+                          const newTags = new Set(selectedTags);
+                          if (isActive) {
+                            newTags.delete(tag);
+                          } else {
+                            newTags.add(tag);
+                          }
+                          setSelectedTags(newTags);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "3px 8px",
+                          border: `2px solid ${isActive ? color : "#e2e8f0"}`,
+                          backgroundColor: isActive ? `${color}20` : "white",
+                          borderRadius: "10px",
+                          cursor: "pointer",
+                          fontSize: "11px",
+                          fontWeight: isActive ? 600 : 500,
+                          color: isActive ? color : "#64748b",
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            backgroundColor: color,
+                          }}
+                        />
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Most common tags */}
+            <div style={{ marginBottom: "12px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#64748b" }}>
+                Filter by tag (click to toggle):
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {getTopTags(8).map(({ tag, count, color }) => {
+                  const isActive = selectedTags.has(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        const newTags = new Set(selectedTags);
+                        if (isActive) {
+                          newTags.delete(tag);
+                        } else {
+                          newTags.add(tag);
+                        }
+                        setSelectedTags(newTags);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "4px 10px",
+                        border: `2px solid ${isActive ? color : "#e2e8f0"}`,
+                        backgroundColor: isActive ? `${color}15` : "white",
+                        borderRadius: "12px",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: isActive ? 600 : 400,
+                        color: isActive ? color : "#64748b",
+                        transition: "all 0.2s",
+                      }}
+                      title={`${count} notes`}
+                    >
+                      <div
+                        style={{
+                          width: "10px",
+                          height: "10px",
+                          borderRadius: "50%",
+                          backgroundColor: color,
+                        }}
+                      />
+                      {tag}
+                      <span style={{ fontSize: "10px", opacity: 0.7 }}>({count})</span>
+                    </button>
+                  );
+                })}
+                {selectedTags.size > 0 && (
+                  <button
+                    onClick={() => setSelectedTags(new Set())}
+                    style={{
+                      padding: "4px 10px",
+                      border: "1px solid #e2e8f0",
+                      backgroundColor: "white",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      fontSize: "11px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
             </div>
-            <div className={styles.instructions}>Click a node to select · Hover to see title</div>
+            <div className={styles.instructions}>
+              Hover over nodes to see titles and connections · Larger nodes = hub notes with more links
+            </div>
           </div>
         </div>
 
