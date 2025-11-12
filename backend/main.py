@@ -413,9 +413,10 @@ def get_resources() -> ResourceListResponse:
 @app.post("/api/resources", response_model=ResourceResponse, status_code=201)
 def create_resource(resource: Resource) -> ResourceResponse:
     """Create a new user resource."""
-    # Generate ID based on total resources (static + user)
-    total_resources = len(static_articles) + len(user_resources_db)
-    resource.id = total_resources + 1
+    # Generate ID based on maximum existing ID (prevents conflicts)
+    all_resources = static_articles + user_resources_db
+    max_id = max((r["id"] for r in all_resources), default=0)
+    resource.id = max_id + 1
     resource.created_at = datetime.now()
     user_resources_db.append(resource.model_dump())
     return ResourceResponse(resource=resource)
