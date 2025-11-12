@@ -30,9 +30,10 @@ def test_get_resources_includes_static(client: TestClient) -> None:
 
 def test_create_resource(client: TestClient, sample_resource: dict[str, str | list[str]]) -> None:
     """Test creating a new resource."""
-    # Get current resource count
+    # Get current max ID from existing resources
     initial_response = client.get("/api/resources")
-    initial_count = len(initial_response.json()["resources"])
+    existing_resources = initial_response.json()["resources"]
+    max_existing_id = max((r["id"] for r in existing_resources), default=0)
 
     response = client.post("/api/resources", json=sample_resource)
     assert response.status_code == 201
@@ -41,8 +42,8 @@ def test_create_resource(client: TestClient, sample_resource: dict[str, str | li
     resource = data["resource"]
     assert resource["title"] == sample_resource["title"]
     assert resource["content"] == sample_resource["content"]
-    # ID should be total count + 1 (after all existing resources)
-    assert resource["id"] == initial_count + 1
+    # ID should be max existing ID + 1 (prevents conflicts)
+    assert resource["id"] == max_existing_id + 1
     assert "created_at" in resource
 
 

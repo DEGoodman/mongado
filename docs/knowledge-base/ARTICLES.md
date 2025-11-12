@@ -118,6 +118,7 @@ See [[curious-elephant]] for more details on database design.
 - `description` (string): Brief summary for metadata/SEO
 - `category` (string): Category slug
 - `published` (boolean): Defaults to true if omitted
+- `draft` (boolean): If true, only visible in development mode (when `DEBUG=true`). Hidden in production. Defaults to false.
 
 ### 4. File Naming Convention
 
@@ -127,6 +128,51 @@ Use numbered prefixes for easy ordering:
 - `003-third-article.md`
 
 Files are loaded in alphabetical order.
+
+## Working with Draft Articles
+
+Draft articles are perfect for work-in-progress content that you want to test locally but keep hidden from production users.
+
+### How Drafts Work
+
+Articles with `draft: true` in their frontmatter are:
+- ✅ **Visible in local development** (when `DEBUG=true` or `TESTING=1`)
+- ❌ **Hidden in production** (when `DEBUG=false`)
+
+### Creating a Draft
+
+Add `draft: true` to the frontmatter:
+
+```markdown
+---
+id: 15
+title: "Work in Progress: New Feature Guide"
+tags: ["draft", "features"]
+draft: true
+created_at: "2025-11-12T10:00:00"
+---
+
+## Draft Content
+
+This content is only visible in development...
+```
+
+### Use Cases for Drafts
+
+1. **Work in Progress**: Content you're still writing
+2. **Review Required**: Articles waiting for review before publication
+3. **Future Content**: Articles scheduled for future publication
+4. **Experimental**: Testing new content formats or ideas
+
+### Publishing a Draft
+
+When ready to publish, simply change the frontmatter:
+
+```yaml
+draft: false  # or remove the draft field entirely
+```
+
+Then commit and push - the article will be visible in production after deployment.
 
 ## Adding Images
 
