@@ -5,7 +5,6 @@ import logging
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -30,9 +29,6 @@ from models import (
     HealthResponse,
     ImageUploadResponse,
     ReadyResponse,
-    Resource,
-    ResourceListResponse,
-    ResourceResponse,
     StatusResponse,
 )
 from notes_service import get_notes_service
@@ -231,7 +227,8 @@ app.add_middleware(CacheControlMiddleware)
 
 # Create and include domain routers with dependency injection
 notes_router = create_notes_router(
-    notes_service=notes_service
+    notes_service=notes_service,
+    ollama_client=ollama_client
 )
 app.include_router(notes_router)
 
@@ -246,7 +243,6 @@ app.include_router(search_router)
 
 articles_router = create_articles_router(
     get_static_articles=lambda: static_articles,  # Callable returns current list
-    get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
     ollama_client=ollama_client
 )
 app.include_router(articles_router)
@@ -384,78 +380,9 @@ async def upload_image(file: Annotated[UploadFile, File()]) -> ImageUploadRespon
         return ImageUploadResponse(url=image_url, filename=temp_filename)
 
 
-@app.get("/api/resources", response_model=ResourceListResponse)
-def get_resources() -> ResourceListResponse:
-    """Get all resources (static articles + user-created), ordered by created_at descending."""
-    from dateutil import parser
-
-    all_resources = static_articles + user_resources_db
-
-    # Sort by created_at descending (newest first)
-    # Handle both string and datetime types
-    def get_sort_key(resource: dict[str, Any]) -> datetime:
-        created = resource.get("created_at")
-        if not created:
-            return datetime.min
-        if isinstance(created, str):
-            try:
-                return parser.parse(created)
-            except Exception:
-                return datetime.min
-        if isinstance(created, datetime):
-            return created
-        return datetime.min
-
-    sorted_resources = sorted(all_resources, key=get_sort_key, reverse=True)
-    return ResourceListResponse(resources=sorted_resources)
-
-
-@app.post("/api/resources", response_model=ResourceResponse, status_code=201)
-def create_resource(resource: Resource) -> ResourceResponse:
-    """Create a new user resource."""
-    # Generate ID based on maximum existing ID (prevents conflicts)
-    all_resources = static_articles + user_resources_db
-    max_id = max((r["id"] for r in all_resources), default=0)
-    resource.id = max_id + 1
-    resource.created_at = datetime.now()
-    user_resources_db.append(resource.model_dump())
-    return ResourceResponse(resource=resource)
-
-
-@app.get("/api/resources/{resource_id}", response_model=ResourceResponse)
-def get_resource(resource_id: int) -> ResourceResponse:
-    """Get a specific resource by ID (static or user-created)."""
-    all_resources = static_articles + user_resources_db
-    for resource in all_resources:
-        if resource["id"] == resource_id:
-            return ResourceResponse(resource=Resource(**resource))
-    raise HTTPException(status_code=404, detail="Resource not found")
-
-
-@app.delete("/api/resources/{resource_id}")
-def delete_resource(resource_id: int) -> dict[str, str]:
-    """Delete a user resource by ID (static articles cannot be deleted)."""
-    global user_resources_db
-
-    # Check if it's a static article (read-only)
-    for article in static_articles:
-        if article["id"] == resource_id:
-            raise HTTPException(
-                status_code=403, detail="Cannot delete static article. Static articles are read-only."
-            )
-
-    # Try to delete from user resources
-    initial_length = len(user_resources_db)
-    user_resources_db = [r for r in user_resources_db if r["id"] != resource_id]
-
-    if len(user_resources_db) == initial_length:
-        raise HTTPException(status_code=404, detail="Resource not found")
-
-    return {"message": "Resource deleted"}
-
-
-# Search and Q&A routes moved to routers/search.py
-# Article AI features moved to routers/articles.py
+# Article CRUD and AI features moved to routers/articles.py
+# Note CRUD and features moved to routers/notes.py
+# Search and Q&A routes moved to routers/search.py and routers/ai.py
 
 
 

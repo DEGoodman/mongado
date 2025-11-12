@@ -15,6 +15,7 @@ from models import (
     NoteCreate,
     NotesListResponse,
     NoteUpdate,
+    SummaryResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,11 +26,12 @@ router = APIRouter(prefix="/api/notes", tags=["notes"])
 limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "1")
 
 
-def create_notes_router(notes_service: Any) -> APIRouter:
+def create_notes_router(notes_service: Any, ollama_client: Any) -> APIRouter:
     """Create notes router with dependencies injected.
 
     Args:
         notes_service: Notes service for note operations
+        ollama_client: Ollama client for AI features (summaries, etc.)
 
     Returns:
         Configured APIRouter with notes endpoints
@@ -234,5 +236,29 @@ Links are automatically parsed and stored as graph relationships.
 
         # Build graph using pure function
         return notes_core.build_graph_data(notes)
+
+    @router.get("/{note_id}/summary", response_model=SummaryResponse)
+    async def get_note_summary(note_id: str) -> SummaryResponse:
+        """Generate an AI summary of a specific note using Ollama."""
+        if not ollama_client.is_available():
+            raise HTTPException(
+                status_code=503,
+                detail="AI summary feature is not available. Ollama is not running or not configured.",
+            )
+
+        # Get the note
+        note = notes_service.get_note(note_id)
+        if not note:
+            raise HTTPException(status_code=404, detail="Note not found")
+
+        # Generate summary from note content
+        summary = ollama_client.summarize_article(note.get("content", ""))
+
+        if not summary:
+            raise HTTPException(
+                status_code=500, detail="Failed to generate summary. Please try again."
+            )
+
+        return SummaryResponse(summary=summary)
 
     return router

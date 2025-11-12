@@ -1,4 +1,4 @@
-"""Article AI features API routes (summaries, concept extraction)."""
+"""Article CRUD and AI features API routes."""
 
 import json
 import logging
@@ -11,8 +11,11 @@ from models import (
     BatchConceptSuggestion,
     ConceptExtractionResponse,
     ConceptSuggestion,
+    ResourceListResponse,
+    ResourceResponse,
     SummaryResponse,
 )
+from models.resource import Resource
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +24,45 @@ router = APIRouter(prefix="/api/articles", tags=["articles"])
 
 def create_articles_router(
     get_static_articles: Any,  # Callable that returns current articles list
-    get_user_resources_db: Any,  # Callable that returns current user resources
     ollama_client: Any,
 ) -> APIRouter:
-    """Create articles router with dependencies injected."""
+    """Create articles router with dependencies injected.
 
-    @router.get("/{resource_id}/summary", response_model=SummaryResponse)
-    def get_article_summary(resource_id: int) -> SummaryResponse:
+    Provides full CRUD operations for articles plus AI-powered features
+    like summarization and concept extraction.
+    """
+
+    @router.get("", response_model=ResourceListResponse)
+    def list_articles() -> ResourceListResponse:
+        """Get all static articles, ordered by publication date descending."""
+        from dateutil import parser
+
+        articles = get_static_articles()
+
+        # Sort by published_date (newer first), fallback to created_at
+        def get_sort_key(resource: dict[str, Any]) -> Any:
+            date_str = resource.get("published_date") or resource.get("created_at")
+            if date_str:
+                try:
+                    return parser.parse(str(date_str))
+                except Exception:
+                    return parser.parse("1970-01-01")
+            return parser.parse("1970-01-01")
+
+        sorted_articles = sorted(articles, key=get_sort_key, reverse=True)
+        return ResourceListResponse(resources=sorted_articles)
+
+    @router.get("/{article_id}", response_model=ResourceResponse)
+    def get_article(article_id: int) -> ResourceResponse:
+        """Get a specific article by ID."""
+        articles = get_static_articles()
+        for article in articles:
+            if article["id"] == article_id:
+                return ResourceResponse(resource=Resource(**article))
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    @router.get("/{article_id}/summary", response_model=SummaryResponse)
+    def get_article_summary(article_id: int) -> SummaryResponse:
         """Generate an AI summary of a specific article using Ollama."""
         if not ollama_client.is_available():
             raise HTTPException(
@@ -35,16 +70,16 @@ def create_articles_router(
                 detail="AI summary feature is not available. Ollama is not running or not configured.",
             )
 
-        # Find the article - get current state dynamically
-        all_resources = get_static_articles() + get_user_resources_db()
+        # Find the article
+        articles = get_static_articles()
         article = None
-        for resource in all_resources:
-            if resource["id"] == resource_id:
-                article = resource
+        for a in articles:
+            if a["id"] == article_id:
+                article = a
                 break
 
         if not article:
-            raise HTTPException(status_code=404, detail="Resource not found")
+            raise HTTPException(status_code=404, detail="Article not found")
 
         # Generate summary
         summary = ollama_client.summarize_article(article["content"])
@@ -56,8 +91,8 @@ def create_articles_router(
 
         return SummaryResponse(summary=summary)
 
-    @router.post("/{resource_id}/extract-concepts", response_model=ConceptExtractionResponse)
-    def extract_article_concepts(resource_id: int) -> ConceptExtractionResponse:
+    @router.post("/{article_id}/extract-concepts", response_model=ConceptExtractionResponse)
+    def extract_article_concepts(article_id: int) -> ConceptExtractionResponse:
         """Extract key concepts from an article that could become Zettelkasten notes.
 
         Analyzes article content using AI to identify frameworks, methodologies,
@@ -70,12 +105,12 @@ def create_articles_router(
             logger.warning("Ollama not available for concept extraction")
             return ConceptExtractionResponse(concepts=[], count=0)
 
-        # Find the article - get current state dynamically
-        all_resources = get_static_articles() + get_user_resources_db()
+        # Find the article
+        articles = get_static_articles()
         article = None
-        for resource in all_resources:
-            if resource["id"] == resource_id:
-                article = resource
+        for a in articles:
+            if a["id"] == article_id:
+                article = a
                 break
 
         if not article:
@@ -86,7 +121,7 @@ def create_articles_router(
         article_content = article.get("content", "")
 
         if not article_content:
-            logger.warning("Article %s has no content", resource_id)
+            logger.warning("Article %s has no content", article_id)
             return ConceptExtractionResponse(concepts=[], count=0)
 
         # Build prompt for LLM
@@ -186,7 +221,7 @@ JSON:"""
             # Limit to top 10 concepts
             concepts = concepts[:10]
 
-            logger.info("Extracted %d concepts from article %s", len(concepts), resource_id)
+            logger.info("Extracted %d concepts from article %s", len(concepts), article_id)
             return ConceptExtractionResponse(concepts=concepts, count=len(concepts))
 
         except json.JSONDecodeError as e:
