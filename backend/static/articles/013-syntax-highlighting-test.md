@@ -1,9 +1,10 @@
 ---
-id: 12
+id: 13
 title: Syntax Highlighting Test
 date: 2025-11-13
 tags: [test, development]
 summary: A test article to demonstrate syntax highlighting in code blocks
+draft: true
 ---
 
 # Syntax Highlighting Test
