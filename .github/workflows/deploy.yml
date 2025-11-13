@@ -123,6 +123,10 @@ jobs:
             echo "🧹 Cleaning up old Docker images..."
             docker image prune -f
 
+            # Create post-deployment backup
+            echo "💾 Creating post-deployment backup..."
+            curl -X POST http://localhost:8000/api/admin/backup || echo "⚠️  Backup failed, but deployment was successful"
+
             echo "✅ Deployment complete!"
           EOF
 
