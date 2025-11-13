@@ -185,6 +185,24 @@
       @include text-secondary;
     }
   }
+
+  .articlePreview {
+    margin-bottom: $spacing-3;
+    color: $color-text-secondary;
+    overflow: hidden;
+    word-wrap: break-word;
+  }
+
+  .articleTags {
+    margin-top: $spacing-4;
+  }
+
+  .readMore {
+    margin-top: $spacing-4;
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+    color: $blue-600;
+  }
 }
 
 // Draft article styling
@@ -210,23 +228,4 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-size: 0.7rem;
-}
-
-  .articlePreview {
-    margin-bottom: $spacing-3;
-    color: $color-text-secondary;
-    overflow: hidden;
-    word-wrap: break-word;
-  }
-
-  .articleTags {
-    margin-top: $spacing-4;
-  }
-
-  .readMore {
-    margin-top: $spacing-4;
-    @include text-secondary;
-    font-weight: $font-weight-medium;
-    color: $blue-600;
-  }
 }
