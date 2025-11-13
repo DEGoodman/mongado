@@ -5,6 +5,8 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import type { Components } from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import styles from "./MarkdownWithWikilinks.module.scss";
 
 interface MarkdownWithWikilinksProps {
@@ -31,6 +33,26 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
     li: ({ children, ...props }) => {
       const processedChildren = processWikilinks(children);
       return <li {...props}>{processedChildren}</li>;
+    },
+    // Syntax highlighting for code blocks
+    code: ({ node, inline, className, children, ...props }: any) => {
+      const match = /language-(\w+)/.exec(className || "");
+      const language = match ? match[1] : "";
+
+      return !inline && language ? (
+        <SyntaxHighlighter
+          style={oneDark}
+          language={language}
+          PreTag="div"
+          {...props}
+        >
+          {String(children).replace(/\n$/, "")}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
     },
   };
 
