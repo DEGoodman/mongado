@@ -54,21 +54,28 @@ function ArticlesContent() {
     fetchResources();
   }, [fetchResources]);
 
-  const filteredResources = resources.filter((resource) => {
-    // Filter by tag if tag query param is present
-    if (tagFilter && !resource.tags.includes(tagFilter)) {
-      return false;
-    }
+  const filteredResources = resources
+    .filter((resource) => {
+      // Filter by tag if tag query param is present
+      if (tagFilter && !resource.tags.includes(tagFilter)) {
+        return false;
+      }
 
-    // Filter by search query
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      resource.title.toLowerCase().includes(query) ||
-      resource.content.toLowerCase().includes(query) ||
-      resource.tags.some((tag) => tag.toLowerCase().includes(query))
-    );
-  });
+      // Filter by search query
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        resource.title.toLowerCase().includes(query) ||
+        resource.content.toLowerCase().includes(query) ||
+        resource.tags.some((tag) => tag.toLowerCase().includes(query))
+      );
+    })
+    .sort((a, b) => {
+      // Sort drafts to the top
+      if (a.draft && !b.draft) return -1;
+      if (!a.draft && b.draft) return 1;
+      return 0;
+    });
 
   const handleTagClick = (tag: string) => {
     router.push(`/knowledge-base/articles?tag=${encodeURIComponent(tag)}`);
@@ -151,10 +158,13 @@ function ArticlesContent() {
                 <Link
                   key={resource.id}
                   href={`/knowledge-base/articles/${resource.id}`}
-                  className={styles.articleCard}
+                  className={`${styles.articleCard} ${resource.draft ? styles.draftCard : ""}`}
                 >
                   <div className={styles.articleHeader}>
-                    <h3 className={styles.articleTitle}>{resource.title}</h3>
+                    <div className={styles.titleRow}>
+                      <h3 className={styles.articleTitle}>{resource.title}</h3>
+                      {resource.draft && <span className={styles.draftBadge}>Draft</span>}
+                    </div>
                     <div className={styles.articleMeta}>
                       {resource.updated_date &&
                       resource.updated_date !== resource.published_date ? (
