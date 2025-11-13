@@ -125,7 +125,7 @@ jobs:
 
             # Create post-deployment backup
             echo "💾 Creating post-deployment backup..."
-            curl -X POST http://localhost:8000/api/admin/backup || echo "⚠️  Backup failed, but deployment was successful"
+            docker compose -f docker-compose.prod.yml exec -T neo4j /scripts/backup_neo4j.sh || echo "⚠️  Backup failed, but deployment was successful"
 
             echo "✅ Deployment complete!"
           EOF

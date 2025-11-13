@@ -33,7 +33,6 @@ from models import (
 )
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
-from routers.admin import create_admin_router
 from routers.ai import create_ai_router
 from routers.articles import create_articles_router
 from routers.notes import create_notes_router
@@ -256,10 +255,6 @@ ai_router = create_ai_router(
     neo4j_adapter=neo4j_adapter
 )
 app.include_router(ai_router)
-
-# Admin router for system management (backups, maintenance)
-admin_router = create_admin_router()
-app.include_router(admin_router)
 
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
