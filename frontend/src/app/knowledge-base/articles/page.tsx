@@ -39,7 +39,7 @@ function ArticlesContent() {
 
   const fetchResources = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/resources`);
+      const response = await fetch(`${API_URL}/api/articles`);
       const data = await response.json();
       setResources(data.resources);
       logger.debug("Fetched articles", { count: data.resources.length });

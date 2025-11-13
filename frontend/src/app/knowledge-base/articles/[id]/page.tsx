@@ -43,7 +43,7 @@ export default function ArticleDetailPage() {
     async function fetchArticle() {
       try {
         setLoading(true);
-        const response = await fetch(`${API_URL}/api/resources/${articleId}`);
+        const response = await fetch(`${API_URL}/api/articles/${articleId}`);
 
         if (!response.ok) {
           throw new Error("Article not found");
