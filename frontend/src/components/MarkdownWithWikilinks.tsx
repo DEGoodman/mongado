@@ -40,12 +40,7 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
       const language = match ? match[1] : "";
 
       return !inline && language ? (
-        <SyntaxHighlighter
-          style={oneDark}
-          language={language}
-          PreTag="div"
-          {...props}
-        >
+        <SyntaxHighlighter style={oneDark} language={language} PreTag="div" {...props}>
           {String(children).replace(/\n$/, "")}
         </SyntaxHighlighter>
       ) : (
