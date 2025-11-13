@@ -114,9 +114,10 @@ export default function ArticleDetailPage() {
             <SettingsDropdown />
           </div>
 
-          {/* Content Type Badge */}
-          <div className={styles.badge}>
+          {/* Content Type Badge and Draft Badge */}
+          <div className={styles.badgeRow}>
             <Badge type="article" />
+            {article.draft && <span className={styles.draftBadge}>Draft</span>}
           </div>
 
           {/* Title */}

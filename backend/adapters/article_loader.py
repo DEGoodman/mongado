@@ -9,6 +9,9 @@ import frontmatter  # type: ignore[import-untyped]
 
 from config import get_settings
 
+# TODO: Re-enable when server-side rendering is fixed
+# from core.markdown_renderer import render_markdown_to_html
+
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
@@ -125,11 +128,21 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
                 logger.info("Skipping draft article in production: %s", post.get("title", md_file.stem))
                 continue
 
+            # TODO: Re-enable server-side HTML rendering once fence renderer is fixed
+            # Render markdown to HTML for faster frontend rendering
+            # try:
+            #     html_content = render_markdown_to_html(post.content)
+            # except Exception as e:
+            #     logger.warning("Failed to render HTML for %s: %s", post.get("title"), e)
+            #     html_content = None
+            html_content = None  # Temporarily disabled
+
             # Extract metadata from frontmatter
             article = {
                 "id": post.get("id"),
                 "title": post.get("title", md_file.stem),
-                "content": post.content,  # Markdown content
+                "content": post.content,  # Markdown content (fallback)
+                "html_content": html_content,  # Pre-rendered HTML (will be None for now)
                 "content_type": "markdown",
                 "url": post.get("url"),
                 "tags": post.get("tags", []),
@@ -212,10 +225,20 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
                     logger.info("Skipping draft article in production: %s", post.get("title", Path(obj["Key"]).stem))
                     continue
 
+                # TODO: Re-enable server-side HTML rendering once fence renderer is fixed
+                # Render markdown to HTML for faster frontend rendering
+                # try:
+                #     html_content = render_markdown_to_html(post.content)
+                # except Exception as e:
+                #     logger.warning("Failed to render HTML for %s: %s", post.get("title"), e)
+                #     html_content = None
+                html_content = None  # Temporarily disabled
+
                 article = {
                     "id": post.get("id"),
                     "title": post.get("title", Path(obj["Key"]).stem),
-                    "content": post.content,
+                    "content": post.content,  # Markdown content (fallback)
+                    "html_content": html_content,  # Pre-rendered HTML (will be None for now)
                     "content_type": "markdown",
                     "url": post.get("url"),
                     "tags": post.get("tags", []),

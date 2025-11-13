@@ -11,10 +11,14 @@ class Resource(BaseModel):
 
     id: int | None = None
     title: str
-    content: str  # Markdown content (preferred) or plain text
+    content: str  # Markdown content (fallback) or plain text
+    html_content: str | None = None  # Pre-rendered HTML (preferred for performance)
     content_type: str = "markdown"  # "markdown" (default) or "plain"
     url: str | None = None
     tags: list[str] = []
+    draft: bool | None = None  # True for draft articles (hidden in production)
+    published_date: str | None = None  # ISO 8601 date string
+    updated_date: str | None = None  # ISO 8601 date string
     created_at: datetime | None = None
 
 

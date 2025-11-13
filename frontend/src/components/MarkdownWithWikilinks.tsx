@@ -1,20 +1,125 @@
 "use client";
 
+import React, { useMemo, memo, useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import type { Components } from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import dynamic from "next/dynamic";
 import styles from "./MarkdownWithWikilinks.module.scss";
+
+// Lazy load syntax highlighter to reduce initial bundle size (~200KB)
+// Only loads when first code block is rendered
+const SyntaxHighlighter = dynamic(
+  () => import("react-syntax-highlighter").then((mod) => mod.Prism),
+  {
+    loading: () => (
+      <div className="animate-pulse bg-gray-800 rounded p-4">Loading syntax highlighter...</div>
+    ),
+    ssr: false,
+  }
+);
+
+// Lazy load theme separately
+const useSyntaxTheme = () => {
+  const [theme, setTheme] = useState<any>(null);
+
+  useEffect(() => {
+    import("react-syntax-highlighter/dist/esm/styles/prism").then((mod) => {
+      setTheme(mod.oneDark);
+    });
+  }, []);
+
+  return theme;
+};
 
 interface MarkdownWithWikilinksProps {
   content: string | null | undefined;
 }
 
-export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinksProps) {
-  // Handle null/undefined content
+// Process children to convert [[note-id]] to Link components
+const processWikilinks = (children: React.ReactNode): React.ReactNode => {
+  if (typeof children === "string") {
+    const parts = children.split(/(\[\[[a-z0-9-]+\]\])/g);
+    return parts.map((part, i) => {
+      const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
+      if (match) {
+        return (
+          <Link key={i} href={`/knowledge-base/notes/${match[1]}`} className={styles.wikilink}>
+            {part}
+          </Link>
+        );
+      }
+      return part;
+    });
+  }
+
+  if (Array.isArray(children)) {
+    return children.map((child, i) => {
+      if (typeof child === "string") {
+        return <span key={i}>{processWikilinks(child)}</span>;
+      }
+      return child;
+    });
+  }
+
+  return children;
+};
+
+function MarkdownWithWikilinks({ content }: MarkdownWithWikilinksProps) {
+  const syntaxTheme = useSyntaxTheme();
+  const [showSyntaxHighlighting, setShowSyntaxHighlighting] = useState(false);
+
+  // Progressive rendering: show content first, then enable syntax highlighting
+  useEffect(() => {
+    // Delay syntax highlighting to prioritize initial render
+    const timer = setTimeout(() => {
+      setShowSyntaxHighlighting(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Memoize components to prevent recreation on every render
+  // This is especially important for large articles with many code blocks
+  // NOTE: Must be before early return to satisfy React Hooks rules
+  const components: Components = useMemo(
+    () => ({
+      // Process text nodes to convert wikilinks to actual links
+      p: ({ children, ...props }) => {
+        const processedChildren = processWikilinks(children);
+        return <p {...props}>{processedChildren}</p>;
+      },
+      li: ({ children, ...props }) => {
+        const processedChildren = processWikilinks(children);
+        return <li {...props}>{processedChildren}</li>;
+      },
+      // Syntax highlighting for code blocks
+      code: ({ node, inline, className, children, ...props }: any) => {
+        const match = /language-(\w+)/.exec(className || "");
+        const language = match ? match[1] : "";
+
+        // Show plain code first for faster initial render
+        if (!inline && language && showSyntaxHighlighting && syntaxTheme) {
+          return (
+            <SyntaxHighlighter style={syntaxTheme} language={language} PreTag="div" {...props}>
+              {String(children).replace(/\n$/, "")}
+            </SyntaxHighlighter>
+          );
+        }
+
+        // Fallback to plain code block
+        return (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        );
+      },
+    }),
+    [showSyntaxHighlighting, syntaxTheme] // Re-create when highlighting becomes available
+  );
+
+  // Handle null/undefined content after hooks
   if (!content) {
     return (
       <div className={`${styles.container} prose prose-sm`}>
@@ -22,63 +127,6 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
       </div>
     );
   }
-
-  // Custom component to handle text nodes and convert wikilinks
-  const components: Components = {
-    // Process text nodes to convert wikilinks to actual links
-    p: ({ children, ...props }) => {
-      const processedChildren = processWikilinks(children);
-      return <p {...props}>{processedChildren}</p>;
-    },
-    li: ({ children, ...props }) => {
-      const processedChildren = processWikilinks(children);
-      return <li {...props}>{processedChildren}</li>;
-    },
-    // Syntax highlighting for code blocks
-    code: ({ node, inline, className, children, ...props }: any) => {
-      const match = /language-(\w+)/.exec(className || "");
-      const language = match ? match[1] : "";
-
-      return !inline && language ? (
-        <SyntaxHighlighter style={oneDark} language={language} PreTag="div" {...props}>
-          {String(children).replace(/\n$/, "")}
-        </SyntaxHighlighter>
-      ) : (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    },
-  };
-
-  // Process children to convert [[note-id]] to Link components
-  const processWikilinks = (children: React.ReactNode): React.ReactNode => {
-    if (typeof children === "string") {
-      const parts = children.split(/(\[\[[a-z0-9-]+\]\])/g);
-      return parts.map((part, i) => {
-        const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
-        if (match) {
-          return (
-            <Link key={i} href={`/knowledge-base/notes/${match[1]}`} className={styles.wikilink}>
-              {part}
-            </Link>
-          );
-        }
-        return part;
-      });
-    }
-
-    if (Array.isArray(children)) {
-      return children.map((child, i) => {
-        if (typeof child === "string") {
-          return <span key={i}>{processWikilinks(child)}</span>;
-        }
-        return child;
-      });
-    }
-
-    return children;
-  };
 
   return (
     <div className={`${styles.container} prose prose-sm`}>
@@ -188,3 +236,7 @@ export default function MarkdownWithWikilinks({ content }: MarkdownWithWikilinks
     </div>
   );
 }
+
+// Export memoized component to prevent re-renders when parent re-renders
+// This is crucial for performance with large articles
+export default memo(MarkdownWithWikilinks);
