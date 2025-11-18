@@ -1,0 +1,124 @@
+/**
+ * Settings Component Styles
+ * Global app settings dropdown (available to all users)
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  position: relative;
+}
+
+.settingsButton {
+  @include flex-center;
+  font-size: 0.9375rem;
+  padding: $spacing-2 $spacing-3;
+  border: 1px solid $neutral-300;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  cursor: pointer;
+  @include transition-default;
+
+  &:hover {
+    background-color: $neutral-50;
+    border-color: $neutral-400;
+  }
+
+  &[aria-expanded="true"] {
+    background-color: $neutral-100;
+    border-color: $neutral-400;
+  }
+}
+
+.icon {
+  font-size: 1.125rem;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + $spacing-2);
+  right: 0;
+  min-width: 320px;
+  background-color: $white;
+  border: 1px solid $neutral-200;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-dropdown;
+  z-index: 50;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownContent {
+  padding: $spacing-4;
+}
+
+.section {
+  & + .section {
+    margin-top: $spacing-4;
+    padding-top: $spacing-4;
+    border-top: 1px solid $neutral-200;
+  }
+}
+
+.warmupIndicator {
+  font-size: 0.75rem;
+  color: $blue-600;
+  text-align: center;
+  margin-bottom: $spacing-2;
+}
+
+.segmentedControl {
+  @include flex-start;
+  background-color: $neutral-100;
+  border-radius: $border-radius-md;
+  padding: $spacing-1;
+  gap: $spacing-1;
+}
+
+.segmentButton {
+  flex: 1;
+  padding: $spacing-2 $spacing-3;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  @include transition-default;
+
+  &.active {
+    background-color: $white;
+    color: $neutral-900;
+    box-shadow: $shadow-card-sm;
+    font-weight: 500;
+  }
+
+  &.inactive {
+    background-color: transparent;
+    color: $neutral-600;
+
+    &:hover {
+      color: $neutral-900;
+    }
+  }
+}
+
+.modeDescription {
+  margin-top: $spacing-3;
+
+  p {
+    font-size: 0.875rem;
+    color: $neutral-600;
+    margin: 0;
+    line-height: 1.5;
+  }
+}

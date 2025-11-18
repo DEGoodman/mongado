@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import SettingsDropdown from "@/components/SettingsDropdown";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
 
@@ -508,7 +507,6 @@ export default function NotesGraphPage() {
                 All notes
               </Link>
             </div>
-            <SettingsDropdown />
           </div>
 
           <h1 className={styles.title}>Notes Graph</h1>

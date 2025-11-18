@@ -1,6 +1,6 @@
 /**
- * Breadcrumb component for consistent navigation hierarchy
- * Handles both Articles and Notes sections with proper structure
+ * Breadcrumb component - Simple back navigation
+ * Shows "← Back" link to return to the section list page
  */
 
 import Link from "next/link";
@@ -8,18 +8,17 @@ import styles from "./Breadcrumb.module.scss";
 
 interface BreadcrumbProps {
   section: "articles" | "notes";
-  subsection?: string; // e.g., "All notes" for notes list page
   className?: string;
 }
 
-export default function Breadcrumb({ section, subsection, className = "" }: BreadcrumbProps) {
+export default function Breadcrumb({ section, className = "" }: BreadcrumbProps) {
   const sectionConfig = {
     articles: {
-      label: "Articles",
+      label: "Back",
       href: "/knowledge-base/articles",
     },
     notes: {
-      label: "Notes",
+      label: "Back",
       href: "/knowledge-base/notes",
     },
   };
@@ -28,34 +27,9 @@ export default function Breadcrumb({ section, subsection, className = "" }: Brea
 
   return (
     <nav aria-label="Breadcrumb" className={`${styles.breadcrumb} ${className}`}>
-      <ol className={styles.list}>
-        {/* Knowledge Base root */}
-        <li>
-          <Link href="/knowledge-base" className={styles.link}>
-            ← Knowledge Base
-          </Link>
-        </li>
-
-        {/* Section (Articles or Notes) */}
-        <li className={styles.listItem}>
-          <span className={styles.separator} aria-hidden="true">
-            /
-          </span>
-          <Link href={config.href} className={styles.link}>
-            {config.label}
-          </Link>
-        </li>
-
-        {/* Subsection (optional, e.g., "All notes") */}
-        {subsection && (
-          <li className={styles.listItem}>
-            <span className={styles.separator} aria-hidden="true">
-              &gt;
-            </span>
-            <span className={styles.subsection}>{subsection}</span>
-          </li>
-        )}
-      </ol>
+      <Link href={config.href} className={styles.link}>
+        ← {config.label}
+      </Link>
     </nav>
   );
 }

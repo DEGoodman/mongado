@@ -7,7 +7,6 @@ import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import ArticleTableOfContents from "@/components/ArticleTableOfContents";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
-import SettingsDropdown from "@/components/SettingsDropdown";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
@@ -108,10 +107,9 @@ export default function ArticleDetailPage() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          {/* Breadcrumb and Settings */}
+          {/* Breadcrumb */}
           <div className={styles.headerTop}>
             <Breadcrumb section="articles" />
-            <SettingsDropdown />
           </div>
 
           {/* Content Type Badge and Draft Badge */}

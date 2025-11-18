@@ -9,7 +9,6 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
-import SettingsDropdown from "@/components/SettingsDropdown";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
@@ -369,10 +368,9 @@ export default function NoteDetailPage() {
           <div className={styles.mainContent}>
             {/* Header */}
             <div className={styles.header}>
-              {/* Breadcrumb and Settings */}
+              {/* Breadcrumb */}
               <div className={styles.headerTop}>
-                <Breadcrumb section="notes" subsection="All notes" />
-                <SettingsDropdown />
+                <Breadcrumb section="notes" />
               </div>
 
               {/* Content Type Badge */}

@@ -1,0 +1,147 @@
+/**
+ * TopNavigation Component Styles
+ * Persistent navigation bar for Knowledge Base section
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.topNav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background-color: $white;
+  border-bottom: 1px solid $neutral-200;
+  box-shadow: $shadow-card-sm;
+}
+
+.container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 $spacing-6;
+  @include flex-between;
+  align-items: center;
+  height: 64px;
+  gap: $spacing-6;
+
+  @media (max-width: 768px) {
+    padding: 0 $spacing-4;
+    gap: $spacing-4;
+  }
+}
+
+// Left: Logo
+.left {
+  @include flex-start;
+  align-items: center;
+}
+
+.logo {
+  @include flex-center;
+  text-decoration: none;
+  @include transition-default;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.logoText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $neutral-900;
+}
+
+// Center: Section Links
+.center {
+  @include flex-center;
+  gap: $spacing-2;
+}
+
+.navLink {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: $neutral-600;
+  text-decoration: none;
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-md;
+  @include transition-default;
+
+  &:hover {
+    background-color: $neutral-50;
+    color: $neutral-900;
+  }
+
+  &.active {
+    background-color: $blue-50;
+    color: $blue-700;
+    font-weight: 600;
+  }
+}
+
+// Right: Search + User Menu
+.right {
+  @include flex-start;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-3;
+}
+
+// Global Search Button (future Phase 5c)
+.searchButton {
+  @include flex-start;
+  align-items: center;
+  gap: $spacing-2;
+  font-size: 0.9375rem;
+  padding: $spacing-2 $spacing-3;
+  border: 1px solid $neutral-300;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  cursor: pointer;
+  @include transition-default;
+
+  &:hover {
+    background-color: $neutral-50;
+    border-color: $neutral-400;
+  }
+}
+
+.searchIcon {
+  font-size: 1.125rem;
+}
+
+.searchLabel {
+  @media (max-width: 640px) {
+    display: none;
+  }
+}
+
+.searchKbd {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background-color: $neutral-100;
+  border: 1px solid $neutral-300;
+  border-radius: $border-radius-sm;
+  color: $neutral-600;
+  font-family: var(--font-space-mono);
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+// Mobile Responsiveness
+@media (max-width: 640px) {
+  .container {
+    height: 56px;
+  }
+
+  .logoText {
+    font-size: 1.125rem;
+  }
+
+  .navLink {
+    padding: $spacing-2 $spacing-3;
+    font-size: 0.875rem;
+  }
+}

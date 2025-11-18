@@ -8,7 +8,6 @@ import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes"
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
-import SettingsDropdown from "@/components/SettingsDropdown";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
@@ -108,7 +107,6 @@ function NotesContent() {
         <div className={styles.headerContent}>
           <div className={styles.headerTop}>
             <Breadcrumb section="notes" />
-            <SettingsDropdown />
           </div>
           <div className={styles.titleRow}>
             <div className={styles.titleSection}>

@@ -9,7 +9,6 @@ import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
-import SettingsDropdown from "@/components/SettingsDropdown";
 import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
@@ -253,7 +252,6 @@ export default function NewNotePage() {
                 All notes
               </Link>
             </div>
-            <SettingsDropdown />
           </div>
           <h1 className={styles.title}>Create New Note</h1>
           <p className={styles.subtitle}>Add a new note to your Zettelkasten knowledge base</p>

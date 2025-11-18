@@ -1,0 +1,130 @@
+/**
+ * UserMenu Component Styles
+ * Dropdown menu for user-specific actions (AI preferences, Sign Out)
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  position: relative;
+}
+
+.signInLink {
+  font-size: 0.9375rem;
+  color: $blue-600;
+  text-decoration: none;
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-md;
+  @include transition-colors;
+
+  &:hover {
+    background-color: $blue-50;
+    color: $blue-700;
+  }
+}
+
+.userButton {
+  @include flex-center;
+  gap: $spacing-2;
+  font-size: 0.9375rem;
+  padding: $spacing-2 $spacing-3;
+  border: 1px solid $neutral-300;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  cursor: pointer;
+  @include transition-default;
+
+  &:hover {
+    background-color: $neutral-50;
+    border-color: $neutral-400;
+  }
+}
+
+.userIcon {
+  font-size: 1.25rem;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + $spacing-2);
+  right: 0;
+  min-width: 320px;
+  background-color: $white;
+  border: 1px solid $neutral-200;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-dropdown;
+  z-index: 50;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownContent {
+  padding: $spacing-4;
+}
+
+.section {
+  & + .section {
+    margin-top: $spacing-4;
+  }
+}
+
+.divider {
+  height: 1px;
+  background-color: $neutral-200;
+  margin: $spacing-4 0;
+}
+
+.userInfo {
+  padding: $spacing-2 0;
+}
+
+.userName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $neutral-900;
+  margin-bottom: $spacing-1;
+}
+
+.userEmail {
+  font-size: 0.875rem;
+  color: $neutral-600;
+}
+
+.logoutButton {
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  font-size: 0.9375rem;
+  background-color: $white;
+  border: 1px solid $neutral-300;
+  border-radius: $border-radius-md;
+  color: $red-600;
+  cursor: pointer;
+  @include transition-default;
+
+  &:hover {
+    background-color: $red-50;
+    border-color: $red-500;
+    color: $red-700;
+  }
+}

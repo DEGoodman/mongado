@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
-import SettingsDropdown from "@/components/SettingsDropdown";
 import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
@@ -136,15 +135,7 @@ export default function KnowledgeBasePage() {
 
       {/* Header */}
       <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.nav}>
-            <Link href="/" className={styles.homeLink}>
-              ← Home
-            </Link>
-            <h1 className={styles.title}>Knowledge Base</h1>
-          </div>
-          <SettingsDropdown />
-        </div>
+        <h1 className={styles.title}>Knowledge Base</h1>
       </header>
 
       <main className={styles.main}>

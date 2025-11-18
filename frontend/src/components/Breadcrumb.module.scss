@@ -1,40 +1,23 @@
 /**
  * Breadcrumb Component Styles
- * Matches production Tailwind design with blue theme
+ * Simple back navigation link
  */
 
 @use '@/styles/design-tokens' as *;
 @use '@/styles/mixins' as *;
 
 .breadcrumb {
-  @include text-secondary;
-}
-
-.list {
-  @include flex-start;
-  gap: $spacing-2;
-}
-
-.listItem {
-  @include flex-start;
-  gap: $spacing-2;
+  margin-bottom: $spacing-4;
 }
 
 .link {
+  font-size: 0.9375rem;
   color: $blue-600;
   text-decoration: none;
   @include transition-colors;
 
   &:hover {
-    color: $blue-800;
+    color: $blue-700;
     text-decoration: underline;
   }
-}
-
-.separator {
-  color: $neutral-400;
-}
-
-.subsection {
-  color: $neutral-600;
 }
