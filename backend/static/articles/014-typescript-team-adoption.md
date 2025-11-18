@@ -1,20 +1,14 @@
 ---
-id: 014
-title: "Convincing Teams to Avoid 'any': A Leader's Guide to TypeScript Adoption"
-slug: typescript-team-adoption
-description: Strategies for building a culture of type safety and moving away from 'any' abuse in TypeScript projects
-date: 2025-11-15
-updated: 2025-11-15
-status: published
-tags:
-  - typescript
-  - leadership
-  - engineering-management
-  - code-quality
-  - team-culture
+id: 14
+title: "A Leader's Guide to TypeScript Adoption"
+tags: ["typescript", "leadership", "engineering-management", "code-quality", "team-culture"]
+draft: false
+published_date: "2025-11-15T10:00:00"
+created_at: "2025-11-15T10:00:00"
+updated_date: "2025-11-18T10:00:00"
 ---
 
-# Convincing Teams to Avoid 'any': A Leader's Guide to TypeScript Adoption
+# A Leader's Guide to TypeScript Adoption
 
 **Audience**: Frontend engineering team leads, tech leads, and engineering managers
 **Purpose**: Strategies for building a culture of type safety and moving away from `any` abuse
