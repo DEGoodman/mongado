@@ -7,11 +7,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from models import (
+    ArticleMetadata,
+    ArticleMetadataListResponse,
     BatchConceptExtractionResponse,
     BatchConceptSuggestion,
     ConceptExtractionResponse,
     ConceptSuggestion,
-    ResourceListResponse,
     ResourceResponse,
     SummaryResponse,
 )
@@ -32,9 +33,13 @@ def create_articles_router(
     like summarization and concept extraction.
     """
 
-    @router.get("", response_model=ResourceListResponse)
-    def list_articles() -> ResourceListResponse:
-        """Get all static articles, ordered by publication date descending."""
+    @router.get("", response_model=ArticleMetadataListResponse)
+    def list_articles() -> ArticleMetadataListResponse:
+        """Get all static articles metadata (without content), ordered by publication date descending.
+
+        Returns lightweight metadata for article list views. Use GET /api/articles/{id}
+        to retrieve full article content.
+        """
         from dateutil import parser
 
         articles = get_static_articles()
@@ -50,7 +55,11 @@ def create_articles_router(
             return parser.parse("1970-01-01")
 
         sorted_articles = sorted(articles, key=get_sort_key, reverse=True)
-        return ResourceListResponse(resources=sorted_articles)
+
+        # Convert to ArticleMetadata (excludes content and html_content)
+        metadata_list = [ArticleMetadata(**article) for article in sorted_articles]
+
+        return ArticleMetadataListResponse(resources=metadata_list)
 
     @router.get("/{article_id}", response_model=ResourceResponse)
     def get_article(article_id: int) -> ResourceResponse:

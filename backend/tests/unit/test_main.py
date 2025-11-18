@@ -77,12 +77,21 @@ def test_upload_invalid_file_type(client: TestClient) -> None:
 
 
 def test_article_has_markdown_content(client: TestClient) -> None:
-    """Test that articles have markdown content."""
+    """Test that individual articles have markdown content."""
+    # List endpoint should NOT have content (optimization)
     response = client.get("/api/articles")
     articles = response.json()["resources"]
     assert len(articles) > 0, "No articles found"
 
-    # Check that the first article has content
+    # List endpoint should have metadata but not content
     article = articles[0]
-    assert "content" in article
-    assert len(article["content"]) > 0
+    assert "id" in article
+    assert "title" in article
+    assert "content" not in article, "List endpoint should not return content"
+
+    # Individual article endpoint SHOULD have content
+    article_id = article["id"]
+    detail_response = client.get(f"/api/articles/{article_id}")
+    detail_article = detail_response.json()["resource"]
+    assert "content" in detail_article
+    assert len(detail_article["content"]) > 0

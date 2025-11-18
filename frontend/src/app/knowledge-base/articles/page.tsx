@@ -12,18 +12,16 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import styles from "./page.module.scss";
 
-interface Resource {
+interface ArticleMetadata {
   id: number;
   title: string;
   summary?: string; // Optional 1-2 sentence description
-  content: string;
-  content_type?: string;
   url?: string;
   tags: string[];
   draft?: boolean;
   published_date?: string;
   updated_date?: string;
-  created_at: string; // Legacy fallback
+  created_at?: string; // Legacy fallback
 }
 
 function ArticlesContent() {
@@ -31,7 +29,7 @@ function ArticlesContent() {
   const searchParams = useSearchParams();
   const tagFilter = searchParams.get("tag");
 
-  const [resources, setResources] = useState<Resource[]>([]);
+  const [resources, setResources] = useState<ArticleMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,7 +65,7 @@ function ArticlesContent() {
       const query = searchQuery.toLowerCase();
       return (
         resource.title.toLowerCase().includes(query) ||
-        resource.content.toLowerCase().includes(query) ||
+        (resource.summary && resource.summary.toLowerCase().includes(query)) ||
         resource.tags.some((tag) => tag.toLowerCase().includes(query))
       );
     })
@@ -148,15 +146,6 @@ function ArticlesContent() {
             </div>
           ) : (
             filteredResources.map((resource) => {
-              // Use summary if available, otherwise fall back to first paragraph/200 chars
-              const preview =
-                resource.summary ||
-                resource.content
-                  .split("\n\n")[0]
-                  .replace(/[#*`[\]]/g, "")
-                  .substring(0, 200);
-              const needsTruncation = !resource.summary && resource.content.length > 200;
-
               return (
                 <Link
                   key={resource.id}
@@ -183,7 +172,7 @@ function ArticlesContent() {
                         <>
                           Published{" "}
                           {new Date(
-                            resource.published_date || resource.created_at
+                            resource.published_date || resource.created_at || ""
                           ).toLocaleDateString("en-US", {
                             year: "numeric",
                             month: "long",
@@ -194,11 +183,8 @@ function ArticlesContent() {
                     </div>
                   </div>
 
-                  {/* Preview */}
-                  <p className={styles.articlePreview}>
-                    {preview}
-                    {needsTruncation && "..."}
-                  </p>
+                  {/* Summary */}
+                  {resource.summary && <p className={styles.articlePreview}>{resource.summary}</p>}
 
                   {/* Tags */}
                   {resource.tags.length > 0 && (

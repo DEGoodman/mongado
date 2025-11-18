@@ -24,6 +24,8 @@ from models.note import (
     TagSuggestionsResponse,
 )
 from models.resource import (
+    ArticleMetadata,
+    ArticleMetadataListResponse,
     HealthResponse,
     ImageUploadResponse,
     ReadyResponse,
@@ -57,6 +59,8 @@ __all__ = [
     "TagSuggestion",
     "TagSuggestionsResponse",
     # Resource models
+    "ArticleMetadata",
+    "ArticleMetadataListResponse",
     "HealthResponse",
     "ImageUploadResponse",
     "ReadyResponse",

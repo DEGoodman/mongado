@@ -159,6 +159,7 @@ class Neo4jAdapter:
                     content: $content,
                     author: $author,
                     tags: $tags,
+                    links: $links,
                     created_at: $created_at,
                     updated_at: $updated_at
                 })
@@ -169,6 +170,7 @@ class Neo4jAdapter:
                 content=content,
                 author=author,
                 tags=tags or [],
+                links=links or [],
                 created_at=time.time(),
                 updated_at=time.time(),
             )
@@ -177,26 +179,13 @@ class Neo4jAdapter:
             if not note_record:
                 raise RuntimeError(f"Failed to create note {note_id}")
 
-            # Create links to other notes
+            # Create links to other notes (relationships for graph traversal)
             if links:
                 self._create_links(session, note_id, links)
 
-            # Fetch the complete note with links
-            result = session.run(
-                """
-                MATCH (n:Note {id: $id})
-                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(target.id) AS links
-                """,
-                id=note_id,
-            )
-
-            record = result.single()
-            if not record:
-                raise RuntimeError(f"Failed to fetch note {note_id} after creation")
-
-            note = self._node_to_dict(record["n"])
-            note["links"] = record["links"] or []
+            # Return the created note (already has links property from node creation)
+            note = self._node_to_dict(note_record["n"])
+            note["links"] = links or []  # Return extracted wikilinks
 
             return note
 
@@ -217,8 +206,7 @@ class Neo4jAdapter:
                 """
                 MATCH (n:Note)
                 WHERE n.id = $id
-                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                RETURN n, collect(target.id) AS links
+                RETURN n
                 """,
                 id=note_id,
             )
@@ -228,7 +216,8 @@ class Neo4jAdapter:
                 return None
 
             note = self._node_to_dict(record["n"])
-            note["links"] = record["links"] or []
+            # Use links stored as property on node (extracted wikilinks from content)
+            note["links"] = record["n"].get("links", [])
 
             # If note has no meaningful content (all defaults), treat as not found
             has_content = bool(note.get("content", "").strip())
@@ -315,6 +304,7 @@ class Neo4jAdapter:
                 SET n.content = $content,
                     n.title = $title,
                     n.tags = $tags,
+                    n.links = $links,
                     n.updated_at = $updated_at
                 RETURN n
                 """,
@@ -322,6 +312,7 @@ class Neo4jAdapter:
                 content=content,
                 title=title or "",
                 tags=tags or [],
+                links=links or [],
                 updated_at=time.time(),
             )
 
