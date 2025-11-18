@@ -1,6 +1,7 @@
 ---
 id: 8
 title: "Rocks & Barnacles: Surfacing Technical Debt"
+summary: "A structured framework for surfacing and prioritizing technical debt using pirate ship metaphors. Democratically identifies barnacles (daily slowdowns) and rocky shoals (catastrophic risks) to get infrastructure work onto roadmaps alongside features."
 tags: ["engineering-management", "technical-debt", "operations"]
 draft: false
 published_date: "2025-10-24T10:00:00"

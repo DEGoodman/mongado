@@ -1,6 +1,7 @@
 ---
 id: 7
 title: "30-60-90 Day Framework for Engineering Leaders"
+summary: "A context-driven framework for the first 90 days in a new engineering leadership role. Three phases covering listening and mapping, executing quick wins, and establishing strategic foundation while adapting to your specific team context."
 url: ""
 tags: ["management", "leadership"]
 draft: false

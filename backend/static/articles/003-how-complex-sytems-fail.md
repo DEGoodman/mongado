@@ -1,6 +1,7 @@
 ---
 id: 3
 title: "How Complex Sytems Fail"
+summary: "A treatise on the nature of failure in complex systems, explaining why failures are inherent, how defenses work, the role of human operators, and why hindsight oversimplifies root causes. Essential reading for SRE and systems thinking."
 url: "https://how.complexsystems.fail"
 tags: []
 draft: false

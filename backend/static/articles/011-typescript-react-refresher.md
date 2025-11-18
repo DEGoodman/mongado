@@ -1,6 +1,7 @@
 ---
 id: 11
 title: "TypeScript & React Refresher"
+summary: "Quick reference guide covering TypeScript fundamentals, advanced patterns, React hooks, performance optimization, and practical exercises. A condensed resource for refreshing frontend development skills."
 url: ""
 tags: ["typescript", "react", "reference", "webdev"]
 draft: false

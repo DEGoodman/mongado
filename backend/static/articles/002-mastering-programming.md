@@ -1,6 +1,7 @@
 ---
 id: 2
 title: "Mastering Programming"
+summary: "Kent Beck's observations on patterns master programmers use to solve bigger problems by solving fewer problems at once. Covers slicing, concentration, learning strategies, and behavioral patterns for effective software development."
 url: "https://www.facebook.com/notes/kent-beck/mastering-programming/1184427814923414/"
 tags: ["programming", "software-development", "career"]
 draft: false

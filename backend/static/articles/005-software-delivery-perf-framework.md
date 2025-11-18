@@ -1,6 +1,7 @@
 ---
 id: 5
 title: "Software Delivery Performance Framework"
+summary: "A framework for measuring software delivery performance using four key metrics: lead time, deployment frequency, mean time to recovery, and change failure rate. Avoids common anti-patterns like velocity and utilization."
 url: "https://itrevolution.com/product/accelerate/"
 tags: ["operations", "management"]
 draft: false

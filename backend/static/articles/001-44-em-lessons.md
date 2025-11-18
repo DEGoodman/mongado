@@ -1,6 +1,7 @@
 ---
 id: 1
 title: "44 Engineering Management Lessons"
+summary: "Concise lessons on transitioning to engineering management, covering team building, motivation, process, hiring, and organizational dynamics. Practical advice on what to do, what to avoid, and how to lead effectively."
 url: "https://www.defmacro.org/2014/10/03/engman.html"
 tags: ["engineering-management", "leadership"]
 draft: false

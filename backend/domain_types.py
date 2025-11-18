@@ -44,6 +44,7 @@ class ArticleDict(TypedDict, total=False):
     Attributes:
         id: Unique article slug (e.g., "python-performance")
         title: Article title
+        summary: Brief 1-2 sentence description of the article
         content: Markdown content
         author: Author name
         tags: List of tag strings
@@ -60,6 +61,7 @@ class ArticleDict(TypedDict, total=False):
 
     id: str
     title: str
+    summary: str
     content: str
     author: str
     tags: list[str]

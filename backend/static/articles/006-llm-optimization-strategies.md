@@ -1,6 +1,7 @@
 ---
 id: 6
 title: "Self-Hosted LLM Optimization: Production Under Resource Constraints"
+summary: "Optimizing self-hosted LLMs on a 4GB droplet with no GPU. Four optimization levels that reduced Q&A from 90s timeouts to 45s stable responses and semantic search to 5-10s using caching and batching strategies."
 tags: ["ai", "performance", "architecture"]
 draft: false
 published_date: "2025-11-03T00:00:00"

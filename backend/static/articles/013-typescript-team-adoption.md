@@ -1,6 +1,7 @@
 ---
-id: 14
+id: 13
 title: "A Leader's Guide to TypeScript Adoption"
+summary: "Practical strategies for building a culture of type safety and moving away from 'any' abuse in TypeScript projects. Includes metrics, tooling approaches, and change management tactics for engineering leaders."
 tags: ["typescript", "leadership", "engineering-management", "code-quality", "team-culture"]
 draft: false
 published_date: "2025-11-15T10:00:00"

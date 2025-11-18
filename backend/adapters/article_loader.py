@@ -141,6 +141,7 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
             article = {
                 "id": post.get("id"),
                 "title": post.get("title", md_file.stem),
+                "summary": post.get("summary"),  # Optional 1-2 sentence description
                 "content": post.content,  # Markdown content (fallback)
                 "html_content": html_content,  # Pre-rendered HTML (will be None for now)
                 "content_type": "markdown",
@@ -237,6 +238,7 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
                 article = {
                     "id": post.get("id"),
                     "title": post.get("title", Path(obj["Key"]).stem),
+                    "summary": post.get("summary"),  # Optional 1-2 sentence description
                     "content": post.content,  # Markdown content (fallback)
                     "html_content": html_content,  # Pre-rendered HTML (will be None for now)
                     "content_type": "markdown",

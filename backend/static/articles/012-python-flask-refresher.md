@@ -1,6 +1,7 @@
 ---
 id: 12
 title: "Python & Flask Refresher"
+summary: "Quick reference guide covering Python 3.13+ fundamentals, modern type hints, Flask application patterns, and advanced techniques. A condensed resource for refreshing backend development skills."
 url: ""
 tags: ["python", "flask", "webdev", "reference", "backend"]
 draft: false

@@ -1,6 +1,7 @@
 ---
 id: 4
 title: "Weekly Department Update Template"
+summary: "A structured template for weekly department updates covering project progress, challenges, next steps, team metrics, and cross-department coordination. Ensures consistent communication across engineering teams."
 url: ""
 tags: ["operations"]
 draft: false

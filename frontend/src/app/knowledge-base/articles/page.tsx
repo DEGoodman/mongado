@@ -15,6 +15,7 @@ import styles from "./page.module.scss";
 interface Resource {
   id: number;
   title: string;
+  summary?: string; // Optional 1-2 sentence description
   content: string;
   content_type?: string;
   url?: string;
@@ -147,12 +148,14 @@ function ArticlesContent() {
             </div>
           ) : (
             filteredResources.map((resource) => {
-              // Extract first paragraph or first 200 chars as preview
-              const preview = resource.content
-                .split("\n\n")[0]
-                .replace(/[#*`[\]]/g, "")
-                .substring(0, 200);
-              const needsTruncation = resource.content.length > 200;
+              // Use summary if available, otherwise fall back to first paragraph/200 chars
+              const preview =
+                resource.summary ||
+                resource.content
+                  .split("\n\n")[0]
+                  .replace(/[#*`[\]]/g, "")
+                  .substring(0, 200);
+              const needsTruncation = !resource.summary && resource.content.length > 200;
 
               return (
                 <Link

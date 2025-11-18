@@ -1,6 +1,7 @@
 ---
 id: 10
 title: "Zettelkasten: Building a Personal Knowledge Graph"
+summary: "How the Zettelkasten method transforms note-taking from information storage into idea generation using atomic notes and bidirectional linking. Includes practical implementation examples and AI enhancements."
 description: "How the Zettelkasten method transforms note-taking from information storage into idea generation, with practical examples from this site's implementation."
 category: knowledge-management
 draft: false
