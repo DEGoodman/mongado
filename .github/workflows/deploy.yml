@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'backend/static/articles/**'
-      - 'backend/static/assets/**'
-      - '**.md'
-      - 'docs/**'
+      - 'backend/static/assets/**'  # Ignore non-article assets
+      - 'docs/**'  # Ignore documentation
+      - 'README.md'  # Ignore root README
+      # Note: We DO deploy on article changes to invalidate backend cache
   workflow_dispatch:  # Allow manual deployment
 
 jobs:
@@ -96,6 +96,12 @@ jobs:
             # Wait for services to be healthy
             echo "⏳ Waiting for services to be healthy..."
             sleep 10
+
+            # Restart backend to invalidate article cache
+            # This ensures new/updated articles are picked up immediately
+            echo "🔄 Restarting backend to invalidate article cache..."
+            docker compose -f docker-compose.prod.yml restart backend
+            sleep 5
 
             # Pull Ollama model if not already present (use 1B model for 4GB RAM server)
             echo "🤖 Setting up Ollama model..."
