@@ -13,15 +13,16 @@ $font-family-mono: var(--font-space-mono), 'SF Mono', 'Monaco', 'Inconsolata', '
   'Source Code Pro', monospace;
 
 // ===== FONT SIZES =====
-$font-size-xs: 0.75rem; // 12px
-$font-size-sm: 0.875rem; // 14px
-$font-size-base: 1rem; // 16px
-$font-size-lg: 1.125rem; // 18px
-$font-size-xl: 1.25rem; // 20px
-$font-size-2xl: 1.5rem; // 24px
-$font-size-3xl: 1.875rem; // 30px
-$font-size-4xl: 2.25rem; // 36px
-$font-size-5xl: 3rem; // 48px
+// Scaled down ~15% for more compact display
+$font-size-xs: 0.625rem; // 10px (was 12px)
+$font-size-sm: 0.75rem; // 12px (was 14px)
+$font-size-base: 0.875rem; // 14px (was 16px)
+$font-size-lg: 1rem; // 16px (was 18px)
+$font-size-xl: 1.125rem; // 18px (was 20px)
+$font-size-2xl: 1.3125rem; // 21px (was 24px)
+$font-size-3xl: 1.625rem; // 26px (was 30px)
+$font-size-4xl: 2rem; // 32px (was 36px)
+$font-size-5xl: 2.625rem; // 42px (was 48px)
 
 // ===== FONT WEIGHTS =====
 $font-weight-normal: 400;
@@ -30,10 +31,11 @@ $font-weight-semibold: 600;
 $font-weight-bold: 700;
 
 // ===== LINE HEIGHTS =====
-$line-height-tight: 1.25;
-$line-height-normal: 1.5;
+// Tightened for viewport-friendly compact display
+$line-height-tight: 1.2;
+$line-height-normal: 1.4;
 $line-height-relaxed: 1.6;
-$line-height-loose: 1.7;
+$line-height-loose: 1.6;
 
 // ===== LETTER SPACING =====
 // Retro feel - increased letter spacing for that 80s geometric look
@@ -76,5 +78,5 @@ $heading-h6-letter-spacing: $letter-spacing-normal;
 // ===== BODY TEXT =====
 $body-size: $font-size-base;
 $body-weight: $font-weight-normal;
-$body-line-height: $line-height-relaxed; // 1.6 for breathing room
+$body-line-height: $line-height-relaxed; // 1.6 for compact but readable
 $body-letter-spacing: $letter-spacing-normal; // 0.01em for retro feel

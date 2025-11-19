@@ -13,56 +13,56 @@
 
 .main {
   @include container;
-  padding-top: $spacing-12;
-  padding-bottom: $spacing-12;
+  padding-top: $spacing-8; // Reduced from 48px to 32px
+  padding-bottom: $spacing-6; // Reduced from 48px to 24px
 
   @media (min-width: 768px) {
-    padding-top: $spacing-16;
-    padding-bottom: $spacing-16;
+    padding-top: $spacing-8; // Reduced from 64px to 32px
+    padding-bottom: $spacing-8; // Reduced from 64px to 32px
   }
 }
 
 // ===== HERO SECTION =====
 .heroCard {
   @include card-elevated;
-  margin-bottom: $spacing-8;
+  margin-bottom: $spacing-6; // Reduced from 32px to 24px
   text-align: center;
   background-color: $color-surface-elevated;
 
   .header {
-    margin-bottom: $spacing-8;
+    margin-bottom: $spacing-6; // Reduced from 32px to 24px
 
     .title {
       @include heading-h1;
-      margin-bottom: $spacing-4;
+      margin-bottom: $spacing-3; // Reduced from 16px to 12px (tighter gap)
       color: $neutral-900;
-      font-size: clamp(3rem, 5vw, 3.75rem); // Match production sm:text-6xl
+      font-size: clamp(2.5rem, 5vw, 3rem); // Slightly smaller: 40-48px instead of 48-60px
     }
 
     .subtitle {
-      font-size: $font-size-xl;
+      font-size: $font-size-lg; // Reduced from xl (18px) to lg (16px)
       color: $color-text-secondary;
-      margin-bottom: $spacing-2;
+      margin-bottom: $spacing-2; // Keep 8px gap
     }
 
     .location {
-      font-size: $font-size-base;
+      font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
       color: $color-text-tertiary;
     }
   }
 
   .bio {
     max-width: 48rem;
-    margin: 0 auto $spacing-8;
-    font-size: $font-size-lg;
-    line-height: $line-height-relaxed;
+    margin: 0 auto $spacing-6; // Reduced from 32px to 24px
+    font-size: $font-size-base; // Reduced from lg (16px) to base (14px)
+    line-height: $line-height-relaxed; // 1.6 (already optimized)
     color: $color-text-secondary;
   }
 
   .socialLinks {
-    @include cluster($spacing-4);
+    @include cluster($spacing-3); // Reduced gap from 16px to 12px
     justify-content: center;
-    margin-top: $spacing-8;
+    margin-top: $spacing-6; // Reduced from 32px to 24px
   }
 }
 
@@ -119,26 +119,26 @@
 // ===== KNOWLEDGE BASE SECTION =====
 .kbSection {
   @include card-elevated;
-  margin-bottom: $spacing-8;
+  margin-bottom: $spacing-6; // Reduced from 32px to 24px
   background: linear-gradient(to bottom right, $orange-50 0%, $white 50%, $gray-50 100%);
 
   .kbIcon {
-    font-size: 3rem;
-    margin-bottom: $spacing-6;
+    font-size: 2.5rem; // Reduced from 3rem (48px) to 2.5rem (40px)
+    margin-bottom: $spacing-4; // Reduced from 24px to 16px
     line-height: 1;
   }
 
   .kbTitle {
     @include heading-h2;
-    margin-bottom: $spacing-6;
+    margin-bottom: $spacing-4; // Reduced from 24px to 16px (tighter gap)
     color: $neutral-900;
   }
 
   .kbDescription {
     max-width: 56rem;
-    margin: 0 auto $spacing-8;
-    font-size: $font-size-lg;
-    line-height: $line-height-relaxed;
+    margin: 0 auto $spacing-6; // Reduced from 32px to 24px
+    font-size: $font-size-base; // Reduced from lg (16px) to base (14px)
+    line-height: $line-height-relaxed; // 1.6 (already optimized)
     color: $color-text-secondary;
   }
 
@@ -150,9 +150,9 @@
   .kbButton {
     @include flex-center;
     gap: $spacing-2;
-    padding: $spacing-4 $spacing-8;
+    padding: $spacing-3 $spacing-6; // Reduced from spacing-4/8 (16/32px) to spacing-3/6 (12/24px)
     border-radius: $border-radius-button;
-    font-size: $font-size-lg;
+    font-size: $font-size-base; // Reduced from lg (16px) to base (14px)
     font-weight: $font-weight-semibold;
     text-decoration: none;
     color: white;
@@ -161,8 +161,8 @@
     transition: all 0.2s ease;
 
     svg {
-      width: 1.25rem;
-      height: 1.25rem;
+      width: 1.125rem; // Reduced from 1.25rem
+      height: 1.125rem;
     }
 
     &:hover {
@@ -176,12 +176,12 @@
 // ===== OTHER SECTIONS =====
 .projectsLink {
   text-align: center;
-  margin-bottom: $spacing-8;
+  margin-bottom: $spacing-6; // Reduced from 32px to 24px
 
   a {
     @include link-default;
     color: $color-text-secondary;
-    font-size: $font-size-base;
+    font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
 
     &:hover {
       color: $color-primary;
@@ -190,7 +190,8 @@
 }
 
 .footer {
-  margin-top: $spacing-12;
+  margin-top: $spacing-8; // Reduced from 48px to 32px
+  padding: $spacing-6 0; // Reduced padding from implicit spacing
   text-align: center;
   @include text-secondary;
 

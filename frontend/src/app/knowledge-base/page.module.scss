@@ -25,17 +25,17 @@
 
   .headerContent {
     @include container;
-    padding-top: $spacing-6;
-    padding-bottom: $spacing-6;
+    padding-top: $spacing-4; // Reduced from 24px to 16px
+    padding-bottom: $spacing-4; // Reduced from 24px to 16px
     @include flex-between;
 
     .nav {
       @include flex-start;
-      gap: $spacing-4;
+      gap: $spacing-3; // Reduced from 16px to 12px
 
       .homeLink {
         @include link-default;
-        font-size: $font-size-sm;
+        font-size: $font-size-xs; // Reduced from sm (12px) to xs (10px)
 
         &:hover {
           color: $color-primary-hover;
@@ -44,6 +44,7 @@
 
       .title {
         @include heading-h1;
+        font-size: $font-size-3xl; // Reduced from h1 (32px) to 3xl (26px)
         margin: 0;
       }
     }
@@ -53,22 +54,23 @@
 // ===== MAIN =====
 .main {
   @include container;
-  padding-top: $spacing-8;
-  padding-bottom: $spacing-8;
+  padding-top: $spacing-6; // Reduced from 32px to 24px
+  padding-bottom: $spacing-6; // Reduced from 32px to 24px
 }
 
 // ===== SEARCH SECTION =====
 .searchSection {
   @include card-elevated;
-  margin-bottom: $spacing-8;
+  margin-bottom: $spacing-6; // Reduced from 32px to 24px
 
   .searchTitle {
     @include heading-h3;
-    margin-bottom: $spacing-4;
+    font-size: $font-size-xl; // Reduced from 2xl (21px) to xl (18px)
+    margin-bottom: $spacing-3; // Reduced from 16px to 12px (tighter gap)
   }
 
   .searchForm {
-    @include stack($spacing-4);
+    @include stack($spacing-3); // Reduced from 16px to 12px
 
     .searchRow {
       @include flex-start;
@@ -76,10 +78,10 @@
 
       .searchInput {
         flex: 1;
-        padding: $spacing-3 $spacing-4;
+        padding: $spacing-2 $spacing-3; // Reduced from 12/16px to 8/12px
         border: $border-default;
         border-radius: $border-radius-button;
-        font-size: $font-size-base;
+        font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
         font-family: $font-family-primary;
         background-color: $white;
         color: $color-text-primary;
@@ -97,13 +99,13 @@
       }
 
       .clearButton {
-        padding: $spacing-3 $spacing-4;
+        padding: $spacing-2 $spacing-3; // Reduced from 12/16px to 8/12px
         border: $border-default;
         border-radius: $border-radius-button;
         background-color: $color-bg-card;
         color: $color-text-primary;
         font-family: $font-family-primary;
-        font-size: $font-size-base;
+        font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
         cursor: pointer;
         transition: all 0.2s ease;
 
@@ -115,13 +117,13 @@
   }
 
   .searchHint {
-    margin-top: $spacing-2;
+    margin-top: $spacing-2; // Keep at 8px
     @include text-secondary;
   }
 
   .searchError {
-    margin-top: $spacing-4;
-    padding: $spacing-4;
+    margin-top: $spacing-3; // Reduced from 16px to 12px
+    padding: $spacing-3; // Reduced from 16px to 12px
     background-color: $color-error-bg;
     border: $border-width-thin solid $color-error-border;
     border-radius: $border-radius-md;
@@ -131,8 +133,8 @@
 
   // Results
   .resultsSection {
-    margin-top: $spacing-6;
-    @include stack($spacing-3);
+    margin-top: $spacing-4; // Reduced from 24px to 16px
+    @include stack($spacing-2); // Reduced from 12px to 8px
 
     .resultsHeader {
       @include text-secondary;
@@ -141,7 +143,7 @@
 
     .resultCard {
       display: block;
-      padding: $spacing-4;
+      padding: $spacing-3; // Reduced from 16px to 12px
       border: $border-default;
       border-radius: $border-radius-md;
       text-decoration: none;
@@ -192,7 +194,7 @@
   }
 
   .noResults {
-    margin-top: $spacing-4;
+    margin-top: $spacing-3; // Reduced from 16px to 12px
     text-align: center;
     @include text-secondary;
   }
@@ -200,9 +202,9 @@
 
 // ===== CONTENT CARDS =====
 .contentGrid {
-  margin-bottom: $spacing-8;
+  margin-bottom: $spacing-6; // Reduced from 32px to 24px
   display: grid;
-  gap: $spacing-6;
+  gap: $spacing-4; // Reduced from 24px to 16px
   grid-template-columns: 1fr;
 
   @media (min-width: 768px) {
@@ -225,27 +227,31 @@
   }
 
   .cardBadge {
-    margin-bottom: $spacing-3;
+    margin-bottom: $spacing-2; // Reduced from 12px to 8px
   }
 
   .cardTitle {
     @include heading-h2;
-    margin-bottom: $spacing-2;
+    font-size: $font-size-2xl; // Reduced from h2 (26px) to 2xl (21px)
+    margin-bottom: $spacing-2; // Keep at 8px (tight gap)
   }
 
   .cardDescription {
-    margin-bottom: $spacing-4;
+    margin-bottom: $spacing-3; // Reduced from 16px to 12px
+    font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
+    line-height: $line-height-relaxed; // 1.6 (already optimized)
     color: $color-text-secondary;
   }
 
   .cardActions {
     @include flex-start;
-    gap: $spacing-3;
+    gap: $spacing-2; // Reduced from 12px to 8px
   }
 
   .cardButton {
-    padding: $spacing-2 $spacing-4;
+    padding: $spacing-2 $spacing-3; // Reduced from 8/16px to 8/12px
     border-radius: $border-radius-button;
+    font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
     font-weight: $font-weight-semibold;
     text-decoration: none;
     transition: all 0.2s ease;
@@ -292,11 +298,12 @@
 
 // ===== QUICK LISTS SECTION =====
 .quickListsSection {
-  margin-bottom: $spacing-8;
+  margin-bottom: $spacing-6; // Reduced from 32px to 24px
 
   .quickListsTitle {
     @include heading-h2;
-    margin-bottom: $spacing-6;
+    font-size: $font-size-2xl; // Reduced from h2 (26px) to 2xl (21px)
+    margin-bottom: $spacing-4; // Reduced from 24px to 16px
     text-align: center;
   }
 }
@@ -309,14 +316,17 @@
 
   .infoTitle {
     @include heading-h3;
-    margin-bottom: $spacing-2;
+    font-size: $font-size-xl; // Reduced from h3 (21px) to xl (18px)
+    margin-bottom: $spacing-2; // Keep at 8px
     color: $blue-900;
   }
 
   .infoGrid {
     display: grid;
-    gap: $spacing-4;
+    gap: $spacing-3; // Reduced from 16px to 12px
     grid-template-columns: 1fr;
+    font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
+    line-height: $line-height-relaxed; // 1.6 (already optimized)
     @include text-secondary;
     color: $blue-800;
 
