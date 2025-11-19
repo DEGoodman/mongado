@@ -13,16 +13,22 @@ import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import styles from "./page.module.scss";
 
+type SortOption = "newest" | "oldest" | "alphabetical";
+
 function NotesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tagFilter = searchParams.get("tag");
+  const tagsParam = searchParams.get("tags");
+  const selectedTags = tagsParam ? tagsParam.split(",") : [];
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [randomNoteLoading, setRandomNoteLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [showAllTags, setShowAllTags] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -43,16 +49,85 @@ function NotesContent() {
     fetchData();
   }, []);
 
-  // Filter notes by tag
-  const filteredNotes = tagFilter ? notes.filter((note) => note.tags.includes(tagFilter)) : notes;
+  // Calculate tag counts
+  const tagCounts = notes.reduce(
+    (acc, note) => {
+      note.tags.forEach((tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  // Sort tags by count (descending), then alphabetically
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  // Separate tags into top (2+ notes) and other (1 note)
+  const topTags = sortedTags.filter(([_, count]) => count >= 2);
+  const otherTags = sortedTags.filter(([_, count]) => count === 1);
+  const visibleTags = showAllTags ? sortedTags : topTags;
+
+  // Filter and sort notes
+  const filteredNotes = notes
+    .filter((note) => {
+      // Filter by tags (OR logic)
+      if (selectedTags.length > 0) {
+        const hasMatchingTag = selectedTags.some((tag) => note.tags.includes(tag));
+        if (!hasMatchingTag) return false;
+      }
+
+      // Filter by search query
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        note.id.toLowerCase().includes(query) ||
+        (note.title && note.title.toLowerCase().includes(query)) ||
+        note.content.toLowerCase().includes(query) ||
+        note.tags.some((tag) => tag.toLowerCase().includes(query))
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "alphabetical":
+          return (a.title || a.id).localeCompare(b.title || b.id);
+        default:
+          return 0;
+      }
+    });
 
   const handleTagClick = (tag: string) => {
-    router.push(`/knowledge-base/notes?tag=${encodeURIComponent(tag)}`);
+    let newTags: string[];
+
+    if (selectedTags.includes(tag)) {
+      // Tag is already selected, remove it
+      newTags = selectedTags.filter((t) => t !== tag);
+    } else {
+      // Tag is not selected, add it
+      newTags = [...selectedTags, tag];
+    }
+
+    // Update URL with new tags
+    if (newTags.length > 0) {
+      router.push(`/knowledge-base/notes?tags=${newTags.map(encodeURIComponent).join(",")}`);
+    } else {
+      router.push("/knowledge-base/notes");
+    }
   };
 
-  const clearTagFilter = () => {
+  const clearAllFilters = () => {
+    setSearchQuery("");
     router.push("/knowledge-base/notes");
   };
+
+  const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery);
 
   const handleRandomNote = async () => {
     try {
@@ -133,23 +208,119 @@ function NotesContent() {
       </div>
 
       <div className={styles.main}>
-        {/* Tag Filter Banner */}
-        {tagFilter && (
-          <div className={styles.tagFilterBanner}>
-            <div className={styles.filterInfo}>
-              <span className={styles.filterLabel}>Filtering by tag:</span>
-              <span className={styles.tagPill}>{tagFilter}</span>
+        <div className={styles.contentGrid}>
+          {/* Sidebar - Filters */}
+          <aside className={styles.sidebar}>
+            {/* Search */}
+            <div className={styles.searchBar}>
+              <input
+                type="text"
+                placeholder="Search notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={styles.searchInput}
+              />
             </div>
-            <button onClick={clearTagFilter} className={styles.clearButton}>
-              Clear filter
-            </button>
-          </div>
-        )}
 
-        {/* Quick Lists - Special Note Categories */}
-        {!tagFilter && <QuickLists />}
+            {/* Sort */}
+            <div className={styles.sortSection}>
+              <label htmlFor="sort-select" className={styles.sortLabel}>
+                Sort by:
+              </label>
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className={styles.sortSelect}
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="alphabetical">Alphabetical</option>
+              </select>
+            </div>
 
-        {/* Notes list */}
+            {/* Tag Filter Section */}
+            {sortedTags.length > 0 && (
+              <div className={styles.tagFilterSection}>
+                <div className={styles.tagFilterHeader}>
+                  <span className={styles.tagFilterLabel}>Filter by tag:</span>
+                </div>
+                <div className={styles.tagBadges}>
+                  {visibleTags.map(([tag, count]) => {
+                    const isActive = selectedTags.includes(tag);
+                    let sizeClass = styles.tagLow;
+                    if (count >= 3) sizeClass = styles.tagHigh;
+                    else if (count === 2) sizeClass = styles.tagMedium;
+
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => handleTagClick(tag)}
+                        className={`${styles.tagBadge} ${sizeClass} ${isActive ? styles.tagBadgeActive : ""}`}
+                        type="button"
+                      >
+                        #{tag} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+                {otherTags.length > 0 && !showAllTags && (
+                  <button
+                    onClick={() => setShowAllTags(true)}
+                    className={styles.showMoreButton}
+                    type="button"
+                  >
+                    + Show {otherTags.length} more
+                  </button>
+                )}
+                {showAllTags && otherTags.length > 0 && (
+                  <button
+                    onClick={() => setShowAllTags(false)}
+                    className={styles.showMoreButton}
+                    type="button"
+                  >
+                    − Show fewer
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <button onClick={clearAllFilters} className={styles.clearAllButtonSidebar}>
+                Clear all filters
+              </button>
+            )}
+
+            {/* Quick Lists */}
+            {!hasActiveFilters && <QuickLists />}
+          </aside>
+
+          {/* Main Content - Notes */}
+          <div className={styles.notesContent}>
+            {/* Note Count and Active Filters */}
+            <div className={styles.resultsBar}>
+              <div className={styles.noteCountSection}>
+                {selectedTags.length > 0 && (
+                  <div className={styles.activeFilters}>
+                    Filtering by:{" "}
+                    {selectedTags.map((tag, index) => (
+                      <span key={tag}>
+                        #{tag}
+                        {index < selectedTags.length - 1 && ", "}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.noteCount}>
+                  Showing {filteredNotes.length}
+                  {filteredNotes.length !== notes.length && ` of ${notes.length}`}{" "}
+                  {filteredNotes.length === 1 ? "note" : "notes"}
+                </div>
+              </div>
+            </div>
+
+            {/* Notes list */}
         {filteredNotes.length === 0 ? (
           <div className={styles.emptyState}>
             <svg className={styles.emptyIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,6 +395,8 @@ function NotesContent() {
             ))}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -46,55 +46,37 @@
   padding-bottom: $spacing-8;
 }
 
-// ===== TAG FILTER BANNER =====
-.tagFilterBanner {
-  margin-bottom: $spacing-6;
-  @include flex-between;
-  padding: $spacing-4;
-  background-color: $blue-50;
-  border: $border-width-thin solid $blue-200;
-  border-radius: $border-radius-md;
+// ===== CONTENT GRID =====
+.contentGrid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: $spacing-8;
 
-  .filterInfo {
-    @include flex-start;
-    gap: $spacing-2;
-
-    .filterLabel {
-      @include text-secondary;
-      font-weight: $font-weight-medium;
-      color: $blue-900;
-    }
-
-    .tagPill {
-      display: inline-flex;
-      align-items: center;
-      padding: $spacing-1 $spacing-3;
-      background-color: $blue-100;
-      border-radius: $border-radius-full;
-      @include text-secondary;
-      font-weight: $font-weight-medium;
-      color: $blue-800;
-    }
-  }
-
-  .clearButton {
-    @include text-secondary;
-    color: $blue-600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s ease;
-
-    &:hover {
-      color: $blue-800;
-      text-decoration: underline;
-    }
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
   }
 }
 
-// ===== SEARCH BAR =====
-.searchBar {
-  margin-bottom: $spacing-6;
+// ===== SIDEBAR =====
+.sidebar {
+  @include stack($spacing-4);
+  position: sticky;
+  top: 4rem; // ~64px - doubled spacing to prevent search bar cutoff
+  align-self: flex-start;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
 
+  // On mobile, don't sticky (let it scroll naturally)
+  @media (max-width: 1024px) {
+    position: static;
+    margin-bottom: $spacing-6;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+// Search Bar
+.searchBar {
   .searchInput {
     width: 100%;
     padding: $spacing-3 $spacing-4;
@@ -114,6 +96,171 @@
 
     &::placeholder {
       color: $color-text-tertiary;
+    }
+  }
+}
+
+// Sort Section
+.sortSection {
+  .sortLabel {
+    display: block;
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-2;
+  }
+
+  .sortSelect {
+    width: 100%;
+    padding: $spacing-2 $spacing-3;
+    border: $border-default;
+    border-radius: $border-radius-button;
+    font-size: $font-size-base;
+    font-family: $font-family-primary;
+    background-color: $white;
+    color: $color-text-primary;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: $color-input-border-focus;
+      box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+    }
+
+    &:hover {
+      border-color: $blue-300;
+    }
+  }
+}
+
+// Tag Filter Section
+.tagFilterSection {
+  padding: $spacing-4;
+  background-color: $blue-50;
+  border: $border-width-thin solid $blue-200;
+  border-radius: $border-radius-md;
+
+  .tagFilterHeader {
+    margin-bottom: $spacing-3;
+
+    .tagFilterLabel {
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+      color: $blue-900;
+    }
+  }
+
+  .tagBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+
+    .tagBadge {
+      display: inline-flex;
+      align-items: center;
+      padding: $spacing-2 $spacing-3;
+      background-color: $white;
+      border: $border-width-thin solid $blue-200;
+      border-radius: $border-radius-full;
+      @include text-secondary;
+      font-weight: $font-weight-medium;
+      color: $blue-700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: $blue-100;
+        border-color: $blue-300;
+        color: $blue-800;
+      }
+
+      &.tagBadgeActive {
+        background-color: $blue-500;
+        border-color: $blue-600;
+        color: $white;
+
+        &:hover {
+          background-color: $blue-600;
+          border-color: $blue-700;
+        }
+      }
+
+      // Visual hierarchy based on article count
+      &.tagHigh {
+        font-size: 15px;
+        font-weight: $font-weight-semibold;
+      }
+
+      &.tagMedium {
+        font-size: 14px;
+        font-weight: $font-weight-medium;
+      }
+
+      &.tagLow {
+        font-size: 13px;
+        font-weight: $font-weight-normal;
+        opacity: 0.9;
+      }
+    }
+  }
+
+  .showMoreButton {
+    margin-top: $spacing-3;
+    @include text-secondary;
+    color: $blue-600;
+    cursor: pointer;
+    font-weight: $font-weight-medium;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: $blue-800;
+      text-decoration: underline;
+    }
+  }
+}
+
+// Clear All Button (Sidebar)
+.clearAllButtonSidebar {
+  width: 100%;
+  padding: $spacing-3 $spacing-4;
+  background-color: $white;
+  border: $border-width-thin solid $blue-300;
+  border-radius: $border-radius-button;
+  @include text-secondary;
+  color: $blue-600;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $blue-50;
+    border-color: $blue-400;
+    color: $blue-700;
+  }
+}
+
+// ===== ARTICLES CONTENT =====
+.articlesContent {
+  min-width: 0; // Prevents grid blowout
+}
+
+// Results Bar
+.resultsBar {
+  margin-bottom: $spacing-4;
+
+  .articleCountSection {
+    .activeFilters {
+      @include text-secondary;
+      color: $blue-700;
+      font-weight: $font-weight-medium;
+      margin-bottom: $spacing-1;
+    }
+
+    .articleCount {
+      @include text-secondary;
+      color: $color-text-secondary;
+      font-weight: $font-weight-medium;
     }
   }
 }
