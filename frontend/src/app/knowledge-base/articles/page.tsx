@@ -280,7 +280,8 @@ function ArticlesContent() {
                   ) : (
                     <>
                       Showing {filteredResources.length}
-                      {filteredResources.length !== resources.length && ` of ${resources.length}`}{" "}
+                      {filteredResources.length !== resources.length &&
+                        ` of ${resources.length}`}{" "}
                       {filteredResources.length === 1 ? "article" : "articles"}
                     </>
                   )}
@@ -290,76 +291,78 @@ function ArticlesContent() {
 
             {/* Articles List */}
             <div className={styles.articlesList}>
-          {isLoading ? (
-            <div className={styles.loadingState}>
-              <p>Loading articles...</p>
-            </div>
-          ) : filteredResources.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p className={styles.emptyMessage}>
-                {searchQuery ? "No articles match your search" : "No articles yet"}
-              </p>
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton}>
-                  Clear search
-                </button>
-              )}
-            </div>
-          ) : (
-            filteredResources.map((resource) => {
-              return (
-                <Link
-                  key={resource.id}
-                  href={`/knowledge-base/articles/${resource.id}`}
-                  className={`${styles.articleCard} ${resource.draft ? styles.draftCard : ""}`}
-                >
-                  <div className={styles.articleHeader}>
-                    <div className={styles.titleRow}>
-                      <h3 className={styles.articleTitle}>{resource.title}</h3>
-                      {resource.draft && <span className={styles.draftBadge}>Draft</span>}
-                    </div>
-                    <div className={styles.articleMeta}>
-                      {resource.updated_date &&
-                      resource.updated_date !== resource.published_date ? (
-                        <>
-                          Updated{" "}
-                          {new Date(resource.updated_date).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </>
-                      ) : (
-                        <>
-                          Published{" "}
-                          {new Date(
-                            resource.published_date || resource.created_at || ""
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Summary */}
-                  {resource.summary && <p className={styles.articlePreview}>{resource.summary}</p>}
-
-                  {/* Tags */}
-                  {resource.tags.length > 0 && (
-                    <div className={styles.articleTags}>
-                      <TagPillList tags={resource.tags} showHash onClick={handleTagClick} />
-                    </div>
+              {isLoading ? (
+                <div className={styles.loadingState}>
+                  <p>Loading articles...</p>
+                </div>
+              ) : filteredResources.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p className={styles.emptyMessage}>
+                    {searchQuery ? "No articles match your search" : "No articles yet"}
+                  </p>
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton}>
+                      Clear search
+                    </button>
                   )}
+                </div>
+              ) : (
+                filteredResources.map((resource) => {
+                  return (
+                    <Link
+                      key={resource.id}
+                      href={`/knowledge-base/articles/${resource.id}`}
+                      className={`${styles.articleCard} ${resource.draft ? styles.draftCard : ""}`}
+                    >
+                      <div className={styles.articleHeader}>
+                        <div className={styles.titleRow}>
+                          <h3 className={styles.articleTitle}>{resource.title}</h3>
+                          {resource.draft && <span className={styles.draftBadge}>Draft</span>}
+                        </div>
+                        <div className={styles.articleMeta}>
+                          {resource.updated_date &&
+                          resource.updated_date !== resource.published_date ? (
+                            <>
+                              Updated{" "}
+                              {new Date(resource.updated_date).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </>
+                          ) : (
+                            <>
+                              Published{" "}
+                              {new Date(
+                                resource.published_date || resource.created_at || ""
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* Read more indicator */}
-                  <div className={styles.readMore}>Read more →</div>
-                </Link>
-              );
-            })
-          )}
+                      {/* Summary */}
+                      {resource.summary && (
+                        <p className={styles.articlePreview}>{resource.summary}</p>
+                      )}
+
+                      {/* Tags */}
+                      {resource.tags.length > 0 && (
+                        <div className={styles.articleTags}>
+                          <TagPillList tags={resource.tags} showHash onClick={handleTagClick} />
+                        </div>
+                      )}
+
+                      {/* Read more indicator */}
+                      <div className={styles.readMore}>Read more →</div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

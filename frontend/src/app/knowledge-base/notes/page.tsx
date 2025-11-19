@@ -321,80 +321,85 @@ function NotesContent() {
             </div>
 
             {/* Notes list */}
-        {filteredNotes.length === 0 ? (
-          <div className={styles.emptyState}>
-            <svg className={styles.emptyIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            <h3 className={styles.emptyTitle}>No notes yet</h3>
-            <p className={styles.emptyMessage}>Get started by creating your first note</p>
-            <Link href="/knowledge-base/notes/new" className={styles.createButton}>
-              Create Note
-            </Link>
-          </div>
-        ) : (
-          <div className={styles.notesList}>
-            {filteredNotes.map((note) => (
-              <Link
-                key={note.id}
-                href={`/knowledge-base/notes/${note.id}`}
-                className={styles.noteCard}
-              >
-                <div className={styles.noteCardContent}>
-                  <div className={styles.noteInfo}>
-                    {/* Note ID and title */}
-                    <div className={styles.noteIdRow}>
-                      <code className={styles.noteId}>{note.id}</code>
-                    </div>
-
-                    {note.title && <h3 className={styles.noteTitle}>{note.title}</h3>}
-
-                    {/* Content preview */}
-                    <p className={styles.notePreview}>{note.content}</p>
-
-                    {/* Metadata */}
-                    <div className={styles.noteMeta}>
-                      <span>{formatNoteDate(note.created_at)}</span>
-                      <span>by {note.author}</span>
-                      {note.links.length > 0 && (
-                        <span>
-                          {note.links.length} link{note.links.length !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Tags */}
-                    {note.tags.length > 0 && (
-                      <div className={styles.noteTags}>
-                        <TagPillList tags={note.tags} maxVisible={3} onClick={handleTagClick} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Arrow icon */}
-                  <svg
-                    className={styles.noteArrow}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            {filteredNotes.length === 0 ? (
+              <div className={styles.emptyState}>
+                <svg
+                  className={styles.emptyIcon}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <h3 className={styles.emptyTitle}>No notes yet</h3>
+                <p className={styles.emptyMessage}>Get started by creating your first note</p>
+                <Link href="/knowledge-base/notes/new" className={styles.createButton}>
+                  Create Note
+                </Link>
+              </div>
+            ) : (
+              <div className={styles.notesList}>
+                {filteredNotes.map((note) => (
+                  <Link
+                    key={note.id}
+                    href={`/knowledge-base/notes/${note.id}`}
+                    className={styles.noteCard}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+                    <div className={styles.noteCardContent}>
+                      <div className={styles.noteInfo}>
+                        {/* Note ID and title */}
+                        <div className={styles.noteIdRow}>
+                          <code className={styles.noteId}>{note.id}</code>
+                        </div>
+
+                        {note.title && <h3 className={styles.noteTitle}>{note.title}</h3>}
+
+                        {/* Content preview */}
+                        <p className={styles.notePreview}>{note.content}</p>
+
+                        {/* Metadata */}
+                        <div className={styles.noteMeta}>
+                          <span>{formatNoteDate(note.created_at)}</span>
+                          <span>by {note.author}</span>
+                          {note.links.length > 0 && (
+                            <span>
+                              {note.links.length} link{note.links.length !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Tags */}
+                        {note.tags.length > 0 && (
+                          <div className={styles.noteTags}>
+                            <TagPillList tags={note.tags} maxVisible={3} onClick={handleTagClick} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Arrow icon */}
+                      <svg
+                        className={styles.noteArrow}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
