@@ -7,7 +7,7 @@
 @use '@/styles/mixins' as *;
 
 .container {
-  height: calc(100vh - 56px); // Account for top navigation bar
+  height: calc(100vh - 80px); // Account for top navigation bar
   overflow: hidden;
   background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
   display: flex;
