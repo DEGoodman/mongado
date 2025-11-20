@@ -38,6 +38,7 @@ export default function NotesGraphPage() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [showAllTags, setShowAllTags] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
 
@@ -76,9 +77,9 @@ export default function NotesGraphPage() {
         });
 
         // Initialize node positions across the canvas
-        const centerX = 600; // Half of canvas width (1200)
-        const centerY = 350; // Half of canvas height (700)
-        const spread = 500; // Wide initial spread to encourage distribution
+        const centerX = 450; // Half of canvas width (900)
+        const centerY = 311; // Half of canvas height (622)
+        const spread = 420; // Initial spread (smaller to keep centered)
 
         data.nodes = data.nodes.map((node) => ({
           ...node,
@@ -146,7 +147,7 @@ export default function NotesGraphPage() {
   };
 
   // Get most common tags from the graph
-  const getTopTags = (limit: number = 8): Array<{ tag: string; count: number; color: string }> => {
+  const getTopTags = (limit: number = 12): Array<{ tag: string; count: number; color: string }> => {
     if (!graphData) return [];
 
     const tagCounts = new Map<string, number>();
@@ -265,8 +266,8 @@ export default function NotesGraphPage() {
         node.x = node.x! + node.vx!;
         node.y = node.y! + node.vy!;
 
-        // Keep nodes strictly within bounds
-        const margin = 40;
+        // Keep nodes strictly within bounds (larger margin for text labels)
+        const margin = 70;
 
         if (node.x! < margin) {
           node.x = margin;
@@ -298,8 +299,8 @@ export default function NotesGraphPage() {
         const targetMatches = !isFiltering || target.tags.some((tag) => selectedTags.has(tag));
         const isDimmed = isFiltering && !sourceMatches && !targetMatches;
 
-        // Check if edge connects hub nodes (high degree nodes)
-        const isHubEdge = (source.degree || 0) >= 5 || (target.degree || 0) >= 5;
+        // Check if edge connects large/hub nodes (high degree nodes)
+        const isHubEdge = (source.degree || 0) >= 6 || (target.degree || 0) >= 6;
 
         // Highlight edges connected to hovered/selected nodes
         const isHighlighted =
@@ -335,16 +336,26 @@ export default function NotesGraphPage() {
       nodes.forEach((node) => {
         const isSelected = selectedNode?.id === node.id;
         const isHovered = hoveredNode === node.id;
-        const isHub = (node.degree || 0) >= 5;
 
         // Check if node matches tag filter
         const matchesFilter = !isFiltering || node.tags.some((tag) => selectedTags.has(tag));
         const isDimmed = isFiltering && !matchesFilter;
 
-        // Scale radius based on degree (hub nodes are larger)
-        let baseRadius = 8;
-        if (isHub) baseRadius = 12;
-        const radius = isSelected || isHovered ? baseRadius + 2 : baseRadius;
+        // Scale radius based on degree (connection count)
+        const degree = node.degree || 0;
+        let baseRadius: number;
+        if (degree >= 10) {
+          baseRadius = 28; // Hub nodes (10+ connections)
+        } else if (degree >= 6) {
+          baseRadius = 22; // Large nodes (6-9 connections)
+        } else if (degree >= 3) {
+          baseRadius = 16; // Medium nodes (3-5 connections)
+        } else if (degree >= 1) {
+          baseRadius = 10; // Small nodes (1-2 connections)
+        } else {
+          baseRadius = 8; // Orphan nodes (0 connections)
+        }
+        const radius = isSelected || isHovered ? baseRadius * 1.15 : baseRadius;
 
         // Get color based on tags
         const nodeColor = getNodeColor(node);
@@ -361,12 +372,12 @@ export default function NotesGraphPage() {
         // Border
         if (isSelected) {
           ctx.strokeStyle = "#1e40af";
-          ctx.lineWidth = 3;
-        } else if (isHub) {
-          ctx.strokeStyle = "#334155"; // Darker border for hubs
+          ctx.lineWidth = 4;
+        } else if (degree >= 6) {
+          ctx.strokeStyle = "#334155"; // Darker border for large/hub nodes
           ctx.lineWidth = 2;
         } else {
-          ctx.strokeStyle = "#e5e7eb";
+          ctx.strokeStyle = "#374151";
           ctx.lineWidth = 1;
         }
         ctx.stroke();
@@ -374,15 +385,15 @@ export default function NotesGraphPage() {
         // Node label - only show on hover or selected
         if (isSelected || isHovered) {
           ctx.fillStyle = "#1f2937";
-          ctx.font = isHub ? "bold 12px sans-serif" : "12px sans-serif";
+          ctx.font = degree >= 6 ? "bold 13px sans-serif" : "12px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(node.title, node.x!, node.y! - 12);
+          ctx.fillText(node.title, node.x!, node.y! - baseRadius - 6);
 
           // Show degree count only when hovered/selected
           if (node.degree && node.degree > 0) {
             ctx.font = "10px sans-serif";
             ctx.fillStyle = "#64748b";
-            ctx.fillText(`${node.degree} links`, node.x!, node.y! + 16);
+            ctx.fillText(`${node.degree} links`, node.x!, node.y! + baseRadius + 14);
           }
         }
 
@@ -413,13 +424,18 @@ export default function NotesGraphPage() {
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
 
-    // Find clicked node (use larger radius for hub nodes)
+    // Find clicked node (use radius based on degree + padding for easier clicking)
     const clickedNode = graphData.nodes.find((node) => {
       const dx = x - node.x!;
       const dy = y - node.y!;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const isHub = (node.degree || 0) >= 5;
-      const clickRadius = isHub ? 14 : 10;
+      const degree = node.degree || 0;
+      let clickRadius: number;
+      if (degree >= 10) clickRadius = 32;
+      else if (degree >= 6) clickRadius = 26;
+      else if (degree >= 3) clickRadius = 20;
+      else if (degree >= 1) clickRadius = 14;
+      else clickRadius = 12; // Orphan nodes
       return dist < clickRadius;
     });
 
@@ -438,13 +454,18 @@ export default function NotesGraphPage() {
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
 
-    // Find hovered node (use larger radius for hub nodes)
+    // Find hovered node (use radius based on degree + padding)
     const hoveredNode = graphData.nodes.find((node) => {
       const dx = x - node.x!;
       const dy = y - node.y!;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const isHub = (node.degree || 0) >= 5;
-      const hoverRadius = isHub ? 14 : 10;
+      const degree = node.degree || 0;
+      let hoverRadius: number;
+      if (degree >= 10) hoverRadius = 32;
+      else if (degree >= 6) hoverRadius = 26;
+      else if (degree >= 3) hoverRadius = 20;
+      else if (degree >= 1) hoverRadius = 14;
+      else hoverRadius = 12;
       return dist < hoverRadius;
     });
 
@@ -517,102 +538,76 @@ export default function NotesGraphPage() {
             </div>
           </div>
 
-          <h1 className={styles.title}>Notes Graph</h1>
-          <p className={styles.stats}>
-            {graphData.count.nodes} notes · {graphData.count.edges} connections
-          </p>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>Notes Graph</h1>
+            <span className={styles.stats}>
+              {graphData.count.nodes} notes · {graphData.count.edges} connections
+            </span>
+          </div>
         </div>
       </div>
 
       <div className={styles.main}>
-        {/* Graph visualization */}
-        <div className={styles.graphCard}>
-          <canvas
-            ref={canvasRef}
-            width={1200}
-            height={700}
-            onClick={handleCanvasClick}
-            onMouseMove={handleCanvasMouseMove}
-            className={styles.canvas}
-          />
+        <div className={styles.gridLayout}>
+          {/* Graph visualization - Left column */}
+          <div className={styles.graphCard}>
+            <canvas
+              ref={canvasRef}
+              width={900}
+              height={622}
+              onClick={handleCanvasClick}
+              onMouseMove={handleCanvasMouseMove}
+              className={styles.canvas}
+            />
+            <div className={styles.instructions}>
+              Hover over nodes to see titles and connections · Larger nodes = hub notes with more
+              links
+            </div>
+          </div>
 
-          <div className={styles.legend}>
-            {/* Selected node tags */}
-            {selectedNode && selectedNode.tags.length > 0 && (
-              <div
-                style={{
-                  marginBottom: "12px",
-                  padding: "8px",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "8px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    marginBottom: "6px",
-                    color: "#475569",
-                  }}
-                >
-                  Tags on "{selectedNode.title}":
+          {/* Sidebar - Right column */}
+          <div className={styles.sidebar}>
+            {/* Selected node details */}
+            {selectedNode && (
+              <div className={styles.selectedNodePanel}>
+                <h3 className={styles.nodeTitle}>{selectedNode.title}</h3>
+                <div className={styles.nodeMeta}>
+                  <code className={styles.nodeId}>{selectedNode.id}</code>
+                  <span>by {selectedNode.author}</span>
+                  <span className={styles.nodeConnections}>
+                    {selectedNode.degree || 0} connection{selectedNode.degree !== 1 ? "s" : ""}
+                  </span>
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {selectedNode.tags.map((tag) => {
-                    const isActive = selectedTags.has(tag);
-                    const color = getTagColor(tag);
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() => {
-                          const newTags = new Set(selectedTags);
-                          if (isActive) {
-                            newTags.delete(tag);
-                          } else {
-                            newTags.add(tag);
-                          }
-                          setSelectedTags(newTags);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          padding: "3px 8px",
-                          border: `2px solid ${isActive ? color : "#e2e8f0"}`,
-                          backgroundColor: isActive ? `${color}20` : "white",
-                          borderRadius: "10px",
-                          cursor: "pointer",
-                          fontSize: "11px",
-                          fontWeight: isActive ? 600 : 500,
-                          color: isActive ? color : "#64748b",
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            backgroundColor: color,
-                          }}
-                        />
+                {selectedNode.tags.length > 0 && (
+                  <div className={styles.nodeTags}>
+                    {selectedNode.tags.map((tag) => (
+                      <span key={tag} className={styles.tag}>
                         {tag}
-                      </button>
-                    );
-                  })}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.actions}>
+                  <Link
+                    href={`/knowledge-base/notes/${selectedNode.id}`}
+                    className={styles.viewButton}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View note
+                  </Link>
+                  <button onClick={() => setSelectedNode(null)} className={styles.deselectButton}>
+                    Deselect
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Most common tags */}
-            <div style={{ marginBottom: "12px" }}>
-              <div
-                style={{ fontSize: "12px", fontWeight: 600, marginBottom: "6px", color: "#64748b" }}
-              >
-                Filter by tag (click to toggle):
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {getTopTags(8).map(({ tag, count, color }) => {
+            {/* Tag filters */}
+            <div className={styles.filterSection}>
+              <h4 className={styles.filterTitle}>Filter by tag</h4>
+              <div className={`${styles.tagList} ${showAllTags ? styles.tagListScrollable : ""}`}>
+                {getTopTags(showAllTags ? 50 : 10).map(({ tag, count, color }) => {
                   const isActive = selectedTags.has(tag);
                   return (
                     <button
@@ -626,87 +621,38 @@ export default function NotesGraphPage() {
                         }
                         setSelectedTags(newTags);
                       }}
+                      className={`${styles.tagButton} ${isActive ? styles.tagButtonActive : ""}`}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "4px 10px",
-                        border: `2px solid ${isActive ? color : "#e2e8f0"}`,
-                        backgroundColor: isActive ? `${color}15` : "white",
-                        borderRadius: "12px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: isActive ? 600 : 400,
-                        color: isActive ? color : "#64748b",
-                        transition: "all 0.2s",
+                        borderColor: isActive ? color : undefined,
+                        backgroundColor: isActive ? `${color}15` : undefined,
+                        color: isActive ? color : undefined,
                       }}
-                      title={`${count} notes`}
                     >
-                      <div
-                        style={{
-                          width: "10px",
-                          height: "10px",
-                          borderRadius: "50%",
-                          backgroundColor: color,
-                        }}
-                      />
-                      {tag}
-                      <span style={{ fontSize: "10px", opacity: 0.7 }}>({count})</span>
+                      <span className={styles.tagDot} style={{ backgroundColor: color }} />
+                      <span className={styles.tagName}>{tag}</span>
+                      <span className={styles.tagCount}>({count})</span>
                     </button>
                   );
                 })}
-                {selectedTags.size > 0 && (
+              </div>
+              <div className={styles.filterActions}>
+                {getTopTags(50).length > 10 && (
                   <button
-                    onClick={() => setSelectedTags(new Set())}
-                    style={{
-                      padding: "4px 10px",
-                      border: "1px solid #e2e8f0",
-                      backgroundColor: "white",
-                      borderRadius: "12px",
-                      cursor: "pointer",
-                      fontSize: "11px",
-                      color: "#64748b",
-                    }}
+                    onClick={() => setShowAllTags(!showAllTags)}
+                    className={styles.showAllButton}
                   >
-                    Clear all
+                    {showAllTags ? "Show less" : `Show all (${getTopTags(50).length})`}
+                  </button>
+                )}
+                {selectedTags.size > 0 && (
+                  <button onClick={() => setSelectedTags(new Set())} className={styles.clearButton}>
+                    Clear filters
                   </button>
                 )}
               </div>
             </div>
-            <div className={styles.instructions}>
-              Hover over nodes to see titles and connections · Larger nodes = hub notes with more
-              links
-            </div>
           </div>
         </div>
-
-        {/* Selected node details */}
-        {selectedNode && (
-          <div className={styles.selectedNodePanel}>
-            <h3 className={styles.nodeTitle}>{selectedNode.title}</h3>
-            <div className={styles.nodeMeta}>
-              <code className={styles.nodeId}>{selectedNode.id}</code>
-              <span>by {selectedNode.author}</span>
-            </div>
-            {selectedNode.tags.length > 0 && (
-              <div className={styles.nodeTags}>
-                {selectedNode.tags.map((tag) => (
-                  <span key={tag} className={styles.tag}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className={styles.actions}>
-              <Link href={`/knowledge-base/notes/${selectedNode.id}`} className={styles.viewButton}>
-                View note
-              </Link>
-              <button onClick={() => setSelectedNode(null)} className={styles.deselectButton}>
-                Deselect
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

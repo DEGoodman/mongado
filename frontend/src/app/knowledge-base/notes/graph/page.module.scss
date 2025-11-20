@@ -14,8 +14,36 @@
 .main {
   @include container;
   max-width: 80rem;
-  padding-top: $spacing-8;
-  padding-bottom: $spacing-8;
+  padding-top: $spacing-4;
+  padding-bottom: $spacing-4;
+}
+
+// ===== GRID LAYOUT =====
+.gridLayout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: $spacing-4;
+  align-items: start;
+
+  // Stack on smaller screens
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ===== SIDEBAR =====
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+
+  // Sticky on larger screens
+  @media (min-width: 1025px) {
+    position: sticky;
+    top: $spacing-4;
+    max-height: calc(100vh - #{$spacing-8});
+    overflow-y: auto;
+  }
 }
 
 // ===== LOADING & ERROR STATES =====
@@ -143,20 +171,20 @@
   .headerContent {
     @include container;
     max-width: 80rem;
-    padding-top: $spacing-6;
-    padding-bottom: $spacing-6;
+    padding-top: $spacing-4;
+    padding-bottom: $spacing-3;
   }
 
   .headerTop {
-    margin-bottom: $spacing-4;
+    margin-bottom: $spacing-2;
     @include flex-between;
 
     .breadcrumbs {
       @include flex-start;
-      gap: $spacing-4;
+      gap: $spacing-3;
 
       .breadcrumbLink {
-        @include text-secondary;
+        font-size: 13px;
         color: $blue-600;
         text-decoration: none;
 
@@ -168,13 +196,22 @@
     }
   }
 
+  .titleRow {
+    @include flex-start;
+    align-items: baseline;
+    gap: $spacing-3;
+  }
+
   .title {
-    @include heading-h1;
-    margin-bottom: $spacing-2;
+    font-size: 1.25rem;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin: 0;
   }
 
   .stats {
-    color: $color-text-secondary;
+    font-size: 13px;
+    color: $color-text-tertiary;
   }
 }
 
@@ -182,43 +219,122 @@
 .graphCard {
   @include card-elevated;
   background-color: $color-bg-canvas;
-  padding: $spacing-4;
+  padding: $spacing-3;
 
   .canvas {
     width: 100%;
+    max-width: 900px;
   }
 
-  .legend {
-    margin-top: $spacing-4;
-    @include flex-between;
-    @include text-secondary;
+  .instructions {
+    margin-top: $spacing-2;
+    font-size: 12px;
+    color: $color-text-tertiary;
+    text-align: center;
+  }
+}
+
+// ===== FILTER SECTION =====
+.filterSection {
+  @include card-elevated;
+  padding: $spacing-3;
+
+  .filterTitle {
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-semibold;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $color-text-tertiary;
+  }
+
+  .tagList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tagButton {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    width: 100%;
+    padding: 6px $spacing-2;
+    border: 1px solid $color-border;
+    background-color: white;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: $font-weight-normal;
     color: $color-text-secondary;
+    transition: all 0.2s ease;
+    text-align: left;
 
-    .legendItem {
-      @include flex-start;
-      gap: $spacing-2;
-
-      .legendDot {
-        width: 0.75rem;
-        height: 0.75rem;
-        border-radius: 50%;
-        background-color: $purple-600;
-      }
+    &:hover {
+      border-color: #cbd5e1;
+      background-color: $gray-50;
     }
 
-    .instructions {
-      color: $color-text-tertiary;
+    &Active {
+      font-weight: $font-weight-semibold;
     }
+  }
+
+  .tagDot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .tagName {
+    flex: 1;
+  }
+
+  .tagCount {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  .tagListScrollable {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .filterActions {
+    display: flex;
+    gap: $spacing-2;
+    margin-top: $spacing-2;
+  }
+
+  .showAllButton,
+  .clearButton {
+    padding: 4px $spacing-2;
+    border: 1px solid $color-border;
+    background-color: white;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    font-size: 11px;
+    color: $color-text-secondary;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: $gray-50;
+    }
+  }
+
+  .showAllButton {
+    flex: 1;
   }
 }
 
 // ===== SELECTED NODE PANEL =====
 .selectedNodePanel {
-  margin-top: $spacing-6;
   padding: $spacing-4;
   background-color: $purple-50;
   border: $border-width-thin solid $purple-200;
   border-radius: $border-radius-md;
+  box-shadow: $shadow-card-sm;
 
   .nodeTitle {
     margin-bottom: $spacing-2;
@@ -229,16 +345,22 @@
   .nodeMeta {
     margin-bottom: $spacing-3;
     @include flex-start;
-    gap: $spacing-4;
-    @include text-secondary;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+    font-size: 13px;
     color: $purple-800;
 
     .nodeId {
-      padding: $spacing-1 $spacing-2;
+      padding: 2px $spacing-2;
       background-color: $purple-100;
       border-radius: $border-radius-sm;
       font-family: $font-family-mono;
-      @include text-secondary;
+      font-size: 12px;
+    }
+
+    .nodeConnections {
+      color: $color-text-tertiary;
+      font-size: 12px;
     }
   }
 
@@ -266,13 +388,14 @@
       background-color: $purple-600;
       color: white;
       border-radius: $border-radius-button;
-      @include text-secondary;
-      font-weight: $font-weight-medium;
+      font-size: 14px;
+      font-weight: $font-weight-semibold;
       text-decoration: none;
       transition: all 0.2s ease;
 
       &:hover {
         background-color: $purple-700;
+        color: white;
       }
     }
 
