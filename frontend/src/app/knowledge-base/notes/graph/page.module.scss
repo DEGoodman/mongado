@@ -239,13 +239,50 @@
   @include card-elevated;
   padding: $spacing-3;
 
+  .filterControls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-3;
+  }
+
   .filterTitle {
-    margin-bottom: $spacing-2;
+    margin: 0;
     font-weight: $font-weight-semibold;
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: $color-text-tertiary;
+  }
+
+  .filterLogic {
+    display: flex;
+    gap: 4px;
+    background: $neutral-100;
+    border-radius: 6px;
+    padding: 2px;
+
+    button {
+      padding: 4px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: $font-weight-medium;
+      color: $neutral-600;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        background: $neutral-200;
+      }
+
+      &.active {
+        background: white;
+        color: $neutral-900;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+    }
   }
 
   .tagList {
