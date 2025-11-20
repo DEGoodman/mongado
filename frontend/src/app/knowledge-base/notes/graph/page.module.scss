@@ -7,15 +7,22 @@
 @use '@/styles/mixins' as *;
 
 .container {
-  min-height: 100vh;
+  height: calc(100vh - 56px); // Account for top navigation bar
+  overflow: hidden;
   background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  display: flex;
+  flex-direction: column;
 }
 
 .main {
   @include container;
   max-width: 80rem;
-  padding-top: $spacing-4;
-  padding-bottom: $spacing-4;
+  padding-top: $spacing-2;
+  padding-bottom: $spacing-2;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 // ===== GRID LAYOUT =====
@@ -23,7 +30,8 @@
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: $spacing-4;
-  align-items: start;
+  flex: 1;
+  min-height: 0;
 
   // Stack on smaller screens
   @media (max-width: 1024px) {
@@ -36,14 +44,8 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-4;
-
-  // Sticky on larger screens
-  @media (min-width: 1025px) {
-    position: sticky;
-    top: $spacing-4;
-    max-height: calc(100vh - #{$spacing-8});
-    overflow-y: auto;
-  }
+  min-height: 0;
+  height: 100%;
 }
 
 // ===== LOADING & ERROR STATES =====
@@ -171,8 +173,8 @@
   .headerContent {
     @include container;
     max-width: 80rem;
-    padding-top: $spacing-4;
-    padding-bottom: $spacing-3;
+    padding-top: $spacing-2;
+    padding-bottom: $spacing-2;
   }
 
   .headerTop {
@@ -220,10 +222,15 @@
   @include card-elevated;
   background-color: $color-bg-canvas;
   padding: $spacing-3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 
   .canvas {
     width: 100%;
-    max-width: 900px;
+    flex: 1;
+    min-height: 0;
   }
 
   .instructions {
@@ -231,6 +238,7 @@
     font-size: 12px;
     color: $color-text-tertiary;
     text-align: center;
+    flex-shrink: 0;
   }
 }
 
@@ -238,12 +246,17 @@
 .filterSection {
   @include card-elevated;
   padding: $spacing-3;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 
   .filterControls {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: $spacing-3;
+    flex-shrink: 0;
   }
 
   .filterTitle {
@@ -289,6 +302,9 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   .tagButton {
@@ -333,18 +349,13 @@
     opacity: 0.7;
   }
 
-  .tagListScrollable {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
   .filterActions {
     display: flex;
     gap: $spacing-2;
     margin-top: $spacing-2;
+    flex-shrink: 0;
   }
 
-  .showAllButton,
   .clearButton {
     padding: 4px $spacing-2;
     border: 1px solid $color-border;
@@ -354,14 +365,11 @@
     font-size: 11px;
     color: $color-text-secondary;
     transition: all 0.2s ease;
+    flex: 1;
 
     &:hover {
       background-color: $gray-50;
     }
-  }
-
-  .showAllButton {
-    flex: 1;
   }
 }
 
@@ -372,6 +380,7 @@
   border: $border-width-thin solid $purple-200;
   border-radius: $border-radius-md;
   box-shadow: $shadow-card-sm;
+  flex-shrink: 0;
 
   .nodeTitle {
     margin-bottom: $spacing-2;

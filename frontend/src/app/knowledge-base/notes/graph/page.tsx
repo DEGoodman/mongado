@@ -35,7 +35,6 @@ export default function NotesGraphPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [showAllTags, setShowAllTags] = useState(false);
   const [filterLogic, setFilterLogic] = useState<"OR" | "AND">("OR");
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphEdge> | null>(null);
@@ -150,7 +149,7 @@ export default function NotesGraphPage() {
     return getTagColor(node.tags[0]);
   };
 
-  const getTopTags = (limit: number = 12): Array<{ tag: string; count: number; color: string }> => {
+  const getAllTags = (): Array<{ tag: string; count: number; color: string }> => {
     if (!graphData) return [];
 
     const tagCounts = new Map<string, number>();
@@ -162,8 +161,7 @@ export default function NotesGraphPage() {
 
     return Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count, color: getTagColor(tag) }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit);
+      .sort((a, b) => b.count - a.count);
   };
 
   // D3 Force Simulation
@@ -807,10 +805,10 @@ export default function NotesGraphPage() {
           <div className={styles.graphCard}>
             <svg
               ref={svgRef}
-              width={900}
-              height={622}
+              viewBox="0 0 900 622"
+              preserveAspectRatio="xMidYMid meet"
               className={styles.canvas}
-              style={{ display: "block" }}
+              style={{ display: "block", width: "100%", height: "100%" }}
             />
             <div className={styles.instructions}>
               Hover over nodes to see titles and connections · Drag nodes to reposition · Larger
@@ -875,8 +873,8 @@ export default function NotesGraphPage() {
                   </button>
                 </div>
               </div>
-              <div className={`${styles.tagList} ${showAllTags ? styles.tagListScrollable : ""}`}>
-                {getTopTags(showAllTags ? 50 : 10).map(({ tag, count, color }) => {
+              <div className={styles.tagList}>
+                {getAllTags().map(({ tag, count, color }) => {
                   const isActive = selectedTags.has(tag);
                   return (
                     <button
@@ -904,21 +902,13 @@ export default function NotesGraphPage() {
                   );
                 })}
               </div>
-              <div className={styles.filterActions}>
-                {getTopTags(50).length > 10 && (
-                  <button
-                    onClick={() => setShowAllTags(!showAllTags)}
-                    className={styles.showAllButton}
-                  >
-                    {showAllTags ? "Show less" : `Show all (${getTopTags(50).length})`}
-                  </button>
-                )}
-                {selectedTags.size > 0 && (
+              {selectedTags.size > 0 && (
+                <div className={styles.filterActions}>
                   <button onClick={() => setSelectedTags(new Set())} className={styles.clearButton}>
                     Clear filters
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
