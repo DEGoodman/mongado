@@ -20,21 +20,19 @@ FAILED=0
 echo "📦 Backend Quality Checks"
 echo "========================="
 
-cd backend
-
 # Linting
 echo -n "  Linting... "
-if ./venv/bin/ruff check . > /dev/null 2>&1; then
+if docker compose exec -T backend ruff check . > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
-    echo -e "${RED}  Run 'cd backend && make lint' to see errors${NC}"
+    echo -e "${RED}  Run 'make lint-backend' to see errors${NC}"
     FAILED=1
 fi
 
 # Type checking
 echo -n "  Type checking... "
-if ./venv/bin/mypy *.py > /dev/null 2>&1; then
+if docker compose exec -T backend mypy *.py > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${YELLOW}⚠${NC} (type errors exist but not blocking)"
@@ -42,15 +40,13 @@ fi
 
 # Security check
 echo -n "  Security scan... "
-if ./venv/bin/bandit -r . -c pyproject.toml > /dev/null 2>&1; then
+if docker compose exec -T backend bandit -r . -c pyproject.toml > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
-    echo -e "${RED}  Run 'cd backend && make security' to see issues${NC}"
+    echo -e "${RED}  Run 'make security' to see issues${NC}"
     FAILED=1
 fi
-
-cd ..
 
 echo ""
 
@@ -58,39 +54,35 @@ echo ""
 echo "🎨 Frontend Quality Checks"
 echo "=========================="
 
-cd frontend
-
 # Linting
 echo -n "  Linting... "
-if npm run lint > /dev/null 2>&1; then
+if docker compose exec -T frontend npm run lint > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
-    echo -e "${RED}  Run 'cd frontend && npm run lint' to see errors${NC}"
+    echo -e "${RED}  Run 'docker compose exec frontend npm run lint' to see errors${NC}"
     FAILED=1
 fi
 
 # Type checking
 echo -n "  Type checking... "
-if npm run type-check > /dev/null 2>&1; then
+if docker compose exec -T frontend npm run type-check > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
-    echo -e "${RED}  Run 'cd frontend && npm run type-check' to see errors${NC}"
+    echo -e "${RED}  Run 'docker compose exec frontend npm run type-check' to see errors${NC}"
     FAILED=1
 fi
 
 # Format checking
 echo -n "  Format checking... "
-if npm run format:check > /dev/null 2>&1; then
+if docker compose exec -T frontend npm run format:check > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
-    echo -e "${RED}  Run 'cd frontend && npm run format' to fix formatting${NC}"
+    echo -e "${RED}  Run 'docker compose exec frontend npm run format' to fix formatting${NC}"
     FAILED=1
 fi
-
-cd ..
 
 echo ""
 
