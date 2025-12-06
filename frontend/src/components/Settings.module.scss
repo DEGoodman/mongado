@@ -20,6 +20,11 @@
   cursor: pointer;
   @include transition-default;
 
+  @media (max-width: 640px) {
+    padding: $spacing-2;
+    font-size: 0.875rem;
+  }
+
   &:hover {
     background-color: $neutral-50;
     border-color: $neutral-400;

@@ -93,8 +93,13 @@
   );
   border-bottom: 1px solid $slate-blue-300;  // Refined 1px border
   box-shadow: $shadow-card-sm;
-  padding-top: $spacing-4;
-  padding-bottom: $spacing-4;
+  padding-top: $spacing-3;
+  padding-bottom: $spacing-3;
+
+  @media (min-width: 640px) {
+    padding-top: $spacing-4;
+    padding-bottom: $spacing-4;
+  }
 
   .headerContent {
     max-width: 56rem;
@@ -141,6 +146,8 @@
     .title {
       @include heading-h1;
       margin-bottom: $spacing-6;
+      font-size: $font-size-2xl;
+      line-height: 1.2;
 
       @media (min-width: 640px) {
         font-size: $heading-h1-size;
@@ -156,9 +163,18 @@
       @include stack($spacing-1);
       @include text-secondary;
 
+      @media (max-width: 640px) {
+        font-size: $font-size-sm;
+      }
+
       .metaItem {
         @include flex-start;
         gap: $spacing-2;
+        flex-wrap: wrap;
+
+        @media (max-width: 640px) {
+          gap: $spacing-1;
+        }
       }
     }
 

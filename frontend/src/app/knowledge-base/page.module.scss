@@ -25,9 +25,14 @@
 
   .headerContent {
     @include container;
-    padding-top: $spacing-4; // Reduced from 24px to 16px
-    padding-bottom: $spacing-4; // Reduced from 24px to 16px
+    padding-top: $spacing-3; // Even smaller on mobile
+    padding-bottom: $spacing-3;
     @include flex-between;
+
+    @media (min-width: 640px) {
+      padding-top: $spacing-4;
+      padding-bottom: $spacing-4;
+    }
 
     .nav {
       @include flex-start;
@@ -44,8 +49,12 @@
 
       .title {
         @include heading-h1;
-        font-size: $font-size-3xl; // Reduced from h1 (32px) to 3xl (26px)
+        font-size: $font-size-2xl; // Even smaller on mobile
         margin: 0;
+
+        @media (min-width: 640px) {
+          font-size: $font-size-3xl;
+        }
       }
     }
   }
