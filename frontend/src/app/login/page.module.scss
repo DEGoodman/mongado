@@ -7,34 +7,102 @@
 @use '@/styles/mixins' as *;
 
 .container {
-  display: flex;
   min-height: 100vh;
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+}
+
+// ===== HEADER =====
+.header {
+  // Cool slate blue header zone (consistent with KB pages)
+  background: linear-gradient(
+    to bottom,
+    $slate-blue-200 0%,
+    $slate-blue-100 50%,
+    rgba($slate-blue-50, 0.7) 100%
+  );
+  border-bottom: 1px solid $slate-blue-300;
+  box-shadow: $shadow-card-sm;
+  padding-top: $spacing-3;
+  padding-bottom: $spacing-3;
+
+  @media (min-width: 640px) {
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
+  }
+
+  .headerContent {
+    max-width: 28rem;
+    margin: 0 auto;
+    padding: 0 $spacing-4;
+    text-align: center;
+
+    @media (min-width: 640px) {
+      padding: 0 $spacing-6;
+    }
+
+    .backButton {
+      display: block;
+      margin-bottom: $spacing-4;
+      padding: 0;
+      background: none;
+      border: none;
+      font-size: 0.9375rem;
+      color: $color-link-default;
+      text-decoration: none;
+      font-family: $font-family-primary;
+      cursor: pointer;
+      @include transition-colors;
+      text-align: left;
+
+      &:hover {
+        color: $color-link-hover;
+        text-decoration: underline;
+      }
+    }
+
+    .title {
+      @include heading-h1;
+      margin: 0 0 $spacing-2 0;
+      font-size: $font-size-2xl;
+
+      @media (min-width: 640px) {
+        font-size: $font-size-3xl;
+      }
+    }
+
+    .subtitle {
+      @include text-secondary;
+      color: $color-text-secondary;
+      margin: 0;
+
+      @media (max-width: 640px) {
+        font-size: $font-size-sm;
+      }
+    }
+  }
+}
+
+// ===== MAIN =====
+.main {
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
-  padding: $spacing-12 $spacing-4;
+  padding: $spacing-8 $spacing-4;
+  min-height: calc(100vh - 200px);
+
+  @media (min-width: 640px) {
+    padding: $spacing-12 $spacing-4;
+  }
 }
 
 .formCard {
   width: 100%;
   max-width: 28rem;
   @include card-elevated;
-  padding: $spacing-8;
-}
+  padding: $spacing-6;
 
-// ===== HEADER =====
-.header {
-  margin-bottom: $spacing-8;
-  text-align: center;
-
-  .title {
-    @include heading-h1;
-    margin-bottom: $spacing-2;
-  }
-
-  .subtitle {
-    @include text-secondary;
-    color: $color-text-secondary;
+  @media (min-width: 640px) {
+    padding: $spacing-8;
   }
 }
 
@@ -111,11 +179,11 @@
   width: 100%;
   padding: $spacing-2 $spacing-4;
   background-color: $blue-600;
-  color: white;
+  color: $white;
   border: none;
   border-radius: $border-radius-button;
   font-family: $font-family-primary;
-  @include text-secondary;
+  font-size: $font-size-base;
   font-weight: $font-weight-medium;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -133,19 +201,5 @@
     background-color: $neutral-400;
     cursor: not-allowed;
     opacity: 0.6;
-  }
-}
-
-// ===== BACK LINK =====
-.backLink {
-  display: block;
-  text-align: center;
-  @include text-secondary;
-  color: $blue-600;
-  text-decoration: none;
-
-  &:hover {
-    color: $blue-700;
-    text-decoration: underline;
   }
 }

@@ -12,12 +12,12 @@
 
 .link {
   font-size: 0.9375rem;
-  color: $blue-600;
+  color: $color-link-default;
   text-decoration: none;
   @include transition-colors;
 
   &:hover {
-    color: $blue-700;
+    color: $color-link-hover;
     text-decoration: underline;
   }
 }
