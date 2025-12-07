@@ -110,6 +110,7 @@ Add these secrets:
 | `CORS_ORIGINS` | **Yes** | `http://localhost:3000` | Comma-separated list of allowed frontend origins |
 | `NEXT_PUBLIC_API_URL` | **Yes** | `http://localhost:8000` | Backend API URL (must be set at build time) |
 | `ADMIN_TOKEN` | **Yes** | - | Bearer token for admin authentication |
+| `NEO4J_PASSWORD` | **Yes** | - | Neo4j database password (auto-constructs NEO4J_AUTH) |
 
 #### Optional Environment Variables
 
@@ -118,7 +119,6 @@ Add these secrets:
 | `OP_MONGADO_SERVICE_ACCOUNT_TOKEN` | No | - | 1Password service account token |
 | `NEO4J_URI` | No | `bolt://localhost:7687` | Neo4j connection string |
 | `NEO4J_USER` | No | `neo4j` | Neo4j username |
-| `NEO4J_PASSWORD` | No | - | Neo4j password |
 | `OLLAMA_HOST` | No | `http://localhost:11434` | Ollama API endpoint |
 | `OLLAMA_ENABLED` | No | `true` | Enable/disable AI features |
 | `DEBUG` | No | `false` | Enable debug mode (set to `false` in production) |
