@@ -101,22 +101,38 @@ jobs:
             # This ensures new/updated articles are picked up immediately
             echo "🔄 Restarting backend to invalidate article cache..."
             docker compose -f docker-compose.prod.yml restart backend
-            sleep 5
 
             # Pull Ollama model if not already present (use 1B model for 4GB RAM server)
             echo "🤖 Setting up Ollama model..."
             docker exec mongado-ollama-prod ollama pull llama3.2:1b || echo "⚠️  Failed to pull Ollama model, will retry on next deployment"
 
-            # Health check
-            echo "🏥 Running health checks..."
-            if curl -f http://localhost:8000/ > /dev/null 2>&1; then
-              echo "✅ Backend is healthy"
-            else
-              echo "❌ Backend health check failed"
-              docker compose -f docker-compose.prod.yml logs backend
-              exit 1
-            fi
+            # Wait for backend to fully restart before health check
+            echo "⏳ Waiting for backend to fully restart..."
+            sleep 15
 
+            # Health check with retry logic
+            echo "🏥 Running health checks..."
+            RETRY_COUNT=0
+            MAX_RETRIES=5
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+                echo "✅ Backend is healthy"
+                break
+              else
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "⏳ Backend not ready yet, retrying in 5s... ($RETRY_COUNT/$MAX_RETRIES)"
+                  sleep 5
+                else
+                  echo "❌ Backend health check failed after $MAX_RETRIES attempts"
+                  docker compose -f docker-compose.prod.yml logs backend
+                  exit 1
+                fi
+              fi
+            done
+
+            # Check frontend health (single attempt is fine, it starts faster)
+            echo "🏥 Checking frontend health..."
             if curl -f http://localhost:3000/ > /dev/null 2>&1; then
               echo "✅ Frontend is healthy"
             else
