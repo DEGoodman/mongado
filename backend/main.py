@@ -84,6 +84,30 @@ async def _sync_embeddings_background() -> None:
         # Don't set ready flag, but app is still healthy
 
 
+def _auto_seed_notes_if_empty() -> None:
+    """Auto-seed test notes if database is empty (dev mode only)."""
+    if not settings.debug:
+        return
+
+    if not neo4j_adapter.is_available():
+        logger.warning("Neo4j not available - skipping auto-seed check")
+        return
+
+    note_count = neo4j_adapter.get_note_count()
+    if note_count > 0:
+        logger.info("Found %d existing notes - skipping auto-seed", note_count)
+        return
+
+    logger.info("No notes found in dev mode - auto-seeding test data...")
+    try:
+        from scripts.seed_test_notes import seed_notes
+        seed_notes()
+        new_count = neo4j_adapter.get_note_count()
+        logger.info("✅ Auto-seeded %d test notes", new_count)
+    except Exception as e:
+        logger.error("Failed to auto-seed notes: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan context manager for startup and shutdown events."""
@@ -97,6 +121,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Load static articles (fast)
     static_articles = load_static_articles()
     logger.info("Loaded %d static articles", len(static_articles))
+
+    # Auto-seed test notes if database is empty (dev mode only)
+    _auto_seed_notes_if_empty()
 
     # Conditionally start embedding sync in background (non-blocking)
     if settings.sync_embeddings_on_startup:

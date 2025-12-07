@@ -573,6 +573,20 @@ class Neo4jAdapter:
 
             return central
 
+    def get_note_count(self) -> int:
+        """Get total number of notes in the database.
+
+        Returns:
+            Number of notes, or 0 if unavailable
+        """
+        if not self._available or not self.driver:
+            return 0
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run("MATCH (n:Note) RETURN count(n) AS count")
+            record = result.single()
+            return record["count"] if record else 0
+
     def get_all_note_ids(self) -> set[str]:
         """Get all note IDs (for collision detection).
 

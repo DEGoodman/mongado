@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 os.environ["TESTING"] = "1"
 
 from config import get_settings
-from database import get_database
 from main import app
 from notes_service import get_notes_service
 
@@ -36,27 +35,16 @@ def admin_headers() -> dict[str, str]:
 @pytest.fixture(autouse=True)
 def clean_notes() -> None:
     """Clean up notes before and after each test."""
-    # Clear database notes
-    db = get_database()
-    db.execute("DELETE FROM notes")
-    db.execute("DELETE FROM note_links")
-    db.commit()
-
-    # Clear Neo4j notes
     notes_service = get_notes_service()
-    if notes_service.neo4j and notes_service.neo4j.is_available():
-        # Delete all notes from Neo4j
+
+    # Clear Neo4j notes before test
+    if notes_service.neo4j.is_available():
         notes_service.neo4j.driver.execute_query("MATCH (n:Note) DETACH DELETE n")
 
     yield
 
-    # Cleanup after test
-    db.execute("DELETE FROM notes")
-    db.execute("DELETE FROM note_links")
-    db.commit()
-
     # Clear Neo4j notes after test
-    if notes_service.neo4j and notes_service.neo4j.is_available():
+    if notes_service.neo4j.is_available():
         notes_service.neo4j.driver.execute_query("MATCH (n:Note) DETACH DELETE n")
 
 
