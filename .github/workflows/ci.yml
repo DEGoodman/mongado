@@ -57,6 +57,23 @@ jobs:
       run:
         working-directory: ./backend
 
+    services:
+      neo4j:
+        image: neo4j:latest
+        env:
+          NEO4J_AUTH: neo4j/test-password
+          NEO4J_PLUGINS: '["apoc"]'
+          NEO4J_dbms_security_procedures_unrestricted: apoc.*
+        ports:
+          - 7687:7687
+          - 7474:7474
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p test-password 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 30s
+
     steps:
       - uses: actions/checkout@v4
 
@@ -82,6 +99,9 @@ jobs:
         env:
           TESTING: "1"
           ADMIN_TOKEN: "test-admin-token-for-ci"
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: test-password
         run: |
           pytest tests/ --cov --cov-report=xml --cov-report=term
 
