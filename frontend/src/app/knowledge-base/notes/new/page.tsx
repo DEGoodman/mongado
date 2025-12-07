@@ -133,9 +133,12 @@ export default function NewNotePage() {
       if (issues.length > 0) {
         setAtomicityIssues(issues);
         setShowAtomicityWarning(true);
-      } else {
-        // Show AI suggestions modal instead of immediately redirecting
+      } else if (settings.aiMode === "real-time") {
+        // Show AI suggestions modal only if AI mode is real-time/automatic
         setShowPostSaveSuggestions(true);
+      } else {
+        // Redirect to the note directly when AI is off or on-demand
+        router.push(`/knowledge-base/notes/${note.id}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create note";
@@ -195,12 +198,20 @@ export default function NewNotePage() {
 
   const handleContinueToSuggestions = () => {
     setShowAtomicityWarning(false);
-    setShowPostSaveSuggestions(true);
+    if (settings.aiMode === "real-time") {
+      setShowPostSaveSuggestions(true);
+    } else if (savedNoteId) {
+      router.push(`/knowledge-base/notes/${savedNoteId}`);
+    }
   };
 
   const handleKeepAsIs = () => {
     setShowAtomicityWarning(false);
-    setShowPostSaveSuggestions(true);
+    if (settings.aiMode === "real-time") {
+      setShowPostSaveSuggestions(true);
+    } else if (savedNoteId) {
+      router.push(`/knowledge-base/notes/${savedNoteId}`);
+    }
   };
 
   const handleCancel = () => {

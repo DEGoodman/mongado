@@ -181,8 +181,10 @@ export default function NoteDetailPage() {
       setBacklinks(backlinksData.backlinks);
       setOutboundLinks(outboundData.links);
 
-      // Show AI suggestions modal after save
-      setShowPostSaveSuggestions(true);
+      // Show AI suggestions modal after save (only if AI mode is real-time/automatic)
+      if (settings.aiMode === "real-time") {
+        setShowPostSaveSuggestions(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update note";
       setError(message);

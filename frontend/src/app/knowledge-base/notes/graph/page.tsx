@@ -51,7 +51,7 @@ export default function NotesGraphPage() {
         setLoading(true);
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-        const token = localStorage.getItem("adminPasskey");
+        const token = localStorage.getItem("admin_token");
         const headers: HeadersInit = {
           "Content-Type": "application/json",
         };
