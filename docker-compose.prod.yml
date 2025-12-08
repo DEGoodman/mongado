@@ -113,16 +113,22 @@ services:
       start_period: 40s
 
   backup-cron:
-    image: alpine:latest
+    image: docker:cli
     container_name: mongado-backup-cron
+    environment:
+      - BACKUP_DIR=/var/mongado-backups
+      - BACKUP_RETENTION_COUNT=14
+      - BACKUP_RETENTION_DAYS=30
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set}
     command: >
       sh -c "
-      echo '0 2 * * * docker exec mongado-neo4j-prod /scripts/backup_neo4j.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root &&
+      echo '0 2 * * * /scripts/backup_neo4j_prod.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root &&
       crond -f -l 2
       "
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker socket for exec
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket for container management
       - /var/mongado-backups:/var/mongado-backups  # Backup directory
+      - ./backend/scripts:/scripts:ro  # Backup scripts
     restart: always
     depends_on:
       neo4j:

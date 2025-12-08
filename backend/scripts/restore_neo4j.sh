@@ -1,21 +1,23 @@
 #!/bin/bash
 #
-# Neo4j Restore Script
+# Neo4j Restore Script using neo4j-admin
 #
-# This script restores a Neo4j database from a backup file.
+# Restores a Neo4j database from a backup created with neo4j-admin dump.
+# Requires stopping the Neo4j container (~1-2min downtime).
 #
 # Usage:
-#   ./restore_neo4j.sh                    # Restore from latest backup
-#   ./restore_neo4j.sh <backup_file>      # Restore from specific backup
+#   make restore                         # Via Makefile - restores latest backup
+#   make restore BACKUP=neo4j_backup_20241201_120000.dump  # Specific backup
+#   ./backend/scripts/restore_neo4j.sh   # Direct execution (latest)
+#   ./backend/scripts/restore_neo4j.sh <backup_file>  # Specific backup
 #
 # Environment variables:
-#   BACKUP_DIR - Directory for backups (default: /var/mongado-backups)
+#   BACKUP_DIR - Directory for backups (default: ./backups for dev, /var/mongado-backups for prod)
+#   FORCE - Set to "true" to skip confirmation prompts (for CI/CD)
+#   COMPOSE_FILE - Docker compose file to use (default: docker-compose.yml)
+#
 
 set -euo pipefail
-
-# Configuration
-BACKUP_DIR="${BACKUP_DIR:-/var/mongado-backups}"
-TEMP_DIR="/tmp/neo4j-restore-$$"
 
 # Colors for output
 RED='\033[0;31m'
@@ -40,116 +42,169 @@ log_debug() {
     echo -e "${BLUE}[DEBUG]${NC} $1"
 }
 
-# Cleanup function
-cleanup() {
-    if [ -d "$TEMP_DIR" ]; then
-        rm -rf "$TEMP_DIR"
-        log_debug "Cleaned up temp directory"
-    fi
-}
+# Detect environment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-trap cleanup EXIT
+# Configuration
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+FORCE="${FORCE:-false}"
 
-# Check if Neo4j admin tool exists
-if [ ! -f /var/lib/neo4j/bin/neo4j-admin ]; then
-    log_error "This script must be run inside the Neo4j container"
-    log_info "Usage: docker compose exec neo4j /scripts/restore_neo4j.sh [backup_file]"
+# Determine backup directory based on environment
+if [[ "$COMPOSE_FILE" == *"prod"* ]]; then
+    BACKUP_DIR="${BACKUP_DIR:-/var/mongado-backups}"
+    VOLUME_NAME="mongado_neo4j-data"
+    NEO4J_IMAGE="neo4j:latest"
+else
+    BACKUP_DIR="${BACKUP_DIR:-${PROJECT_ROOT}/backups}"
+    VOLUME_NAME="mongado_neo4j-data"
+    NEO4J_IMAGE="neo4j:latest"
+fi
+
+# Get Neo4j password from docker-compose config or environment
+if [[ -z "${NEO4J_PASSWORD:-}" ]]; then
+    # Try to extract from docker compose config (handles both "KEY: value" and "KEY=value" formats)
+    NEO4J_PASSWORD=$(docker compose -f "$COMPOSE_FILE" config 2>/dev/null | grep -i 'NEO4J_AUTH' | head -1 | sed 's/.*neo4j\///' | tr -d ' "' || echo "")
+fi
+
+# Change to project root for docker compose commands
+cd "$PROJECT_ROOT"
+
+# Verify docker compose is available
+if ! command -v docker &> /dev/null; then
+    log_error "Docker is not installed or not in PATH"
     exit 1
 fi
 
 # Determine which backup to restore
-if [ $# -eq 0 ]; then
-    # Find latest backup
-    LATEST_BACKUP=$(find "${BACKUP_DIR}" -name "neo4j_backup_*.tar.gz" -type f -printf '%T+ %p\n' | sort -r | head -n 1 | cut -d' ' -f2-)
+# Backups are directories named neo4j_backup_YYYYMMDD_HHMMSS containing neo4j.dump
+if [[ $# -eq 0 ]]; then
+    # Find latest backup directory (sort by name which includes timestamp)
+    BACKUP_SUBDIR=$(ls -1d "${BACKUP_DIR}"/neo4j_backup_* 2>/dev/null | sort -r | head -n 1)
 
-    if [ -z "$LATEST_BACKUP" ]; then
+    if [[ -z "$BACKUP_SUBDIR" ]] || [[ ! -d "$BACKUP_SUBDIR" ]]; then
         log_error "No backups found in ${BACKUP_DIR}"
+        log_info "Looking for directories matching: neo4j_backup_*"
         exit 1
     fi
 
-    BACKUP_FILE="$LATEST_BACKUP"
-    log_info "Using latest backup: $(basename "$BACKUP_FILE")"
+    log_info "Using latest backup: $(basename "$BACKUP_SUBDIR")"
 else
-    BACKUP_FILE="$1"
+    BACKUP_INPUT="$1"
 
-    # If only filename provided, look in backup dir
-    if [ ! -f "$BACKUP_FILE" ]; then
-        BACKUP_FILE="${BACKUP_DIR}/$1"
-    fi
-
-    if [ ! -f "$BACKUP_FILE" ]; then
-        log_error "Backup file not found: $1"
+    # If only directory name provided, look in backup dir
+    if [[ -d "$BACKUP_INPUT" ]]; then
+        BACKUP_SUBDIR="$BACKUP_INPUT"
+    elif [[ -d "${BACKUP_DIR}/$BACKUP_INPUT" ]]; then
+        BACKUP_SUBDIR="${BACKUP_DIR}/$BACKUP_INPUT"
+    else
+        log_error "Backup directory not found: $BACKUP_INPUT"
+        log_info "Available backups:"
+        ls -1d "${BACKUP_DIR}"/neo4j_backup_* 2>/dev/null | xargs -I{} basename {} || echo "  (none)"
         exit 1
     fi
 
-    log_info "Using specified backup: $(basename "$BACKUP_FILE")"
+    log_info "Using specified backup: $(basename "$BACKUP_SUBDIR")"
 fi
 
-# Display backup info
-BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-BACKUP_DATE=$(stat -c %y "$BACKUP_FILE" 2>/dev/null || stat -f %Sm "$BACKUP_FILE")
+# Verify the dump file exists in the backup directory
+if [[ ! -f "${BACKUP_SUBDIR}/neo4j.dump" ]]; then
+    log_error "neo4j.dump not found in backup directory: ${BACKUP_SUBDIR}"
+    exit 1
+fi
+
+# Get backup info
+BACKUP_SIZE=$(du -sh "${BACKUP_SUBDIR}" | cut -f1)
+BACKUP_DATE=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "${BACKUP_SUBDIR}/neo4j.dump" 2>/dev/null || stat -c "%y" "${BACKUP_SUBDIR}/neo4j.dump" 2>/dev/null | cut -d'.' -f1)
+
+log_info "=== Neo4j Restore ==="
+log_info "Backup: $(basename "$BACKUP_SUBDIR")"
 log_info "Backup size: ${BACKUP_SIZE}"
 log_info "Backup date: ${BACKUP_DATE}"
+log_warn "This will REPLACE the current database!"
+log_warn "Estimated downtime: ~1-2 minutes"
 
-# Confirm restore
-log_warn "⚠️  This will REPLACE the current database with the backup!"
-read -p "Are you sure you want to continue? (yes/no): " -r
-echo
-if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-    log_info "Restore cancelled"
-    exit 0
+# Confirm unless forced
+if [[ "$FORCE" != "true" ]]; then
+    echo ""
+    read -p "Are you sure you want to continue? (yes/no): " -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+        log_info "Restore cancelled"
+        exit 0
+    fi
 fi
 
-# Create temp directory
-mkdir -p "$TEMP_DIR"
+# Get current note count for comparison
+log_debug "Getting current note count..."
+NOTE_COUNT_BEFORE=$(docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" "MATCH (n:Note) RETURN count(n) as count" 2>/dev/null | tail -1 | tr -d ' ' || echo "unknown")
+log_info "Notes before restore: ${NOTE_COUNT_BEFORE}"
 
-# Extract backup
-log_info "Extracting backup..."
-if tar -xzf "$BACKUP_FILE" -C "$TEMP_DIR"; then
-    log_debug "Backup extracted to ${TEMP_DIR}"
+# Stop Neo4j container
+log_info "Stopping Neo4j container..."
+DOWNTIME_START=$(date +%s)
+docker compose -f "$COMPOSE_FILE" stop neo4j
+
+# Run neo4j-admin load in a temporary container
+log_info "Restoring database with neo4j-admin..."
+
+# Mount the backup subdirectory which contains neo4j.dump
+if docker run --rm \
+    -v "${VOLUME_NAME}:/data" \
+    -v "${BACKUP_SUBDIR}:/backups:ro" \
+    "${NEO4J_IMAGE}" \
+    neo4j-admin database load neo4j --from-path=/backups --overwrite-destination=true; then
+    log_info "Database restored successfully"
 else
-    log_error "Failed to extract backup"
+    log_error "neo4j-admin load failed"
+    log_warn "Starting Neo4j with existing data..."
+    docker compose -f "$COMPOSE_FILE" start neo4j
     exit 1
 fi
 
-# Find the dump file
-DUMP_FILE=$(find "$TEMP_DIR" -name "neo4j.dump" -type f | head -n 1)
-if [ -z "$DUMP_FILE" ]; then
-    log_error "No neo4j.dump file found in backup"
+# Restart Neo4j container
+log_info "Starting Neo4j container..."
+docker compose -f "$COMPOSE_FILE" start neo4j
+DOWNTIME_END=$(date +%s)
+DOWNTIME=$((DOWNTIME_END - DOWNTIME_START))
+
+# Wait for Neo4j to be healthy
+log_info "Waiting for Neo4j to become healthy..."
+HEALTH_TIMEOUT=120
+HEALTH_COUNT=0
+while [[ $HEALTH_COUNT -lt $HEALTH_TIMEOUT ]]; do
+    if docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" "RETURN 1" &>/dev/null; then
+        break
+    fi
+    sleep 1
+    HEALTH_COUNT=$((HEALTH_COUNT + 1))
+done
+
+if [[ $HEALTH_COUNT -ge $HEALTH_TIMEOUT ]]; then
+    log_error "Neo4j health check timed out after ${HEALTH_TIMEOUT}s"
+    log_warn "Neo4j may still be starting - check logs with: docker compose logs neo4j"
     exit 1
 fi
 
-# This backup is a tar of the data directory, not a neo4j-admin dump
-# We need to stop Neo4j, restore the data directory, and restart
-log_warn "This restore requires Neo4j to be stopped"
-read -p "Stop Neo4j and proceed? (yes/no): " -r
-echo
-if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-    log_info "Restore cancelled"
-    exit 0
-fi
+# Verify restore
+log_debug "Verifying restore..."
+NOTE_COUNT_AFTER=$(docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" "MATCH (n:Note) RETURN count(n) as count" 2>/dev/null | tail -1 | tr -d ' ' || echo "unknown")
 
-log_info "Restoring database from backup..."
+# Update hash file to match restored state
+RESTORED_HASH=$(sha256sum "${BACKUP_SUBDIR}/neo4j.dump" | cut -d' ' -f1)
+echo "$RESTORED_HASH" > "${BACKUP_DIR}/.last_backup_hash"
 
-# Extract the tar backup to the data directory
-if tar -xzf "$DUMP_FILE" -C /data; then
-    log_info "Database restored successfully!"
-    log_warn "Restart Neo4j service to load restored data"
-else
-    log_error "Failed to restore database"
-    exit 1
-fi
-
-# Update the hash file to match restored backup
-RESTORED_HASH=$(sha256sum "$DUMP_FILE" | cut -d' ' -f1)
-HASH_FILE="${BACKUP_DIR}/.last_backup_hash"
-echo "$RESTORED_HASH" > "$HASH_FILE"
-log_debug "Updated backup hash to match restored state"
-
+# Summary
 log_info "=== Restore Summary ==="
-log_info "Backup file: $(basename "$BACKUP_FILE")"
+log_info "Backup: $(basename "$BACKUP_SUBDIR")"
 log_info "Backup size: ${BACKUP_SIZE}"
 log_info "Backup date: ${BACKUP_DATE}"
-log_info ""
-log_warn "⚠️  You may need to restart the Neo4j service:"
-log_info "   docker compose restart neo4j"
+log_info "Downtime: ${DOWNTIME} seconds"
+log_info "Notes before: ${NOTE_COUNT_BEFORE}"
+log_info "Notes after: ${NOTE_COUNT_AFTER}"
+
+if [[ "$NOTE_COUNT_BEFORE" != "$NOTE_COUNT_AFTER" ]] && [[ "$NOTE_COUNT_BEFORE" != "unknown" ]] && [[ "$NOTE_COUNT_AFTER" != "unknown" ]]; then
+    log_warn "Note count changed from ${NOTE_COUNT_BEFORE} to ${NOTE_COUNT_AFTER}"
+fi
+
+log_info "=== Restore Complete ==="

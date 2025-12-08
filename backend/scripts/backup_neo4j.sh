@@ -1,26 +1,34 @@
 #!/bin/bash
 #
-# Neo4j Backup Script with Hash-based Change Detection
+# Neo4j Backup Script using neo4j-admin
 #
-# This script creates a backup of the Neo4j database only if content has changed.
-# Backups are stored as compressed dumps on the local server.
+# Creates a consistent backup using Neo4j's official dump tool.
+# Requires briefly stopping the Neo4j container (~30-60s downtime).
 #
-# Usage: docker compose exec neo4j /scripts/backup_neo4j.sh
+# Usage:
+#   make backup                    # Via Makefile (recommended)
+#   ./backend/scripts/backup_neo4j.sh   # Direct execution
 #
 # Environment variables:
-#   BACKUP_DIR - Directory for backups (default: /var/mongado-backups)
+#   BACKUP_DIR - Directory for backups (default: ./backups for dev, /var/mongado-backups for prod)
 #   BACKUP_RETENTION_COUNT - Number of backups to keep (default: 14)
 #   BACKUP_RETENTION_DAYS - Days to keep backups (default: 30)
+#   NON_INTERACTIVE - Set to "true" to skip prompts (for CI/CD)
+#   FORCE_BACKUP - Set to "true" to backup even if no changes detected
+#   COMPOSE_FILE - Docker compose file to use (default: docker-compose.yml)
+#
+# Features:
+#   - Hash-based change detection: skips backup if database unchanged
+#   - Safe retention policy: always keeps minimum N backups, only deletes old excess
+#   - Health check: waits for Neo4j to recover after backup
+#
+# Retention policy:
+#   - Always keeps at least BACKUP_RETENTION_COUNT backups (default: 14)
+#   - Only deletes backups older than BACKUP_RETENTION_DAYS when count exceeds minimum
+#   - This ensures at least one backup always exists, even during low-activity periods
+#
 
 set -euo pipefail
-
-# Configuration
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="${BACKUP_DIR:-/var/mongado-backups}"
-TEMP_DIR="/tmp/neo4j-backup-${TIMESTAMP}"
-BACKUP_NAME="neo4j_backup_${TIMESTAMP}"
-RETENTION_COUNT="${BACKUP_RETENTION_COUNT:-14}"
-RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -45,111 +53,219 @@ log_debug() {
     echo -e "${BLUE}[DEBUG]${NC} $1"
 }
 
-# Cleanup function
-cleanup() {
-    if [ -d "$TEMP_DIR" ]; then
-        rm -rf "$TEMP_DIR"
-        log_debug "Cleaned up temp directory"
-    fi
-}
+# Detect environment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-trap cleanup EXIT
+# Configuration
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+NON_INTERACTIVE="${NON_INTERACTIVE:-false}"
+FORCE_BACKUP="${FORCE_BACKUP:-false}"
+RETENTION_COUNT="${BACKUP_RETENTION_COUNT:-14}"
+RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 
-# Check if Neo4j admin tool exists
-if [ ! -f /var/lib/neo4j/bin/neo4j-admin ]; then
-    log_error "This script must be run inside the Neo4j container"
-    log_info "Usage: docker compose exec neo4j /scripts/backup_neo4j.sh"
+# Determine backup directory based on environment
+if [[ "$COMPOSE_FILE" == *"prod"* ]]; then
+    BACKUP_DIR="${BACKUP_DIR:-/var/mongado-backups}"
+    VOLUME_NAME="mongado_neo4j-data"
+    NEO4J_IMAGE="neo4j:latest"
+else
+    BACKUP_DIR="${BACKUP_DIR:-${PROJECT_ROOT}/backups}"
+    VOLUME_NAME="mongado_neo4j-data"
+    NEO4J_IMAGE="neo4j:latest"
+fi
+
+BACKUP_NAME="neo4j_backup_${TIMESTAMP}.dump"
+
+# Get Neo4j password from docker-compose config or environment
+if [[ -z "${NEO4J_PASSWORD:-}" ]]; then
+    # Try to extract from docker compose config (handles both "KEY: value" and "KEY=value" formats)
+    NEO4J_PASSWORD=$(docker compose -f "$COMPOSE_FILE" config 2>/dev/null | grep -i 'NEO4J_AUTH' | head -1 | sed 's/.*neo4j\///' | tr -d ' "' || echo "")
+fi
+if [[ -z "$NEO4J_PASSWORD" ]]; then
+    log_warn "Could not determine Neo4j password - note count may show as 'unknown'"
+    log_info "Tip: Set NEO4J_PASSWORD env var or ensure NEO4J_AUTH is in docker-compose.yml"
+fi
+
+# Change to project root for docker compose commands
+cd "$PROJECT_ROOT"
+
+# Verify docker compose is available
+if ! command -v docker &> /dev/null; then
+    log_error "Docker is not installed or not in PATH"
+    exit 1
+fi
+
+# Check if Neo4j container exists
+if ! docker compose -f "$COMPOSE_FILE" ps neo4j --format json 2>/dev/null | grep -q "neo4j"; then
+    log_error "Neo4j service not found in ${COMPOSE_FILE}"
     exit 1
 fi
 
 # Create backup directory if it doesn't exist
 mkdir -p "${BACKUP_DIR}"
-mkdir -p "${TEMP_DIR}"
 
-log_info "Starting Neo4j backup check..."
+log_info "=== Neo4j Backup ==="
+log_info "Backup directory: ${BACKUP_DIR}"
+log_info "Volume: ${VOLUME_NAME}"
+log_warn "This will cause ~30-60 seconds of downtime"
 
-# Create temporary database dump
-log_debug "Creating temporary database dump..."
-# Use Cypher export instead of neo4j-admin dump (which requires database to be stopped)
-# We'll export using APOC if available, otherwise use a simple tar of the data directory
-if cypher-shell -u neo4j -p "${NEO4J_AUTH#neo4j/}" "RETURN 1" > /dev/null 2>&1; then
-    # Database is running, use data directory snapshot
-    log_debug "Creating snapshot from live database..."
-
-    # Export nodes and relationships as JSON via APOC
-    # For now, just tar the data directory (this is safe for read operations)
-    tar -czf "${TEMP_DIR}/neo4j.dump" -C /data databases/neo4j 2>/dev/null || {
-        log_error "Failed to create database snapshot"
-        exit 1
-    }
-    TEMP_DUMP="${TEMP_DIR}/neo4j.dump"
-    log_debug "Temporary snapshot created"
-else
-    log_error "Cannot connect to Neo4j database"
-    exit 1
+# Confirm unless non-interactive
+if [[ "$NON_INTERACTIVE" != "true" ]]; then
+    read -p "Continue with backup? [y/N] " -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Backup cancelled"
+        exit 0
+    fi
 fi
 
-# Calculate hash of current dump
-CURRENT_HASH=$(sha256sum "$TEMP_DUMP" | cut -d' ' -f1)
-log_debug "Current database hash: ${CURRENT_HASH:0:16}..."
+# Get current note count for verification
+log_debug "Getting current note count..."
+NOTE_COUNT_BEFORE=$(docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" "MATCH (n:Note) RETURN count(n) as count" 2>/dev/null | tail -1 | tr -d ' ' || echo "unknown")
+log_info "Notes in database: ${NOTE_COUNT_BEFORE}"
 
-# Check if we have a previous hash
+# Hash-based change detection
+# We use a query-based hash of the database content to detect changes
+# This avoids unnecessary backups when nothing has changed
+log_debug "Calculating database content hash..."
+CONTENT_HASH=$(docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
+    "MATCH (n:Note) WITH n ORDER BY n.id RETURN apoc.util.sha256(collect(n{.*})) as hash" 2>/dev/null | tail -1 | tr -d ' ' || echo "")
+
+if [[ -z "$CONTENT_HASH" ]]; then
+    # Fallback: use note count + titles hash if APOC not available
+    CONTENT_HASH=$(docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
+        "MATCH (n:Note) RETURN count(n) as c, collect(n.title) as titles" 2>/dev/null | tail -1 | sha256sum | cut -d' ' -f1 || echo "unknown")
+fi
+
 HASH_FILE="${BACKUP_DIR}/.last_backup_hash"
-if [ -f "$HASH_FILE" ]; then
+if [[ -f "$HASH_FILE" ]] && [[ "$FORCE_BACKUP" != "true" ]]; then
     LAST_HASH=$(cat "$HASH_FILE")
-    log_debug "Previous database hash: ${LAST_HASH:0:16}..."
-
-    # Compare hashes
-    if [ "$CURRENT_HASH" = "$LAST_HASH" ]; then
-        log_info "No changes detected - skipping backup"
+    if [[ "$CONTENT_HASH" == "$LAST_HASH" ]] && [[ "$CONTENT_HASH" != "unknown" ]]; then
+        log_info "No changes detected since last backup - skipping"
+        log_info "Use FORCE_BACKUP=true to force a backup"
         exit 0
+    fi
+    log_info "Changes detected - proceeding with backup"
+else
+    if [[ "$FORCE_BACKUP" == "true" ]]; then
+        log_info "Forced backup requested"
     else
-        log_info "Changes detected - creating backup"
+        log_info "No previous backup hash found - creating initial backup"
+    fi
+fi
+
+# Stop Neo4j container
+log_info "Stopping Neo4j container..."
+DOWNTIME_START=$(date +%s)
+docker compose -f "$COMPOSE_FILE" stop neo4j
+
+# Create timestamped backup directory
+BACKUP_SUBDIR="${BACKUP_DIR}/${BACKUP_NAME%.dump}"
+mkdir -p "${BACKUP_SUBDIR}"
+
+# Run neo4j-admin dump in a temporary container
+log_info "Creating backup with neo4j-admin..."
+if docker run --rm \
+    -v "${VOLUME_NAME}:/data" \
+    -v "${BACKUP_SUBDIR}:/backups" \
+    "${NEO4J_IMAGE}" \
+    neo4j-admin database dump neo4j --to-path=/backups --overwrite-destination=true; then
+
+    # The dump creates neo4j.dump in the backup subdirectory
+    if [[ -f "${BACKUP_SUBDIR}/neo4j.dump" ]]; then
+        log_info "Backup created: ${BACKUP_NAME%.dump}/neo4j.dump"
+    else
+        log_error "Dump file not found at expected location"
+        docker compose -f "$COMPOSE_FILE" start neo4j
+        exit 1
     fi
 else
-    log_info "No previous backup found - creating initial backup"
-fi
-
-# Compress the dump
-BACKUP_ARCHIVE="${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
-log_info "Compressing backup..."
-if tar -czf "${BACKUP_ARCHIVE}" -C "${TEMP_DIR}" neo4j.dump; then
-    BACKUP_SIZE=$(du -h "${BACKUP_ARCHIVE}" | cut -f1)
-    log_info "Backup created: ${BACKUP_NAME}.tar.gz (${BACKUP_SIZE})"
-else
-    log_error "Failed to compress backup"
+    log_error "neo4j-admin dump failed"
+    docker compose -f "$COMPOSE_FILE" start neo4j
     exit 1
 fi
 
-# Save current hash
-echo "$CURRENT_HASH" > "$HASH_FILE"
-log_debug "Saved current hash for next comparison"
+# Restart Neo4j container
+log_info "Starting Neo4j container..."
+docker compose -f "$COMPOSE_FILE" start neo4j
+DOWNTIME_END=$(date +%s)
+DOWNTIME=$((DOWNTIME_END - DOWNTIME_START))
 
-# Clean up old backups by count (keep last N backups)
-log_info "Cleaning up old backups (keeping last ${RETENTION_COUNT})..."
-BACKUP_COUNT=$(find "${BACKUP_DIR}" -name "neo4j_backup_*.tar.gz" -type f | wc -l)
-if [ "$BACKUP_COUNT" -gt "$RETENTION_COUNT" ]; then
-    BACKUPS_TO_DELETE=$((BACKUP_COUNT - RETENTION_COUNT))
-    log_info "Deleting ${BACKUPS_TO_DELETE} old backup(s)..."
-    find "${BACKUP_DIR}" -name "neo4j_backup_*.tar.gz" -type f -printf '%T+ %p\n' | \
-        sort | \
-        head -n "$BACKUPS_TO_DELETE" | \
-        cut -d' ' -f2- | \
-        xargs rm -f
+# Wait for Neo4j to be healthy
+log_info "Waiting for Neo4j to become healthy..."
+HEALTH_TIMEOUT=60
+HEALTH_COUNT=0
+while [[ $HEALTH_COUNT -lt $HEALTH_TIMEOUT ]]; do
+    if docker compose -f "$COMPOSE_FILE" exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" "RETURN 1" &>/dev/null; then
+        break
+    fi
+    sleep 1
+    HEALTH_COUNT=$((HEALTH_COUNT + 1))
+done
+
+if [[ $HEALTH_COUNT -ge $HEALTH_TIMEOUT ]]; then
+    log_warn "Neo4j health check timed out after ${HEALTH_TIMEOUT}s"
 fi
 
-# Also clean up by age (delete anything older than retention days)
-log_info "Cleaning up backups older than ${RETENTION_DAYS} days..."
-find "${BACKUP_DIR}" -name "neo4j_backup_*.tar.gz" -type f -mtime +${RETENTION_DAYS} -delete
+# Get backup size
+BACKUP_SIZE=$(du -sh "${BACKUP_SUBDIR}" | cut -f1)
 
-# Display summary
+# Save content hash for change detection (not file hash - content hash is more meaningful)
+echo "$CONTENT_HASH" > "${BACKUP_DIR}/.last_backup_hash"
+log_debug "Saved content hash: ${CONTENT_HASH:0:16}..."
+
+# Also calculate file hash for integrity verification
+BACKUP_HASH=$(sha256sum "${BACKUP_SUBDIR}/neo4j.dump" | cut -d' ' -f1)
+
+# Clean up old backups (macOS compatible)
+# Backups are directories named neo4j_backup_YYYYMMDD_HHMMSS
+#
+# Retention policy (safe):
+# 1. Always keep at least RETENTION_COUNT backups (default: 14)
+# 2. Among backups beyond RETENTION_COUNT, delete those older than RETENTION_DAYS
+#
+# This ensures we NEVER delete all backups, even during low-activity periods.
+
+BACKUP_COUNT=$(ls -1d "${BACKUP_DIR}"/neo4j_backup_* 2>/dev/null | wc -l | tr -d ' ')
+log_info "Current backup count: ${BACKUP_COUNT} (keeping minimum ${RETENTION_COUNT})"
+
+if [[ "$BACKUP_COUNT" -gt "$RETENTION_COUNT" ]]; then
+    # We have more than the minimum - safe to apply age-based cleanup
+    # But only delete old backups that are BEYOND the retention count
+    EXCESS_COUNT=$((BACKUP_COUNT - RETENTION_COUNT))
+
+    # Get the oldest backups (beyond retention count) that are also older than RETENTION_DAYS
+    OLD_BACKUPS=$(ls -1d "${BACKUP_DIR}"/neo4j_backup_* 2>/dev/null | sort | head -n "$EXCESS_COUNT")
+    DELETED=0
+
+    for backup in $OLD_BACKUPS; do
+        # Check if this backup is older than RETENTION_DAYS
+        if find "$backup" -maxdepth 0 -mtime +"${RETENTION_DAYS}" 2>/dev/null | grep -q .; then
+            log_info "Deleting old backup: $(basename "$backup")"
+            rm -rf "$backup"
+            DELETED=$((DELETED + 1))
+        fi
+    done
+
+    if [[ "$DELETED" -gt 0 ]]; then
+        log_info "Deleted ${DELETED} backup(s) older than ${RETENTION_DAYS} days"
+    else
+        log_debug "No backups older than ${RETENTION_DAYS} days to delete"
+    fi
+else
+    log_debug "Backup count (${BACKUP_COUNT}) <= retention minimum (${RETENTION_COUNT}), skipping cleanup"
+fi
+
+# Summary
+REMAINING_BACKUPS=$(ls -1d "${BACKUP_DIR}"/neo4j_backup_* 2>/dev/null | wc -l | tr -d ' ')
+
 log_info "=== Backup Summary ==="
-log_info "Timestamp: ${TIMESTAMP}"
-log_info "File: ${BACKUP_ARCHIVE}"
+log_info "Backup: ${BACKUP_SUBDIR}/"
 log_info "Size: ${BACKUP_SIZE}"
-log_info "Hash: ${CURRENT_HASH:0:16}..."
-log_info "Retention: Last ${RETENTION_COUNT} backups OR ${RETENTION_DAYS} days"
-
-# List current backups
-REMAINING_BACKUPS=$(find "${BACKUP_DIR}" -name "neo4j_backup_*.tar.gz" -type f | wc -l)
+log_info "Downtime: ${DOWNTIME} seconds"
+log_info "Notes backed up: ${NOTE_COUNT_BEFORE}"
+log_info "Hash: ${BACKUP_HASH:0:16}..."
 log_info "Total backups: ${REMAINING_BACKUPS}"
+log_info "=== Backup Complete ==="

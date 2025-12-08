@@ -2,6 +2,7 @@
 .PHONY: test test-backend test-backend-unit test-backend-cov test-frontend test-e2e test-all
 .PHONY: lint lint-backend lint-frontend format format-backend format-frontend typecheck typecheck-backend typecheck-frontend
 .PHONY: build-frontend security ci clean
+.PHONY: backup backup-force backup-auto restore restore-auto backup-list
 
 # Default target
 .DEFAULT_GOAL := help
@@ -170,6 +171,30 @@ status: ## Show status of all services
 db-shell: ## Open Neo4j browser shell
 	@echo "Opening Neo4j browser at http://localhost:7474"
 	@echo "Default credentials: neo4j/password (check docker-compose.yml for actual password)"
+
+##@ Database Backup/Restore
+
+backup: ## Create Neo4j backup (skips if unchanged, ~30-60s downtime)
+	@./backend/scripts/backup_neo4j.sh
+
+backup-force: ## Create Neo4j backup even if unchanged
+	@FORCE_BACKUP=true ./backend/scripts/backup_neo4j.sh
+
+backup-auto: ## Create Neo4j backup non-interactively (for CI/CD, skips if unchanged)
+	@NON_INTERACTIVE=true ./backend/scripts/backup_neo4j.sh
+
+restore: ## Restore Neo4j from latest backup (~1-2min downtime)
+	@./backend/scripts/restore_neo4j.sh $(BACKUP)
+
+restore-auto: ## Restore Neo4j non-interactively (for CI/CD)
+	@FORCE=true ./backend/scripts/restore_neo4j.sh $(BACKUP)
+
+backup-list: ## List available backups
+	@echo "Available backups in ./backups/:"
+	@ls -1dt backups/neo4j_backup_* 2>/dev/null | while read d; do \
+		size=$$(du -sh "$$d" 2>/dev/null | cut -f1); \
+		echo "  $$(basename $$d) ($$size)"; \
+	done || echo "  (no backups found)"
 
 ##@ Production
 

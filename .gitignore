@@ -102,6 +102,9 @@ logs
 *.sqlite
 *.sqlite3
 
+# Neo4j backups (local dev)
+backups/
+
 # Uploads
 backend/uploads/
 
