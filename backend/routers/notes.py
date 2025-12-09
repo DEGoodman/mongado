@@ -80,38 +80,62 @@ Links are automatically parsed and stored as graph relationships.
         include_full_content: bool = False,
         include_embedding: bool = False,
         minimal: bool = False,
+        page: int = 1,
+        limit: int = 20,
     ) -> NotesListResponse:
-        """List all notes with configurable response payload.
+        """List all notes with configurable response payload and pagination.
 
         Query Parameters:
             is_reference: Filter by reference notes (True/False/None for all)
             include_full_content: Return full markdown (default: False, returns 200 char preview)
             include_embedding: Include embedding vectors (default: False, ~6KB/note)
             minimal: Only id+title for autocomplete/graph (default: False)
+            page: Page number (1-indexed, default: 1)
+            limit: Items per page (default: 20, max: 100)
 
         Default response (~500 bytes/note):
             - id, title, content_preview (200 chars), author, tags, created_at, is_reference, link_count
 
         Performance Impact:
-            - Default (preview): ~50KB for 100 notes
+            - Default (preview): ~50KB for 100 notes, ~10KB for 20 notes/page
             - Full content: ~500KB-1MB for 100 notes
             - With embeddings: +600KB for 100 notes
             - Minimal mode: ~5KB for 100 notes
 
         Examples:
-            - List view: /api/notes (uses defaults)
+            - List view: /api/notes (uses defaults, 20/page)
+            - Page 2: /api/notes?page=2
+            - All notes: /api/notes?limit=100
             - Detail view: /api/notes?include_full_content=true
             - Autocomplete: /api/notes?minimal=true
-            - Search with embeddings: /api/notes?include_embedding=true
         """
-        notes = notes_service.list_notes(
+        # Validate and cap pagination params
+        page = max(1, page)  # Minimum page 1
+        limit = min(max(1, limit), 100)  # Limit between 1-100
+
+        # Get all notes (filtering applied in service)
+        all_notes = notes_service.list_notes(
             is_reference=is_reference,
             include_full_content=include_full_content,
             include_embedding=include_embedding,
             minimal=minimal,
         )
 
-        return NotesListResponse(notes=notes, count=len(notes))
+        # Calculate pagination
+        total = len(all_notes)
+        total_pages = (total + limit - 1) // limit  # Ceiling division
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        paginated_notes = all_notes[start_idx:end_idx]
+
+        return NotesListResponse(
+            notes=paginated_notes,
+            count=len(paginated_notes),
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=total_pages,
+        )
 
     @router.get("/random", response_model=dict[str, Any])
     async def get_random_note() -> dict[str, Any]:

@@ -11,6 +11,7 @@ export interface Note {
   id: string;
   title: string | null;
   content: string;
+  content_preview?: string; // 200 char preview when include_full_content=false
   author: string;
   is_ephemeral: boolean;
   is_reference: boolean;
@@ -18,6 +19,7 @@ export interface Note {
   created_at: number | string;
   updated_at: number | string;
   links: string[];
+  link_count?: number; // Number of outbound links
   session_id?: string;
 }
 
@@ -37,7 +39,11 @@ export interface UpdateNoteRequest {
 
 export interface NotesListResponse {
   notes: Note[];
-  count: number;
+  count: number; // Number of notes in current page
+  total: number; // Total number of notes (all pages)
+  page: number; // Current page number (1-indexed)
+  limit: number; // Items per page
+  total_pages: number; // Total number of pages
 }
 
 export interface BacklinksResponse {
@@ -82,19 +88,36 @@ export async function createNote(request: CreateNoteRequest): Promise<Note> {
 export interface ListNotesOptions {
   /** Filter by type: true for references, false for insights, undefined for all */
   is_reference?: boolean;
+  /** Include full content (default: false, returns preview) */
+  include_full_content?: boolean;
+  /** Page number (1-indexed, default: 1) */
+  page?: number;
+  /** Items per page (default: 20, max: 100) */
+  limit?: number;
 }
 
 /**
- * List all notes
+ * List notes with pagination and content previews
  */
 export async function listNotes(options?: ListNotesOptions): Promise<NotesListResponse> {
   const params = new URLSearchParams();
+
   if (options?.is_reference !== undefined) {
     params.set("is_reference", String(options.is_reference));
   }
 
-  const queryString = params.toString();
-  const url = queryString ? `${API_URL}/api/notes?${queryString}` : `${API_URL}/api/notes`;
+  // Default to previews only (not full content) for performance
+  params.set("include_full_content", String(options?.include_full_content ?? false));
+
+  if (options?.page !== undefined) {
+    params.set("page", String(options.page));
+  }
+
+  if (options?.limit !== undefined) {
+    params.set("limit", String(options.limit));
+  }
+
+  const url = `${API_URL}/api/notes?${params.toString()}`;
 
   const response = await fetch(url, {
     headers: getHeaders(),
@@ -106,7 +129,11 @@ export async function listNotes(options?: ListNotesOptions): Promise<NotesListRe
   }
 
   const data = await response.json();
-  logger.info("Notes listed", { count: data.count });
+  logger.info("Notes listed", {
+    count: data.count,
+    page: data.page,
+    total: data.total,
+  });
   return data;
 }
 

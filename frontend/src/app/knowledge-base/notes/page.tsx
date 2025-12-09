@@ -14,13 +14,12 @@ import QuickLists from "@/components/QuickLists/QuickLists";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
-type NoteTypeFilter = "all" | "insights" | "references";
 
 function NotesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagsParam = searchParams.get("tags");
-  const typeParam = searchParams.get("type");
+  const pageParam = searchParams.get("page");
   const selectedTags = tagsParam ? tagsParam.split(",") : [];
 
   const [notes, setNotes] = useState<Note[]>([]);
@@ -31,17 +30,41 @@ function NotesContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showAllTags, setShowAllTags] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<NoteTypeFilter>(
-    typeParam === "insights" || typeParam === "references" ? typeParam : "all"
-  );
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    return page > 0 ? page : 1;
+  });
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalNotes, setTotalNotes] = useState(0);
+  const itemsPerPage = 20;
+
+  // Sync URL page param with state
+  useEffect(() => {
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    const validPage = page > 0 ? page : 1;
+    if (validPage !== currentPage) {
+      setCurrentPage(validPage);
+    }
+  }, [pageParam, currentPage]);
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        const notesResp = await listNotes();
+        // Only fetch insights (not references - those are in Toolbox)
+        const notesResp = await listNotes({
+          is_reference: false,
+          page: currentPage,
+          limit: itemsPerPage,
+        });
         setNotes(notesResp.notes);
-        logger.info("All notes data loaded");
+        setTotalPages(notesResp.total_pages);
+        setTotalNotes(notesResp.total);
+        logger.info("Notes data loaded", {
+          page: notesResp.page,
+          count: notesResp.count,
+          total: notesResp.total,
+        });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load notes";
         setError(message);
@@ -52,7 +75,7 @@ function NotesContent() {
     }
 
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   // Calculate tag counts
   const tagCounts = notes.reduce(
@@ -76,17 +99,9 @@ function NotesContent() {
   const otherTags = sortedTags.filter(([_, count]) => count === 1);
   const visibleTags = showAllTags ? sortedTags : topTags;
 
-  // Calculate type counts for filter buttons
-  const insightsCount = notes.filter((n) => !n.is_reference).length;
-  const referencesCount = notes.filter((n) => n.is_reference).length;
-
   // Filter and sort notes
   const filteredNotes = notes
     .filter((note) => {
-      // Filter by type
-      if (typeFilter === "insights" && note.is_reference) return false;
-      if (typeFilter === "references" && !note.is_reference) return false;
-
       // Filter by tags (OR logic)
       if (selectedTags.length > 0) {
         const hasMatchingTag = selectedTags.some((tag) => note.tags.includes(tag));
@@ -116,21 +131,28 @@ function NotesContent() {
       }
     });
 
-  // Build URL with current filters
-  const buildFilterUrl = (options: { tags?: string[]; type?: NoteTypeFilter }) => {
+  // Build URL with current filters and page
+  const buildFilterUrl = (options: { tags?: string[]; page?: number }) => {
     const params = new URLSearchParams();
     const tags = options.tags ?? selectedTags;
-    const type = options.type ?? typeFilter;
+    const page = options.page ?? currentPage;
 
     if (tags.length > 0) {
       params.set("tags", tags.map(encodeURIComponent).join(","));
     }
-    if (type !== "all") {
-      params.set("type", type);
+
+    if (page > 1) {
+      params.set("page", String(page));
     }
 
     const queryString = params.toString();
     return queryString ? `/knowledge-base/notes?${queryString}` : "/knowledge-base/notes";
+  };
+
+  // Navigate to a specific page
+  const goToPage = (page: number) => {
+    const validPage = Math.max(1, Math.min(page, totalPages));
+    router.push(buildFilterUrl({ page: validPage }));
   };
 
   const handleTagClick = (tag: string) => {
@@ -147,18 +169,12 @@ function NotesContent() {
     router.push(buildFilterUrl({ tags: newTags }));
   };
 
-  const handleTypeFilter = (newType: NoteTypeFilter) => {
-    setTypeFilter(newType);
-    router.push(buildFilterUrl({ type: newType }));
-  };
-
   const clearAllFilters = () => {
     setSearchQuery("");
-    setTypeFilter("all");
     router.push("/knowledge-base/notes");
   };
 
-  const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery || typeFilter !== "all");
+  const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery);
 
   const handleRandomNote = async () => {
     try {
@@ -218,7 +234,10 @@ function NotesContent() {
             <div className={styles.titleSection}>
               <h1 className={styles.title}>Notes</h1>
               <p className={styles.subtitle}>
-                Your Zettelkasten knowledge base ({notes.length} notes)
+                Atomic insights and knowledge building ({notes.length} notes) &middot;{" "}
+                <Link href="/knowledge-base/toolbox" className={styles.toolboxLink}>
+                  Looking for frameworks and checklists? Check the Toolbox →
+                </Link>
               </p>
             </div>
             <div className={styles.actions}>
@@ -271,34 +290,6 @@ function NotesContent() {
                 <option value="oldest">Oldest</option>
                 <option value="alphabetical">Alphabetical</option>
               </select>
-            </div>
-
-            {/* Type Filter Section */}
-            <div className={styles.typeFilterSection}>
-              <span className={styles.typeFilterLabel}>Type:</span>
-              <div className={styles.typeButtons}>
-                <button
-                  type="button"
-                  onClick={() => handleTypeFilter("all")}
-                  className={`${styles.typeButton} ${typeFilter === "all" ? styles.typeButtonActive : ""}`}
-                >
-                  All ({notes.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeFilter("insights")}
-                  className={`${styles.typeButton} ${typeFilter === "insights" ? styles.typeButtonActive : ""}`}
-                >
-                  Insights ({insightsCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeFilter("references")}
-                  className={`${styles.typeButton} ${typeFilter === "references" ? styles.typeButtonActive : ""}`}
-                >
-                  References ({referencesCount})
-                </button>
-              </div>
             </div>
 
             {/* Tag Filter Section */}
@@ -375,9 +366,15 @@ function NotesContent() {
                   </div>
                 )}
                 <div className={styles.noteCount}>
-                  Showing {filteredNotes.length}
-                  {filteredNotes.length !== notes.length && ` of ${notes.length}`}{" "}
-                  {filteredNotes.length === 1 ? "note" : "notes"}
+                  Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalNotes)}-
+                  {Math.min(currentPage * itemsPerPage, totalNotes)} of {totalNotes} note
+                  {totalNotes !== 1 ? "s" : ""}
+                  {totalPages > 1 && (
+                    <span className={styles.pageIndicator}>
+                      {" "}
+                      (page {currentPage} of {totalPages})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -405,65 +402,123 @@ function NotesContent() {
                 </Link>
               </div>
             ) : (
-              <div className={styles.notesList}>
-                {filteredNotes.map((note) => (
-                  <Link
-                    key={note.id}
-                    href={`/knowledge-base/notes/${note.id}`}
-                    className={styles.noteCard}
-                  >
-                    <div className={styles.noteCardContent}>
-                      <div className={styles.noteInfo}>
-                        {/* Note ID and type badge */}
-                        <div className={styles.noteIdRow}>
-                          <code className={styles.noteId}>{note.id}</code>
-                          {note.is_reference && (
-                            <span className={styles.referenceBadge}>Reference</span>
-                          )}
-                        </div>
-
-                        {note.title && <h3 className={styles.noteTitle}>{note.title}</h3>}
-
-                        {/* Content preview */}
-                        <p className={styles.notePreview}>{note.content}</p>
-
-                        {/* Metadata */}
-                        <div className={styles.noteMeta}>
-                          <span>{formatNoteDate(note.created_at)}</span>
-                          <span>by {note.author}</span>
-                          {note.links.length > 0 && (
-                            <span>
-                              {note.links.length} link{note.links.length !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Tags */}
-                        {note.tags.length > 0 && (
-                          <div className={styles.noteTags}>
-                            <TagPillList tags={note.tags} maxVisible={3} onClick={handleTagClick} />
+              <>
+                <div className={styles.notesList}>
+                  {filteredNotes.map((note) => (
+                    <Link
+                      key={note.id}
+                      href={`/knowledge-base/notes/${note.id}`}
+                      className={styles.noteCard}
+                    >
+                      <div className={styles.noteCardContent}>
+                        <div className={styles.noteInfo}>
+                          {/* Note ID and type badge */}
+                          <div className={styles.noteIdRow}>
+                            <code className={styles.noteId}>{note.id}</code>
+                            {note.is_reference && (
+                              <span className={styles.referenceBadge}>Reference</span>
+                            )}
                           </div>
-                        )}
+
+                          {note.title && <h3 className={styles.noteTitle}>{note.title}</h3>}
+
+                          {/* Content preview */}
+                          <p className={styles.notePreview}>
+                            {note.content_preview || note.content}
+                          </p>
+
+                          {/* Metadata */}
+                          <div className={styles.noteMeta}>
+                            <span>{formatNoteDate(note.created_at)}</span>
+                            <span>by {note.author}</span>
+                            {(note.link_count ?? note.links.length) > 0 && (
+                              <span>
+                                {note.link_count ?? note.links.length} link
+                                {(note.link_count ?? note.links.length) !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Tags */}
+                          {note.tags.length > 0 && (
+                            <div className={styles.noteTags}>
+                              <TagPillList
+                                tags={note.tags}
+                                maxVisible={3}
+                                onClick={handleTagClick}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Arrow icon */}
+                        <svg
+                          className={styles.noteArrow}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className={styles.paginationContainer}>
+                    <div className={styles.paginationControls}>
+                      <button
+                        className={styles.paginationButton}
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        ← Previous
+                      </button>
+
+                      <div className={styles.pageNumbers}>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter((page) => {
+                            // Show first page, last page, current page, and pages around current
+                            if (page === 1 || page === totalPages) return true;
+                            if (Math.abs(page - currentPage) <= 1) return true;
+                            return false;
+                          })
+                          .map((page, index, array) => (
+                            <span key={page}>
+                              {/* Add ellipsis if there's a gap */}
+                              {index > 0 && page - array[index - 1] > 1 && (
+                                <span className={styles.ellipsis}>...</span>
+                              )}
+                              <button
+                                className={`${styles.pageNumber} ${
+                                  page === currentPage ? styles.active : ""
+                                }`}
+                                onClick={() => goToPage(page)}
+                              >
+                                {page}
+                              </button>
+                            </span>
+                          ))}
                       </div>
 
-                      {/* Arrow icon */}
-                      <svg
-                        className={styles.noteArrow}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                      <button
+                        className={styles.paginationButton}
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
+                        Next →
+                      </button>
                     </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

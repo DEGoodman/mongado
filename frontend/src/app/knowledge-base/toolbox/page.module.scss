@@ -402,6 +402,17 @@
         color: $color-text-secondary;
       }
     }
+
+    .cardPreview {
+      margin-top: $spacing-3;
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      line-height: 1.6;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
   }
 
   .cardContent {

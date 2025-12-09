@@ -26,7 +26,11 @@ export default function ToolboxPage() {
     async function fetchReferences() {
       try {
         setLoading(true);
-        const response = await listNotes({ is_reference: true });
+        // Fetch with previews only for performance
+        const response = await listNotes({
+          is_reference: true,
+          include_full_content: false,
+        });
         setReferences(response.notes);
         logger.info("Toolbox references loaded", { count: response.count });
       } catch (err) {
@@ -279,6 +283,8 @@ export default function ToolboxPage() {
                         ))}
                       </div>
                     )}
+                    {/* Content Preview */}
+                    <p className={styles.cardPreview}>{ref.content_preview || ref.content}</p>
                   </div>
 
                   {/* Expanded Content */}

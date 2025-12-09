@@ -102,10 +102,14 @@ class NoteWithEmbedding(NoteResponse):
 
 
 class NotesListResponse(BaseModel):
-    """Response model for list of notes."""
+    """Response model for list of notes with pagination support."""
 
     notes: list[dict[str, Any]]
-    count: int
+    count: int  # Number of notes in current page
+    total: int  # Total number of notes (all pages)
+    page: int  # Current page number (1-indexed)
+    limit: int  # Items per page
+    total_pages: int  # Total number of pages
 
 
 class BacklinksResponse(BaseModel):
