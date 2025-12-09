@@ -166,16 +166,18 @@ BACKUP_SUBDIR="${BACKUP_DIR}/${BACKUP_NAME%.dump}"
 mkdir -p "${BACKUP_SUBDIR}"
 
 # Run neo4j-admin dump in a temporary container
-# Run as root to avoid permission issues with host-mounted backup directory
+# Dump to parent directory first, then move to timestamped subdirectory
+# This avoids permission issues with newly-created subdirectories
 log_info "Creating backup with neo4j-admin..."
 if docker run --rm --user root \
     -v "${VOLUME_NAME}:/data" \
-    -v "${BACKUP_SUBDIR}:/backups" \
+    -v "${BACKUP_DIR}:/backups" \
     "${NEO4J_IMAGE}" \
     neo4j-admin database dump neo4j --to-path=/backups --overwrite-destination=true; then
 
-    # The dump creates neo4j.dump in the backup subdirectory
-    if [[ -f "${BACKUP_SUBDIR}/neo4j.dump" ]]; then
+    # Move the dump to the timestamped subdirectory
+    if [[ -f "${BACKUP_DIR}/neo4j.dump" ]]; then
+        mv "${BACKUP_DIR}/neo4j.dump" "${BACKUP_SUBDIR}/neo4j.dump"
         log_info "Backup created: ${BACKUP_NAME%.dump}/neo4j.dump"
     else
         log_error "Dump file not found at expected location"
