@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter
 from rapidfuzz import fuzz
 
+from core.search import extract_snippet
 from models import SearchRequest, SearchResponse, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -74,18 +75,28 @@ def _get_all_resources(static_articles: list, user_resources_db: list, notes_ser
     return static_articles + user_resources_db + normalized_notes
 
 
-def _normalize_search_result(doc: dict[str, Any], score: float = 1.0) -> SearchResult:
-    """Normalize a resource document into a consistent SearchResult."""
+def _normalize_search_result(doc: dict[str, Any], query: str, score: float = 1.0) -> SearchResult:
+    """Normalize a resource document into a consistent SearchResult.
+
+    Args:
+        doc: The document dictionary with title, content, etc.
+        query: The search query (used to generate contextual snippet)
+        score: The relevance score
+    """
     # Determine if this is an article or note
     is_note = "note_id" in doc
     resource_type = "note" if is_note else "article"
     resource_id: str | int = str(doc.get("note_id") if is_note else doc.get("id", ""))
 
+    content = doc.get("content", "")
+    snippet = extract_snippet(content, query)
+
     return SearchResult(
         id=resource_id,
         type=resource_type,
         title=doc.get("title", "Untitled"),
-        content=doc.get("content", ""),
+        content=content,
+        snippet=snippet,
         score=score
     )
 
@@ -166,7 +177,7 @@ def create_search_router(
 
             # Sort by score (descending) and take top_k
             scored_docs.sort(key=lambda x: x[1], reverse=True)
-            results = [_normalize_search_result(doc, score=score) for doc, score in scored_docs[:request.top_k]]
+            results = [_normalize_search_result(doc, request.query, score=score) for doc, score in scored_docs[:request.top_k]]
 
             duration = time.time() - start_time
             logger.info("Text search complete: %d results in %.2fs", len(results), duration)
@@ -203,7 +214,7 @@ def create_search_router(
 
             # Sort by score (descending) and take top_k
             scored_docs.sort(key=lambda x: x[1], reverse=True)
-            results = [_normalize_search_result(doc, score=score) for doc, score in scored_docs[:request.top_k]]
+            results = [_normalize_search_result(doc, request.query, score=score) for doc, score in scored_docs[:request.top_k]]
 
             duration = time.time() - start_time
             logger.info("Fallback text search complete: %d results in %.2fs", len(results), duration)
@@ -247,7 +258,7 @@ def create_search_router(
                 )
 
                 results = [
-                    _normalize_search_result(doc, score=doc.get("score", 0.0))
+                    _normalize_search_result(doc, request.query, score=doc.get("score", 0.0))
                     for doc in semantic_results
                 ]
                 duration = time.time() - start_time
@@ -260,7 +271,7 @@ def create_search_router(
         logger.info("Using on-demand embedding generation (slower)")
         semantic_results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
         results = [
-            _normalize_search_result(doc, score=doc.get("score", 0.0))
+            _normalize_search_result(doc, request.query, score=doc.get("score", 0.0))
             for doc in semantic_results
         ]
         duration = time.time() - start_time

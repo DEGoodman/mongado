@@ -26,6 +26,7 @@ class SearchResult(BaseModel):
     type: str  # "article" or "note"
     title: str
     content: str
+    snippet: str  # Contextual snippet with match highlighted
     score: float  # 1.0 for text search, cosine similarity for semantic
 
 

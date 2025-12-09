@@ -15,6 +15,7 @@ interface SearchResult {
   type: "article" | "note";
   title: string;
   content: string;
+  snippet: string; // Contextual snippet around match
   score: number; // 1.0 for text search, cosine similarity for semantic
 }
 
@@ -196,7 +197,7 @@ export default function KnowledgeBasePage() {
                       {highlightText(result.title, searchQuery)}
                     </h4>
                     <p className={styles.resultContent}>
-                      {highlightText(result.content.substring(0, 200), searchQuery)}
+                      {highlightText(result.snippet, searchQuery)}
                     </p>
                   </Link>
                 );
