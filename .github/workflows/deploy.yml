@@ -141,9 +141,10 @@ jobs:
               exit 1
             fi
 
-            # Clean up old images
-            echo "🧹 Cleaning up old Docker images..."
+            # Clean up old images and build cache
+            echo "🧹 Cleaning up old Docker images and build cache..."
             docker image prune -f
+            docker builder prune -f
 
             # Create post-deployment backup
             echo "💾 Creating post-deployment backup..."
