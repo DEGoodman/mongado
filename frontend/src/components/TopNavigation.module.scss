@@ -135,6 +135,17 @@
 }
 
 // Mobile Responsiveness
+@media (max-width: 768px) {
+  .center {
+    gap: $spacing-1;
+  }
+
+  .navLink {
+    padding: $spacing-2 $spacing-2;
+    font-size: 0.8125rem;
+  }
+}
+
 @media (max-width: 640px) {
   .container {
     height: 56px;
@@ -144,8 +155,12 @@
     font-size: 1.125rem;
   }
 
+  .center {
+    gap: 0;
+  }
+
   .navLink {
-    padding: $spacing-2 $spacing-3;
-    font-size: 0.875rem;
+    padding: $spacing-2 $spacing-2;
+    font-size: 0.75rem;
   }
 }

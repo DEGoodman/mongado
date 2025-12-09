@@ -420,6 +420,12 @@ export default function NoteDetailPage() {
               {/* Actions */}
               {!isEditing && (
                 <div className={styles.actions}>
+                  <Link
+                    href={`/knowledge-base/notes/graph?node=${note.id}`}
+                    className={`${styles.button} ${styles.viewGraphButton}`}
+                  >
+                    View in Graph
+                  </Link>
                   <button
                     onClick={() => setIsEditing(true)}
                     className={`${styles.button} ${styles.editButton}`}

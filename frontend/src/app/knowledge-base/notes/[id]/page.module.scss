@@ -182,6 +182,20 @@
       }
     }
 
+    .viewGraphButton {
+      background-color: transparent;
+      color: $dusty-blue-600;               // Cool info action
+      border: 2px solid $dusty-blue-600;
+      text-decoration: none;
+      display: inline-block;
+
+      &:hover:not(:disabled) {
+        background-color: $dusty-blue-50;
+        border-color: $dusty-blue-700;
+        color: $dusty-blue-700;
+      }
+    }
+
     .editButton {
       background-color: $orange-600;        // Warm primary action
       color: white;

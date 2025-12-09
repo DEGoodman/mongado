@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import * as d3 from "d3";
 import { logger } from "@/lib/logger";
@@ -29,7 +30,11 @@ interface GraphData {
   };
 }
 
-export default function NotesGraphPage() {
+function NotesGraphContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nodeParam = searchParams.get("node");
+
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +118,19 @@ export default function NotesGraphPage() {
 
     fetchGraphData();
   }, []);
+
+  // Handle URL parameter for pre-selected node
+  useEffect(() => {
+    if (nodeParam && graphData) {
+      const node = graphData.nodes.find((n) => n.id === nodeParam);
+      if (node) {
+        setSelectedNode(node);
+        logger.info("Node pre-selected from URL param", { nodeId: nodeParam });
+      } else {
+        logger.warn("Node from URL param not found in graph", { nodeId: nodeParam });
+      }
+    }
+  }, [nodeParam, graphData]);
 
   // Tag color utilities
   const tagColorMap: Record<string, string> = {
@@ -722,7 +740,8 @@ export default function NotesGraphPage() {
   // Handle deselect
   const handleDeselect = () => {
     setSelectedNode(null);
-    // Re-run effect to reset visuals
+    // Remove node query param from URL
+    router.push("/knowledge-base/notes/graph");
   };
 
   if (loading) {
@@ -914,5 +933,13 @@ export default function NotesGraphPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NotesGraphPage() {
+  return (
+    <Suspense fallback={<div>Loading graph...</div>}>
+      <NotesGraphContent />
+    </Suspense>
   );
 }

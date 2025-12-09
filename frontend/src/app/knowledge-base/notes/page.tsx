@@ -222,6 +222,9 @@ function NotesContent() {
               </p>
             </div>
             <div className={styles.actions}>
+              <Link href="/knowledge-base/notes/graph" className={styles.graphButton}>
+                View Graph
+              </Link>
               <button
                 onClick={handleRandomNote}
                 disabled={randomNoteLoading || notes.length === 0}
