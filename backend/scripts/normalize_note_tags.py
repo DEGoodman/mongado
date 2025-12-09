@@ -88,6 +88,10 @@ def main() -> None:
 
     # Fetch all notes
     logger.info("Fetching all notes from Neo4j...")
+    if not neo4j.driver:
+        logger.error("Neo4j driver not available")
+        return
+
     with neo4j.driver.session(database=neo4j.database) as session:
         result = session.run("MATCH (n:Note) RETURN n")
         notes = [record["n"] for record in result]
@@ -115,11 +119,12 @@ def main() -> None:
             logger.info(f"  New: {new_tags}")
 
             # Update in Neo4j
-            with neo4j.driver.session(database=neo4j.database) as session:
-                session.run(
-                    "MATCH (n:Note {id: $id}) SET n.tags = $tags",
-                    id=note_id,
-                    tags=new_tags,
+            if neo4j.driver:
+                with neo4j.driver.session(database=neo4j.database) as session:
+                    session.run(
+                        "MATCH (n:Note {id: $id}) SET n.tags = $tags",
+                        id=note_id,
+                        tags=new_tags,
                 )
 
             updated_count += 1

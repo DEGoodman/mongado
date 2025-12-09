@@ -75,13 +75,41 @@ Links are automatically parsed and stored as graph relationships.
         return created_note
 
     @router.get("", response_model=NotesListResponse)
-    async def list_notes(is_reference: bool | None = None) -> NotesListResponse:
-        """List all notes (ordered by created_at descending).
+    async def list_notes(
+        is_reference: bool | None = None,
+        include_full_content: bool = False,
+        include_embedding: bool = False,
+        minimal: bool = False,
+    ) -> NotesListResponse:
+        """List all notes with configurable response payload.
 
-        Args:
-            is_reference: Filter by type (True=references, False=insights, None=all)
+        Query Parameters:
+            is_reference: Filter by reference notes (True/False/None for all)
+            include_full_content: Return full markdown (default: False, returns 200 char preview)
+            include_embedding: Include embedding vectors (default: False, ~6KB/note)
+            minimal: Only id+title for autocomplete/graph (default: False)
+
+        Default response (~500 bytes/note):
+            - id, title, content_preview (200 chars), author, tags, created_at, is_reference, link_count
+
+        Performance Impact:
+            - Default (preview): ~50KB for 100 notes
+            - Full content: ~500KB-1MB for 100 notes
+            - With embeddings: +600KB for 100 notes
+            - Minimal mode: ~5KB for 100 notes
+
+        Examples:
+            - List view: /api/notes (uses defaults)
+            - Detail view: /api/notes?include_full_content=true
+            - Autocomplete: /api/notes?minimal=true
+            - Search with embeddings: /api/notes?include_embedding=true
         """
-        notes = notes_service.list_notes(is_reference=is_reference)
+        notes = notes_service.list_notes(
+            is_reference=is_reference,
+            include_full_content=include_full_content,
+            include_embedding=include_embedding,
+            minimal=minimal,
+        )
 
         return NotesListResponse(notes=notes, count=len(notes))
 

@@ -24,7 +24,7 @@ def profile_with_pyspy() -> None:
 def profile_with_viztracer() -> None:
     """Profile with VizTracer (tracing profiler with GUI)."""
     logger.info("Starting VizTracer profiler...")
-    import viztracer
+    import viztracer  # type: ignore[import-untyped]
 
     tracer = viztracer.VizTracer()
     tracer.start()

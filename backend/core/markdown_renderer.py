@@ -42,7 +42,7 @@ def _highlight_code(code: str, lang: str, **_kwargs: Any) -> str:
         noclasses=False,  # Use CSS classes for better control
     )
 
-    return highlight(code, lexer, formatter)
+    return str(highlight(code, lexer, formatter))
 
 
 def _convert_wikilinks(html: str) -> str:
@@ -95,7 +95,7 @@ def render_markdown_to_html(markdown_content: str) -> str:
             return f'<pre><code>{code}</code></pre>'
 
     # Replace the default fence renderer
-    md.renderer.rules['fence'] = custom_fence
+    md.renderer.rules['fence'] = custom_fence  # type: ignore[attr-defined]
 
     # Render markdown to HTML
     html = md.render(markdown_content)
@@ -113,4 +113,4 @@ def get_pygments_css() -> str:
         CSS string for syntax highlighting styles
     """
     formatter = HtmlFormatter(style='monokai', cssclass='highlight')
-    return formatter.get_style_defs('.highlight')
+    return str(formatter.get_style_defs('.highlight'))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Seed Neo4j database with 87 structured test notes for development.
+Seed Neo4j database with structured test notes for development.
 
 Structure:
 - 5 entry point notes (10-13 links each)
@@ -9,8 +9,9 @@ Structure:
 - 15 stub notes (TODOs)
 - 10 question notes
 - 10 orphan notes (0 links)
+- 10 reference notes (quick references: frameworks, checklists, acronyms)
 
-Total: 308 bidirectional links, 3.5 avg links/note
+Total: ~320 bidirectional links, 3.5 avg links/note
 """
 
 import sys
@@ -385,7 +386,7 @@ Related: [[software-architecture]]"""
     print(f"✅ Created {len(atomic_note_data)} atomic notes")
 
     # Stub notes (minimal content with TODOs) - leave untagged intentionally
-    stub_note_data = [
+    stub_note_data: list[tuple[str, str, str, list[str]]] = [
         ("chaos-engineering-stub", "Chaos Engineering", "TODO: Add chaos engineering principles and practices.", []),
         ("service-mesh-stub", "Service Mesh", "TODO: Document service mesh patterns (Istio, Linkerd).", []),
         ("gitops-stub", "GitOps", "TODO: Explain GitOps deployment model.", []),
@@ -429,8 +430,217 @@ Related: [[software-architecture]]"""
         notes_created += 1
     print(f"✅ Created {len(question_note_data)} question notes")
 
+    # Reference notes (quick references: frameworks, checklists, acronyms)
+    # These use is_reference=True to distinguish from Zettelkasten insights
+    reference_note_data = [
+        (
+            "dora-metrics",
+            "DORA Metrics",
+            """The four key metrics from the DORA research program for measuring software delivery performance:
+
+1. **Deployment Frequency** - How often code is deployed to production
+2. **Lead Time for Changes** - Time from commit to production
+3. **Mean Time to Recovery (MTTR)** - Time to restore service after incident
+4. **Change Failure Rate** - Percentage of deployments causing failures
+
+Related: [[sre-practices]], [[deployment-strategies]], [[ci-cd-pipeline]]""",
+            ["sre", "metrics"],
+        ),
+        (
+            "biceps-framework",
+            "BICEPS Framework",
+            """Core needs framework for understanding what people need at work:
+
+- **B**elonging - Connection to a group
+- **I**mprovement - Progress and growth
+- **C**hoice - Autonomy and control
+- **E**quality - Fair treatment
+- **P**redictability - Certainty about the future
+- **S**ignificance - Status and meaning
+
+Related: [[team-dynamics]], [[one-on-ones]], [[feedback-culture]]""",
+            ["leadership", "management"],
+        ),
+        (
+            "eisenhower-matrix",
+            "Eisenhower Matrix",
+            """Prioritization framework based on urgency and importance:
+
+|              | Urgent | Not Urgent |
+|--------------|--------|------------|
+| Important    | DO     | SCHEDULE   |
+| Not Important| DELEGATE | DELETE   |
+
+Related: [[stakeholder-management]], [[engineering-leadership]]""",
+            ["productivity", "management"],
+        ),
+        (
+            "testing-pyramid-ref",
+            "Testing Pyramid Reference",
+            """Standard testing distribution:
+
+```
+        /\\
+       /E2E\\        (~10%)
+      /------\\
+     /Integration\\   (~20%)
+    /--------------\\
+   /    Unit Tests   \\ (~70%)
+  /------------------\\
+```
+
+- **Unit**: Fast, isolated, many
+- **Integration**: Medium speed, service boundaries
+- **E2E**: Slow, full user flows, few
+
+Related: [[testing-pyramid]], [[code-quality]]""",
+            ["testing", "best-practices"],
+        ),
+        (
+            "smart-goals",
+            "SMART Goals Framework",
+            """Goal-setting framework:
+
+- **S**pecific - Clear and well-defined
+- **M**easurable - Quantifiable progress
+- **A**chievable - Realistic and attainable
+- **R**elevant - Aligned with broader objectives
+- **T**ime-bound - Has a deadline
+
+Related: [[career-ladders]], [[one-on-ones]]""",
+            ["management", "productivity"],
+        ),
+        (
+            "http-status-codes",
+            "HTTP Status Code Quick Reference",
+            """Common HTTP status codes:
+
+**2xx Success**
+- 200 OK
+- 201 Created
+- 204 No Content
+
+**4xx Client Errors**
+- 400 Bad Request
+- 401 Unauthorized
+- 403 Forbidden
+- 404 Not Found
+- 429 Too Many Requests
+
+**5xx Server Errors**
+- 500 Internal Server Error
+- 502 Bad Gateway
+- 503 Service Unavailable
+
+Related: [[api-design]]""",
+            ["engineering", "api"],
+        ),
+        (
+            "git-commands-ref",
+            "Git Commands Quick Reference",
+            """Essential git commands:
+
+**Branching**
+```bash
+git checkout -b feature/name
+git merge --no-ff feature/name
+git rebase main
+```
+
+**Undoing**
+```bash
+git reset --soft HEAD~1  # undo commit, keep changes staged
+git reset --hard HEAD~1  # undo commit, discard changes
+git revert <commit>      # create new commit undoing changes
+```
+
+**Inspection**
+```bash
+git log --oneline --graph
+git diff --stat
+git blame <file>
+```
+
+Related: [[code-review-process]], [[ci-cd-pipeline]]""",
+            ["engineering", "git"],
+        ),
+        (
+            "incident-severity-levels",
+            "Incident Severity Levels",
+            """Standard incident classification:
+
+| Level | Name | Description | Response |
+|-------|------|-------------|----------|
+| SEV1 | Critical | Full outage, data loss | All hands, 24/7 |
+| SEV2 | Major | Partial outage, degraded | On-call + backup |
+| SEV3 | Minor | Limited impact | On-call during hours |
+| SEV4 | Low | Cosmetic, workaround exists | Normal priority |
+
+Related: [[incident-management]], [[on-call-rotation]], [[slo-definition]]""",
+            ["sre", "operations"],
+        ),
+        (
+            "rest-api-conventions",
+            "REST API Conventions",
+            """Standard RESTful patterns:
+
+**HTTP Methods**
+- GET - Read (idempotent)
+- POST - Create
+- PUT - Update/Replace (idempotent)
+- PATCH - Partial update
+- DELETE - Remove (idempotent)
+
+**URL Structure**
+```
+GET    /resources          # List
+POST   /resources          # Create
+GET    /resources/{id}     # Read
+PUT    /resources/{id}     # Update
+DELETE /resources/{id}     # Delete
+```
+
+**Response Codes**
+- 200/201 for success
+- 400 for client errors
+- 500 for server errors
+
+Related: [[api-design]], [[versioning-strategy]]""",
+            ["engineering", "api"],
+        ),
+        (
+            "twelve-factor-app",
+            "12-Factor App Checklist",
+            """The twelve factors for modern app development:
+
+1. **Codebase** - One codebase, many deploys
+2. **Dependencies** - Explicitly declare and isolate
+3. **Config** - Store in environment
+4. **Backing Services** - Treat as attached resources
+5. **Build, Release, Run** - Strictly separate stages
+6. **Processes** - Execute as stateless processes
+7. **Port Binding** - Export services via port binding
+8. **Concurrency** - Scale out via process model
+9. **Disposability** - Fast startup, graceful shutdown
+10. **Dev/Prod Parity** - Keep environments similar
+11. **Logs** - Treat as event streams
+12. **Admin Processes** - Run as one-off processes
+
+Related: [[microservices]], [[deployment-strategies]], [[software-architecture]]""",
+            ["architecture", "best-practices"],
+        ),
+    ]
+
+    for note_id, title, content, tags in reference_note_data:
+        all_notes.append((note_id, content, title))
+        neo4j_adapter.create_note(
+            note_id, content, title, tags=tags, is_reference=True
+        )
+        notes_created += 1
+    print(f"✅ Created {len(reference_note_data)} reference notes")
+
     # Orphan notes (no links - for testing orphan detection) - leave untagged
-    orphan_note_data = [
+    orphan_note_data: list[tuple[str, str, str, list[str]]] = [
         ("random-thought-1", "Random Thought 1", "This note has no links to other notes. Used for testing orphan detection.", []),
         ("random-thought-2", "Random Thought 2", "Another isolated note without connections.", []),
         ("random-thought-3", "Random Thought 3", "Testing orphan note functionality.", []),
@@ -454,12 +664,13 @@ Related: [[software-architecture]]"""
     # Pass 2: Create all links (now that all notes exist)
     print("\n📎 Creating links between notes...")
     links_created = 0
-    with neo4j_adapter.driver.session() as session:
-        for note_id, content, _title in all_notes:
-            links = wikilink_parser.extract_links(content)
-            if links:
-                neo4j_adapter._create_links(session, note_id, links)
-                links_created += len(links)
+    if neo4j_adapter.driver:
+        with neo4j_adapter.driver.session() as session:
+            for note_id, content, _title in all_notes:
+                links = wikilink_parser.extract_links(content)
+                if links:
+                    neo4j_adapter._create_links(session, note_id, links)
+                    links_created += len(links)
     print(f"✅ Created {links_created} links")
     print("\nExpected structure:")
     print("  - 5 entry point notes (10-13 links each)")
@@ -467,19 +678,23 @@ Related: [[software-architecture]]"""
     print("  - 40 atomic notes (2-3 links each)")
     print("  - 15 stub notes (TODOs)")
     print("  - 10 question notes")
+    print("  - 10 reference notes (is_reference=True)")
     print("  - 10 orphan notes (0 links)")
-    print("  - Total: ~308 bidirectional links")
+    print("  - Total: ~320 bidirectional links")
 
     # Verify by querying count
-    with neo4j_adapter.driver.session() as session:
-        result = session.run("MATCH (n:Note) RETURN count(n) as count")
-        count = result.single()["count"]
-        print(f"\n✅ Verified: {count} notes in database")
+    if neo4j_adapter.driver:
+        with neo4j_adapter.driver.session() as session:
+            result = session.run("MATCH (n:Note) RETURN count(n) as count")
+            record = result.single()
+            count = record["count"] if record else 0
+            print(f"\n✅ Verified: {count} notes in database")
 
-        # Count links
-        link_result = session.run("MATCH ()-[r:LINKS_TO]->() RETURN count(r) as count")
-        link_count = link_result.single()["count"]
-        print(f"✅ Verified: {link_count} links in database")
+            # Count links
+            link_result = session.run("MATCH ()-[r:LINKS_TO]->() RETURN count(r) as count")
+            link_record = link_result.single()
+            link_count = link_record["count"] if link_record else 0
+            print(f"✅ Verified: {link_count} links in database")
 
 
 if __name__ == "__main__":

@@ -239,12 +239,18 @@ class Neo4jAdapter:
         self,
         author: str | None = None,
         is_reference: bool | None = None,
+        include_full_content: bool = True,
+        include_embedding: bool = False,
+        minimal: bool = False,
     ) -> list[dict[str, Any]]:
         """List all notes, optionally filtered by author and/or type.
 
         Args:
             author: Optional author filter
             is_reference: Filter by type (True=references, False=insights, None=all)
+            include_full_content: If False, return content preview only (default: True)
+            include_embedding: If True, include embedding vectors (default: False)
+            minimal: If True, return only id+title (default: False)
 
         Returns:
             List of note dicts sorted by created_at descending
@@ -281,8 +287,23 @@ class Neo4jAdapter:
 
             notes = []
             for record in result:
-                note = self._node_to_dict(record["n"])
-                note["links"] = record["links"] or []
+                note = self._node_to_dict(
+                    record["n"],
+                    exclude_embedding=not include_embedding,
+                    include_preview_only=not include_full_content,
+                    minimal_fields=minimal,
+                )
+
+                # Add links data (not needed for minimal mode)
+                if not minimal:
+                    links = record["links"] or []
+                    note["links"] = links
+                    note["link_count"] = len(links)
+
+                    # Rename 'content' to 'content_preview' if in preview mode
+                    if not include_full_content and "content" in note:
+                        note["content_preview"] = note.pop("content")
+
                 notes.append(note)
 
             return notes
@@ -684,7 +705,13 @@ class Neo4jAdapter:
             source_id=source_id,
         )
 
-    def _node_to_dict(self, node: Any) -> dict[str, Any]:
+    def _node_to_dict(
+        self,
+        node: Any,
+        exclude_embedding: bool = True,
+        include_preview_only: bool = False,
+        minimal_fields: bool = False,
+    ) -> dict[str, Any]:
         """Convert Neo4j node to dict (works for both Note and Article nodes).
 
         This method intelligently handles both Note and Article nodes by checking
@@ -692,17 +719,33 @@ class Neo4jAdapter:
 
         Args:
             node: Neo4j node (Note or Article)
+            exclude_embedding: If True, omit embedding fields (default: True)
+            include_preview_only: If True, truncate content to ~200 chars (default: False)
+            minimal_fields: If True, return only id+title (default: False)
 
         Returns:
-            Dict representation including all available fields
+            Dict representation with requested fields
         """
         # Handle both 'id' and 'note_id' properties for backward compatibility
         node_id = node.get("id") or node.get("note_id") or node.get("article_id")
 
+        # Minimal mode: only id and title
+        if minimal_fields:
+            return {
+                "id": node_id,
+                "title": node.get("title", ""),
+            }
+
+        # Get content (with optional truncation for preview)
+        content = node.get("content", "")
+        if include_preview_only and content:
+            # Truncate to ~200 chars for preview
+            content = content[:200] + ("..." if len(content) > 200 else "")
+
         result = {
             "id": node_id,
             "title": node.get("title", ""),
-            "content": node.get("content", ""),
+            "content": content,
             "created_at": node.get("created_at", 0.0),
             "updated_at": node.get("updated_at", node.get("created_at", 0.0)),
         }
@@ -712,15 +755,18 @@ class Neo4jAdapter:
         result["tags"] = node.get("tags", [])
         result["is_reference"] = node.get("is_reference", False)
 
-        # Embedding-related fields (present in both Notes and Articles)
+        # Content hash (used for embedding staleness checks)
         if "content_hash" in node:
             result["content_hash"] = node["content_hash"]
-        if "embedding" in node:
-            result["embedding"] = node["embedding"]
-        if "embedding_model" in node:
-            result["embedding_model"] = node["embedding_model"]
-        if "embedding_version" in node:
-            result["embedding_version"] = node["embedding_version"]
+
+        # Embedding-related fields (excluded by default)
+        if not exclude_embedding:
+            if "embedding" in node:
+                result["embedding"] = node["embedding"]
+            if "embedding_model" in node:
+                result["embedding_model"] = node["embedding_model"]
+            if "embedding_version" in node:
+                result["embedding_version"] = node["embedding_version"]
 
         return result
 

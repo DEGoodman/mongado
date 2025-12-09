@@ -1598,9 +1598,14 @@ def generate_corpus() -> None:
         sys.exit(1)
 
     # Safety check: confirm before clearing
+    if not neo4j.driver:
+        logger.error("Neo4j driver not available")
+        sys.exit(1)
+
     with neo4j.driver.session(database=neo4j.database) as session:
         result = session.run("MATCH (n:Note) RETURN count(n) AS count")
-        existing_count = result.single()["count"]
+        record = result.single()
+        existing_count = record["count"] if record else 0
 
     if existing_count > 0:
         logger.warning(f"⚠️  WARNING: {existing_count} notes currently exist in Neo4j")
@@ -1614,8 +1619,9 @@ def generate_corpus() -> None:
 
     # Clear existing notes
     logger.info("Clearing existing notes...")
-    with neo4j.driver.session(database=neo4j.database) as session:
-        session.run("MATCH (n:Note) DETACH DELETE n")
+    if neo4j.driver:
+        with neo4j.driver.session(database=neo4j.database) as session:
+            session.run("MATCH (n:Note) DETACH DELETE n")
     logger.info("✓ Database cleared\n")
 
     # Create notes in order (entry points first for proper linking)
@@ -1629,12 +1635,12 @@ def generate_corpus() -> None:
         for note in notes:
             try:
                 neo4j.create_note(
-                    note_id=note["id"],
-                    title=note["title"],
-                    content=note["content"],
+                    note_id=str(note["id"]),
+                    title=str(note["title"]),
+                    content=str(note["content"]),
                     author="Erik",
-                    tags=note["tags"],
-                    links=note.get("links", []),
+                    tags=list(note["tags"]) if note.get("tags") else None,
+                    links=list(note.get("links", [])),
                 )
                 total_created += 1
                 logger.info(f"  ✓ {note['id']}: {note['title']}")
@@ -1648,25 +1654,27 @@ def generate_corpus() -> None:
     logger.info(f"{'='*60}\n")
 
     # Show statistics
-    with neo4j.driver.session(database=neo4j.database) as session:
-        # Count by category
-        result = session.run("""
-            MATCH (n:Note)
-            RETURN
-                count(n) as total,
-                count(CASE WHEN size([(n)-[:LINKS_TO]->() | 1]) = 0 AND NOT exists((()-[:LINKS_TO]->(n))) THEN 1 END) as orphans,
-                count(CASE WHEN size([(n)-[:LINKS_TO]->() | 1]) = 0 AND exists((()-[:LINKS_TO]->(n))) THEN 1 END) as dead_ends,
-                count(CASE WHEN size([(n)-[:LINKS_TO]->() | 1]) >= 5 THEN 1 END) as hubs,
-                avg(size([(n)-[:LINKS_TO]->() | 1])) as avg_links
-        """)
-        stats = result.single()
+    if neo4j.driver:
+        with neo4j.driver.session(database=neo4j.database) as session:
+            # Count by category
+            result = session.run("""
+                MATCH (n:Note)
+                RETURN
+                    count(n) as total,
+                    count(CASE WHEN size([(n)-[:LINKS_TO]->() | 1]) = 0 AND NOT exists((()-[:LINKS_TO]->(n))) THEN 1 END) as orphans,
+                    count(CASE WHEN size([(n)-[:LINKS_TO]->() | 1]) = 0 AND exists((()-[:LINKS_TO]->(n))) THEN 1 END) as dead_ends,
+                    count(CASE WHEN size([(n)-[:LINKS_TO]->() | 1]) >= 5 THEN 1 END) as hubs,
+                    avg(size([(n)-[:LINKS_TO]->() | 1])) as avg_links
+            """)
+            stats = result.single()
 
-        logger.info("Graph Statistics:")
-        logger.info(f"  Total notes: {stats['total']}")
-        logger.info(f"  Orphans (no links): {stats['orphans']}")
-        logger.info(f"  Dead ends (no outbound links): {stats['dead_ends']}")
-        logger.info(f"  Hub notes (5+ links): {stats['hubs']}")
-        logger.info(f"  Average links per note: {stats['avg_links']:.1f}")
+            if stats:
+                logger.info("Graph Statistics:")
+                logger.info(f"  Total notes: {stats['total']}")
+                logger.info(f"  Orphans (no links): {stats['orphans']}")
+                logger.info(f"  Dead ends (no outbound links): {stats['dead_ends']}")
+                logger.info(f"  Hub notes (5+ links): {stats['hubs']}")
+                logger.info(f"  Average links per note: {stats['avg_links']:.1f}")
 
 
 if __name__ == "__main__":

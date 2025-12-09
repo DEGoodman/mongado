@@ -145,14 +145,185 @@ class TestListNotes:
         time.sleep(0.01)  # 10ms delay
         client.post("/api/notes", json={"content": "Third"}, headers=admin_headers)
 
-        # List notes
-        response = client.get("/api/notes")
+        # List notes with full content to check ordering
+        response = client.get("/api/notes?include_full_content=true")
         notes = response.json()["notes"]
 
         # Should be in reverse order (newest first)
         assert notes[0]["content"] == "Third"
         assert notes[1]["content"] == "Second"
         assert notes[2]["content"] == "First"
+
+    def test_list_notes_default_excludes_embedding(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that default response excludes embeddings for performance."""
+        # Create note (will have embedding if Neo4j is available)
+        client.post(
+            "/api/notes",
+            json={"content": "Test note with embedding"},
+            headers=admin_headers
+        )
+
+        # List notes with defaults
+        response = client.get("/api/notes")
+        assert response.status_code == 200
+        notes = response.json()["notes"]
+
+        # Should not include embedding fields
+        assert len(notes) == 1
+        assert "embedding" not in notes[0]
+        assert "embedding_model" not in notes[0]
+        assert "embedding_version" not in notes[0]
+
+    def test_list_notes_default_returns_preview(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that default response returns content preview, not full content."""
+        # Create note with long content (>200 chars)
+        long_content = "A" * 300  # 300 characters
+        client.post(
+            "/api/notes",
+            json={"content": long_content},
+            headers=admin_headers
+        )
+
+        # List notes with defaults
+        response = client.get("/api/notes")
+        assert response.status_code == 200
+        notes = response.json()["notes"]
+
+        # Should have content_preview (truncated), not full content
+        assert len(notes) == 1
+        assert "content_preview" in notes[0]
+        assert "content" not in notes[0] or notes[0].get("content") == notes[0].get("content_preview")
+        # Preview should be truncated to ~200 chars
+        preview = notes[0]["content_preview"]
+        assert len(preview) <= 203  # 200 + "..."
+        assert preview.endswith("...")
+
+    def test_list_notes_include_full_content(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that include_full_content=true returns complete content."""
+        # Create note with long content
+        long_content = "B" * 300
+        client.post(
+            "/api/notes",
+            json={"content": long_content},
+            headers=admin_headers
+        )
+
+        # List notes with full content
+        response = client.get("/api/notes?include_full_content=true")
+        assert response.status_code == 200
+        notes = response.json()["notes"]
+
+        # Should have full content (not truncated)
+        assert len(notes) == 1
+        assert "content" in notes[0]
+        assert notes[0]["content"] == long_content
+        assert len(notes[0]["content"]) == 300
+
+    def test_list_notes_include_embedding(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that include_embedding=true returns embedding vectors."""
+        from notes_service import get_notes_service
+
+        notes_service = get_notes_service()
+
+        # Skip if Neo4j not available
+        if not notes_service.neo4j.is_available():
+            pytest.skip("Neo4j not available")
+
+        # Create note
+        response = client.post(
+            "/api/notes",
+            json={"content": "Test note for embedding"},
+            headers=admin_headers
+        )
+        note_id = response.json()["id"]
+
+        # Store a test embedding
+        test_embedding = [0.1] * 768  # Standard embedding size
+        notes_service.neo4j.store_embedding(
+            node_type="Note",
+            node_id=note_id,
+            embedding=test_embedding,
+            model="test-model",
+            version=1
+        )
+
+        # List notes with embedding
+        response = client.get("/api/notes?include_embedding=true")
+        assert response.status_code == 200
+        notes = response.json()["notes"]
+
+        # Should include embedding fields
+        assert len(notes) == 1
+        assert "embedding" in notes[0]
+        assert "embedding_model" in notes[0]
+        assert "embedding_version" in notes[0]
+        assert notes[0]["embedding"] == test_embedding
+        assert notes[0]["embedding_model"] == "test-model"
+        assert notes[0]["embedding_version"] == 1
+
+    def test_list_notes_minimal_mode(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that minimal=true returns only id and title."""
+        # Create note with all fields
+        client.post(
+            "/api/notes",
+            json={
+                "content": "Full content here",
+                "title": "Test Title",
+                "tags": ["tag1", "tag2"]
+            },
+            headers=admin_headers
+        )
+
+        # List notes in minimal mode
+        response = client.get("/api/notes?minimal=true")
+        assert response.status_code == 200
+        notes = response.json()["notes"]
+
+        # Should only have id and title
+        assert len(notes) == 1
+        note = notes[0]
+        assert "id" in note
+        assert "title" in note
+        assert note["title"] == "Test Title"
+
+        # Should not have other fields
+        assert "content" not in note
+        assert "content_preview" not in note
+        assert "tags" not in note
+        assert "author" not in note
+        assert "created_at" not in note
+        assert "links" not in note
+        assert "link_count" not in note
+
+    def test_list_notes_includes_link_count(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+        """Test that default response includes link_count field."""
+        # Create two notes with a link between them
+        response1 = client.post(
+            "/api/notes",
+            json={"content": "First note", "title": "Note 1"},
+            headers=admin_headers
+        )
+        note1_id = response1.json()["id"]
+
+        client.post(
+            "/api/notes",
+            json={"content": f"Second note linking to [[{note1_id}]]", "title": "Note 2"},
+            headers=admin_headers
+        )
+
+        # List notes
+        response = client.get("/api/notes")
+        assert response.status_code == 200
+        notes = response.json()["notes"]
+
+        # Should include link_count
+        assert len(notes) == 2
+        assert "link_count" in notes[0]
+        assert "link_count" in notes[1]
+
+        # Note 2 (newer) should have 1 link, Note 1 should have 0 links
+        assert notes[0]["link_count"] == 1  # Note 2 links to Note 1
+        assert notes[1]["link_count"] == 0  # Note 1 has no outbound links
 
 
 class TestGetNote:
@@ -655,8 +826,8 @@ class TestIsReferenceField:
             headers=admin_headers,
         )
 
-        # Filter for insights only
-        response = client.get("/api/notes?is_reference=false")
+        # Filter for insights only (with full content to check)
+        response = client.get("/api/notes?is_reference=false&include_full_content=true")
         assert response.status_code == 200
 
         data = response.json()
@@ -680,8 +851,8 @@ class TestIsReferenceField:
             headers=admin_headers,
         )
 
-        # Filter for references only
-        response = client.get("/api/notes?is_reference=true")
+        # Filter for references only (with full content to check)
+        response = client.get("/api/notes?is_reference=true&include_full_content=true")
         assert response.status_code == 200
 
         data = response.json()

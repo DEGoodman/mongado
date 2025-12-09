@@ -59,6 +59,48 @@ class NoteResponse(BaseModel):
     is_reference: bool
 
 
+class NoteListItem(BaseModel):
+    """Lightweight note for list views - includes preview, not full content.
+
+    Optimized for list displays where full content is not needed.
+    Content is truncated to ~200 characters for preview.
+    Excludes embeddings to reduce payload size (~6KB per note).
+    """
+
+    id: str
+    title: str | None
+    content_preview: str  # First 200 chars of content
+    author: str
+    tags: list[str]
+    created_at: str | float
+    is_reference: bool
+    link_count: int  # Number of outbound links
+
+
+class NoteMinimal(BaseModel):
+    """Minimal note for autocomplete, graph nodes.
+
+    Ultra-lightweight response for use cases that only need
+    basic identification: autocomplete widgets, graph visualization.
+    """
+
+    id: str
+    title: str | None
+
+
+class NoteWithEmbedding(NoteResponse):
+    """Full note + embedding (for AI search only).
+
+    Extends NoteResponse with embedding data. Only used for
+    semantic search where embeddings are needed for similarity
+    calculations. Frontend should never request this.
+    """
+
+    embedding: list[float]
+    embedding_model: str | None = None
+    embedding_version: int | None = None
+
+
 class NotesListResponse(BaseModel):
     """Response model for list of notes."""
 

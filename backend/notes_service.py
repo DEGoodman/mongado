@@ -107,17 +107,31 @@ class NotesService:
         self._require_neo4j()
         return self.neo4j.get_note(note_id)
 
-    def list_notes(self, is_reference: bool | None = None) -> list[dict[str, Any]]:
+    def list_notes(
+        self,
+        is_reference: bool | None = None,
+        include_full_content: bool = True,
+        include_embedding: bool = False,
+        minimal: bool = False,
+    ) -> list[dict[str, Any]]:
         """List all notes, ordered by created_at descending.
 
         Args:
             is_reference: Filter by type (True=references, False=insights, None=all)
+            include_full_content: If False, return content preview only (default: True)
+            include_embedding: If True, include embedding vectors (default: False)
+            minimal: If True, return only id+title (default: False)
 
         Returns:
             List of note dicts, newest first
         """
         self._require_neo4j()
-        return self.neo4j.list_notes(is_reference=is_reference)
+        return self.neo4j.list_notes(
+            is_reference=is_reference,
+            include_full_content=include_full_content,
+            include_embedding=include_embedding,
+            minimal=minimal,
+        )
 
     def update_note(
         self,

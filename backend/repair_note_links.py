@@ -106,9 +106,10 @@ def repair_note_links(dry_run: bool = False) -> dict[str, int]:
             # Create missing links
             if valid_missing and not dry_run:
                 logger.info("Creating %d missing links for note %s", len(valid_missing), note_id)
-                with neo4j.driver.session(database=neo4j.database) as session:
-                    neo4j._create_links(session, note_id, valid_missing)
-                stats["links_created"] += len(valid_missing)
+                if neo4j.driver:
+                    with neo4j.driver.session(database=neo4j.database) as session:
+                        neo4j._create_links(session, note_id, valid_missing)
+                    stats["links_created"] += len(valid_missing)
 
     # Summary
     logger.info("\n" + "=" * 60)
