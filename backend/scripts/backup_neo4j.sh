@@ -166,8 +166,9 @@ BACKUP_SUBDIR="${BACKUP_DIR}/${BACKUP_NAME%.dump}"
 mkdir -p "${BACKUP_SUBDIR}"
 
 # Run neo4j-admin dump in a temporary container
+# Run as root to avoid permission issues with host-mounted backup directory
 log_info "Creating backup with neo4j-admin..."
-if docker run --rm \
+if docker run --rm --user root \
     -v "${VOLUME_NAME}:/data" \
     -v "${BACKUP_SUBDIR}:/backups" \
     "${NEO4J_IMAGE}" \

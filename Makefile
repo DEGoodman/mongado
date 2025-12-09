@@ -212,3 +212,25 @@ prod-logs-backend: ## View production backend logs
 
 prod-logs-frontend: ## View production frontend logs
 	docker compose -f docker-compose.prod.yml logs -f frontend
+
+prod-backup: ## Create Neo4j backup in production (interactive)
+	@COMPOSE_FILE=docker-compose.prod.yml ./backend/scripts/backup_neo4j.sh
+
+prod-backup-auto: ## Create Neo4j backup in production (non-interactive, for CI/CD)
+	@COMPOSE_FILE=docker-compose.prod.yml NON_INTERACTIVE=true ./backend/scripts/backup_neo4j.sh
+
+prod-backup-force: ## Force Neo4j backup in production even if unchanged
+	@COMPOSE_FILE=docker-compose.prod.yml FORCE_BACKUP=true ./backend/scripts/backup_neo4j.sh
+
+prod-restore: ## Restore Neo4j in production from backup (interactive)
+	@COMPOSE_FILE=docker-compose.prod.yml ./backend/scripts/restore_neo4j.sh $(BACKUP)
+
+prod-restore-auto: ## Restore Neo4j in production (non-interactive, for CI/CD)
+	@COMPOSE_FILE=docker-compose.prod.yml FORCE=true ./backend/scripts/restore_neo4j.sh $(BACKUP)
+
+prod-backup-list: ## List available production backups
+	@echo "Available backups in /var/mongado-backups/:"
+	@ls -1dt /var/mongado-backups/neo4j_backup_* 2>/dev/null | while read d; do \
+		size=$$(du -sh "$$d" 2>/dev/null | cut -f1); \
+		echo "  $$(basename $$d) ($$size)"; \
+	done || echo "  (no backups found)"
