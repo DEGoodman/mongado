@@ -181,7 +181,7 @@ function NotesContent() {
       <div className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.headerTop}>
-            <Breadcrumb section="notes" />
+            <Breadcrumb section="notes" toHub />
           </div>
           <div className={styles.titleRow}>
             <div className={styles.titleSection}>

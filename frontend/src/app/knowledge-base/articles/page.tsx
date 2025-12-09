@@ -164,7 +164,7 @@ function ArticlesContent() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.breadcrumb}>
-            <Breadcrumb section="articles" />
+            <Breadcrumb section="articles" toHub />
           </div>
           <h1 className={styles.title}>Articles</h1>
         </div>
