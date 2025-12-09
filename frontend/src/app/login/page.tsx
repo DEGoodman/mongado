@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setAdminToken } from "@/lib/api/client";
+import { hasDraft } from "@/lib/draft";
 import TopNavigation from "@/components/TopNavigation";
 import styles from "./page.module.scss";
 
@@ -48,8 +49,12 @@ export default function LoginPage() {
           },
         });
 
-        // Redirect to notes page
-        router.push("/knowledge-base/notes");
+        // Redirect to draft if one exists, otherwise to notes list
+        if (hasDraft()) {
+          router.push("/knowledge-base/notes/new");
+        } else {
+          router.push("/knowledge-base/notes");
+        }
       } else {
         const data = await response.json().catch(() => ({ detail: "Invalid token" }));
         setError(data.detail || "Invalid token");

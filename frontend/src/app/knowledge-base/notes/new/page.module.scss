@@ -164,6 +164,35 @@
   }
 }
 
+// ===== DRAFT BANNER =====
+.draftBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-3 $spacing-4;
+  border-radius: $border-radius-md;
+  border: $border-width-thin solid $green-500;
+  background-color: $green-50;
+  margin-bottom: $spacing-4;
+  color: $green-700;
+  font-size: $font-size-sm;
+
+  .discardButton {
+    background: none;
+    border: none;
+    color: $green-600;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    text-decoration: underline;
+    padding: 0;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $green-700;
+    }
+  }
+}
+
 // ===== TIPS/WARNINGS =====
 .tipBox {
   padding: $spacing-4;

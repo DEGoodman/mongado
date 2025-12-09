@@ -13,6 +13,7 @@ import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
 import styles from "./page.module.scss";
 
 export default function NewNotePage() {
@@ -42,6 +43,33 @@ export default function NewNotePage() {
   const [atomicityIssues, setAtomicityIssues] = useState<string[]>([]);
   const [showFirstPersonReminder, setShowFirstPersonReminder] = useState(true);
   const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setTitle(draft.title);
+      setContent(draft.content);
+      setTags(draft.tags);
+      setDraftRestored(true);
+      logger.info("Draft restored from localStorage", {
+        savedAt: new Date(draft.savedAt).toISOString(),
+      });
+    }
+  }, []);
+
+  // Auto-save draft to localStorage (debounced)
+  useEffect(() => {
+    // Don't save if all fields are empty
+    if (!title && !content && !tags) return;
+
+    const timeoutId = setTimeout(() => {
+      saveDraft({ title, content, tags });
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [title, content, tags]);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -127,6 +155,10 @@ export default function NewNotePage() {
 
       logger.info("Note created successfully", { id: note.id });
       setSavedNoteId(note.id);
+
+      // Clear draft after successful save
+      clearDraft();
+      setDraftRestored(false);
 
       // Check atomicity and show warning if issues detected
       const issues = checkAtomicity(content);
@@ -267,6 +299,25 @@ export default function NewNotePage() {
           <h1 className={styles.title}>Create New Note</h1>
           <p className={styles.subtitle}>Add a new note to your Zettelkasten knowledge base</p>
         </div>
+
+        {/* Draft Restored Banner */}
+        {draftRestored && (
+          <div className={styles.draftBanner}>
+            <span>📝 Draft restored from your previous session</span>
+            <button
+              onClick={() => {
+                clearDraft();
+                setTitle("");
+                setContent("");
+                setTags("");
+                setDraftRestored(false);
+              }}
+              className={styles.discardButton}
+            >
+              Discard draft
+            </button>
+          </div>
+        )}
 
         {/* First-Person Voice Reminder */}
         {showFirstPersonReminder && (
