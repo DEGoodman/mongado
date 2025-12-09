@@ -268,8 +268,13 @@ class Neo4jAdapter:
                 params["author"] = author
 
             if is_reference is not None:
-                where_clauses.append("n.is_reference = $is_reference")
-                params["is_reference"] = is_reference
+                # Handle NULL as false (insights): nodes without is_reference field are insights
+                if is_reference:
+                    # Only match notes explicitly marked as references
+                    where_clauses.append("n.is_reference = true")
+                else:
+                    # Match notes that are NOT references (false or NULL)
+                    where_clauses.append("(n.is_reference = false OR n.is_reference IS NULL)")
 
             where_clause = ""
             if where_clauses:
