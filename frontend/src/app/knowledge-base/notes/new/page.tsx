@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
 import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
@@ -16,8 +16,9 @@ import { config } from "@/lib/config";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
 import styles from "./page.module.scss";
 
-export default function NewNotePage() {
+function NewNoteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { settings } = useSettings();
 
   // Check if AI features should be available
@@ -27,7 +28,10 @@ export default function NewNotePage() {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState("");
-  const [isReference, setIsReference] = useState(false);
+  const [isReference, setIsReference] = useState(() => {
+    // Pre-check "Quick Reference" if URL has ?ref=true
+    return searchParams.get("ref") === "true";
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allNotes, setAllNotes] = useState<Note[]>([]);
@@ -605,5 +609,13 @@ export default function NewNotePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function NewNotePage() {
+  return (
+    <Suspense fallback={<div className={styles.loadingContainer}>Loading...</div>}>
+      <NewNoteContent />
+    </Suspense>
   );
 }

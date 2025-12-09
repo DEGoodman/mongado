@@ -158,6 +158,11 @@ export default function ToolboxPage() {
                 Frameworks, checklists, and mental models at your fingertips
               </p>
             </div>
+            <div className={styles.actions}>
+              <Link href="/knowledge-base/notes/new?ref=true" className={styles.newReferenceButton}>
+                + New Reference
+              </Link>
+            </div>
           </div>
         </div>
       </header>

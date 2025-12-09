@@ -107,17 +107,66 @@
   }
 
   .titleRow {
+    @include flex-between;
+    align-items: flex-start;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      gap: $spacing-4;
+    }
+
     .titleSection {
       .title {
         @include heading-h1;
         margin: 0;
         color: $amber-900;
+
+        @media (max-width: 640px) {
+          font-size: $font-size-2xl;
+        }
       }
 
       .subtitle {
         margin-top: $spacing-2;
         color: $amber-700;
         font-size: $font-size-lg;
+
+        @media (max-width: 640px) {
+          font-size: $font-size-sm;
+        }
+      }
+    }
+
+    .actions {
+      @include flex-start;
+      gap: $spacing-3;
+      flex-shrink: 0;
+
+      @media (max-width: 640px) {
+        width: 100%;
+        flex-direction: column;
+        gap: $spacing-2;
+      }
+
+      .newReferenceButton {
+        padding: $spacing-2 $spacing-4;
+        border-radius: $border-radius-button;
+        background-color: $amber-600;
+        color: white;
+        font-weight: $font-weight-medium;
+        text-decoration: none;
+        transition: all 0.2s ease;
+
+        @media (max-width: 640px) {
+          width: 100%;
+          padding: $spacing-3 $spacing-4;
+          font-size: $font-size-sm;
+          text-align: center;
+        }
+
+        &:hover {
+          background-color: $amber-700;
+        }
       }
     }
   }
@@ -323,11 +372,9 @@
   }
 }
 
-// ===== REFERENCE GRID =====
+// ===== REFERENCE LIST =====
 .referenceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: $spacing-4;
+  @include stack($spacing-4);
 }
 
 // ===== REFERENCE CARD =====
