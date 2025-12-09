@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { listNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
-import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import Breadcrumb from "@/components/Breadcrumb";
 import styles from "./page.module.scss";
 
@@ -20,7 +19,6 @@ export default function ToolboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchReferences() {
@@ -104,10 +102,6 @@ export default function ToolboxPage() {
 
     return sortedGrouped;
   }, [filteredReferences]);
-
-  const handleToggleExpand = (noteId: string) => {
-    setExpandedNoteId(expandedNoteId === noteId ? null : noteId);
-  };
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -251,59 +245,52 @@ export default function ToolboxPage() {
             </h2>
             <div className={styles.referenceGrid}>
               {refs.map((ref) => (
-                <div
+                <Link
                   key={ref.id}
-                  className={`${styles.referenceCard} ${expandedNoteId === ref.id ? styles.expanded : ""}`}
+                  href={`/knowledge-base/notes/${ref.id}`}
+                  className={styles.referenceCard}
                 >
-                  <div
-                    className={styles.cardHeader}
-                    onClick={() => handleToggleExpand(ref.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleToggleExpand(ref.id);
-                      }
-                    }}
-                  >
-                    <div className={styles.cardTitleRow}>
-                      <h3 className={styles.cardTitle}>{ref.title || ref.id}</h3>
-                      <span className={styles.expandIcon}>
-                        {expandedNoteId === ref.id ? "▼" : "▶"}
-                      </span>
-                    </div>
-                    {ref.title && <code className={styles.cardId}>{ref.id}</code>}
-                    {ref.tags.length > 1 && (
-                      <div className={styles.cardTags}>
-                        {ref.tags.slice(1).map((tag) => (
-                          <span key={tag} className={styles.tag}>
-                            {tag}
-                          </span>
-                        ))}
+                  <div className={styles.cardContent}>
+                    <div className={styles.cardInfo}>
+                      {/* Note ID and title */}
+                      <div className={styles.cardIdRow}>
+                        <code className={styles.cardId}>{ref.id}</code>
+                        <span className={styles.referenceBadge}>Reference</span>
                       </div>
-                    )}
-                    {/* Content Preview */}
-                    <p className={styles.cardPreview}>{ref.content_preview || ref.content}</p>
-                  </div>
 
-                  {/* Expanded Content */}
-                  {expandedNoteId === ref.id && (
-                    <div className={styles.cardContent}>
-                      <div className={styles.contentBody}>
-                        <MarkdownWithWikilinks content={ref.content} />
-                      </div>
-                      <div className={styles.cardActions}>
-                        <Link
-                          href={`/knowledge-base/notes/${ref.id}`}
-                          className={styles.openNoteButton}
-                        >
-                          Open in Notes →
-                        </Link>
-                      </div>
+                      {ref.title && <h3 className={styles.cardTitle}>{ref.title}</h3>}
+
+                      {/* Content preview */}
+                      <p className={styles.cardPreview}>{ref.content_preview || ref.content}</p>
+
+                      {/* Tags (skip first tag as it's the category) */}
+                      {ref.tags.length > 1 && (
+                        <div className={styles.cardTags}>
+                          {ref.tags.slice(1).map((tag) => (
+                            <span key={tag} className={styles.tag}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+
+                    {/* Arrow icon */}
+                    <svg
+                      className={styles.cardArrow}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>

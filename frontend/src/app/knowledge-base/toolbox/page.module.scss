@@ -333,150 +333,101 @@
 // ===== REFERENCE CARD =====
 .referenceCard {
   @include card-elevated;
+  display: block;
   background-color: $white;
+  text-decoration: none;
   transition: all 0.2s ease;
 
   &:hover {
     border-color: $amber-300;
     box-shadow: $shadow-card-lg;
+    transform: translateY(-1px);
   }
 
-  &.expanded {
-    border-color: $amber-400;
-    box-shadow: 0 4px 20px rgba($amber-500, 0.15);
-  }
-
-  .cardHeader {
-    cursor: pointer;
+  .cardContent {
     padding: $spacing-4;
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-3;
 
-    &:focus {
-      outline: 2px solid $amber-500;
-      outline-offset: -2px;
-      border-radius: $border-radius-md;
-    }
+    .cardInfo {
+      flex: 1;
+      min-width: 0;
 
-    .cardTitleRow {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: $spacing-2;
+      .cardIdRow {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+        flex-wrap: wrap;
+        margin-bottom: $spacing-2;
+      }
+
+      .cardId {
+        display: inline-block;
+        padding: 2px 6px;
+        background-color: rgba($amber-500, 0.1);
+        border-radius: $border-radius-sm;
+        font-family: $font-family-mono;
+        font-size: $font-size-xs;
+        color: $amber-700;
+      }
+
+      .referenceBadge {
+        display: inline-block;
+        padding: 2px 8px;
+        background-color: $amber-200;
+        border: 1px solid $amber-300;
+        border-radius: $border-radius-full;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-medium;
+        color: $amber-700;
+      }
 
       .cardTitle {
         font-size: $font-size-lg;
         font-weight: $font-weight-semibold;
         color: $color-text-primary;
-        margin: 0;
-        flex: 1;
+        margin: 0 0 $spacing-2 0;
+        line-height: 1.4;
       }
 
-      .expandIcon {
-        color: $amber-500;
+      .cardPreview {
+        margin-bottom: $spacing-3;
         font-size: $font-size-sm;
-        flex-shrink: 0;
-      }
-    }
-
-    .cardId {
-      display: inline-block;
-      margin-top: $spacing-1;
-      padding: 2px 6px;
-      background-color: rgba($amber-500, 0.1);
-      border-radius: $border-radius-sm;
-      font-family: $font-family-mono;
-      font-size: $font-size-xs;
-      color: $amber-700;
-    }
-
-    .cardTags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-1;
-      margin-top: $spacing-2;
-
-      .tag {
-        padding: 2px 8px;
-        background-color: $neutral-100;
-        border-radius: $border-radius-full;
-        font-size: $font-size-xs;
         color: $color-text-secondary;
+        line-height: 1.6;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+      }
+
+      .cardTags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $spacing-1;
+
+        .tag {
+          padding: 2px 8px;
+          background-color: $neutral-100;
+          border-radius: $border-radius-full;
+          font-size: $font-size-xs;
+          color: $color-text-secondary;
+        }
       }
     }
 
-    .cardPreview {
-      margin-top: $spacing-3;
-      font-size: $font-size-sm;
-      color: $color-text-secondary;
-      line-height: 1.6;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
+    .cardArrow {
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      color: $amber-500;
+      margin-top: $spacing-1;
+      transition: transform 0.2s ease;
     }
   }
 
-  .cardContent {
-    border-top: 1px solid $neutral-200;
-    padding: $spacing-4;
-    background-color: $neutral-50;
-
-    .contentBody {
-      max-height: 400px;
-      overflow-y: auto;
-      padding-right: $spacing-2;
-
-      // Markdown content styling
-      :global {
-        h1, h2, h3, h4, h5, h6 {
-          margin-top: $spacing-3;
-          margin-bottom: $spacing-2;
-          font-weight: $font-weight-semibold;
-        }
-
-        p {
-          margin-bottom: $spacing-2;
-        }
-
-        ul, ol {
-          margin-bottom: $spacing-2;
-          padding-left: $spacing-5;
-        }
-
-        li {
-          margin-bottom: $spacing-1;
-        }
-
-        code {
-          padding: 2px 4px;
-          background-color: $neutral-200;
-          border-radius: $border-radius-sm;
-          font-family: $font-family-mono;
-          font-size: 0.9em;
-        }
-      }
-    }
-
-    .cardActions {
-      margin-top: $spacing-4;
-      padding-top: $spacing-3;
-      border-top: 1px solid $neutral-200;
-
-      .openNoteButton {
-        display: inline-flex;
-        align-items: center;
-        padding: $spacing-2 $spacing-3;
-        border-radius: $border-radius-button;
-        background-color: $amber-500;
-        color: white;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
-        text-decoration: none;
-        transition: all 0.2s ease;
-
-        &:hover {
-          background-color: $amber-600;
-        }
-      }
-    }
+  &:hover .cardArrow {
+    transform: translateX(4px);
   }
 }
