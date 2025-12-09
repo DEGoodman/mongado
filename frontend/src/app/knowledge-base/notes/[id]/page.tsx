@@ -388,9 +388,7 @@ export default function NoteDetailPage() {
               <div className={styles.titleRow}>
                 <div className={styles.noteIdRow}>
                   <code className={styles.noteId}>{note.id}</code>
-                  {note.is_reference && (
-                    <span className={styles.referenceBadge}>Reference</span>
-                  )}
+                  {note.is_reference && <span className={styles.referenceBadge}>Reference</span>}
                 </div>
                 <h1 className={styles.noteTitle}>{note.title || "Untitled Note"}</h1>
               </div>
