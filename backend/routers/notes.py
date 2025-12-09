@@ -51,6 +51,10 @@ Create a new note in the knowledge base.
 Use double brackets to link to other notes: `[[note-id]]`
 Links are automatically parsed and stored as graph relationships.
 
+**Note Types:**
+- `is_reference: false` (default) - Zettelkasten insights/atomic notes
+- `is_reference: true` - Quick references (checklists, frameworks, acronyms)
+
 **Rate Limit:** 10 notes per minute per IP address
 """,
     )
@@ -65,14 +69,19 @@ Links are automatically parsed and stored as graph relationships.
             content=note.content,
             title=note.title,
             tags=note.tags,
+            is_reference=note.is_reference,
         )
 
         return created_note
 
     @router.get("", response_model=NotesListResponse)
-    async def list_notes() -> NotesListResponse:
-        """List all notes (ordered by created_at descending)."""
-        notes = notes_service.list_notes()
+    async def list_notes(is_reference: bool | None = None) -> NotesListResponse:
+        """List all notes (ordered by created_at descending).
+
+        Args:
+            is_reference: Filter by type (True=references, False=insights, None=all)
+        """
+        notes = notes_service.list_notes(is_reference=is_reference)
 
         return NotesListResponse(notes=notes, count=len(notes))
 
@@ -183,6 +192,7 @@ Links are automatically parsed and stored as graph relationships.
             content=note_update.content,
             title=note_update.title,
             tags=note_update.tags,
+            is_reference=note_update.is_reference,
         )
 
         if not updated:

@@ -12,13 +12,15 @@ class NoteCreate(BaseModel):
         {
             "title": "My First Note",
             "content": "This is a note with a [[wikilink]] to another note.",
-            "tags": ["pkm", "learning"]
+            "tags": ["pkm", "learning"],
+            "is_reference": false
         }
     """
 
     title: str | None = None
     content: str
     tags: list[str] = []
+    is_reference: bool = False
 
     model_config = {
         "json_schema_extra": {
@@ -27,6 +29,7 @@ class NoteCreate(BaseModel):
                     "title": "Zettelkasten Method",
                     "content": "Personal knowledge management system based on interconnected atomic notes.\n\nKey principles:\n- One idea per note\n- Link liberally with [[wikilinks]]\n- Emerge structure organically",
                     "tags": ["pkm", "methodology"],
+                    "is_reference": False,
                 }
             ]
         }
@@ -39,6 +42,7 @@ class NoteUpdate(BaseModel):
     title: str | None = None
     content: str
     tags: list[str] | None = None
+    is_reference: bool | None = None
 
 
 class NoteResponse(BaseModel):
@@ -52,6 +56,7 @@ class NoteResponse(BaseModel):
     created_at: str | float
     updated_at: str | float
     links: list[str]
+    is_reference: bool
 
 
 class NotesListResponse(BaseModel):

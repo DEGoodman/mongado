@@ -1,0 +1,471 @@
+/**
+ * Toolbox Page Styles
+ * Quick reference library for frameworks, checklists, and mental models
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+}
+
+// ===== LOADING STATE =====
+.loadingContainer {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+
+  .loadingSkeleton {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+    .skeletonHeader {
+      height: 4rem;
+      margin-bottom: $spacing-6;
+      background-color: rgba(156, 163, 175, 0.2);
+      border-radius: $border-radius-md;
+    }
+
+    .skeletonGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: $spacing-4;
+
+      .skeletonCard {
+        height: 8rem;
+        background-color: rgba(156, 163, 175, 0.2);
+        border-radius: $border-radius-md;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// ===== ERROR STATE =====
+.errorContainer {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+
+  .errorCard {
+    padding: $spacing-4;
+    background-color: rgba(254, 226, 226, 0.8);
+    border: $border-width-thin solid rgba(220, 38, 38, 0.3);
+    border-radius: $border-radius-md;
+
+    .errorTitle {
+      margin-bottom: $spacing-2;
+      font-weight: $font-weight-semibold;
+      color: $color-error-text;
+    }
+
+    .errorMessage {
+      margin-bottom: $spacing-4;
+      color: $color-error-border;
+    }
+
+    .backLink {
+      color: $blue-600;
+      text-decoration: none;
+
+      &:hover {
+        color: $blue-700;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+// ===== HEADER =====
+.header {
+  background: linear-gradient(
+    to bottom,
+    $amber-100 0%,
+    $amber-50 50%,
+    rgba($amber-50, 0.5) 100%
+  );
+  border-bottom: 1px solid $amber-200;
+  box-shadow: $shadow-card-sm;
+
+  .headerContent {
+    @include container;
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
+  }
+
+  .headerTop {
+    margin-bottom: $spacing-4;
+  }
+
+  .titleRow {
+    .titleSection {
+      .title {
+        @include heading-h1;
+        margin: 0;
+        color: $amber-900;
+      }
+
+      .subtitle {
+        margin-top: $spacing-2;
+        color: $amber-700;
+        font-size: $font-size-lg;
+      }
+    }
+  }
+}
+
+// ===== MAIN =====
+.main {
+  @include container;
+  padding-top: $spacing-6;
+  padding-bottom: $spacing-8;
+}
+
+// ===== FILTER BAR =====
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-4;
+  margin-bottom: $spacing-4;
+  padding: $spacing-4;
+  background-color: $white;
+  border: $border-default;
+  border-radius: $border-radius-lg;
+
+  .searchBox {
+    flex: 1;
+    min-width: 200px;
+
+    .searchInput {
+      width: 100%;
+      padding: $spacing-2 $spacing-3;
+      border: $border-default;
+      border-radius: $border-radius-button;
+      font-size: $font-size-base;
+      font-family: $font-family-primary;
+      background-color: $white;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: $amber-500;
+        box-shadow: 0 0 0 2px rgba($amber-500, 0.2);
+      }
+
+      &::placeholder {
+        color: $color-text-tertiary;
+      }
+    }
+  }
+
+  .categoryFilters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+  }
+
+  .categoryButton {
+    padding: $spacing-2 $spacing-3;
+    border: $border-default;
+    border-radius: $border-radius-full;
+    background-color: $white;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+    font-family: $font-family-primary;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(.active) {
+      background-color: $amber-50;
+      border-color: $amber-300;
+    }
+
+    &.active {
+      background-color: $amber-500;
+      border-color: $amber-600;
+      color: $white;
+    }
+  }
+
+  .clearButton {
+    padding: $spacing-2 $spacing-3;
+    border: none;
+    border-radius: $border-radius-button;
+    background-color: transparent;
+    color: $amber-600;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: $amber-700;
+      text-decoration: underline;
+    }
+  }
+}
+
+// ===== RESULTS BAR =====
+.resultsBar {
+  margin-bottom: $spacing-4;
+
+  .resultsCount {
+    @include text-secondary;
+    color: $color-text-secondary;
+    font-weight: $font-weight-medium;
+  }
+}
+
+// ===== EMPTY STATE =====
+.emptyState {
+  padding: $spacing-12;
+  text-align: center;
+  @include card;
+  border: $border-width-medium dashed $amber-300;
+  background-color: $amber-50;
+
+  .emptyIcon {
+    font-size: 3rem;
+    margin-bottom: $spacing-3;
+  }
+
+  .emptyTitle {
+    @include heading-h3;
+    margin-bottom: $spacing-2;
+    color: $amber-900;
+  }
+
+  .emptyMessage {
+    @include text-secondary;
+    color: $amber-700;
+    margin-bottom: $spacing-2;
+  }
+
+  .emptyHint {
+    @include text-tertiary;
+    color: $amber-600;
+    margin-bottom: $spacing-6;
+  }
+
+  .createButton {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-3 $spacing-6;
+    border-radius: $border-radius-button;
+    background-color: $amber-600;
+    color: white;
+    font-weight: $font-weight-medium;
+    text-decoration: none;
+    box-shadow: $shadow-button;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: $amber-700;
+      box-shadow: $shadow-button-hover;
+    }
+  }
+}
+
+// ===== NO RESULTS =====
+.noResults {
+  padding: $spacing-8;
+  text-align: center;
+  @include card;
+
+  p {
+    @include text-secondary;
+    margin-bottom: $spacing-4;
+  }
+
+  .clearFiltersButton {
+    padding: $spacing-2 $spacing-4;
+    border: $border-default;
+    border-radius: $border-radius-button;
+    background-color: $white;
+    color: $amber-600;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: $amber-50;
+      border-color: $amber-300;
+    }
+  }
+}
+
+// ===== CATEGORY SECTIONS =====
+.categorySection {
+  margin-bottom: $spacing-8;
+
+  .categoryTitle {
+    @include heading-h3;
+    margin-bottom: $spacing-4;
+    color: $amber-800;
+    border-bottom: 2px solid $amber-200;
+    padding-bottom: $spacing-2;
+
+    .categoryCount {
+      font-weight: $font-weight-normal;
+      color: $amber-500;
+    }
+  }
+}
+
+// ===== REFERENCE GRID =====
+.referenceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: $spacing-4;
+}
+
+// ===== REFERENCE CARD =====
+.referenceCard {
+  @include card-elevated;
+  background-color: $white;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: $amber-300;
+    box-shadow: $shadow-card-lg;
+  }
+
+  &.expanded {
+    border-color: $amber-400;
+    box-shadow: 0 4px 20px rgba($amber-500, 0.15);
+  }
+
+  .cardHeader {
+    cursor: pointer;
+    padding: $spacing-4;
+
+    &:focus {
+      outline: 2px solid $amber-500;
+      outline-offset: -2px;
+      border-radius: $border-radius-md;
+    }
+
+    .cardTitleRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: $spacing-2;
+
+      .cardTitle {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+        margin: 0;
+        flex: 1;
+      }
+
+      .expandIcon {
+        color: $amber-500;
+        font-size: $font-size-sm;
+        flex-shrink: 0;
+      }
+    }
+
+    .cardId {
+      display: inline-block;
+      margin-top: $spacing-1;
+      padding: 2px 6px;
+      background-color: rgba($amber-500, 0.1);
+      border-radius: $border-radius-sm;
+      font-family: $font-family-mono;
+      font-size: $font-size-xs;
+      color: $amber-700;
+    }
+
+    .cardTags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-1;
+      margin-top: $spacing-2;
+
+      .tag {
+        padding: 2px 8px;
+        background-color: $neutral-100;
+        border-radius: $border-radius-full;
+        font-size: $font-size-xs;
+        color: $color-text-secondary;
+      }
+    }
+  }
+
+  .cardContent {
+    border-top: 1px solid $neutral-200;
+    padding: $spacing-4;
+    background-color: $neutral-50;
+
+    .contentBody {
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: $spacing-2;
+
+      // Markdown content styling
+      :global {
+        h1, h2, h3, h4, h5, h6 {
+          margin-top: $spacing-3;
+          margin-bottom: $spacing-2;
+          font-weight: $font-weight-semibold;
+        }
+
+        p {
+          margin-bottom: $spacing-2;
+        }
+
+        ul, ol {
+          margin-bottom: $spacing-2;
+          padding-left: $spacing-5;
+        }
+
+        li {
+          margin-bottom: $spacing-1;
+        }
+
+        code {
+          padding: 2px 4px;
+          background-color: $neutral-200;
+          border-radius: $border-radius-sm;
+          font-family: $font-family-mono;
+          font-size: 0.9em;
+        }
+      }
+    }
+
+    .cardActions {
+      margin-top: $spacing-4;
+      padding-top: $spacing-3;
+      border-top: 1px solid $neutral-200;
+
+      .openNoteButton {
+        display: inline-flex;
+        align-items: center;
+        padding: $spacing-2 $spacing-3;
+        border-radius: $border-radius-button;
+        background-color: $amber-500;
+        color: white;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        text-decoration: none;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $amber-600;
+        }
+      }
+    }
+  }
+}

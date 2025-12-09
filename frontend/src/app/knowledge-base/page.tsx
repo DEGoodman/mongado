@@ -258,6 +258,26 @@ export default function KnowledgeBasePage() {
               </Link>
             </div>
           </div>
+
+          {/* Toolbox Card */}
+          <div className={`${styles.contentCard} ${styles.toolbox}`}>
+            <div className={styles.cardBadge}>
+              <span className={styles.toolboxBadge}>Reference</span>
+            </div>
+            <h3 className={styles.cardTitle}>Toolbox</h3>
+            <p className={styles.cardDescription}>
+              Quick reference library. Frameworks, checklists, acronyms, and mental models for fast
+              lookup when you need them most.
+            </p>
+            <div className={styles.cardActions}>
+              <Link
+                href="/knowledge-base/toolbox"
+                className={`${styles.cardButton} ${styles.toolboxPrimary}`}
+              >
+                Open Toolbox →
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Info Section */}

@@ -119,6 +119,12 @@
   .titleRow {
     margin-bottom: $spacing-4;
 
+    .noteIdRow {
+      display: flex;
+      align-items: center;
+      gap: $spacing-2;
+    }
+
     .noteId {
       padding: $spacing-1 $spacing-2;
       background-color: rgba(196, 98, 79, 0.1);
@@ -126,6 +132,16 @@
       font-family: $font-family-mono;
       @include text-secondary;
       color: $color-secondary;
+    }
+
+    .referenceBadge {
+      display: inline-block;
+      padding: 2px 8px;
+      background-color: $amber-100;
+      color: $amber-800;
+      border-radius: $border-radius-sm;
+      font-size: 11px;
+      font-weight: $font-weight-medium;
     }
 
     .noteTitle {
@@ -374,6 +390,36 @@
   &::placeholder {
     color: $color-input-placeholder;
   }
+}
+
+// ===== REFERENCE TOGGLE =====
+.referenceToggle {
+  margin-top: $spacing-2;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
+  cursor: pointer;
+
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: $blue-600;
+  }
+
+  .checkboxText {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+  }
+}
+
+.formHint {
+  margin-top: $spacing-1;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
 }
 
 .suggestLinksButton {

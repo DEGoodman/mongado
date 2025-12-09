@@ -27,6 +27,7 @@ export default function NewNotePage() {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState("");
+  const [isReference, setIsReference] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allNotes, setAllNotes] = useState<Note[]>([]);
@@ -52,6 +53,9 @@ export default function NewNotePage() {
       setTitle(draft.title);
       setContent(draft.content);
       setTags(draft.tags);
+      if (draft.isReference !== undefined) {
+        setIsReference(draft.isReference);
+      }
       setDraftRestored(true);
       logger.info("Draft restored from localStorage", {
         savedAt: new Date(draft.savedAt).toISOString(),
@@ -65,11 +69,11 @@ export default function NewNotePage() {
     if (!title && !content && !tags) return;
 
     const timeoutId = setTimeout(() => {
-      saveDraft({ title, content, tags });
+      saveDraft({ title, content, tags, isReference });
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [title, content, tags]);
+  }, [title, content, tags, isReference]);
 
   // Load all notes for autocomplete
   useEffect(() => {
@@ -151,6 +155,7 @@ export default function NewNotePage() {
         content,
         title: title.trim() || undefined,
         tags: tagArray.length > 0 ? tagArray : undefined,
+        is_reference: isReference,
       });
 
       logger.info("Note created successfully", { id: note.id });
@@ -402,6 +407,22 @@ export default function NewNotePage() {
                 placeholder="Comma-separated tags (e.g., idea, research, todo)"
                 className={styles.formInput}
               />
+            </div>
+
+            {/* Reference Toggle */}
+            <div className={styles.referenceToggle}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={isReference}
+                  onChange={(e) => setIsReference(e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <span className={styles.checkboxText}>Quick Reference</span>
+              </label>
+              <p className={styles.formHint}>
+                Check for checklists, frameworks, acronyms — not personal insights
+              </p>
             </div>
 
             {/* Content */}

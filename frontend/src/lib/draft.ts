@@ -13,6 +13,7 @@ export interface NoteDraft {
   title: string;
   content: string;
   tags: string;
+  isReference?: boolean;
   savedAt: number;
 }
 

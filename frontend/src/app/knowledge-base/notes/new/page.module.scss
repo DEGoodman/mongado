@@ -288,6 +288,30 @@
   color: $color-text-tertiary;
 }
 
+// ===== REFERENCE TOGGLE =====
+.referenceToggle {
+  margin-top: $spacing-2;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
+  cursor: pointer;
+
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: $blue-600;
+  }
+
+  .checkboxText {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+  }
+}
+
 // ===== EDITOR GRID =====
 .editorGrid {
   display: grid;

@@ -53,6 +53,7 @@ class NotesService:
         content: str,
         title: str | None = None,
         tags: list[str] | None = None,
+        is_reference: bool = False,
     ) -> dict[str, Any]:
         """Create a new persistent note.
 
@@ -60,6 +61,7 @@ class NotesService:
             content: Markdown content
             title: Optional title
             tags: Optional tags
+            is_reference: True for quick references, False for insights (default)
 
         Returns:
             Created note dict
@@ -84,6 +86,7 @@ class NotesService:
             author="Erik",
             tags=tags or [],
             links=links,
+            is_reference=is_reference,
         )
         logger.info("Created note: %s", note_id)
 
@@ -104,14 +107,17 @@ class NotesService:
         self._require_neo4j()
         return self.neo4j.get_note(note_id)
 
-    def list_notes(self) -> list[dict[str, Any]]:
+    def list_notes(self, is_reference: bool | None = None) -> list[dict[str, Any]]:
         """List all notes, ordered by created_at descending.
+
+        Args:
+            is_reference: Filter by type (True=references, False=insights, None=all)
 
         Returns:
             List of note dicts, newest first
         """
         self._require_neo4j()
-        return self.neo4j.list_notes()
+        return self.neo4j.list_notes(is_reference=is_reference)
 
     def update_note(
         self,
@@ -119,6 +125,7 @@ class NotesService:
         content: str,
         title: str | None = None,
         tags: list[str] | None = None,
+        is_reference: bool | None = None,
     ) -> dict[str, Any] | None:
         """Update note content.
 
@@ -127,6 +134,7 @@ class NotesService:
             content: New content
             title: New title
             tags: New tags
+            is_reference: New reference status (None to keep existing)
 
         Returns:
             Updated note dict or None if not found
@@ -148,6 +156,7 @@ class NotesService:
             title=title,
             tags=tags,
             links=links,
+            is_reference=is_reference,
         )
         logger.info("Updated note: %s", note_id)
 

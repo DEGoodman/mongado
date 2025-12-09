@@ -23,6 +23,7 @@ class NoteDict(TypedDict, total=False):
         created_at: Unix timestamp (float) or ISO datetime string
         updated_at: Unix timestamp (float) or ISO datetime string
         links: List of note IDs this note links to
+        is_reference: True for quick references (checklists, frameworks), False for insights
     """
 
     id: str
@@ -33,6 +34,7 @@ class NoteDict(TypedDict, total=False):
     created_at: float | str
     updated_at: float | str
     links: list[str]
+    is_reference: bool
 
 
 class ArticleDict(TypedDict, total=False):

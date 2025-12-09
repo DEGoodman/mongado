@@ -132,6 +132,7 @@ class Neo4jAdapter:
         author: str = "admin",
         tags: list[str] | None = None,
         links: list[str] | None = None,
+        is_reference: bool = False,
     ) -> dict[str, Any]:
         """Create a new note in Neo4j.
 
@@ -142,6 +143,7 @@ class Neo4jAdapter:
             author: Note author (default: admin)
             tags: Optional tags
             links: Optional wikilinks to other notes
+            is_reference: True for quick references, False for insights (default)
 
         Returns:
             Created note as dict
@@ -160,6 +162,7 @@ class Neo4jAdapter:
                     author: $author,
                     tags: $tags,
                     links: $links,
+                    is_reference: $is_reference,
                     created_at: $created_at,
                     updated_at: $updated_at
                 })
@@ -171,6 +174,7 @@ class Neo4jAdapter:
                 author=author,
                 tags=tags or [],
                 links=links or [],
+                is_reference=is_reference,
                 created_at=time.time(),
                 updated_at=time.time(),
             )
@@ -231,11 +235,16 @@ class Neo4jAdapter:
 
             return note
 
-    def list_notes(self, author: str | None = None) -> list[dict[str, Any]]:
-        """List all notes, optionally filtered by author.
+    def list_notes(
+        self,
+        author: str | None = None,
+        is_reference: bool | None = None,
+    ) -> list[dict[str, Any]]:
+        """List all notes, optionally filtered by author and/or type.
 
         Args:
             author: Optional author filter
+            is_reference: Filter by type (True=references, False=insights, None=all)
 
         Returns:
             List of note dicts sorted by created_at descending
@@ -244,25 +253,31 @@ class Neo4jAdapter:
             return []
 
         with self.driver.session(database=self.database) as session:
+            # Build WHERE clauses based on filters
+            where_clauses = []
+            params: dict[str, Any] = {}
+
             if author:
-                result = session.run(
-                    """
-                    MATCH (n:Note {author: $author})
-                    OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                    RETURN n, collect(target.id) AS links
-                    ORDER BY n.created_at DESC
-                    """,
-                    author=author,
-                )
-            else:
-                result = session.run(
-                    """
-                    MATCH (n:Note)
-                    OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
-                    RETURN n, collect(target.id) AS links
-                    ORDER BY n.created_at DESC
-                    """
-                )
+                where_clauses.append("n.author = $author")
+                params["author"] = author
+
+            if is_reference is not None:
+                where_clauses.append("n.is_reference = $is_reference")
+                params["is_reference"] = is_reference
+
+            where_clause = ""
+            if where_clauses:
+                where_clause = "WHERE " + " AND ".join(where_clauses)
+
+            query = f"""
+                MATCH (n:Note)
+                {where_clause}
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                RETURN n, collect(target.id) AS links
+                ORDER BY n.created_at DESC
+            """
+
+            result = session.run(query, **params)
 
             notes = []
             for record in result:
@@ -279,6 +294,7 @@ class Neo4jAdapter:
         title: str | None = None,
         tags: list[str] | None = None,
         links: list[str] | None = None,
+        is_reference: bool | None = None,
     ) -> dict[str, Any] | None:
         """Update note content and metadata.
 
@@ -288,6 +304,7 @@ class Neo4jAdapter:
             title: New title
             tags: New tags
             links: New wikilinks
+            is_reference: New reference status (None to keep existing)
 
         Returns:
             Updated note dict or None if not found
@@ -296,25 +313,37 @@ class Neo4jAdapter:
             return None
 
         with self.driver.session(database=self.database) as session:
-            # Update note properties
-            result = session.run(
-                """
+            # Build SET clauses dynamically
+            set_clauses = [
+                "n.content = $content",
+                "n.title = $title",
+                "n.tags = $tags",
+                "n.links = $links",
+                "n.updated_at = $updated_at",
+            ]
+            params: dict[str, Any] = {
+                "id": note_id,
+                "content": content,
+                "title": title or "",
+                "tags": tags or [],
+                "links": links or [],
+                "updated_at": time.time(),
+            }
+
+            # Only update is_reference if explicitly provided
+            if is_reference is not None:
+                set_clauses.append("n.is_reference = $is_reference")
+                params["is_reference"] = is_reference
+
+            set_clause = ", ".join(set_clauses)
+            query = f"""
                 MATCH (n:Note)
                 WHERE n.id = $id
-                SET n.content = $content,
-                    n.title = $title,
-                    n.tags = $tags,
-                    n.links = $links,
-                    n.updated_at = $updated_at
+                SET {set_clause}
                 RETURN n
-                """,
-                id=note_id,
-                content=content,
-                title=title or "",
-                tags=tags or [],
-                links=links or [],
-                updated_at=time.time(),
-            )
+            """
+
+            result = session.run(query, **params)
 
             record = result.single()
             if not record:
@@ -681,6 +710,7 @@ class Neo4jAdapter:
         # Note-specific fields (provide defaults for backward compatibility)
         result["author"] = node.get("author", "anonymous")
         result["tags"] = node.get("tags", [])
+        result["is_reference"] = node.get("is_reference", False)
 
         # Embedding-related fields (present in both Notes and Articles)
         if "content_hash" in node:

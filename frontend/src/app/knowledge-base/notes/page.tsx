@@ -14,11 +14,13 @@ import QuickLists from "@/components/QuickLists/QuickLists";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
+type NoteTypeFilter = "all" | "insights" | "references";
 
 function NotesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagsParam = searchParams.get("tags");
+  const typeParam = searchParams.get("type");
   const selectedTags = tagsParam ? tagsParam.split(",") : [];
 
   const [notes, setNotes] = useState<Note[]>([]);
@@ -29,6 +31,9 @@ function NotesContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showAllTags, setShowAllTags] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<NoteTypeFilter>(
+    typeParam === "insights" || typeParam === "references" ? typeParam : "all"
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -71,9 +76,17 @@ function NotesContent() {
   const otherTags = sortedTags.filter(([_, count]) => count === 1);
   const visibleTags = showAllTags ? sortedTags : topTags;
 
+  // Calculate type counts for filter buttons
+  const insightsCount = notes.filter((n) => !n.is_reference).length;
+  const referencesCount = notes.filter((n) => n.is_reference).length;
+
   // Filter and sort notes
   const filteredNotes = notes
     .filter((note) => {
+      // Filter by type
+      if (typeFilter === "insights" && note.is_reference) return false;
+      if (typeFilter === "references" && !note.is_reference) return false;
+
       // Filter by tags (OR logic)
       if (selectedTags.length > 0) {
         const hasMatchingTag = selectedTags.some((tag) => note.tags.includes(tag));
@@ -103,6 +116,23 @@ function NotesContent() {
       }
     });
 
+  // Build URL with current filters
+  const buildFilterUrl = (options: { tags?: string[]; type?: NoteTypeFilter }) => {
+    const params = new URLSearchParams();
+    const tags = options.tags ?? selectedTags;
+    const type = options.type ?? typeFilter;
+
+    if (tags.length > 0) {
+      params.set("tags", tags.map(encodeURIComponent).join(","));
+    }
+    if (type !== "all") {
+      params.set("type", type);
+    }
+
+    const queryString = params.toString();
+    return queryString ? `/knowledge-base/notes?${queryString}` : "/knowledge-base/notes";
+  };
+
   const handleTagClick = (tag: string) => {
     let newTags: string[];
 
@@ -114,20 +144,21 @@ function NotesContent() {
       newTags = [...selectedTags, tag];
     }
 
-    // Update URL with new tags
-    if (newTags.length > 0) {
-      router.push(`/knowledge-base/notes?tags=${newTags.map(encodeURIComponent).join(",")}`);
-    } else {
-      router.push("/knowledge-base/notes");
-    }
+    router.push(buildFilterUrl({ tags: newTags }));
+  };
+
+  const handleTypeFilter = (newType: NoteTypeFilter) => {
+    setTypeFilter(newType);
+    router.push(buildFilterUrl({ type: newType }));
   };
 
   const clearAllFilters = () => {
     setSearchQuery("");
+    setTypeFilter("all");
     router.push("/knowledge-base/notes");
   };
 
-  const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery);
+  const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery || typeFilter !== "all");
 
   const handleRandomNote = async () => {
     try {
@@ -237,6 +268,34 @@ function NotesContent() {
                 <option value="oldest">Oldest</option>
                 <option value="alphabetical">Alphabetical</option>
               </select>
+            </div>
+
+            {/* Type Filter Section */}
+            <div className={styles.typeFilterSection}>
+              <span className={styles.typeFilterLabel}>Type:</span>
+              <div className={styles.typeButtons}>
+                <button
+                  type="button"
+                  onClick={() => handleTypeFilter("all")}
+                  className={`${styles.typeButton} ${typeFilter === "all" ? styles.typeButtonActive : ""}`}
+                >
+                  All ({notes.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeFilter("insights")}
+                  className={`${styles.typeButton} ${typeFilter === "insights" ? styles.typeButtonActive : ""}`}
+                >
+                  Insights ({insightsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeFilter("references")}
+                  className={`${styles.typeButton} ${typeFilter === "references" ? styles.typeButtonActive : ""}`}
+                >
+                  References ({referencesCount})
+                </button>
+              </div>
             </div>
 
             {/* Tag Filter Section */}
@@ -352,9 +411,12 @@ function NotesContent() {
                   >
                     <div className={styles.noteCardContent}>
                       <div className={styles.noteInfo}>
-                        {/* Note ID and title */}
+                        {/* Note ID and type badge */}
                         <div className={styles.noteIdRow}>
                           <code className={styles.noteId}>{note.id}</code>
+                          {note.is_reference && (
+                            <span className={styles.referenceBadge}>Reference</span>
+                          )}
                         </div>
 
                         {note.title && <h3 className={styles.noteTitle}>{note.title}</h3>}

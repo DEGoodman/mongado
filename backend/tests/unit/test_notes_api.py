@@ -601,3 +601,182 @@ class TestEntryPointDiscovery:
         response = client.get("/api/notes/central")
         assert response.status_code == 200
         assert response.json()["count"] == 0
+
+
+class TestIsReferenceField:
+    """Tests for is_reference field (quick references vs insights)."""
+
+    def test_create_reference_note(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Can create notes marked as references."""
+        response = client.post(
+            "/api/notes",
+            json={
+                "content": "BICEPS: Belonging, Improvement, Choice, Equality, Predictability, Significance",
+                "title": "BICEPS Framework",
+                "is_reference": True,
+            },
+            headers=admin_headers,
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_reference"] is True
+        assert data["title"] == "BICEPS Framework"
+
+    def test_create_note_defaults_to_insight(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Notes default to insights (is_reference=false)."""
+        response = client.post(
+            "/api/notes",
+            json={"content": "My observation about team dynamics"},
+            headers=admin_headers,
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_reference"] is False
+
+    def test_filter_notes_by_insights(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Can filter notes to show only insights."""
+        # Create one insight and one reference
+        client.post(
+            "/api/notes",
+            json={"content": "Insight note"},
+            headers=admin_headers,
+        )
+        client.post(
+            "/api/notes",
+            json={"content": "Reference note", "is_reference": True},
+            headers=admin_headers,
+        )
+
+        # Filter for insights only
+        response = client.get("/api/notes?is_reference=false")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert all(not note["is_reference"] for note in data["notes"])
+        assert data["notes"][0]["content"] == "Insight note"
+
+    def test_filter_notes_by_references(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Can filter notes to show only references."""
+        # Create one insight and one reference
+        client.post(
+            "/api/notes",
+            json={"content": "Insight note"},
+            headers=admin_headers,
+        )
+        client.post(
+            "/api/notes",
+            json={"content": "Reference note", "is_reference": True},
+            headers=admin_headers,
+        )
+
+        # Filter for references only
+        response = client.get("/api/notes?is_reference=true")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 1
+        assert all(note["is_reference"] for note in data["notes"])
+        assert data["notes"][0]["content"] == "Reference note"
+
+    def test_list_all_notes_without_filter(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Without filter, returns all notes (insights and references)."""
+        # Create one insight and one reference
+        client.post(
+            "/api/notes",
+            json={"content": "Insight note"},
+            headers=admin_headers,
+        )
+        client.post(
+            "/api/notes",
+            json={"content": "Reference note", "is_reference": True},
+            headers=admin_headers,
+        )
+
+        # List all notes without filter
+        response = client.get("/api/notes")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["count"] == 2
+
+    def test_update_note_to_reference(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Can update an insight to become a reference."""
+        # Create insight
+        create_response = client.post(
+            "/api/notes",
+            json={"content": "Originally an insight"},
+            headers=admin_headers,
+        )
+        note_id = create_response.json()["id"]
+        assert create_response.json()["is_reference"] is False
+
+        # Update to reference
+        update_response = client.put(
+            f"/api/notes/{note_id}",
+            json={"content": "Now a reference", "is_reference": True},
+            headers=admin_headers,
+        )
+
+        assert update_response.status_code == 200
+        data = update_response.json()
+        assert data["is_reference"] is True
+        assert data["content"] == "Now a reference"
+
+    def test_update_note_without_changing_is_reference(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Updating note without is_reference preserves existing value."""
+        # Create reference
+        create_response = client.post(
+            "/api/notes",
+            json={"content": "A reference", "is_reference": True},
+            headers=admin_headers,
+        )
+        note_id = create_response.json()["id"]
+
+        # Update content without changing is_reference
+        update_response = client.put(
+            f"/api/notes/{note_id}",
+            json={"content": "Updated reference content"},
+            headers=admin_headers,
+        )
+
+        assert update_response.status_code == 200
+        data = update_response.json()
+        assert data["is_reference"] is True  # Preserved
+        assert data["content"] == "Updated reference content"
+
+    def test_get_note_includes_is_reference(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Getting a single note includes is_reference field."""
+        # Create reference note
+        create_response = client.post(
+            "/api/notes",
+            json={"content": "DORA metrics", "is_reference": True},
+            headers=admin_headers,
+        )
+        note_id = create_response.json()["id"]
+
+        # Get note
+        response = client.get(f"/api/notes/{note_id}")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "is_reference" in data
+        assert data["is_reference"] is True

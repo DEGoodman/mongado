@@ -50,6 +50,7 @@ export default function NoteDetailPage() {
   const [editContent, setEditContent] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editTags, setEditTags] = useState("");
+  const [editIsReference, setEditIsReference] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
@@ -79,6 +80,7 @@ export default function NoteDetailPage() {
         setEditContent(noteData.content);
         setEditTitle(noteData.title || "");
         setEditTags(noteData.tags.join(", "));
+        setEditIsReference(noteData.is_reference || false);
 
         logger.info("Note loaded", {
           id: noteData.id,
@@ -167,6 +169,7 @@ export default function NoteDetailPage() {
         content: editContent,
         title: editTitle.trim() || undefined,
         tags: tagArray.length > 0 ? tagArray : undefined,
+        is_reference: editIsReference,
       });
 
       setNote(updatedNote);
@@ -294,6 +297,7 @@ export default function NoteDetailPage() {
       setEditContent(note.content);
       setEditTitle(note.title || "");
       setEditTags(note.tags.join(", "));
+      setEditIsReference(note.is_reference || false);
     }
     setIsEditing(false);
     setError(null);
@@ -382,7 +386,12 @@ export default function NoteDetailPage() {
 
               {/* Title and metadata */}
               <div className={styles.titleRow}>
-                <code className={styles.noteId}>{note.id}</code>
+                <div className={styles.noteIdRow}>
+                  <code className={styles.noteId}>{note.id}</code>
+                  {note.is_reference && (
+                    <span className={styles.referenceBadge}>Reference</span>
+                  )}
+                </div>
                 <h1 className={styles.noteTitle}>{note.title || "Untitled Note"}</h1>
               </div>
 
@@ -477,6 +486,21 @@ export default function NoteDetailPage() {
                       placeholder="Comma-separated tags"
                       className="w-full rounded-lg border border-gray-300 px-3 py-2"
                     />
+                  </div>
+
+                  <div className={styles.referenceToggle}>
+                    <label className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={editIsReference}
+                        onChange={(e) => setEditIsReference(e.target.checked)}
+                        className={styles.checkbox}
+                      />
+                      <span className={styles.checkboxText}>Quick Reference</span>
+                    </label>
+                    <p className={styles.formHint}>
+                      Check for checklists, frameworks, acronyms — not personal insights
+                    </p>
                   </div>
 
                   <div>

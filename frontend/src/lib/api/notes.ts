@@ -13,6 +13,7 @@ export interface Note {
   content: string;
   author: string;
   is_ephemeral: boolean;
+  is_reference: boolean;
   tags: string[];
   created_at: number | string;
   updated_at: number | string;
@@ -24,12 +25,14 @@ export interface CreateNoteRequest {
   content: string;
   title?: string;
   tags?: string[];
+  is_reference?: boolean;
 }
 
 export interface UpdateNoteRequest {
   content: string;
   title?: string;
   tags?: string[];
+  is_reference?: boolean;
 }
 
 export interface NotesListResponse {
@@ -76,11 +79,24 @@ export async function createNote(request: CreateNoteRequest): Promise<Note> {
   return note;
 }
 
+export interface ListNotesOptions {
+  /** Filter by type: true for references, false for insights, undefined for all */
+  is_reference?: boolean;
+}
+
 /**
  * List all notes
  */
-export async function listNotes(): Promise<NotesListResponse> {
-  const response = await fetch(`${API_URL}/api/notes`, {
+export async function listNotes(options?: ListNotesOptions): Promise<NotesListResponse> {
+  const params = new URLSearchParams();
+  if (options?.is_reference !== undefined) {
+    params.set("is_reference", String(options.is_reference));
+  }
+
+  const queryString = params.toString();
+  const url = queryString ? `${API_URL}/api/notes?${queryString}` : `${API_URL}/api/notes`;
+
+  const response = await fetch(url, {
     headers: getHeaders(),
   });
 

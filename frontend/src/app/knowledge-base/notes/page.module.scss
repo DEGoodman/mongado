@@ -169,6 +169,47 @@
   }
 }
 
+// Type Filter Section
+.typeFilterSection {
+  .typeFilterLabel {
+    display: block;
+    @include text-secondary;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-2;
+  }
+
+  .typeButtons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+  }
+
+  .typeButton {
+    padding: $spacing-2 $spacing-3;
+    border: $border-default;
+    border-radius: $border-radius-button;
+    background-color: $white;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+    font-family: $font-family-primary;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(.typeButtonActive) {
+      background-color: $neutral-50;
+      border-color: $blue-300;
+    }
+
+    &.typeButtonActive {
+      background-color: $blue-50;
+      border-color: $blue-500;
+      color: $blue-700;
+    }
+  }
+}
+
 // Tag Filter Section
 .tagFilterSection {
   padding: $spacing-4;
@@ -546,6 +587,16 @@
           font-family: $font-family-mono;
           @include text-secondary;
           color: $color-secondary;
+        }
+
+        .referenceBadge {
+          display: inline-block;
+          padding: 2px 8px;
+          background-color: $amber-100;
+          color: $amber-800;
+          border-radius: $border-radius-sm;
+          font-size: 11px;
+          font-weight: $font-weight-medium;
         }
       }
 
