@@ -146,10 +146,11 @@ DOWNTIME_START=$(date +%s)
 docker compose -f "$COMPOSE_FILE" stop neo4j
 
 # Run neo4j-admin load in a temporary container
+# Run as root to ensure write access to data volume
 log_info "Restoring database with neo4j-admin..."
 
 # Mount the backup subdirectory which contains neo4j.dump
-if docker run --rm \
+if docker run --rm --user root \
     -v "${VOLUME_NAME}:/data" \
     -v "${BACKUP_SUBDIR}:/backups:ro" \
     "${NEO4J_IMAGE}" \
