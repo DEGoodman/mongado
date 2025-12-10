@@ -32,7 +32,7 @@ fi
 
 # Type checking
 echo -n "  Type checking... "
-if docker compose exec -T backend mypy main.py > /dev/null 2>&1; then
+if docker compose exec -T backend mypy . > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${YELLOW}⚠${NC} (type errors exist but not blocking)"

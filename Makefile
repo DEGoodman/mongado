@@ -103,7 +103,7 @@ format-backend: ## Format backend code (ruff)
 	docker compose exec backend ruff check --fix .
 
 typecheck-backend: ## Run backend type checker (mypy)
-	docker compose exec backend mypy main.py
+	docker compose exec backend mypy .
 
 security: ## Run backend security checks (bandit)
 	docker compose exec backend bandit -r . -c pyproject.toml
@@ -138,7 +138,7 @@ typecheck: typecheck-backend typecheck-frontend ## Run all type checkers
 ci: ## Run full CI pipeline (lint, typecheck, security, tests)
 	@echo "=== Backend CI ==="
 	docker compose exec backend ruff check .
-	docker compose exec backend mypy main.py
+	docker compose exec backend mypy .
 	docker compose exec backend bandit -r . -c pyproject.toml
 	docker compose exec backend pytest tests/ --cov
 	@echo "\n=== Frontend CI ==="
