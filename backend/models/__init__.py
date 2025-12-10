@@ -1,5 +1,13 @@
 """Pydantic models for API requests and responses."""
 
+from models.admin import (
+    BackupCreateResponse,
+    BackupInfo,
+    BackupListResponse,
+    DatabaseHealthResponse,
+    RestoreRequest,
+    RestoreResponse,
+)
 from models.ai import (
     BatchConceptExtractionResponse,
     BatchConceptSuggestion,
@@ -37,6 +45,13 @@ from models.resource import (
 from models.search import SearchRequest, SearchResponse, SearchResult
 
 __all__ = [
+    # Admin models
+    "BackupCreateResponse",
+    "BackupInfo",
+    "BackupListResponse",
+    "DatabaseHealthResponse",
+    "RestoreRequest",
+    "RestoreResponse",
     # AI models
     "BatchConceptExtractionResponse",
     "BatchConceptSuggestion",

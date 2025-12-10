@@ -21,6 +21,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create pre-deployment backup
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "📦 Creating pre-deployment backup..."
+
+          # Attempt backup via API (may fail on first deployment)
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.mongado.com/api/admin/backup \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
+            --max-time 300 2>&1 || echo -e "\n000")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Pre-deployment backup created successfully"
+            echo "$BODY" | jq '.'
+            BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
+            echo "backup_file=$BACKUP_FILE" >> $GITHUB_OUTPUT
+            echo "Backup file: $BACKUP_FILE"
+          else
+            echo "⚠️ Pre-deployment backup failed (HTTP $HTTP_CODE)"
+            echo "This is expected on first deployment or if API is unreachable"
+            echo "Response: $BODY"
+            echo "Continuing with deployment..."
+          fi
+        id: pre_backup
+        continue-on-error: true
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -146,12 +175,67 @@ jobs:
             docker image prune -f
             docker builder prune -f
 
-            # Create post-deployment backup
-            echo "💾 Creating post-deployment backup..."
-            docker compose -f docker-compose.prod.yml exec -T neo4j /scripts/backup_neo4j.sh || echo "⚠️  Backup failed, but deployment was successful"
-
             echo "✅ Deployment complete!"
           EOF
+
+      - name: Check database health
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "🏥 Checking database health..."
+
+          HEALTH=$(curl -s https://api.mongado.com/api/admin/health/database || echo '{"status":"unreachable"}')
+          echo "$HEALTH" | jq '.'
+
+          # Check if database needs restore
+          NEEDS_RESTORE=$(echo "$HEALTH" | jq -r '.needs_restore // false')
+          if [ "$NEEDS_RESTORE" = "true" ]; then
+            echo "⚠️ Database is empty but backups are available"
+            echo "🔄 Triggering automatic restore from latest backup..."
+
+            RESTORE_RESPONSE=$(curl -s -X POST https://api.mongado.com/api/admin/restore \
+              -H "Authorization: Bearer $ADMIN_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{}' \
+              --max-time 600)
+
+            echo "$RESTORE_RESPONSE" | jq '.'
+
+            RESTORE_STATUS=$(echo "$RESTORE_RESPONSE" | jq -r '.status // "failed"')
+            if [ "$RESTORE_STATUS" = "success" ]; then
+              echo "✅ Database restored successfully"
+            else
+              echo "❌ Database restore failed"
+              exit 1
+            fi
+          else
+            echo "✅ Database is healthy ($(echo "$HEALTH" | jq -r '.notes_count // 0') notes)"
+          fi
+
+      - name: Create post-deployment backup
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "💾 Creating post-deployment backup..."
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.mongado.com/api/admin/backup \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
+            --max-time 300 2>&1 || echo -e "\n000")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Post-deployment backup created successfully"
+            echo "$BODY" | jq '.'
+            BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
+            echo "Backup file: $BACKUP_FILE"
+          else
+            echo "⚠️ Post-deployment backup failed (HTTP $HTTP_CODE)"
+            echo "Response: $BODY"
+            echo "Deployment was successful, but backup should be created manually"
+          fi
+        continue-on-error: true
 
       - name: Deployment notification
         if: always()
