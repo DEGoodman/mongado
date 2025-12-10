@@ -168,138 +168,158 @@ export default function ToolboxPage() {
       </header>
 
       <main className={styles.main}>
-        {/* Search and Filter Bar */}
-        <div className={styles.filterBar}>
-          <div className={styles.searchBox}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search references..."
-              className={styles.searchInput}
-            />
-          </div>
+        <div className={styles.contentGrid}>
+          {/* Sidebar - Filters */}
+          <aside className={styles.sidebar}>
+            {/* Search */}
+            <div className={styles.searchBar}>
+              <input
+                type="text"
+                placeholder="Search references..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={styles.searchInput}
+              />
+            </div>
 
-          <div className={styles.categoryFilters}>
-            <button
-              type="button"
-              onClick={() => setCategoryFilter("all")}
-              className={`${styles.categoryButton} ${categoryFilter === "all" ? styles.active : ""}`}
-            >
-              All ({references.length})
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setCategoryFilter(cat)}
-                className={`${styles.categoryButton} ${categoryFilter === cat ? styles.active : ""}`}
-              >
-                {cat} ({references.filter((r) => r.tags.includes(cat)).length})
+            {/* Category Filter Section */}
+            {categories.length > 0 && (
+              <div className={styles.categoryFilterSection}>
+                <div className={styles.categoryFilterHeader}>
+                  <span className={styles.categoryFilterLabel}>Filter by category:</span>
+                </div>
+                <div className={styles.categoryBadges}>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter("all")}
+                    className={`${styles.categoryBadge} ${categoryFilter === "all" ? styles.categoryBadgeActive : ""}`}
+                  >
+                    All ({references.length})
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`${styles.categoryBadge} ${categoryFilter === cat ? styles.categoryBadgeActive : ""}`}
+                    >
+                      {cat} ({references.filter((r) => r.tags.includes(cat)).length})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className={styles.clearAllButtonSidebar}>
+                Clear all filters
               </button>
+            )}
+          </aside>
+
+          {/* Main Content - References */}
+          <div className={styles.referencesContent}>
+            {/* Results Count */}
+            <div className={styles.resultsBar}>
+              <div className={styles.referenceCountSection}>
+                {categoryFilter !== "all" && (
+                  <div className={styles.activeFilters}>Filtering by: {categoryFilter}</div>
+                )}
+                <div className={styles.referenceCount}>
+                  {filteredReferences.length} reference{filteredReferences.length !== 1 ? "s" : ""}
+                  {hasActiveFilters && " matching filters"}
+                </div>
+              </div>
+            </div>
+
+            {/* Empty State */}
+            {references.length === 0 && (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📦</div>
+                <h3 className={styles.emptyTitle}>No references yet</h3>
+                <p className={styles.emptyMessage}>
+                  Quick references like frameworks, checklists, and acronyms will appear here.
+                </p>
+                <p className={styles.emptyHint}>
+                  Create a note and check &quot;Quick Reference&quot; to add it to your toolbox.
+                </p>
+                <Link href="/knowledge-base/notes/new" className={styles.createButton}>
+                  Create Reference
+                </Link>
+              </div>
+            )}
+
+            {/* No Results for Filter */}
+            {references.length > 0 && filteredReferences.length === 0 && (
+              <div className={styles.noResults}>
+                <p>No references match your filters.</p>
+                <button type="button" onClick={clearFilters} className={styles.clearFiltersButton}>
+                  Clear filters
+                </button>
+              </div>
+            )}
+
+            {/* Reference Cards - Grouped by Category */}
+            {Object.entries(groupedReferences).map(([category, refs]) => (
+              <div key={category} className={styles.categorySection}>
+                <h2 className={styles.categoryTitle}>
+                  {category} <span className={styles.categoryCount}>({refs.length})</span>
+                </h2>
+                <div className={styles.referenceGrid}>
+                  {refs.map((ref) => (
+                    <Link
+                      key={ref.id}
+                      href={`/knowledge-base/notes/${ref.id}`}
+                      className={styles.referenceCard}
+                    >
+                      <div className={styles.cardContent}>
+                        <div className={styles.cardInfo}>
+                          {/* Note ID and title */}
+                          <div className={styles.cardIdRow}>
+                            <code className={styles.cardId}>{ref.id}</code>
+                            <span className={styles.referenceBadge}>Reference</span>
+                          </div>
+
+                          {ref.title && <h3 className={styles.cardTitle}>{ref.title}</h3>}
+
+                          {/* Content preview */}
+                          <p className={styles.cardPreview}>{ref.content_preview || ref.content}</p>
+
+                          {/* Tags (skip first tag as it's the category) */}
+                          {ref.tags.length > 1 && (
+                            <div className={styles.cardTags}>
+                              {ref.tags.slice(1).map((tag) => (
+                                <span key={tag} className={styles.tag}>
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Arrow icon */}
+                        <svg
+                          className={styles.cardArrow}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-
-          {hasActiveFilters && (
-            <button type="button" onClick={clearFilters} className={styles.clearButton}>
-              Clear filters
-            </button>
-          )}
         </div>
-
-        {/* Results Count */}
-        <div className={styles.resultsBar}>
-          <span className={styles.resultsCount}>
-            {filteredReferences.length} reference{filteredReferences.length !== 1 ? "s" : ""}
-            {hasActiveFilters && " matching filters"}
-          </span>
-        </div>
-
-        {/* Empty State */}
-        {references.length === 0 && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>📦</div>
-            <h3 className={styles.emptyTitle}>No references yet</h3>
-            <p className={styles.emptyMessage}>
-              Quick references like frameworks, checklists, and acronyms will appear here.
-            </p>
-            <p className={styles.emptyHint}>
-              Create a note and check &quot;Quick Reference&quot; to add it to your toolbox.
-            </p>
-            <Link href="/knowledge-base/notes/new" className={styles.createButton}>
-              Create Reference
-            </Link>
-          </div>
-        )}
-
-        {/* No Results for Filter */}
-        {references.length > 0 && filteredReferences.length === 0 && (
-          <div className={styles.noResults}>
-            <p>No references match your filters.</p>
-            <button type="button" onClick={clearFilters} className={styles.clearFiltersButton}>
-              Clear filters
-            </button>
-          </div>
-        )}
-
-        {/* Reference Cards - Grouped by Category */}
-        {Object.entries(groupedReferences).map(([category, refs]) => (
-          <div key={category} className={styles.categorySection}>
-            <h2 className={styles.categoryTitle}>
-              {category} <span className={styles.categoryCount}>({refs.length})</span>
-            </h2>
-            <div className={styles.referenceGrid}>
-              {refs.map((ref) => (
-                <Link
-                  key={ref.id}
-                  href={`/knowledge-base/notes/${ref.id}`}
-                  className={styles.referenceCard}
-                >
-                  <div className={styles.cardContent}>
-                    <div className={styles.cardInfo}>
-                      {/* Note ID and title */}
-                      <div className={styles.cardIdRow}>
-                        <code className={styles.cardId}>{ref.id}</code>
-                        <span className={styles.referenceBadge}>Reference</span>
-                      </div>
-
-                      {ref.title && <h3 className={styles.cardTitle}>{ref.title}</h3>}
-
-                      {/* Content preview */}
-                      <p className={styles.cardPreview}>{ref.content_preview || ref.content}</p>
-
-                      {/* Tags (skip first tag as it's the category) */}
-                      {ref.tags.length > 1 && (
-                        <div className={styles.cardTags}>
-                          {ref.tags.slice(1).map((tag) => (
-                            <span key={tag} className={styles.tag}>
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Arrow icon */}
-                    <svg
-                      className={styles.cardArrow}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
       </main>
     </div>
   );

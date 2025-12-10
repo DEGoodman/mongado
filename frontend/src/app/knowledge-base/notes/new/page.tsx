@@ -23,7 +23,8 @@ function NewNoteContent() {
 
   // Check if AI features should be available
   // AI is available if: user is authenticated OR unauthenticated AI is allowed
-  const aiAvailable = isAuthenticated() || config.allowUnauthenticatedAI;
+  // Use state to avoid hydration mismatch (localStorage only available on client)
+  const [aiAvailable, setAiAvailable] = useState(config.allowUnauthenticatedAI);
 
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
@@ -49,6 +50,11 @@ function NewNoteContent() {
   const [showFirstPersonReminder, setShowFirstPersonReminder] = useState(true);
   const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+
+  // Check authentication status after hydration (client-side only)
+  useEffect(() => {
+    setAiAvailable(isAuthenticated() || config.allowUnauthenticatedAI);
+  }, []);
 
   // Load draft from localStorage on mount
   useEffect(() => {
