@@ -34,19 +34,34 @@ gh run watch
 ```
 
 **Expected CI/CD Steps:**
-1. ✅ Pre-deployment backup succeeds (new step)
+1. ✅ Pre-deployment backup succeeds (with retry/error handling)
 2. ✅ SSH into droplet
 3. ✅ Pull latest code
-4. ✅ Rebuild containers
-5. ✅ Health checks pass
-6. ✅ Database health check runs
-7. ✅ Auto-restore (if needed)
-8. ✅ Post-deployment backup succeeds (updated to use API)
+4. ✅ Tag deployment for rollback (new)
+5. ✅ Rebuild containers
+6. ✅ Health checks pass (all with retry logic):
+   - Backend (localhost:8000): 5 retries x 5s = 25s max
+   - Frontend (localhost:3000): 5 retries x 5s = 25s max
+7. ✅ Database health check runs (12 retries x 5s = 60s max)
+8. ✅ Auto-restore (if needed)
+9. ✅ Post-deployment backup succeeds (with retry/error handling)
+10. ✅ Verify deployment (external endpoints):
+    - Backend API (https://api.mongado.com): 6 retries x 10s = 60s max
+    - Frontend (https://mongado.com): 6 retries x 10s = 60s max
 
 **What to watch for:**
-- Pre-deployment backup should complete in ~60 seconds
+- Pre-deployment backup should complete in ~60 seconds (may skip if API not ready)
+- Deployment gets tagged with timestamp (e.g., `deployment-1702234567`)
+- All health checks show retry attempts if services aren't ready immediately
 - If database is empty, auto-restore should trigger
 - Post-deployment backup should use API (not SSH)
+- External endpoint verification should succeed within 60 seconds
+
+**Retry Logic Summary:**
+- **Internal health checks** (localhost): 5 attempts x 5s = max 25s wait
+- **Database health check** (API): 12 attempts x 5s = max 60s wait
+- **External verification**: 6 attempts x 10s = max 60s wait
+- Total max deployment time: ~15 minutes (including build, health checks, backups)
 
 ### 2. Verify API Endpoints
 
@@ -317,7 +332,42 @@ Check GitHub Actions logs for:
 
 If any issues occur during testing:
 
-### 1. If Backup API Fails
+### 1. Automatic Rollback (Issue #127 - Tag-Based)
+
+**NEW**: If deployment fails, GitHub Actions will automatically trigger rollback to the previous successful deployment.
+
+The rollback process:
+1. Finds the previous deployment tag (e.g., `deployment-1702234567`)
+2. Resets git to that tag
+3. Rebuilds and restarts containers
+4. Verifies backend and frontend health
+5. Reports rollback status
+
+**Fallback**: If no deployment tags exist (first deployment), falls back to `HEAD~1`.
+
+**View deployment tags:**
+```bash
+ssh your-droplet
+cd /opt/mongado
+git tag -l 'deployment-*' | sort -V | tail -10
+```
+
+### 2. Manual Rollback to Specific Deployment
+
+```bash
+ssh your-droplet
+cd /opt/mongado
+
+# List recent deployments
+git tag -l 'deployment-*' | sort -V | tail -10
+
+# Rollback to specific tag
+git reset --hard deployment-TIMESTAMP
+docker compose -f docker-compose.prod.yml build
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### 3. If Backup API Fails
 
 ```bash
 # Fallback to manual backup via SSH
@@ -325,7 +375,7 @@ ssh your-droplet
 docker compose -f docker-compose.prod.yml exec neo4j /scripts/backup_neo4j.sh
 ```
 
-### 2. If Restore Fails
+### 4. If Restore Fails
 
 ```bash
 # Manual restore via SSH
@@ -333,16 +383,19 @@ ssh your-droplet
 docker compose -f docker-compose.prod.yml exec neo4j /scripts/restore_neo4j.sh
 ```
 
-### 3. If Deployment Breaks Site
+### 5. Emergency Rollback (Outside CI/CD)
 
 ```bash
-# Revert to previous commit
+# Revert to previous commit and force push
 git revert HEAD
 git push origin main
 
 # Or manually restore from backup on droplet
 ssh your-droplet
-docker compose -f docker-compose.prod.yml exec neo4j /scripts/restore_neo4j.sh
+cd /opt/mongado
+git tag -l 'deployment-*' | sort -V | tail -2 | head -1  # Get previous tag
+git reset --hard deployment-PREVIOUS
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## Success Criteria

@@ -102,6 +102,11 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
+            # Tag this deployment for potential rollback
+            DEPLOYMENT_TAG="deployment-$(date +%s)"
+            echo "🏷️  Tagging deployment as: $DEPLOYMENT_TAG"
+            git tag "$DEPLOYMENT_TAG" || echo "⚠️  Failed to create deployment tag (non-critical)"
+
             # Create/update environment files
             echo "🔐 Setting up environment variables..."
 
@@ -166,15 +171,26 @@ jobs:
               fi
             done
 
-            # Check frontend health (single attempt is fine, it starts faster)
+            # Check frontend health with retry logic
             echo "🏥 Checking frontend health..."
-            if curl -f http://localhost:3000/ > /dev/null 2>&1; then
-              echo "✅ Frontend is healthy"
-            else
-              echo "❌ Frontend health check failed"
-              docker compose -f docker-compose.prod.yml logs frontend
-              exit 1
-            fi
+            RETRY_COUNT=0
+            MAX_RETRIES=5
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if curl -f http://localhost:3000/ > /dev/null 2>&1; then
+                echo "✅ Frontend is healthy"
+                break
+              else
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "⏳ Frontend not ready yet, retrying in 5s... ($RETRY_COUNT/$MAX_RETRIES)"
+                  sleep 5
+                else
+                  echo "❌ Frontend health check failed after $MAX_RETRIES attempts"
+                  docker compose -f docker-compose.prod.yml logs frontend
+                  exit 1
+                fi
+              fi
+            done
 
             # Clean up old images and build cache
             echo "🧹 Cleaning up old Docker images and build cache..."
@@ -290,23 +306,58 @@ jobs:
       - name: Verify deployment
         run: |
           echo "🔍 Verifying production deployment..."
-          sleep 5
+          echo "⏳ Waiting for external endpoints to be ready..."
 
-          # Check backend API
-          BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.mongado.com/ || echo "000")
-          if [ "$BACKEND_STATUS" = "200" ]; then
-            echo "✅ Backend API responding (Status: $BACKEND_STATUS)"
-          else
-            echo "⚠️  Backend API status: $BACKEND_STATUS"
+          # Check backend API with retry logic
+          echo "Checking backend API..."
+          RETRY_COUNT=0
+          MAX_RETRIES=6
+          BACKEND_READY=false
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.mongado.com/ || echo "000")
+            if [ "$BACKEND_STATUS" = "200" ]; then
+              echo "✅ Backend API responding (Status: $BACKEND_STATUS)"
+              BACKEND_READY=true
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Backend API not ready (Status: $BACKEND_STATUS), retrying in 10s... ($RETRY_COUNT/$MAX_RETRIES)"
+                sleep 10
+              else
+                echo "❌ Backend API failed to respond after $MAX_RETRIES attempts (Status: $BACKEND_STATUS)"
+              fi
+            fi
+          done
+
+          # Check frontend with retry logic
+          echo "Checking frontend..."
+          RETRY_COUNT=0
+          FRONTEND_READY=false
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://mongado.com/ || echo "000")
+            if [ "$FRONTEND_STATUS" = "200" ]; then
+              echo "✅ Frontend responding (Status: $FRONTEND_STATUS)"
+              FRONTEND_READY=true
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⏳ Frontend not ready (Status: $FRONTEND_STATUS), retrying in 10s... ($RETRY_COUNT/$MAX_RETRIES)"
+                sleep 10
+              else
+                echo "❌ Frontend failed to respond after $MAX_RETRIES attempts (Status: $FRONTEND_STATUS)"
+              fi
+            fi
+          done
+
+          # Fail if either endpoint didn't become ready
+          if [ "$BACKEND_READY" = "false" ] || [ "$FRONTEND_READY" = "false" ]; then
+            echo "❌ Deployment verification failed - services not responding"
+            exit 1
           fi
 
-          # Check frontend
-          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://mongado.com/ || echo "000")
-          if [ "$FRONTEND_STATUS" = "200" ]; then
-            echo "✅ Frontend responding (Status: $FRONTEND_STATUS)"
-          else
-            echo "⚠️  Frontend status: $FRONTEND_STATUS"
-          fi
+          echo "✅ All external endpoints verified"
 
   # Rollback if deployment fails
   rollback:
@@ -338,11 +389,49 @@ jobs:
 
             cd /opt/mongado
 
-            # Rollback to previous git commit
-            git reset --hard HEAD~1
+            # Find the previous successful deployment tag
+            # List all deployment tags, sort by timestamp, and get the second-to-last one
+            PREV_TAG=$(git tag -l 'deployment-*' | sort -V | tail -2 | head -1)
+
+            if [ -z "$PREV_TAG" ]; then
+              echo "❌ No previous deployment tag found"
+              echo "⚠️  Falling back to HEAD~1 (use with caution)"
+              git reset --hard HEAD~1
+            else
+              echo "🔄 Rolling back to previous deployment: $PREV_TAG"
+              git reset --hard "$PREV_TAG"
+
+              # Verify the rollback target exists
+              if ! git rev-parse --verify "$PREV_TAG" >/dev/null 2>&1; then
+                echo "❌ Rollback tag $PREV_TAG does not exist"
+                exit 1
+              fi
+
+              echo "✅ Rolled back to $PREV_TAG"
+            fi
 
             # Restart containers with previous version
+            echo "🐳 Restarting containers with previous version..."
+            docker compose -f docker-compose.prod.yml build
             docker compose -f docker-compose.prod.yml up -d
+
+            # Wait for services to restart
+            echo "⏳ Waiting for services to restart..."
+            sleep 15
+
+            # Verify rollback was successful
+            echo "🏥 Verifying rollback..."
+            if curl -f http://localhost:8000/ > /dev/null 2>&1; then
+              echo "✅ Backend is healthy after rollback"
+            else
+              echo "⚠️  Backend health check failed after rollback"
+            fi
+
+            if curl -f http://localhost:3000/ > /dev/null 2>&1; then
+              echo "✅ Frontend is healthy after rollback"
+            else
+              echo "⚠️  Frontend health check failed after rollback"
+            fi
 
             echo "✅ Rollback complete"
           EOF
