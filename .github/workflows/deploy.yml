@@ -37,10 +37,16 @@ jobs:
 
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✅ Pre-deployment backup created successfully"
-            echo "$BODY" | jq '.'
-            BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
-            echo "backup_file=$BACKUP_FILE" >> $GITHUB_OUTPUT
-            echo "Backup file: $BACKUP_FILE"
+            # Only parse JSON if it's valid
+            if echo "$BODY" | jq -e . >/dev/null 2>&1; then
+              echo "$BODY" | jq '.'
+              BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
+              echo "backup_file=$BACKUP_FILE" >> $GITHUB_OUTPUT
+              echo "Backup file: $BACKUP_FILE"
+            else
+              echo "⚠️ Response is not valid JSON:"
+              echo "$BODY"
+            fi
           else
             echo "⚠️ Pre-deployment backup failed (HTTP $HTTP_CODE)"
             echo "This is expected on first deployment or if API is unreachable"
@@ -183,8 +189,37 @@ jobs:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           echo "🏥 Checking database health..."
+          echo "⏳ Waiting for API to be ready (up to 60 seconds)..."
 
-          HEALTH=$(curl -s https://api.mongado.com/api/admin/health/database || echo '{"status":"unreachable"}')
+          # Wait for API to be ready with retry logic
+          MAX_ATTEMPTS=12
+          ATTEMPT=0
+          API_READY=false
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+            # Check if API returns valid JSON
+            HTTP_CODE=$(curl -s -o /tmp/health.json -w "%{http_code}" https://api.mongado.com/api/admin/health/database)
+
+            if [ "$HTTP_CODE" = "200" ] && jq -e . /tmp/health.json >/dev/null 2>&1; then
+              echo "✅ API is ready"
+              API_READY=true
+              break
+            else
+              echo "API not ready yet (HTTP $HTTP_CODE), waiting 5 seconds..."
+              sleep 5
+            fi
+          done
+
+          if [ "$API_READY" = "false" ]; then
+            echo "⚠️ API did not become ready in time, skipping health check"
+            exit 0
+          fi
+
+          # Parse health response
+          HEALTH=$(cat /tmp/health.json)
           echo "$HEALTH" | jq '.'
 
           # Check if database needs restore
@@ -227,9 +262,15 @@ jobs:
 
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✅ Post-deployment backup created successfully"
-            echo "$BODY" | jq '.'
-            BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
-            echo "Backup file: $BACKUP_FILE"
+            # Only parse JSON if it's valid
+            if echo "$BODY" | jq -e . >/dev/null 2>&1; then
+              echo "$BODY" | jq '.'
+              BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
+              echo "Backup file: $BACKUP_FILE"
+            else
+              echo "⚠️ Response is not valid JSON:"
+              echo "$BODY"
+            fi
           else
             echo "⚠️ Post-deployment backup failed (HTTP $HTTP_CODE)"
             echo "Response: $BODY"
