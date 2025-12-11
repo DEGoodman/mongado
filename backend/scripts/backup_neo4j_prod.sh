@@ -94,7 +94,7 @@ docker stop "${NEO4J_CONTAINER}"
 
 # Run neo4j-admin dump in a temporary container
 log_info "Creating backup with neo4j-admin..."
-if docker run --rm \
+if docker run --rm --user root \
     -v "${VOLUME_NAME}:/data" \
     -v "${BACKUP_SUBDIR}:/backups" \
     "${NEO4J_IMAGE}" \
