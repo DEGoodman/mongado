@@ -68,10 +68,12 @@ services:
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set in production}
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_ENABLED=true
+      - COMPOSE_FILE=docker-compose.prod.yml  # Enable prod backup path detection
     env_file:
       - ./backend/.env
     volumes:
       - ./backend/static:/app/static:ro  # Mount static files for hot-reload without restart
+      - /var/mongado-backups:/var/mongado-backups:ro  # Backup directory for health checks
     networks:
       - mongado-network
     depends_on:
