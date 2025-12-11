@@ -50,7 +50,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-# Create backup directory
+# Create backup directory (will move dump here after creation)
 mkdir -p "${BACKUP_SUBDIR}"
 
 log_info "=== Neo4j Production Backup ==="
@@ -93,13 +93,24 @@ DOWNTIME_START=$(date +%s)
 docker stop "${NEO4J_CONTAINER}"
 
 # Run neo4j-admin dump in a temporary container
+# Dump to parent directory first, then move to timestamped subdirectory
+# This avoids permission issues with newly-created subdirectories
 log_info "Creating backup with neo4j-admin..."
 if docker run --rm --user root \
     -v "${VOLUME_NAME}:/data" \
-    -v "${BACKUP_SUBDIR}:/backups" \
+    -v "${BACKUP_DIR}:/backups" \
     "${NEO4J_IMAGE}" \
     neo4j-admin database dump neo4j --to-path=/backups --overwrite-destination=true; then
-    log_info "Backup created successfully"
+
+    # Move the dump to the timestamped subdirectory
+    if [ -f "${BACKUP_DIR}/neo4j.dump" ]; then
+        mv "${BACKUP_DIR}/neo4j.dump" "${BACKUP_SUBDIR}/neo4j.dump"
+        log_info "Backup created successfully"
+    else
+        log_error "Dump file not found at expected location"
+        docker start "${NEO4J_CONTAINER}"
+        exit 1
+    fi
 else
     log_error "neo4j-admin dump failed"
     log_warn "Starting Neo4j container..."
