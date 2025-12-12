@@ -17,9 +17,10 @@ class OllamaClient:
         """Initialize Ollama client."""
         self.enabled = settings.ollama_enabled
         self.host = settings.ollama_host
-        # Use separate models for embeddings (fast) vs chat (quality)
-        self.embed_model = settings.ollama_embed_model
-        self.chat_model = settings.ollama_chat_model
+        # Use separate models for different tasks (see Article 009)
+        self.embed_model = settings.ollama_embed_model  # Embeddings (nomic-embed-text)
+        self.chat_model = settings.ollama_chat_model  # Chat/Q&A (llama3.2:1b)
+        self.structured_model = settings.ollama_structured_model  # JSON output (qwen2.5:1.5b)
         self.model = settings.ollama_chat_model  # Backwards compatibility
         self.num_ctx = settings.ollama_num_ctx
         self.client: Any | None = None

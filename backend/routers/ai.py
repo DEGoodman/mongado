@@ -1,9 +1,12 @@
 """AI-powered features API routes (Q&A, summaries, suggestions)."""
 
+import json
 import logging
+from collections.abc import Generator
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from core import ai as ai_core
 from models import (
@@ -241,9 +244,9 @@ def create_ai_router(
         )
 
         try:
-            # Use qwen2.5:1.5b for instruction-following (excellent at JSON format)
+            # Use structured output model (qwen2.5:1.5b) for reliable JSON
             response_data = ollama_client.client.generate(
-                model="qwen2.5:1.5b",
+                model=ollama_client.structured_model,
                 prompt=prompt,
                 options={"num_ctx": 4096}
             )
@@ -324,9 +327,9 @@ def create_ai_router(
         )
 
         try:
-            # Use qwen2.5:1.5b for structured output
+            # Use structured output model (qwen2.5:1.5b) for reliable JSON
             response_data = ollama_client.client.generate(
-                model="qwen2.5:1.5b",
+                model=ollama_client.structured_model,
                 prompt=prompt,
                 options={"num_ctx": 8192}  # Larger context for multiple notes
             )
@@ -368,5 +371,150 @@ def create_ai_router(
         except Exception as e:
             logger.error("Error generating link suggestions: %s", e)
             return LinkSuggestionsResponse(suggestions=[], count=0)
+
+    @router.get("/notes/{note_id}/suggest-stream")
+    def suggest_stream(note_id: str) -> StreamingResponse:
+        """Stream AI suggestions (tags then links) via Server-Sent Events.
+
+        This endpoint streams suggestions progressively as they're generated,
+        reducing perceived wait time for CPU-bound AI operations (10-15 seconds).
+
+        Event types:
+        - progress: Phase update (tags, links)
+        - tag: Individual tag suggestion
+        - link: Individual link suggestion
+        - complete: All suggestions generated
+        - error: Error occurred
+
+        Returns:
+            StreamingResponse with text/event-stream content type
+        """
+
+        def format_sse(data: dict[str, Any]) -> str:
+            """Format data as SSE event."""
+            return f"data: {json.dumps(data)}\n\n"
+
+        def event_generator() -> Generator[str]:
+            # Get the note
+            note = notes_service.get_note(note_id)
+            if not note:
+                yield format_sse({"type": "error", "message": f"Note '{note_id}' not found"})
+                return
+
+            # Check Ollama availability
+            if not ollama_client.is_available():
+                yield format_sse({"type": "error", "message": "AI service unavailable"})
+                return
+
+            # === PHASE 1: Generate Tags ===
+            yield format_sse({"type": "progress", "phase": "tags"})
+
+            # Get existing tags for context
+            all_notes = notes_service.list_notes()
+            existing_tags: set[str] = set()
+            for n in all_notes:
+                existing_tags.update(n.get("tags", []))
+
+            # Build tag suggestion prompt
+            title = note.get("title", "")
+            content = note.get("content", "")
+            current_tags = note.get("tags", [])
+
+            tag_prompt = ai_core.build_tag_suggestion_prompt(
+                title=title,
+                content=content,
+                current_tags=current_tags,
+                existing_tags=existing_tags
+            )
+
+            try:
+                # Generate tags using structured output model
+                tag_response = ollama_client.client.generate(
+                    model=ollama_client.structured_model,
+                    prompt=tag_prompt,
+                    options={"num_ctx": 4096}
+                )
+
+                tag_text = tag_response.get("response", "")
+                if tag_text:
+                    tags_data = ai_core.parse_json_response(tag_text, expected_type="array")
+                    if tags_data and isinstance(tags_data, list):
+                        for tag_item in tags_data[:4]:
+                            if isinstance(tag_item, dict):
+                                tag_suggestion = {
+                                    "tag": tag_item.get("tag", ""),
+                                    "confidence": tag_item.get("confidence", 0.5),
+                                    "reason": tag_item.get("reason", "")
+                                }
+                                yield format_sse({"type": "tag", "data": tag_suggestion})
+
+                logger.info("Streamed tag suggestions for note %s", note_id)
+
+            except Exception as e:
+                logger.error("Error generating tag suggestions during stream: %s", e)
+                # Continue to links even if tags fail
+
+            # === PHASE 2: Generate Links ===
+            yield format_sse({"type": "progress", "phase": "links"})
+
+            # Filter link candidates
+            existing_links = note.get("links", [])
+            candidate_notes = ai_core.filter_link_candidates(
+                all_notes=all_notes,
+                current_note_id=note_id,
+                existing_links=existing_links
+            )
+
+            if candidate_notes:
+                # Build link suggestion prompt
+                link_prompt = ai_core.build_link_suggestion_prompt(
+                    current_title=title,
+                    current_content=content,
+                    candidate_notes=candidate_notes,
+                    max_candidates=50
+                )
+
+                try:
+                    # Generate links using structured output model
+                    link_response = ollama_client.client.generate(
+                        model=ollama_client.structured_model,
+                        prompt=link_prompt,
+                        options={"num_ctx": 8192}
+                    )
+
+                    link_text = link_response.get("response", "")
+                    if link_text:
+                        links_data = ai_core.parse_json_response(link_text, expected_type="array")
+                        if links_data and isinstance(links_data, list):
+                            note_map = {n["id"]: n for n in candidate_notes}
+                            for link_item in links_data[:5]:
+                                if isinstance(link_item, dict):
+                                    link_note_id = link_item.get("note_id")
+                                    if link_note_id and link_note_id in note_map:
+                                        link_suggestion = {
+                                            "note_id": link_note_id,
+                                            "title": note_map[link_note_id].get("title", "Untitled"),
+                                            "confidence": link_item.get("confidence", 0.5),
+                                            "reason": link_item.get("reason", "")
+                                        }
+                                        yield format_sse({"type": "link", "data": link_suggestion})
+
+                    logger.info("Streamed link suggestions for note %s", note_id)
+
+                except Exception as e:
+                    logger.error("Error generating link suggestions during stream: %s", e)
+
+            # === COMPLETE ===
+            yield format_sse({"type": "complete"})
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"  # Disable nginx buffering
+            }
+        )
 
     return router

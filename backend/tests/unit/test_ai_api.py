@@ -363,3 +363,143 @@ class TestMockOllamaClientUnit:
 
         # Different length vectors should return 0.0
         assert MockOllamaClient._cosine_similarity([1.0], [1.0, 2.0]) == 0.0
+
+
+class TestSuggestStream:
+    """Tests for GET /api/notes/{note_id}/suggest-stream endpoint (SSE streaming).
+
+    Note: Tests that require actual AI generation are marked @slow because
+    the current architecture captures ollama_client in closures at import time,
+    making mocking difficult. See issue #141 for the planned DI refactor.
+    """
+
+    def test_suggest_stream_not_found(self, client: TestClient) -> None:
+        """Streaming endpoint returns error event for non-existent note."""
+        response = client.get("/api/notes/nonexistent-note-id-12345/suggest-stream")
+
+        assert response.status_code == 200  # SSE always returns 200, errors in stream
+        content = response.text
+
+        # Should have error event
+        assert "data: " in content
+        assert '"type": "error"' in content or '"type":"error"' in content
+        assert "not found" in content.lower()
+
+    @slow
+    def test_suggest_stream_returns_sse_content_type(self, client: TestClient) -> None:
+        """Streaming endpoint returns text/event-stream content type."""
+        # Get a note ID first
+        notes_response = client.get("/api/notes")
+        if notes_response.status_code != 200:
+            pytest.skip("Notes endpoint not available")
+
+        notes = notes_response.json().get("notes", [])
+        if not notes:
+            pytest.skip("No notes available for testing")
+
+        note_id = notes[0]["id"]
+        response = client.get(f"/api/notes/{note_id}/suggest-stream")
+
+        assert response.status_code == 200
+        assert "text/event-stream" in response.headers.get("content-type", "")
+
+    @slow
+    def test_suggest_stream_returns_sse_events(self, client: TestClient) -> None:
+        """Streaming endpoint returns properly formatted SSE events."""
+        notes_response = client.get("/api/notes")
+        if notes_response.status_code != 200:
+            pytest.skip("Notes endpoint not available")
+
+        notes = notes_response.json().get("notes", [])
+        if not notes:
+            pytest.skip("No notes available for testing")
+
+        note_id = notes[0]["id"]
+        response = client.get(f"/api/notes/{note_id}/suggest-stream")
+
+        assert response.status_code == 200
+        content = response.text
+
+        # SSE events should start with "data: "
+        assert "data: " in content
+
+        # Parse events
+        events = []
+        for line in content.split("\n\n"):
+            if line.startswith("data: "):
+                import json
+                try:
+                    event_data = json.loads(line[6:])  # Skip "data: "
+                    events.append(event_data)
+                except json.JSONDecodeError:
+                    pass
+
+        # Should have at least progress and complete events
+        assert len(events) >= 1
+
+        # First event should be progress or error
+        assert events[0]["type"] in ["progress", "error"]
+
+        # If Ollama is available, should have complete event at end
+        # If not available, should have error event
+        last_event_type = events[-1]["type"]
+        assert last_event_type in ["complete", "error"]
+
+    @slow
+    def test_suggest_stream_full_flow(self, client: TestClient) -> None:
+        """Full streaming flow returns tags and links (slow test, hits real Ollama)."""
+        notes_response = client.get("/api/notes")
+        if notes_response.status_code != 200:
+            pytest.skip("Notes endpoint not available")
+
+        notes = notes_response.json().get("notes", [])
+        if not notes:
+            pytest.skip("No notes available for testing")
+
+        note_id = notes[0]["id"]
+        response = client.get(f"/api/notes/{note_id}/suggest-stream")
+
+        assert response.status_code == 200
+        content = response.text
+
+        # Parse all events
+        events = []
+        for line in content.split("\n\n"):
+            if line.startswith("data: "):
+                import json
+                try:
+                    event_data = json.loads(line[6:])
+                    events.append(event_data)
+                except json.JSONDecodeError:
+                    pass
+
+        event_types = [e.get("type") for e in events]
+
+        # If Ollama is available, should see progress phases
+        if "error" not in event_types:
+            assert "progress" in event_types
+            assert "complete" in event_types
+
+            # Check progress phases
+            progress_events = [e for e in events if e.get("type") == "progress"]
+            phases = [e.get("phase") for e in progress_events]
+            assert "tags" in phases
+            assert "links" in phases
+
+    @slow
+    def test_suggest_stream_no_buffering_headers(self, client: TestClient) -> None:
+        """Streaming endpoint sets proper no-buffering headers."""
+        notes_response = client.get("/api/notes")
+        if notes_response.status_code != 200:
+            pytest.skip("Notes endpoint not available")
+
+        notes = notes_response.json().get("notes", [])
+        if not notes:
+            pytest.skip("No notes available for testing")
+
+        note_id = notes[0]["id"]
+        response = client.get(f"/api/notes/{note_id}/suggest-stream")
+
+        assert response.status_code == 200
+        # Check for no-cache header
+        assert response.headers.get("cache-control") == "no-cache"

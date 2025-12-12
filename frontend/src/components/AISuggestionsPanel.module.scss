@@ -160,20 +160,35 @@
 }
 
 // ===== STATES =====
-// Loading state
-.loadingContainer {
-  @include stack($spacing-4);
-}
-
-.loadingBanner {
-  padding: $spacing-4;
+// Streaming progress indicator
+.streamingProgress {
+  margin-bottom: $spacing-4;
+  padding: $spacing-3 $spacing-4;
   border-radius: $border-radius-md;
   background-color: $blue-50;
+  border: $border-width-thin solid $blue-200;
 }
 
 .loadingContent {
   @include flex-start;
   gap: $spacing-3;
+}
+
+.progressText {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-1;
+}
+
+.progressStatus {
+  @include text-secondary;
+  color: $blue-900;
+}
+
+.progressCounts {
+  @include text-tertiary;
+  color: $blue-700;
+  font-weight: $font-weight-medium;
 }
 
 .spinner {
@@ -288,6 +303,22 @@
 
 .suggestionsList {
   @include stack($spacing-3);
+}
+
+// Fade-in animation for streaming suggestions
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
 // Suggestion card

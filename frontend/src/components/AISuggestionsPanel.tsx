@@ -4,23 +4,17 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { logger } from "@/lib/logger";
 import type { AiMode } from "@/lib/settings";
 import Toast from "@/components/Toast";
+import {
+  streamAISuggestions,
+  isStreamingSupported,
+  type TagSuggestion,
+  type LinkSuggestion,
+  type StreamPhase,
+} from "@/lib/aiSuggestionsStream";
 import styles from "./AISuggestionsPanel.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const DEBOUNCE_MS = 5000; // 5 second debounce for automatic mode
-
-interface TagSuggestion {
-  tag: string;
-  confidence: number;
-  reason: string;
-}
-
-interface LinkSuggestion {
-  note_id: string;
-  title: string;
-  confidence: number;
-  reason: string;
-}
 
 interface CachedSuggestions {
   tags: TagSuggestion[];
@@ -62,11 +56,13 @@ export default function AISuggestionsPanel({
   const [linkSuggestions, setLinkSuggestions] = useState<LinkSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState<string>("");
+  const [streamPhase, setStreamPhase] = useState<StreamPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [cachedData, setCachedData] = useState<CachedSuggestions | null>(null);
   const [isOutdated, setIsOutdated] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const streamCleanupRef = useRef<(() => void) | null>(null);
 
   // Check if current content matches cached content
   useEffect(() => {
@@ -76,7 +72,80 @@ export default function AISuggestionsPanel({
     }
   }, [content, cachedData]);
 
-  const fetchSuggestions = useCallback(async () => {
+  // Streaming fetch using SSE
+  const fetchSuggestionsStreaming = useCallback(() => {
+    // Clean up any existing stream
+    if (streamCleanupRef.current) {
+      streamCleanupRef.current();
+      streamCleanupRef.current = null;
+    }
+
+    setLoading(true);
+    setError(null);
+    setTagSuggestions([]);
+    setLinkSuggestions([]);
+    setStreamPhase("idle");
+    setLoadingStatus("Connecting to AI service...");
+
+    const cleanup = streamAISuggestions(noteId, {
+      onProgress: (phase) => {
+        setStreamPhase(phase);
+        if (phase === "tags") {
+          setLoadingStatus("Generating tag suggestions...");
+        } else if (phase === "links") {
+          setLoadingStatus("Finding related notes...");
+        }
+      },
+      onTag: (tag) => {
+        setTagSuggestions((prev) => [...prev, tag]);
+      },
+      onLink: (link) => {
+        setLinkSuggestions((prev) => [...prev, link]);
+      },
+      onComplete: () => {
+        setLoading(false);
+        setLoadingStatus("");
+        setStreamPhase("complete");
+
+        // Cache the results after complete
+        if (content) {
+          const contentHash = hashContent(content);
+          // Use the current state values at completion time
+          setTagSuggestions((currentTags) => {
+            setLinkSuggestions((currentLinks) => {
+              setCachedData({
+                tags: currentTags,
+                links: currentLinks,
+                contentHash,
+              });
+              return currentLinks;
+            });
+            return currentTags;
+          });
+          setIsOutdated(false);
+        }
+
+        logger.info("AI suggestions streaming complete");
+
+        // Show toast notification for automatic mode
+        if (mode === "real-time") {
+          setShowToast(true);
+        }
+      },
+      onError: (message) => {
+        setError(message);
+        setLoading(false);
+        setLoadingStatus("");
+        setStreamPhase("error");
+        logger.error("AI suggestions streaming failed", { message });
+      },
+    });
+
+    streamCleanupRef.current = cleanup;
+  }, [noteId, content, mode]);
+
+  // Non-streaming fallback fetch
+  const fetchSuggestionsFallback = useCallback(async () => {
     setLoading(true);
     setError(null);
     setLoadingStatus("Generating AI suggestions... typically takes 10-15 seconds");
@@ -137,6 +206,24 @@ export default function AISuggestionsPanel({
       setLoadingStatus("");
     }
   }, [noteId, content, mode]);
+
+  // Main fetch function - uses streaming if available
+  const fetchSuggestions = useCallback(() => {
+    if (isStreamingSupported()) {
+      fetchSuggestionsStreaming();
+    } else {
+      fetchSuggestionsFallback();
+    }
+  }, [fetchSuggestionsStreaming, fetchSuggestionsFallback]);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamCleanupRef.current) {
+        streamCleanupRef.current();
+      }
+    };
+  }, []);
 
   // On-demand mode: fetch when panel is opened (if no cached data or outdated)
   useEffect(() => {
@@ -237,28 +324,18 @@ export default function AISuggestionsPanel({
             </div>
           </div>
 
-          {/* Loading State */}
+          {/* Streaming Progress Indicator */}
           {loading && (
-            <div className={styles.loadingContainer}>
-              <div className={styles.loadingBanner}>
-                <div className={styles.loadingContent}>
-                  <div className={styles.spinner}></div>
-                  <p className={styles.loadingText}>{loadingStatus}</p>
-                </div>
-              </div>
-
-              {/* Skeleton UI */}
-              <div className={styles.skeletonContainer}>
-                <div className={styles.skeletonSection}>
-                  <div className={styles.skeletonHeader}></div>
-                  <div className={styles.skeletonCards}>
-                    {[1, 2].map((i) => (
-                      <div key={i} className={styles.skeletonCard}>
-                        <div className={styles.skeletonTitle}></div>
-                        <div className={styles.skeletonDescription}></div>
-                      </div>
-                    ))}
-                  </div>
+            <div className={styles.streamingProgress}>
+              <div className={styles.loadingContent}>
+                <div className={styles.spinner}></div>
+                <div className={styles.progressText}>
+                  <span className={styles.progressStatus}>{loadingStatus}</span>
+                  <span className={styles.progressCounts}>
+                    {tagSuggestions.length > 0 && `${tagSuggestions.length} tags`}
+                    {tagSuggestions.length > 0 && streamPhase === "links" && ", "}
+                    {streamPhase === "links" && `${linkSuggestions.length} links`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -267,8 +344,8 @@ export default function AISuggestionsPanel({
           {/* Error State */}
           {error && !loading && <div className={styles.errorBanner}>{error}</div>}
 
-          {/* Empty State */}
-          {!loading && !hasAnySuggestions && !error && (
+          {/* Empty State - only show when not loading and no suggestions */}
+          {!loading && !hasAnySuggestions && !error && streamPhase !== "tags" && streamPhase !== "links" && (
             <p className={styles.emptyState}>
               {mode === "on-demand"
                 ? "No suggestions yet. Click the button above to generate AI recommendations."
@@ -283,13 +360,13 @@ export default function AISuggestionsPanel({
             </div>
           )}
 
-          {/* Tag Suggestions */}
-          {!loading && tagSuggestions.length > 0 && (
+          {/* Tag Suggestions - show progressively during streaming */}
+          {tagSuggestions.length > 0 && (
             <div className={styles.suggestionsSection}>
               <h4 className={styles.sectionTitle}>🏷️ Suggested Tags</h4>
               <div className={styles.suggestionsList}>
                 {tagSuggestions.map((suggestion, index) => (
-                  <div key={index} className={styles.suggestionCard}>
+                  <div key={index} className={`${styles.suggestionCard} ${styles.fadeIn}`}>
                     <div className={styles.suggestionHeader}>
                       <span className={styles.suggestionTitle}>{suggestion.tag}</span>
                       <button
@@ -310,13 +387,13 @@ export default function AISuggestionsPanel({
             </div>
           )}
 
-          {/* Link Suggestions */}
-          {!loading && linkSuggestions.length > 0 && (
+          {/* Link Suggestions - show progressively during streaming */}
+          {linkSuggestions.length > 0 && (
             <div className={styles.suggestionsSection}>
               <h4 className={styles.sectionTitle}>🔗 Suggested Links</h4>
               <div className={styles.suggestionsList}>
                 {linkSuggestions.map((suggestion, index) => (
-                  <div key={index} className={styles.suggestionCard}>
+                  <div key={index} className={`${styles.suggestionCard} ${styles.fadeIn}`}>
                     <div className={styles.suggestionHeader}>
                       <div className={styles.suggestionMeta}>
                         <div className={styles.suggestionSubtitle}>{suggestion.title}</div>

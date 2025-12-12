@@ -1,5 +1,5 @@
 .PHONY: help up down restart rebuild logs logs-backend logs-frontend shell-backend shell-frontend
-.PHONY: test test-backend test-backend-unit test-backend-cov test-frontend test-e2e test-all
+.PHONY: test test-backend test-backend-unit test-backend-slow test-backend-cov test-frontend test-e2e test-all
 .PHONY: lint lint-backend lint-frontend format format-backend format-frontend typecheck typecheck-backend typecheck-frontend
 .PHONY: build-frontend security ci clean
 .PHONY: backup backup-force backup-auto restore restore-auto backup-list
@@ -59,20 +59,23 @@ shell-frontend: ## Open shell in frontend container
 
 ##@ Backend Testing
 
-test-backend: ## Run all backend tests
-	docker compose exec backend pytest tests/ -v
+test-backend: ## Run backend tests (excludes @slow tests that hit real Ollama)
+	docker compose exec backend pytest tests/ -v -m "not slow"
 
-test-backend-unit: ## Run backend unit tests only
-	docker compose exec backend pytest tests/unit/ -v
+test-backend-unit: ## Run backend unit tests only (excludes @slow)
+	docker compose exec backend pytest tests/unit/ -v -m "not slow"
 
 test-backend-integration: ## Run backend integration tests only
 	docker compose exec backend pytest tests/integration/ -v
 
-test-backend-cov: ## Run backend tests with coverage
-	docker compose exec backend pytest tests/ --cov --cov-report=html --cov-report=term
+test-backend-slow: ## Run ALL backend tests including @slow (hits real Ollama, 30-120+ sec)
+	docker compose exec backend pytest tests/ -v
 
-test-backend-watch: ## Run backend tests in watch mode
-	docker compose exec backend pytest tests/ --watch
+test-backend-cov: ## Run backend tests with coverage (excludes @slow)
+	docker compose exec backend pytest tests/ --cov --cov-report=html --cov-report=term -m "not slow"
+
+test-backend-watch: ## Run backend tests in watch mode (excludes @slow)
+	docker compose exec backend pytest tests/ --watch -m "not slow"
 
 ##@ Frontend Testing
 

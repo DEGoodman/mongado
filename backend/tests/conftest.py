@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures."""
 
 import os
+from collections.abc import Generator
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -14,7 +15,7 @@ import main
 
 
 @pytest.fixture(autouse=True)
-def clear_resources() -> None:
+def clear_resources() -> Generator[None]:
     """Clear user resources before and after each test (static articles remain)."""
     main.user_resources_db.clear()
     yield
@@ -22,7 +23,7 @@ def clear_resources() -> None:
 
 
 @pytest.fixture
-def client():
+def client() -> Generator[TestClient]:
     """Get test client for API testing with lifespan context."""
     with TestClient(main.app) as client:
         yield client
@@ -63,8 +64,9 @@ class MockOllamaClient:
         self.enabled = available
         self.host = "http://mock:11434"
         self.embed_model = "nomic-embed-text"
-        self.chat_model = "qwen2.5:1.5b"
-        self.model = "qwen2.5:1.5b"
+        self.chat_model = "llama3.2:1b"  # Chat/Q&A model
+        self.structured_model = "qwen2.5:1.5b"  # JSON output model
+        self.model = "llama3.2:1b"  # Backwards compatibility
         self.num_ctx = 4096
         self.embedding_cache: dict[str, list[float]] = {}
 
@@ -164,7 +166,8 @@ class MockOllamaClient:
         magnitude2 = sum(b * b for b in vec2) ** 0.5
         if magnitude1 == 0 or magnitude2 == 0:
             return 0.0
-        return dot_product / (magnitude1 * magnitude2)
+        result: float = dot_product / (magnitude1 * magnitude2)
+        return result
 
 
 @pytest.fixture
@@ -186,7 +189,9 @@ def mock_ollama_unavailable() -> MockOllamaClient:
 
 
 @pytest.fixture
-def client_with_mock_ollama(mock_ollama_available: MockOllamaClient):
+def client_with_mock_ollama(
+    mock_ollama_available: MockOllamaClient,
+) -> Generator[tuple[TestClient, MockOllamaClient]]:
     """Get test client with mocked Ollama client.
 
     This fixture patches the global ollama_client in main.py to use
@@ -206,7 +211,9 @@ def client_with_mock_ollama(mock_ollama_available: MockOllamaClient):
 
 
 @pytest.fixture
-def client_with_unavailable_ollama(mock_ollama_unavailable: MockOllamaClient):
+def client_with_unavailable_ollama(
+    mock_ollama_unavailable: MockOllamaClient,
+) -> Generator[tuple[TestClient, MockOllamaClient]]:
     """Get test client with Ollama appearing unavailable.
 
     Use this to test graceful degradation when AI is not available.
