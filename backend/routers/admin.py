@@ -8,9 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from auth import AdminUser, verify_admin
+from auth import AdminUser
 from models import (
     BackupCreateResponse,
     BackupInfo,
@@ -67,7 +67,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         return Path(__file__).parent.parent / "scripts" / script_name
 
     @router.get("/backups", response_model=BackupListResponse)
-    async def list_backups(_admin: AdminUser = Depends(verify_admin)) -> BackupListResponse:
+    async def list_backups(_admin: AdminUser) -> BackupListResponse:
         """List available backups with metadata.
 
         Requires admin authentication.
@@ -120,7 +120,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         return BackupListResponse(backups=backups, count=len(backups))
 
     @router.post("/backup", response_model=BackupCreateResponse)
-    async def create_backup(_admin: AdminUser = Depends(verify_admin)) -> BackupCreateResponse:
+    async def create_backup(_admin: AdminUser) -> BackupCreateResponse:
         """Trigger a new Neo4j backup.
 
         WARNING: This causes ~30-60 seconds of downtime as the Neo4j container
@@ -222,7 +222,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
     @router.post("/restore", response_model=RestoreResponse)
     async def restore_backup(
         restore_req: RestoreRequest,
-        _admin: AdminUser = Depends(verify_admin),
+        _admin: AdminUser,
     ) -> RestoreResponse:
         """Restore Neo4j database from a backup.
 

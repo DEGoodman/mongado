@@ -3,24 +3,29 @@
 import logging
 from typing import Annotated
 
-from fastapi import Header, HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+# HTTPBearer security scheme - enables "Authorize" button in Swagger UI
+# auto_error=False so we can return custom 401 message for missing auth
+security = HTTPBearer(auto_error=False)
 
-def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
+
+def verify_admin(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> bool:
     """Verify admin token from Authorization header.
 
-    Expects: "Bearer your-secret-token"
-
-    This is a simple bearer token auth for a single admin user.
+    Uses FastAPI's HTTPBearer security scheme for proper Swagger UI integration.
     The token is stored in the environment (.env or 1Password).
 
     Args:
-        authorization: Authorization header value
+        credentials: HTTPAuthorizationCredentials from HTTPBearer (None if missing)
 
     Returns:
         True if authenticated
@@ -28,20 +33,14 @@ def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
     Raises:
         HTTPException: 401 if no auth header, 403 if invalid token
     """
-    if not authorization:
+    if not credentials:
         logger.warning("Missing Authorization header")
         raise HTTPException(
             status_code=401,
             detail="Authorization required. Include 'Authorization: Bearer <token>' header.",
         )
 
-    if not authorization.startswith("Bearer "):
-        logger.warning("Invalid Authorization format: %s", authorization[:20])
-        raise HTTPException(
-            status_code=401, detail="Invalid authorization format. Use 'Bearer <token>'."
-        )
-
-    token = authorization.replace("Bearer ", "").strip()
+    token = credentials.credentials
 
     # Get expected token from settings
     expected_token = settings.admin_token
@@ -61,5 +60,5 @@ def verify_admin(authorization: Annotated[str | None, Header()] = None) -> bool:
     return True
 
 
-# Type aliases for dependency injection
-AdminUser = Annotated[bool, verify_admin]
+# Type alias for dependency injection
+AdminUser = Annotated[bool, Depends(verify_admin)]

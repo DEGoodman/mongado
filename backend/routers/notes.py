@@ -4,11 +4,11 @@ import logging
 import os
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from auth import AdminUser, verify_admin
+from auth import AdminUser
 from core import notes as notes_core
 from models import (
     BacklinksResponse,
@@ -62,7 +62,7 @@ Links are automatically parsed and stored as graph relationships.
     async def create_note(
         request: Request,
         note: NoteCreate,
-        _admin: AdminUser = Depends(verify_admin),
+        _admin: AdminUser,
     ) -> dict[str, Any]:
         """Create a new note (admin only)."""
         created_note: dict[str, Any] = notes_service.create_note(
@@ -236,7 +236,7 @@ Links are automatically parsed and stored as graph relationships.
     async def update_note(
         note_id: str,
         note_update: NoteUpdate,
-        _admin: AdminUser = Depends(verify_admin),
+        _admin: AdminUser,
     ) -> dict[str, Any]:
         """Update a note (admin only)."""
         updated: dict[str, Any] | None = notes_service.update_note(
@@ -258,7 +258,7 @@ Links are automatically parsed and stored as graph relationships.
     @router.delete("/{note_id}")
     async def delete_note(
         note_id: str,
-        _admin: AdminUser = Depends(verify_admin),
+        _admin: AdminUser,
     ) -> dict[str, str]:
         """Delete a note (admin only)."""
         deleted = notes_service.delete_note(note_id=note_id)

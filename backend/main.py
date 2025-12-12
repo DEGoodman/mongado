@@ -174,38 +174,6 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
-# Customize OpenAPI schema to add security definitions
-def custom_openapi() -> dict[str, Any]:
-    """Customize OpenAPI schema with security definitions."""
-    if app.openapi_schema:
-        return app.openapi_schema
-
-    from fastapi.openapi.utils import get_openapi
-
-    openapi_schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=app.description,
-        routes=app.routes,
-    )
-
-    # Add security scheme for Bearer token
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-            "description": "Enter your admin token (without 'Bearer ' prefix)",
-        }
-    }
-
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-
-app.openapi = custom_openapi  # type: ignore[method-assign]
-
-
 # Cache control middleware for static assets
 class CacheControlMiddleware(BaseHTTPMiddleware):
     """Add cache control headers for static assets and API responses."""
