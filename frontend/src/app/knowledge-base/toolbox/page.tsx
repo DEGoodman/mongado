@@ -188,11 +188,13 @@ export default function ToolboxPage() {
                 <div className={styles.categoryFilterHeader}>
                   <span className={styles.categoryFilterLabel}>Filter by category:</span>
                 </div>
-                <div className={styles.categoryBadges}>
+                <div className={styles.categoryBadges} role="group" aria-label="Category filters">
                   <button
                     type="button"
                     onClick={() => setCategoryFilter("all")}
                     className={`${styles.categoryBadge} ${categoryFilter === "all" ? styles.categoryBadgeActive : ""}`}
+                    aria-label="Show all categories"
+                    aria-pressed={categoryFilter === "all"}
                   >
                     All ({references.length})
                   </button>
@@ -202,6 +204,8 @@ export default function ToolboxPage() {
                       type="button"
                       onClick={() => setCategoryFilter(cat)}
                       className={`${styles.categoryBadge} ${categoryFilter === cat ? styles.categoryBadgeActive : ""}`}
+                      aria-label={`Filter by category: ${cat}`}
+                      aria-pressed={categoryFilter === cat}
                     >
                       {cat} ({references.filter((r) => r.tags.includes(cat)).length})
                     </button>
@@ -212,7 +216,11 @@ export default function ToolboxPage() {
 
             {/* Clear Filters */}
             {hasActiveFilters && (
-              <button onClick={clearFilters} className={styles.clearAllButtonSidebar}>
+              <button
+                onClick={clearFilters}
+                className={styles.clearAllButtonSidebar}
+                aria-label="Clear category filter"
+              >
                 Clear all filters
               </button>
             )}
@@ -254,7 +262,12 @@ export default function ToolboxPage() {
             {references.length > 0 && filteredReferences.length === 0 && (
               <div className={styles.noResults}>
                 <p>No references match your filters.</p>
-                <button type="button" onClick={clearFilters} className={styles.clearFiltersButton}>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className={styles.clearFiltersButton}
+                  aria-label="Clear category filter"
+                >
                   Clear filters
                 </button>
               </div>

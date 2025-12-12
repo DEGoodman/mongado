@@ -429,12 +429,14 @@ export default function NoteDetailPage() {
                   <button
                     onClick={() => setIsEditing(true)}
                     className={`${styles.button} ${styles.editButton}`}
+                    aria-label="Edit this note"
                   >
                     Edit
                   </button>
                   <button
                     onClick={handleDelete}
                     className={`${styles.button} ${styles.deleteButton}`}
+                    aria-label="Delete this note"
                   >
                     Delete
                   </button>
@@ -443,6 +445,11 @@ export default function NoteDetailPage() {
                       onClick={handlePrewarmAndOpenSuggestions}
                       className={`${styles.button} ${styles.aiSuggestionsButton} ${aiPrewarming ? styles.prewarming : ""}`}
                       disabled={aiPrewarming}
+                      aria-label={
+                        aiPrewarming
+                          ? "Preparing AI suggestions"
+                          : "Get AI suggestions for related notes and tags"
+                      }
                     >
                       {aiPrewarming ? "Preparing AI..." : "AI Suggestions"}
                     </button>
@@ -539,6 +546,12 @@ export default function NoteDetailPage() {
                         <button
                           onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
                           className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
+                          aria-label={
+                            aiSuggestionsOpen
+                              ? "Hide AI suggestions panel"
+                              : "Show AI suggestions for tags and links"
+                          }
+                          aria-expanded={aiSuggestionsOpen}
                         >
                           {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
                         </button>

@@ -828,6 +828,8 @@ function NotesGraphContent() {
               preserveAspectRatio="xMidYMid meet"
               className={styles.canvas}
               style={{ display: "block", width: "100%", height: "100%" }}
+              role="img"
+              aria-label={`Interactive graph visualization showing ${graphData.count.nodes} notes and ${graphData.count.edges} connections. Use mouse to hover, click, and drag nodes.`}
             />
             <div className={styles.instructions}>
               Hover over nodes to see titles and connections · Drag nodes to reposition · Larger
@@ -863,10 +865,15 @@ function NotesGraphContent() {
                     className={styles.viewButton}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`View note: ${selectedNode.title || selectedNode.id}`}
                   >
                     View note
                   </Link>
-                  <button onClick={handleDeselect} className={styles.deselectButton}>
+                  <button
+                    onClick={handleDeselect}
+                    className={styles.deselectButton}
+                    aria-label="Deselect current node"
+                  >
                     Deselect
                   </button>
                 </div>
@@ -877,22 +884,26 @@ function NotesGraphContent() {
             <div className={styles.filterSection}>
               <div className={styles.filterControls}>
                 <h4 className={styles.filterTitle}>Filter by tag</h4>
-                <div className={styles.filterLogic}>
+                <div className={styles.filterLogic} role="group" aria-label="Tag filter logic">
                   <button
                     className={filterLogic === "OR" ? styles.active : ""}
                     onClick={() => setFilterLogic("OR")}
+                    aria-label="Match any selected tag"
+                    aria-pressed={filterLogic === "OR"}
                   >
                     Any
                   </button>
                   <button
                     className={filterLogic === "AND" ? styles.active : ""}
                     onClick={() => setFilterLogic("AND")}
+                    aria-label="Match all selected tags"
+                    aria-pressed={filterLogic === "AND"}
                   >
                     All
                   </button>
                 </div>
               </div>
-              <div className={styles.tagList}>
+              <div className={styles.tagList} role="group" aria-label="Filter tags">
                 {getAllTags().map(({ tag, count, color }) => {
                   const isActive = selectedTags.has(tag);
                   return (
@@ -913,8 +924,14 @@ function NotesGraphContent() {
                         backgroundColor: isActive ? `${color}15` : undefined,
                         color: isActive ? color : undefined,
                       }}
+                      aria-label={`Filter by tag: ${tag}, ${count} notes`}
+                      aria-pressed={isActive}
                     >
-                      <span className={styles.tagDot} style={{ backgroundColor: color }} />
+                      <span
+                        className={styles.tagDot}
+                        style={{ backgroundColor: color }}
+                        aria-hidden="true"
+                      />
                       <span className={styles.tagName}>{tag}</span>
                       <span className={styles.tagCount}>({count})</span>
                     </button>
@@ -923,7 +940,11 @@ function NotesGraphContent() {
               </div>
               {selectedTags.size > 0 && (
                 <div className={styles.filterActions}>
-                  <button onClick={() => setSelectedTags(new Set())} className={styles.clearButton}>
+                  <button
+                    onClick={() => setSelectedTags(new Set())}
+                    className={styles.clearButton}
+                    aria-label="Clear all tag filters"
+                  >
                     Clear filters
                   </button>
                 </div>

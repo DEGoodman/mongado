@@ -272,6 +272,7 @@ function NotesContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={styles.searchInput}
+                aria-label="Search notes by title, content, or tags"
               />
             </div>
 
@@ -311,6 +312,8 @@ function NotesContent() {
                         onClick={() => handleTagClick(tag)}
                         className={`${styles.tagBadge} ${sizeClass} ${isActive ? styles.tagBadgeActive : ""}`}
                         type="button"
+                        aria-label={`Filter by tag: ${tag}, ${count} notes`}
+                        aria-pressed={isActive}
                       >
                         #{tag} ({count})
                       </button>
@@ -322,6 +325,8 @@ function NotesContent() {
                     onClick={() => setShowAllTags(true)}
                     className={styles.showMoreButton}
                     type="button"
+                    aria-label={`Show ${otherTags.length} more tags`}
+                    aria-expanded="false"
                   >
                     + Show {otherTags.length} more
                   </button>
@@ -331,6 +336,8 @@ function NotesContent() {
                     onClick={() => setShowAllTags(false)}
                     className={styles.showMoreButton}
                     type="button"
+                    aria-label="Show fewer tags"
+                    aria-expanded="true"
                   >
                     − Show fewer
                   </button>
@@ -340,7 +347,11 @@ function NotesContent() {
 
             {/* Clear Filters */}
             {hasActiveFilters && (
-              <button onClick={clearAllFilters} className={styles.clearAllButtonSidebar}>
+              <button
+                onClick={clearAllFilters}
+                className={styles.clearAllButtonSidebar}
+                aria-label="Clear all active filters"
+              >
                 Clear all filters
               </button>
             )}

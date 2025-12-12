@@ -153,9 +153,15 @@ export default function KnowledgeBasePage() {
                 placeholder="Search articles and notes..."
                 className={styles.searchInput}
                 autoFocus
+                aria-label="Search all articles and notes"
               />
               {searchResults.length > 0 && (
-                <button type="button" onClick={clearSearch} className={styles.clearButton}>
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className={styles.clearButton}
+                  aria-label="Clear search results"
+                >
                   Clear
                 </button>
               )}
