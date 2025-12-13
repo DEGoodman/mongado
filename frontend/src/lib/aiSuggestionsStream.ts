@@ -28,13 +28,15 @@ export interface StreamCallbacks {
   onTag: (tag: TagSuggestion) => void;
   onLink: (link: LinkSuggestion) => void;
   onProgress: (phase: StreamPhase) => void;
+  onGenerating: (phase: string, tokens: number) => void;
   onComplete: () => void;
   onError: (message: string) => void;
 }
 
 interface StreamEvent {
-  type: "progress" | "tag" | "link" | "complete" | "error";
-  phase?: StreamPhase;
+  type: "progress" | "generating" | "tag" | "link" | "complete" | "error";
+  phase?: StreamPhase | string;
+  tokens?: number;
   data?: TagSuggestion | LinkSuggestion;
   message?: string;
 }
@@ -66,7 +68,13 @@ export function streamAISuggestions(noteId: string, callbacks: StreamCallbacks):
       switch (data.type) {
         case "progress":
           if (data.phase) {
-            callbacks.onProgress(data.phase);
+            callbacks.onProgress(data.phase as StreamPhase);
+          }
+          break;
+
+        case "generating":
+          if (data.phase && data.tokens !== undefined) {
+            callbacks.onGenerating(data.phase, data.tokens);
           }
           break;
 

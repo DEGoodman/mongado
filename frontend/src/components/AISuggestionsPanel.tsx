@@ -57,6 +57,7 @@ export default function AISuggestionsPanel({
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState<string>("");
   const [streamPhase, setStreamPhase] = useState<StreamPhase>("idle");
+  const [tokenCount, setTokenCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [cachedData, setCachedData] = useState<CachedSuggestions | null>(null);
   const [isOutdated, setIsOutdated] = useState(false);
@@ -85,16 +86,21 @@ export default function AISuggestionsPanel({
     setTagSuggestions([]);
     setLinkSuggestions([]);
     setStreamPhase("idle");
+    setTokenCount(0);
     setLoadingStatus("Connecting to AI service...");
 
     const cleanup = streamAISuggestions(noteId, {
       onProgress: (phase) => {
         setStreamPhase(phase);
+        setTokenCount(0); // Reset token count when phase changes
         if (phase === "tags") {
           setLoadingStatus("Generating tag suggestions...");
         } else if (phase === "links") {
           setLoadingStatus("Finding related notes...");
         }
+      },
+      onGenerating: (_phase, tokens) => {
+        setTokenCount(tokens);
       },
       onTag: (tag) => {
         setTagSuggestions((prev) => [...prev, tag]);
@@ -330,7 +336,10 @@ export default function AISuggestionsPanel({
               <div className={styles.loadingContent}>
                 <div className={styles.spinner}></div>
                 <div className={styles.progressText}>
-                  <span className={styles.progressStatus}>{loadingStatus}</span>
+                  <span className={styles.progressStatus}>
+                    {loadingStatus}
+                    {tokenCount > 0 && ` (${tokenCount} tokens)`}
+                  </span>
                   <span className={styles.progressCounts}>
                     {tagSuggestions.length > 0 && `${tagSuggestions.length} tags`}
                     {tagSuggestions.length > 0 && streamPhase === "links" && ", "}
