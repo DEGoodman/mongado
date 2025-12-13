@@ -25,7 +25,7 @@ def extract_wikilinks(content: str) -> list[str]:
         >>> extract_wikilinks("No links here")
         []
     """
-    pattern = r'\[\[([a-z0-9-]+)\]\]'
+    pattern = r"\[\[([a-z0-9-]+)\]\]"
     return re.findall(pattern, content)
 
 
@@ -50,7 +50,7 @@ def validate_note_id(note_id: str) -> bool:
         >>> validate_note_id("UPPERCASE")
         False
     """
-    pattern = r'^[a-z0-9]+-[a-z0-9]+$'
+    pattern = r"^[a-z0-9]+-[a-z0-9]+$"
     return bool(re.match(pattern, note_id))
 
 
@@ -95,10 +95,12 @@ def build_graph_data(notes: list[dict[str, Any]]) -> dict[str, Any]:
     for note in notes:
         source_id = note["id"]
         for target_id in note.get("links", []):
-            edges.append({
-                "source": source_id,
-                "target": target_id,
-            })
+            edges.append(
+                {
+                    "source": source_id,
+                    "target": target_id,
+                }
+            )
 
     return {
         "nodes": nodes,
@@ -106,14 +108,12 @@ def build_graph_data(notes: list[dict[str, Any]]) -> dict[str, Any]:
         "count": {
             "nodes": len(nodes),
             "edges": len(edges),
-        }
+        },
     }
 
 
 def build_local_subgraph(
-    notes: list[dict[str, Any]],
-    center_note_id: str,
-    depth: int = 2
+    notes: list[dict[str, Any]], center_note_id: str, depth: int = 2
 ) -> dict[str, Any]:
     """Build a local subgraph centered on a specific note.
 

@@ -26,26 +26,86 @@ logger = logging.getLogger(__name__)
 
 # Adjective-noun pairs for note IDs (pre-generated for consistency)
 NOTE_IDS = [
-    "curious-mountain", "brave-river", "silent-forest", "quick-thunder",
-    "gentle-breeze", "wise-ocean", "bold-sunrise", "calm-meadow",
-    "bright-star", "deep-valley", "swift-wind", "ancient-tree",
-    "golden-sunset", "quiet-lake", "strong-eagle", "peaceful-garden",
-    "wild-storm", "clear-spring", "noble-phoenix", "steady-rock",
-    "pure-crystal", "warm-fire", "cool-shadow", "vast-horizon",
-    "sharp-blade", "soft-cloud", "dark-void", "light-beam",
-    "fierce-lion", "graceful-swan", "mighty-oak", "tender-rose",
-    "rapid-stream", "still-pond", "high-peak", "low-tide",
-    "fresh-dawn", "old-wisdom", "new-insight", "long-journey",
-    "short-burst", "wide-plain", "narrow-path", "deep-thought",
-    "shallow-pool", "rough-terrain", "smooth-flow", "hard-lesson",
-    "soft-touch", "loud-echo", "quiet-whisper", "true-north",
-    "false-start", "real-impact", "ideal-state", "actual-result",
-    "future-vision", "past-experience", "present-moment", "constant-change",
-    "rare-gem", "common-pattern", "unique-approach", "standard-practice",
-    "complex-system", "simple-rule", "clear-signal", "mixed-message",
-    "strong-signal", "weak-link", "firm-foundation", "shaky-ground",
-    "solid-base", "fluid-motion", "fixed-point", "moving-target",
-    "stable-core", "volatile-edge", "certain-fact", "uncertain-future"
+    "curious-mountain",
+    "brave-river",
+    "silent-forest",
+    "quick-thunder",
+    "gentle-breeze",
+    "wise-ocean",
+    "bold-sunrise",
+    "calm-meadow",
+    "bright-star",
+    "deep-valley",
+    "swift-wind",
+    "ancient-tree",
+    "golden-sunset",
+    "quiet-lake",
+    "strong-eagle",
+    "peaceful-garden",
+    "wild-storm",
+    "clear-spring",
+    "noble-phoenix",
+    "steady-rock",
+    "pure-crystal",
+    "warm-fire",
+    "cool-shadow",
+    "vast-horizon",
+    "sharp-blade",
+    "soft-cloud",
+    "dark-void",
+    "light-beam",
+    "fierce-lion",
+    "graceful-swan",
+    "mighty-oak",
+    "tender-rose",
+    "rapid-stream",
+    "still-pond",
+    "high-peak",
+    "low-tide",
+    "fresh-dawn",
+    "old-wisdom",
+    "new-insight",
+    "long-journey",
+    "short-burst",
+    "wide-plain",
+    "narrow-path",
+    "deep-thought",
+    "shallow-pool",
+    "rough-terrain",
+    "smooth-flow",
+    "hard-lesson",
+    "soft-touch",
+    "loud-echo",
+    "quiet-whisper",
+    "true-north",
+    "false-start",
+    "real-impact",
+    "ideal-state",
+    "actual-result",
+    "future-vision",
+    "past-experience",
+    "present-moment",
+    "constant-change",
+    "rare-gem",
+    "common-pattern",
+    "unique-approach",
+    "standard-practice",
+    "complex-system",
+    "simple-rule",
+    "clear-signal",
+    "mixed-message",
+    "strong-signal",
+    "weak-link",
+    "firm-foundation",
+    "shaky-ground",
+    "solid-base",
+    "fluid-motion",
+    "fixed-point",
+    "moving-target",
+    "stable-core",
+    "volatile-edge",
+    "certain-fact",
+    "uncertain-future",
 ]
 
 
@@ -78,9 +138,19 @@ NOTES = {
 
 The best engineering managers balance [[swift-wind]] tactical execution with [[ancient-tree]] strategic thinking.""",
             "tags": ["engineering-management", "leadership", "meta"],
-            "links": ["brave-river", "silent-forest", "quick-thunder", "gentle-breeze",
-                     "wise-ocean", "golden-sunset", "clear-spring", "steady-rock",
-                     "vast-horizon", "swift-wind", "ancient-tree"]
+            "links": [
+                "brave-river",
+                "silent-forest",
+                "quick-thunder",
+                "gentle-breeze",
+                "wise-ocean",
+                "golden-sunset",
+                "clear-spring",
+                "steady-rock",
+                "vast-horizon",
+                "swift-wind",
+                "ancient-tree",
+            ],
         },
         {
             "id": "brave-river",
@@ -105,9 +175,19 @@ The best engineering managers balance [[swift-wind]] tactical execution with [[a
 
 SRE is about [[real-impact]] sustainable operations, not heroics.""",
             "tags": ["sre", "operations", "meta"],
-            "links": ["calm-meadow", "bright-star", "deep-valley", "noble-phoenix",
-                     "warm-fire", "cool-shadow", "sharp-blade", "vast-horizon",
-                     "steady-rock", "pure-crystal", "real-impact"]
+            "links": [
+                "calm-meadow",
+                "bright-star",
+                "deep-valley",
+                "noble-phoenix",
+                "warm-fire",
+                "cool-shadow",
+                "sharp-blade",
+                "vast-horizon",
+                "steady-rock",
+                "pure-crystal",
+                "real-impact",
+            ],
         },
         {
             "id": "silent-forest",
@@ -133,9 +213,18 @@ SRE is about [[real-impact]] sustainable operations, not heroics.""",
 
 The goal is [[future-vision]] compound knowledge growth, not information hoarding.""",
             "tags": ["knowledge-management", "pkm", "meta"],
-            "links": ["ancient-tree", "quiet-lake", "peaceful-garden", "wild-storm",
-                     "new-insight", "deep-thought", "true-north", "long-journey",
-                     "false-start", "future-vision"]
+            "links": [
+                "ancient-tree",
+                "quiet-lake",
+                "peaceful-garden",
+                "wild-storm",
+                "new-insight",
+                "deep-thought",
+                "true-north",
+                "long-journey",
+                "false-start",
+                "future-vision",
+            ],
         },
         {
             "id": "quick-thunder",
@@ -162,10 +251,22 @@ The goal is [[future-vision]] compound knowledge growth, not information hoardin
 
 The best teams treat [[standard-practice]] technical excellence as enabler of [[moving-target]] business agility.""",
             "tags": ["software-development", "engineering", "meta"],
-            "links": ["smooth-flow", "hard-lesson", "common-pattern", "simple-rule",
-                     "clear-signal", "complex-system", "firm-foundation", "solid-base",
-                     "stable-core", "strong-signal", "rare-gem", "certain-fact",
-                     "standard-practice", "moving-target"]
+            "links": [
+                "smooth-flow",
+                "hard-lesson",
+                "common-pattern",
+                "simple-rule",
+                "clear-signal",
+                "complex-system",
+                "firm-foundation",
+                "solid-base",
+                "stable-core",
+                "strong-signal",
+                "rare-gem",
+                "certain-fact",
+                "standard-practice",
+                "moving-target",
+            ],
         },
         {
             "id": "gentle-breeze",
@@ -192,13 +293,23 @@ The best teams treat [[standard-practice]] technical excellence as enabler of [[
 
 Success requires treating models as [[constant-change]] living systems, not static artifacts.""",
             "tags": ["ai", "ml", "engineering", "meta"],
-            "links": ["light-beam", "dark-void", "mighty-oak", "tender-rose",
-                     "rough-terrain", "shallow-pool", "mixed-message", "weak-link",
-                     "fluid-motion", "fixed-point", "volatile-edge", "uncertain-future",
-                     "constant-change"]
-        }
+            "links": [
+                "light-beam",
+                "dark-void",
+                "mighty-oak",
+                "tender-rose",
+                "rough-terrain",
+                "shallow-pool",
+                "mixed-message",
+                "weak-link",
+                "fluid-motion",
+                "fixed-point",
+                "volatile-edge",
+                "uncertain-future",
+                "constant-change",
+            ],
+        },
     ],
-
     # HUB NOTES (8 notes) - Well-connected concepts, 5-8 links each
     "hubs": [
         {
@@ -226,9 +337,17 @@ Ask: "If you make a mistake, is it held against you?"
 
 See [[curious-mountain]] for broader management context.""",
             "tags": ["management", "culture", "teamwork"],
-            "links": ["curious-mountain", "golden-sunset", "steady-rock", "hard-lesson",
-                     "clear-signal", "gentle-breeze", "true-north", "peaceful-garden",
-                     "noble-phoenix"]
+            "links": [
+                "curious-mountain",
+                "golden-sunset",
+                "steady-rock",
+                "hard-lesson",
+                "clear-signal",
+                "gentle-breeze",
+                "true-north",
+                "peaceful-garden",
+                "noble-phoenix",
+            ],
         },
         {
             "id": "ancient-tree",
@@ -255,9 +374,18 @@ Track [[strong-signal]] deployment frequency and [[certain-fact]] lead time as p
 
 Part of [[curious-mountain]] engineering management.""",
             "tags": ["technical-debt", "engineering", "management"],
-            "links": ["curious-mountain", "rough-terrain", "deep-valley", "weak-link",
-                     "shallow-pool", "swift-wind", "smooth-flow", "real-impact",
-                     "strong-signal", "certain-fact"]
+            "links": [
+                "curious-mountain",
+                "rough-terrain",
+                "deep-valley",
+                "weak-link",
+                "shallow-pool",
+                "swift-wind",
+                "smooth-flow",
+                "real-impact",
+                "strong-signal",
+                "certain-fact",
+            ],
         },
         {
             "id": "golden-sunset",
@@ -283,8 +411,13 @@ Part of [[curious-mountain]] engineering management.""",
 
 Builds [[wise-ocean]] psychological safety. Part of [[curious-mountain]] management practice.""",
             "tags": ["one-on-ones", "management", "leadership"],
-            "links": ["curious-mountain", "wise-ocean", "long-journey", "new-insight",
-                     "deep-thought"]
+            "links": [
+                "curious-mountain",
+                "wise-ocean",
+                "long-journey",
+                "new-insight",
+                "deep-thought",
+            ],
         },
         {
             "id": "calm-meadow",
@@ -313,8 +446,15 @@ Builds [[wise-ocean]] psychological safety. Part of [[curious-mountain]] managem
 
 Core of [[brave-river]] SRE practice.""",
             "tags": ["sre", "operations", "reliability"],
-            "links": ["brave-river", "real-impact", "certain-fact", "bright-star",
-                     "smooth-flow", "firm-foundation", "false-start"]
+            "links": [
+                "brave-river",
+                "real-impact",
+                "certain-fact",
+                "bright-star",
+                "smooth-flow",
+                "firm-foundation",
+                "false-start",
+            ],
         },
         {
             "id": "peaceful-garden",
@@ -345,8 +485,17 @@ Core of [[brave-river]] SRE practice.""",
 
 Complements [[ancient-tree]] Zettelkasten for [[new-insight]] knowledge building.""",
             "tags": ["knowledge-management", "pkm", "productivity"],
-            "links": ["silent-forest", "curious-mountain", "brave-river", "quick-thunder",
-                     "ancient-tree", "swift-wind", "clear-signal", "simple-rule", "new-insight"]
+            "links": [
+                "silent-forest",
+                "curious-mountain",
+                "brave-river",
+                "quick-thunder",
+                "ancient-tree",
+                "swift-wind",
+                "clear-signal",
+                "simple-rule",
+                "new-insight",
+            ],
         },
         {
             "id": "steady-rock",
@@ -378,9 +527,19 @@ Complements [[ancient-tree]] Zettelkasten for [[new-insight]] knowledge building
 
 Part of [[brave-river]] SRE practice and [[curious-mountain]] leadership.""",
             "tags": ["sre", "operations", "incident-management"],
-            "links": ["brave-river", "curious-mountain", "clear-signal", "swift-wind",
-                     "smooth-flow", "real-impact", "noble-phoenix", "complex-system",
-                     "new-insight", "hard-lesson", "wise-ocean"]
+            "links": [
+                "brave-river",
+                "curious-mountain",
+                "clear-signal",
+                "swift-wind",
+                "smooth-flow",
+                "real-impact",
+                "noble-phoenix",
+                "complex-system",
+                "new-insight",
+                "hard-lesson",
+                "wise-ocean",
+            ],
         },
         {
             "id": "hard-lesson",
@@ -410,9 +569,19 @@ Part of [[brave-river]] SRE practice and [[curious-mountain]] leadership.""",
 
 Part of [[quick-thunder]] development practices.""",
             "tags": ["software-development", "code-review", "teamwork"],
-            "links": ["quick-thunder", "new-insight", "common-pattern", "swift-wind",
-                     "simple-rule", "clear-signal", "certain-fact", "firm-foundation",
-                     "smooth-flow", "wise-ocean", "true-north"]
+            "links": [
+                "quick-thunder",
+                "new-insight",
+                "common-pattern",
+                "swift-wind",
+                "simple-rule",
+                "clear-signal",
+                "certain-fact",
+                "firm-foundation",
+                "smooth-flow",
+                "wise-ocean",
+                "true-north",
+            ],
         },
         {
             "id": "smooth-flow",
@@ -441,12 +610,22 @@ Deploy [[certain-fact]] frequency and [[real-impact]] lead time show team health
 
 Core of [[quick-thunder]] modern software development.""",
             "tags": ["software-development", "ci-cd", "devops"],
-            "links": ["quick-thunder", "swift-wind", "real-impact", "firm-foundation",
-                     "certain-fact", "strong-signal", "clear-signal", "calm-meadow",
-                     "steady-rock", "moving-target", "standard-practice", "simple-rule"]
-        }
+            "links": [
+                "quick-thunder",
+                "swift-wind",
+                "real-impact",
+                "firm-foundation",
+                "certain-fact",
+                "strong-signal",
+                "clear-signal",
+                "calm-meadow",
+                "steady-rock",
+                "moving-target",
+                "standard-practice",
+                "simple-rule",
+            ],
+        },
     ],
-
     # REGULAR NOTES (40 notes) - Atomic concepts, 2-3 links each
     "regular": [
         {
@@ -462,7 +641,7 @@ Example: 99.9% SLO = 0.1% error budget = 43 minutes/month
 
 Makes [[calm-meadow]] SLO targets actionable for teams.""",
             "tags": ["sre", "operations"],
-            "links": ["calm-meadow", "smooth-flow", "firm-foundation"]
+            "links": ["calm-meadow", "smooth-flow", "firm-foundation"],
         },
         {
             "id": "deep-valley",
@@ -481,7 +660,7 @@ Makes [[calm-meadow]] SLO targets actionable for teams.""",
 
 Part of [[brave-river]] SRE principles.""",
             "tags": ["sre", "operations", "automation"],
-            "links": ["brave-river", "swift-wind"]
+            "links": ["brave-river", "swift-wind"],
         },
         {
             "id": "noble-phoenix",
@@ -501,7 +680,7 @@ Builds [[wise-ocean]] psychological safety. Incidents are [[new-insight]] learni
 
 See [[steady-rock]] for full incident process.""",
             "tags": ["sre", "incident-management", "culture"],
-            "links": ["steady-rock", "wise-ocean", "new-insight"]
+            "links": ["steady-rock", "wise-ocean", "new-insight"],
         },
         {
             "id": "warm-fire",
@@ -519,7 +698,7 @@ See [[steady-rock]] for full incident process.""",
 
 Part of [[brave-river]] SRE practice.""",
             "tags": ["sre", "operations", "capacity-planning"],
-            "links": ["brave-river", "certain-fact", "false-start"]
+            "links": ["brave-river", "certain-fact", "false-start"],
         },
         {
             "id": "cool-shadow",
@@ -535,7 +714,7 @@ If you can only monitor 4 things, monitor these.
 
 Foundation of [[brave-river]] SRE observability.""",
             "tags": ["sre", "monitoring", "observability"],
-            "links": ["brave-river"]
+            "links": ["brave-river"],
         },
         {
             "id": "sharp-blade",
@@ -555,7 +734,7 @@ Foundation of [[brave-river]] SRE observability.""",
 
 Part of [[brave-river]] SRE.""",
             "tags": ["sre", "operations", "on-call"],
-            "links": ["brave-river", "steady-rock", "calm-meadow", "deep-valley"]
+            "links": ["brave-river", "steady-rock", "calm-meadow", "deep-valley"],
         },
         {
             "id": "vast-horizon",
@@ -575,7 +754,7 @@ Part of [[brave-river]] SRE.""",
 
 Part of [[curious-mountain]] engineering management.""",
             "tags": ["management", "career-development", "leadership"],
-            "links": ["curious-mountain", "golden-sunset", "wise-ocean"]
+            "links": ["curious-mountain", "golden-sunset", "wise-ocean"],
         },
         {
             "id": "swift-wind",
@@ -589,7 +768,7 @@ Part of [[curious-mountain]] engineering management.""",
 
 Part of [[quick-thunder]] development culture.""",
             "tags": ["software-development", "best-practices"],
-            "links": ["quick-thunder", "ancient-tree"]
+            "links": ["quick-thunder", "ancient-tree"],
         },
         {
             "id": "pure-crystal",
@@ -605,7 +784,7 @@ Part of [[quick-thunder]] development culture.""",
 
 Core of [[brave-river]] SRE.""",
             "tags": ["sre", "observability", "monitoring"],
-            "links": ["brave-river", "cool-shadow"]
+            "links": ["brave-river", "cool-shadow"],
         },
         {
             "id": "real-impact",
@@ -624,7 +803,7 @@ Core of [[brave-river]] SRE.""",
 
 Keeps engineering [[true-north]] user-focused.""",
             "tags": ["product", "metrics", "user-experience"],
-            "links": ["calm-meadow", "steady-rock", "ancient-tree", "true-north"]
+            "links": ["calm-meadow", "steady-rock", "ancient-tree", "true-north"],
         },
         {
             "id": "new-insight",
@@ -644,7 +823,7 @@ Individual notes have [[deep-thought]] minimal value. Connections create [[futur
 
 Core of [[silent-forest]] knowledge management.""",
             "tags": ["zettelkasten", "pkm", "note-taking"],
-            "links": ["silent-forest", "false-start", "deep-thought", "future-vision"]
+            "links": ["silent-forest", "false-start", "deep-thought", "future-vision"],
         },
         {
             "id": "deep-thought",
@@ -661,7 +840,7 @@ Add [[new-insight]] context when linking - WHY are these connected?
 
 Part of [[silent-forest]] knowledge management.""",
             "tags": ["zettelkasten", "pkm", "connections"],
-            "links": ["silent-forest", "new-insight"]
+            "links": ["silent-forest", "new-insight"],
         },
         {
             "id": "true-north",
@@ -682,7 +861,7 @@ Avoids [[false-start]] collecting without processing.
 
 Part of [[silent-forest]] knowledge management.""",
             "tags": ["zettelkasten", "pkm", "writing"],
-            "links": ["silent-forest", "new-insight", "false-start"]
+            "links": ["silent-forest", "new-insight", "false-start"],
         },
         {
             "id": "long-journey",
@@ -700,7 +879,7 @@ Future you quickly finds [[new-insight]] key ideas without re-reading everything
 
 Complements [[silent-forest]] note-taking.""",
             "tags": ["pkm", "productivity", "reading"],
-            "links": ["silent-forest", "new-insight"]
+            "links": ["silent-forest", "new-insight"],
         },
         {
             "id": "false-start",
@@ -715,7 +894,7 @@ Saving articles, bookmarking, highlighting - feels productive but isn't.
 
 Part of [[silent-forest]] knowledge management pitfalls.""",
             "tags": ["pkm", "productivity", "anti-pattern"],
-            "links": ["silent-forest", "true-north", "new-insight"]
+            "links": ["silent-forest", "true-north", "new-insight"],
         },
         {
             "id": "future-vision",
@@ -732,7 +911,7 @@ Value appears after ~100-200 notes, 6+ months.
 
 Goal of [[silent-forest]] knowledge management.""",
             "tags": ["zettelkasten", "pkm", "learning"],
-            "links": ["silent-forest", "new-insight", "deep-thought"]
+            "links": ["silent-forest", "new-insight", "deep-thought"],
         },
         {
             "id": "common-pattern",
@@ -749,7 +928,7 @@ Don't force patterns. [[simple-rule]] Solve the problem first.
 
 Part of [[quick-thunder]] software development.""",
             "tags": ["software-development", "design-patterns"],
-            "links": ["quick-thunder", "clear-signal", "hard-lesson", "simple-rule"]
+            "links": ["quick-thunder", "clear-signal", "hard-lesson", "simple-rule"],
         },
         {
             "id": "simple-rule",
@@ -766,7 +945,7 @@ Build for [[present-moment]] today's requirements, not [[uncertain-future]] imag
 
 Part of [[quick-thunder]] development principles.""",
             "tags": ["software-development", "best-practices"],
-            "links": ["quick-thunder", "ancient-tree", "present-moment", "uncertain-future"]
+            "links": ["quick-thunder", "ancient-tree", "present-moment", "uncertain-future"],
         },
         {
             "id": "clear-signal",
@@ -783,7 +962,7 @@ Rename aggressively. Bad names compound [[ancient-tree]] technical debt.
 
 Part of [[quick-thunder]] code quality.""",
             "tags": ["software-development", "code-quality"],
-            "links": ["quick-thunder", "common-pattern", "ancient-tree"]
+            "links": ["quick-thunder", "common-pattern", "ancient-tree"],
         },
         {
             "id": "complex-system",
@@ -804,7 +983,7 @@ Part of [[quick-thunder]] code quality.""",
 
 Part of [[quick-thunder]] architecture decisions.""",
             "tags": ["software-development", "architecture", "microservices"],
-            "links": ["quick-thunder", "simple-rule", "firm-foundation", "real-impact"]
+            "links": ["quick-thunder", "simple-rule", "firm-foundation", "real-impact"],
         },
         {
             "id": "firm-foundation",
@@ -823,7 +1002,7 @@ Part of [[quick-thunder]] architecture decisions.""",
 
 Part of [[quick-thunder]] software development.""",
             "tags": ["software-development", "api-design"],
-            "links": ["quick-thunder", "clear-signal", "real-impact", "common-pattern"]
+            "links": ["quick-thunder", "clear-signal", "real-impact", "common-pattern"],
         },
         {
             "id": "solid-base",
@@ -842,7 +1021,7 @@ Part of [[quick-thunder]] software development.""",
 
 Part of [[quick-thunder]] microservices architecture.""",
             "tags": ["software-development", "microservices", "database"],
-            "links": ["quick-thunder", "firm-foundation", "complex-system"]
+            "links": ["quick-thunder", "firm-foundation", "complex-system"],
         },
         {
             "id": "stable-core",
@@ -860,7 +1039,7 @@ Part of [[quick-thunder]] microservices architecture.""",
 
 Part of [[quick-thunder]] architecture patterns.""",
             "tags": ["software-development", "architecture", "events"],
-            "links": ["quick-thunder", "firm-foundation", "complex-system"]
+            "links": ["quick-thunder", "firm-foundation", "complex-system"],
         },
         {
             "id": "strong-signal",
@@ -879,7 +1058,7 @@ Enables [[smooth-flow]] continuous deployment.
 
 Part of [[quick-thunder]] testing strategy.""",
             "tags": ["software-development", "testing", "quality"],
-            "links": ["quick-thunder", "swift-wind", "deep-valley", "smooth-flow"]
+            "links": ["quick-thunder", "swift-wind", "deep-valley", "smooth-flow"],
         },
         {
             "id": "rare-gem",
@@ -896,7 +1075,7 @@ Part of [[quick-thunder]] testing strategy.""",
 
 Part of [[quick-thunder]] development workflow.""",
             "tags": ["software-development", "tools", "quality"],
-            "links": ["quick-thunder", "hard-lesson"]
+            "links": ["quick-thunder", "hard-lesson"],
         },
         {
             "id": "certain-fact",
@@ -912,7 +1091,7 @@ Elite teams: Deploy multiple times/day, <1 hour lead time.
 
 Validates [[smooth-flow]] continuous deployment practices.""",
             "tags": ["metrics", "devops", "performance"],
-            "links": ["smooth-flow"]
+            "links": ["smooth-flow"],
         },
         {
             "id": "standard-practice",
@@ -930,7 +1109,13 @@ Validates [[smooth-flow]] continuous deployment practices.""",
 
 Part of [[quick-thunder]] development workflow.""",
             "tags": ["software-development", "git", "workflow"],
-            "links": ["quick-thunder", "strong-signal", "clear-signal", "smooth-flow", "swift-wind"]
+            "links": [
+                "quick-thunder",
+                "strong-signal",
+                "clear-signal",
+                "smooth-flow",
+                "swift-wind",
+            ],
         },
         {
             "id": "moving-target",
@@ -950,7 +1135,7 @@ Enables [[smooth-flow]] continuous deployment.
 
 Part of [[quick-thunder]] deployment strategy.""",
             "tags": ["software-development", "deployment", "feature-flags"],
-            "links": ["quick-thunder", "smooth-flow", "certain-fact"]
+            "links": ["quick-thunder", "smooth-flow", "certain-fact"],
         },
         {
             "id": "light-beam",
@@ -971,7 +1156,7 @@ Batch simpler, real-time more flexible.
 
 Part of [[gentle-breeze]] ML engineering.""",
             "tags": ["ml", "architecture", "inference"],
-            "links": ["gentle-breeze", "firm-foundation"]
+            "links": ["gentle-breeze", "firm-foundation"],
         },
         {
             "id": "dark-void",
@@ -986,7 +1171,7 @@ Single feature computation logic used both places.
 
 Part of [[gentle-breeze]] ML architecture.""",
             "tags": ["ml", "mlops", "features"],
-            "links": ["gentle-breeze", "rough-terrain"]
+            "links": ["gentle-breeze", "rough-terrain"],
         },
         {
             "id": "mighty-oak",
@@ -1003,8 +1188,14 @@ Part of [[gentle-breeze]] ML architecture.""",
 
 Part of [[gentle-breeze]] ML engineering.""",
             "tags": ["ml", "mlops", "operations"],
-            "links": ["gentle-breeze", "constant-change", "volatile-edge", "fixed-point",
-                     "fluid-motion", "certain-fact"]
+            "links": [
+                "gentle-breeze",
+                "constant-change",
+                "volatile-edge",
+                "fixed-point",
+                "fluid-motion",
+                "certain-fact",
+            ],
         },
         {
             "id": "tender-rose",
@@ -1021,7 +1212,7 @@ Optimizing for [[mixed-message]] proxy metrics that don't reflect [[real-impact]
 
 Part of [[gentle-breeze]] model validation.""",
             "tags": ["ml", "experimentation", "testing"],
-            "links": ["gentle-breeze", "certain-fact", "mixed-message", "real-impact"]
+            "links": ["gentle-breeze", "certain-fact", "mixed-message", "real-impact"],
         },
         {
             "id": "rough-terrain",
@@ -1036,7 +1227,7 @@ Training uses SQL, serving uses Python → different results.
 
 Critical issue in [[gentle-breeze]] ML systems.""",
             "tags": ["ml", "mlops", "debugging"],
-            "links": ["gentle-breeze", "dark-void"]
+            "links": ["gentle-breeze", "dark-void"],
         },
         {
             "id": "shallow-pool",
@@ -1054,7 +1245,7 @@ COVID changed shopping patterns → pre-COVID recommendation model performs poor
 
 Part of [[gentle-breeze]] ML operations.""",
             "tags": ["ml", "mlops", "monitoring"],
-            "links": ["gentle-breeze", "volatile-edge", "mighty-oak"]
+            "links": ["gentle-breeze", "volatile-edge", "mighty-oak"],
         },
         {
             "id": "mixed-message",
@@ -1072,7 +1263,7 @@ Part of [[gentle-breeze]] ML operations.""",
 
 Critical for [[gentle-breeze]] ML reliability.""",
             "tags": ["ml", "data-quality", "operations"],
-            "links": ["gentle-breeze", "rough-terrain", "certain-fact"]
+            "links": ["gentle-breeze", "rough-terrain", "certain-fact"],
         },
         {
             "id": "weak-link",
@@ -1089,7 +1280,7 @@ Complex models ([[light-beam]] neural nets) harder to explain than [[simple-rule
 
 Important for [[gentle-breeze]] ML adoption.""",
             "tags": ["ml", "explainability", "trust"],
-            "links": ["gentle-breeze", "light-beam", "simple-rule"]
+            "links": ["gentle-breeze", "light-beam", "simple-rule"],
         },
         {
             "id": "fluid-motion",
@@ -1106,7 +1297,7 @@ Enables [[smooth-flow]] safe deployment.
 
 Part of [[mighty-oak]] MLOps practice.""",
             "tags": ["ml", "deployment", "risk-management"],
-            "links": ["mighty-oak", "certain-fact", "uncertain-future", "smooth-flow"]
+            "links": ["mighty-oak", "certain-fact", "uncertain-future", "smooth-flow"],
         },
         {
             "id": "fixed-point",
@@ -1121,7 +1312,7 @@ MLflow, W&B, DVC
 
 Part of [[mighty-oak]] MLOps infrastructure.""",
             "tags": ["ml", "mlops", "versioning"],
-            "links": ["mighty-oak"]
+            "links": ["mighty-oak"],
         },
         {
             "id": "volatile-edge",
@@ -1138,10 +1329,9 @@ Automatic retraining when performance drops.
 
 Part of [[mighty-oak]] MLOps.""",
             "tags": ["ml", "monitoring", "operations"],
-            "links": ["mighty-oak", "shallow-pool", "real-impact", "certain-fact"]
-        }
+            "links": ["mighty-oak", "shallow-pool", "real-impact", "certain-fact"],
+        },
     ],
-
     # STUB NOTES (15 notes) - Placeholders with TODOs, 1-2 links each
     "stubs": [
         {
@@ -1153,7 +1343,7 @@ Related to [[long-journey]] and [[silent-forest]] knowledge management.
 
 Tiago Forte's method for [[new-insight]] processing reading material.""",
             "tags": ["pkm", "reading", "stub"],
-            "links": ["silent-forest", "long-journey", "new-insight"]
+            "links": ["silent-forest", "long-journey", "new-insight"],
         },
         {
             "id": "wild-storm",
@@ -1167,7 +1357,7 @@ Tiago Forte's method for [[new-insight]] processing reading material.""",
 
 Part of [[silent-forest]] note-taking philosophy.""",
             "tags": ["zettelkasten", "pkm", "stub"],
-            "links": ["silent-forest", "new-insight"]
+            "links": ["silent-forest", "new-insight"],
         },
         {
             "id": "present-moment",
@@ -1178,7 +1368,7 @@ Related to [[simple-rule]] YAGNI principle.
 
 Avoid [[uncertain-future]] over-engineering for imagined future.""",
             "tags": ["software-development", "architecture", "stub"],
-            "links": ["simple-rule", "uncertain-future"]
+            "links": ["simple-rule", "uncertain-future"],
         },
         {
             "id": "uncertain-future",
@@ -1189,7 +1379,7 @@ Opposite of [[present-moment]] building for today.
 
 Creates [[ancient-tree]] unnecessary technical debt.""",
             "tags": ["software-development", "anti-pattern", "stub"],
-            "links": ["present-moment", "ancient-tree"]
+            "links": ["present-moment", "ancient-tree"],
         },
         {
             "id": "constant-change",
@@ -1202,7 +1392,7 @@ Never "done" like traditional software.
 
 Part of [[gentle-breeze]] ML engineering mindset.""",
             "tags": ["ml", "mlops", "stub"],
-            "links": ["gentle-breeze", "volatile-edge", "mighty-oak"]
+            "links": ["gentle-breeze", "volatile-edge", "mighty-oak"],
         },
         {
             "id": "shaky-ground",
@@ -1213,7 +1403,7 @@ Related to [[ancient-tree]] technical debt management.
 
 Small [[swift-wind]] improvements prevent compounding.""",
             "tags": ["technical-debt", "management", "stub"],
-            "links": ["ancient-tree", "swift-wind"]
+            "links": ["ancient-tree", "swift-wind"],
         },
         {
             "id": "loud-echo",
@@ -1224,7 +1414,7 @@ Related to [[sharp-blade]] on-call practices.
 
 Should alert on [[calm-meadow]] SLO violations, not everything.""",
             "tags": ["sre", "operations", "stub"],
-            "links": ["sharp-blade", "calm-meadow"]
+            "links": ["sharp-blade", "calm-meadow"],
         },
         {
             "id": "quiet-whisper",
@@ -1235,7 +1425,7 @@ Related to [[smooth-flow]] continuous deployment.
 
 [[certain-fact]] DORA metrics measure feedback speed.""",
             "tags": ["devops", "metrics", "stub"],
-            "links": ["smooth-flow", "certain-fact"]
+            "links": ["smooth-flow", "certain-fact"],
         },
         {
             "id": "ideal-state",
@@ -1246,7 +1436,7 @@ Related to [[hard-lesson]] code review and [[strong-signal]] testing.
 
 Controversial practice in [[quick-thunder]] development.""",
             "tags": ["software-development", "quality", "stub"],
-            "links": ["quick-thunder", "hard-lesson", "strong-signal"]
+            "links": ["quick-thunder", "hard-lesson", "strong-signal"],
         },
         {
             "id": "actual-result",
@@ -1257,7 +1447,7 @@ Controversial practice in [[quick-thunder]] development.""",
 
 Relevant to [[certain-fact]] DORA metrics and [[calm-meadow]] SLOs.""",
             "tags": ["metrics", "management", "stub"],
-            "links": ["certain-fact", "calm-meadow"]
+            "links": ["certain-fact", "calm-meadow"],
         },
         {
             "id": "past-experience",
@@ -1268,7 +1458,7 @@ Related to [[noble-phoenix]] blameless postmortems.
 
 Part of [[steady-rock]] incident management.""",
             "tags": ["sre", "incident-management", "stub"],
-            "links": ["noble-phoenix", "steady-rock"]
+            "links": ["noble-phoenix", "steady-rock"],
         },
         {
             "id": "unique-approach",
@@ -1279,7 +1469,7 @@ Related to [[common-pattern]] design patterns.
 
 Balance [[rare-gem]] innovation with [[standard-practice]] conventions.""",
             "tags": ["software-development", "culture", "stub"],
-            "links": ["common-pattern", "rare-gem", "standard-practice"]
+            "links": ["common-pattern", "rare-gem", "standard-practice"],
         },
         {
             "id": "high-peak",
@@ -1290,7 +1480,7 @@ Related to [[vast-horizon]] career development.
 
 [[wise-ocean]] Environment and team dynamics matter more than individual skill.""",
             "tags": ["engineering", "career", "stub"],
-            "links": ["vast-horizon", "wise-ocean"]
+            "links": ["vast-horizon", "wise-ocean"],
         },
         {
             "id": "low-tide",
@@ -1301,7 +1491,7 @@ Related to [[firm-foundation]] API design.
 
 Part of [[quick-thunder]] development workflow.""",
             "tags": ["documentation", "software-development", "stub"],
-            "links": ["firm-foundation", "quick-thunder"]
+            "links": ["firm-foundation", "quick-thunder"],
         },
         {
             "id": "fresh-dawn",
@@ -1312,10 +1502,9 @@ Related to [[vast-horizon]] career development and [[wise-ocean]] team culture.
 
 First [[golden-sunset]] 1-on-1s are critical.""",
             "tags": ["onboarding", "management", "stub"],
-            "links": ["vast-horizon", "wise-ocean", "golden-sunset"]
-        }
+            "links": ["vast-horizon", "wise-ocean", "golden-sunset"],
+        },
     ],
-
     # QUESTION NOTES (10 notes) - Exploring ideas, 1-2 links each
     "questions": [
         {
@@ -1332,7 +1521,7 @@ First [[golden-sunset]] 1-on-1s are critical.""",
 
 Need to track [[real-impact]] impact on user experience, not just developer happiness.""",
             "tags": ["technical-debt", "management", "question"],
-            "links": ["ancient-tree", "certain-fact", "weak-link", "real-impact"]
+            "links": ["ancient-tree", "certain-fact", "weak-link", "real-impact"],
         },
         {
             "id": "rapid-stream",
@@ -1349,7 +1538,7 @@ Need to track [[real-impact]] impact on user experience, not just developer happ
 
 **Hypothesis:** Depends on team size and maturity.""",
             "tags": ["sre", "organization", "question"],
-            "links": ["brave-river", "sharp-blade"]
+            "links": ["brave-river", "sharp-blade"],
         },
         {
             "id": "still-pond",
@@ -1366,7 +1555,7 @@ More complex deployment vs [[real-impact]] no user impact
 
 Most startups over-invest in this early.""",
             "tags": ["deployment", "operations", "question"],
-            "links": ["smooth-flow", "real-impact"]
+            "links": ["smooth-flow", "real-impact"],
         },
         {
             "id": "narrow-path",
@@ -1383,7 +1572,7 @@ Most startups over-invest in this early.""",
 
 **Nuance:** Depends on org size and manager level.""",
             "tags": ["management", "leadership", "question"],
-            "links": ["curious-mountain"]
+            "links": ["curious-mountain"],
         },
         {
             "id": "wide-plain",
@@ -1396,7 +1585,7 @@ Start with [[cool-shadow]] four golden signals. Add only when debugging reveals 
 **Risk:**
 Over-monitoring creates [[sharp-blade]] alert fatigue.""",
             "tags": ["monitoring", "sre", "question"],
-            "links": ["cool-shadow", "loud-echo", "clear-signal", "sharp-blade"]
+            "links": ["cool-shadow", "loud-echo", "clear-signal", "sharp-blade"],
         },
         {
             "id": "short-burst",
@@ -1414,7 +1603,7 @@ Over-monitoring creates [[sharp-blade]] alert fatigue.""",
 
 **Hypothesis:** Best for complex problems and onboarding, not routine work.""",
             "tags": ["software-development", "practices", "question"],
-            "links": ["hard-lesson", "wise-ocean"]
+            "links": ["hard-lesson", "wise-ocean"],
         },
         {
             "id": "rough-edge",
@@ -1429,7 +1618,7 @@ Over-monitoring creates [[sharp-blade]] alert fatigue.""",
 **Caution:**
 [[simple-rule]] Don't split prematurely. Distributed systems are hard.""",
             "tags": ["architecture", "microservices", "question"],
-            "links": ["complex-system", "simple-rule"]
+            "links": ["complex-system", "simple-rule"],
         },
         {
             "id": "soft-landing",
@@ -1444,7 +1633,7 @@ Last 20% often costs 80% of effort.
 
 Related to [[smooth-flow]] deployment confidence.""",
             "tags": ["testing", "quality", "question"],
-            "links": ["strong-signal", "smooth-flow"]
+            "links": ["strong-signal", "smooth-flow"],
         },
         {
             "id": "hard-truth",
@@ -1459,7 +1648,7 @@ If done >3x/week and takes >30 min, automate.
 
 Part of [[brave-river]] SRE philosophy.""",
             "tags": ["automation", "sre", "question"],
-            "links": ["deep-valley", "brave-river"]
+            "links": ["deep-valley", "brave-river"],
         },
         {
             "id": "gentle-touch",
@@ -1476,10 +1665,9 @@ Part of [[brave-river]] SRE philosophy.""",
 
 **Hypothesis:** Mix both - continuous small improvements + quarterly focused efforts.""",
             "tags": ["refactoring", "technical-debt", "question"],
-            "links": ["swift-wind", "ancient-tree"]
-        }
+            "links": ["swift-wind", "ancient-tree"],
+        },
     ],
-
     # ORPHAN NOTES (10 notes) - No links, for testing orphan detection
     "orphans": [
         {
@@ -1490,7 +1678,7 @@ Part of [[brave-river]] SRE philosophy.""",
 **Implication:**
 If you want microservices, organize teams around services.""",
             "tags": ["architecture", "organization"],
-            "links": []
+            "links": [],
         },
         {
             "id": "forgotten-path",
@@ -1500,7 +1688,7 @@ If you want microservices, organize teams around services.""",
 **Implication:**
 You can't change anything without breaking someone's workflow.""",
             "tags": ["api-design", "compatibility"],
-            "links": []
+            "links": [],
         },
         {
             "id": "silent-echo",
@@ -1510,7 +1698,7 @@ You can't change anything without breaking someone's workflow.""",
 **Reason:**
 Ramp-up time + communication overhead.""",
             "tags": ["project-management", "scaling"],
-            "links": []
+            "links": [],
         },
         {
             "id": "empty-room",
@@ -1520,7 +1708,7 @@ Ramp-up time + communication overhead.""",
 **In Tech:**
 Great engineer becomes mediocre manager.""",
             "tags": ["management", "career"],
-            "links": []
+            "links": [],
         },
         {
             "id": "blank-canvas",
@@ -1530,7 +1718,7 @@ Great engineer becomes mediocre manager.""",
 **Application:**
 Set tight deadlines to prevent scope creep.""",
             "tags": ["productivity", "time-management"],
-            "links": []
+            "links": [],
         },
         {
             "id": "cold-stone",
@@ -1540,7 +1728,7 @@ Set tight deadlines to prevent scope creep.""",
 **Lesson:**
 Estimates are always optimistic. Plan accordingly.""",
             "tags": ["estimation", "project-management"],
-            "links": []
+            "links": [],
         },
         {
             "id": "distant-star",
@@ -1550,7 +1738,7 @@ Estimates are always optimistic. Plan accordingly.""",
 **Rationale:**
 Communication overhead grows O(n²) with team size.""",
             "tags": ["team-size", "organization"],
-            "links": []
+            "links": [],
         },
         {
             "id": "lone-wolf",
@@ -1560,7 +1748,7 @@ Communication overhead grows O(n²) with team size.""",
 **Why it Works:**
 Articulating problem reveals assumptions.""",
             "tags": ["debugging", "techniques"],
-            "links": []
+            "links": [],
         },
         {
             "id": "isolated-peak",
@@ -1570,7 +1758,7 @@ Articulating problem reveals assumptions.""",
 **Example:**
 Arguing about variable names instead of architecture.""",
             "tags": ["decision-making", "meetings"],
-            "links": []
+            "links": [],
         },
         {
             "id": "abandoned-road",
@@ -1580,9 +1768,9 @@ Arguing about variable names instead of architecture.""",
 **Cost:**
 Wasted effort rebuilding existing solutions.""",
             "tags": ["culture", "anti-pattern"],
-            "links": []
-        }
-    ]
+            "links": [],
+        },
+    ],
 }
 
 
@@ -1649,9 +1837,9 @@ def generate_corpus() -> None:
 
         logger.info(f"  Created {len(notes)} {category.replace('_', ' ')} notes\n")
 
-    logger.info(f"{'='*60}")
+    logger.info(f"{'=' * 60}")
     logger.info(f"✅ Generated {total_created} notes")
-    logger.info(f"{'='*60}\n")
+    logger.info(f"{'=' * 60}\n")
 
     # Show statistics
     if neo4j.driver:

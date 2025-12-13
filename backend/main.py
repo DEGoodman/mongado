@@ -21,6 +21,7 @@ from adapters.article_loader import load_static_articles
 from adapters.neo4j import get_neo4j_adapter
 from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
+from dependencies import get_neo4j, get_ollama, set_static_articles, set_user_resources
 from embedding_sync import sync_embeddings_on_startup
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
@@ -34,7 +35,7 @@ from models import (
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
 from routers.admin import create_admin_router
-from routers.ai import create_ai_router
+from routers.ai import router as ai_router
 from routers.articles import create_articles_router
 from routers.notes import create_notes_router
 from routers.search import create_search_router
@@ -72,11 +73,7 @@ async def _sync_embeddings_background() -> None:
         # Run the sync in a thread pool (it's blocking I/O)
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
-            None,
-            sync_embeddings_on_startup,
-            static_articles,
-            ollama_client,
-            neo4j_adapter
+            None, sync_embeddings_on_startup, static_articles, ollama_client, neo4j_adapter
         )
         _embedding_sync_ready = True
         logger.info("Background embedding sync completed - app is fully ready")
@@ -102,6 +99,7 @@ def _auto_seed_notes_if_empty() -> None:
     logger.info("No notes found in dev mode - auto-seeding test data...")
     try:
         from scripts.seed_test_notes import seed_notes
+
         seed_notes()
         new_count = neo4j_adapter.get_note_count()
         logger.info("✅ Auto-seeded %d test notes", new_count)
@@ -116,11 +114,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Startup
     logger.info("Starting %s v%s", settings.app_name, settings.app_version)
-    logger.info("1Password integration: %s", "enabled" if secret_manager.is_available() else "disabled")
+    logger.info(
+        "1Password integration: %s", "enabled" if secret_manager.is_available() else "disabled"
+    )
     logger.info("CORS allowed origins: %s", settings.cors_origins_list)
 
-    # Load static articles (fast)
+    # Load static articles (fast) and set in dependency system
     static_articles = load_static_articles()
+    set_static_articles(static_articles)
+    set_user_resources(user_resources_db)
     logger.info("Loaded %d static articles", len(static_articles))
 
     # Auto-seed test notes if database is empty (dev mode only)
@@ -221,11 +223,12 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # 3. Cache control
 app.add_middleware(CacheControlMiddleware)
 
-# Create and include domain routers with dependency injection
-notes_router = create_notes_router(
-    notes_service=notes_service,
-    ollama_client=ollama_client
-)
+# Create and include domain routers
+# AI router uses FastAPI Depends() - no factory needed
+app.include_router(ai_router)
+
+# Other routers still use factory pattern (to be refactored in future)
+notes_router = create_notes_router(notes_service=notes_service, ollama_client=ollama_client)
 app.include_router(notes_router)
 
 search_router = create_search_router(
@@ -233,24 +236,15 @@ search_router = create_search_router(
     get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
     notes_service=notes_service,
     ollama_client=ollama_client,
-    neo4j_adapter=neo4j_adapter
+    neo4j_adapter=neo4j_adapter,
 )
 app.include_router(search_router)
 
 articles_router = create_articles_router(
     get_static_articles=lambda: static_articles,  # Callable returns current list
-    ollama_client=ollama_client
+    ollama_client=ollama_client,
 )
 app.include_router(articles_router)
-
-ai_router = create_ai_router(
-    ollama_client=ollama_client,
-    get_static_articles=lambda: static_articles,  # Callable returns current list
-    get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
-    notes_service=notes_service,
-    neo4j_adapter=neo4j_adapter
-)
-app.include_router(ai_router)
 
 admin_router = create_admin_router(neo4j_adapter=neo4j_adapter)
 app.include_router(admin_router)
@@ -318,7 +312,9 @@ def readiness_check() -> ReadyResponse:
     return ReadyResponse(
         ready=_embedding_sync_ready,
         embedding_sync_complete=_embedding_sync_ready,
-        message="App is fully ready" if _embedding_sync_ready else "App is healthy, embedding sync in progress",
+        message="App is fully ready"
+        if _embedding_sync_ready
+        else "App is healthy, embedding sync in progress",
     )
 
 
@@ -384,10 +380,12 @@ async def upload_image(file: Annotated[UploadFile, File()]) -> ImageUploadRespon
 # Search and Q&A routes moved to routers/search.py and routers/ai.py
 
 
-
-
 @app.post("/api/admin/sync-embeddings", response_model=EmbeddingSyncResponse)
-def trigger_embedding_sync(_admin: Annotated[bool, Depends(verify_admin)]) -> EmbeddingSyncResponse:
+def trigger_embedding_sync(
+    _admin: Annotated[bool, Depends(verify_admin)],
+    neo4j: Annotated[Any, Depends(get_neo4j)],
+    ollama: Annotated[Any, Depends(get_ollama)],
+) -> EmbeddingSyncResponse:
     """
     Manually trigger embedding sync for all articles and notes (admin only).
 
@@ -399,18 +397,14 @@ def trigger_embedding_sync(_admin: Annotated[bool, Depends(verify_admin)]) -> Em
 
     Requires authentication via Bearer token in Authorization header.
     """
-    if not neo4j_adapter.is_available():
+    if not neo4j.is_available():
         return EmbeddingSyncResponse(
-            success=False,
-            message="Neo4j not available - cannot sync embeddings",
-            stats=None
+            success=False, message="Neo4j not available - cannot sync embeddings", stats=None
         )
 
-    if not ollama_client.is_available():
+    if not ollama.is_available():
         return EmbeddingSyncResponse(
-            success=False,
-            message="Ollama not available - cannot generate embeddings",
-            stats=None
+            success=False, message="Ollama not available - cannot generate embeddings", stats=None
         )
 
     logger.info("Admin triggered manual embedding sync")
@@ -420,11 +414,11 @@ def trigger_embedding_sync(_admin: Annotated[bool, Depends(verify_admin)]) -> Em
         from embedding_sync import sync_articles_to_neo4j, sync_embeddings
 
         # Sync articles to Neo4j first
-        created, updated = sync_articles_to_neo4j(static_articles, neo4j_adapter)
+        created, updated = sync_articles_to_neo4j(static_articles, neo4j)
         logger.info("Articles synced: %d created, %d updated", created, updated)
 
         # Generate embeddings for anything that needs it
-        stats = sync_embeddings(neo4j_adapter, ollama_client)
+        stats = sync_embeddings(neo4j, ollama)
 
         message = (
             f"Sync complete: {stats['articles_processed']} articles, "
@@ -435,19 +429,11 @@ def trigger_embedding_sync(_admin: Annotated[bool, Depends(verify_admin)]) -> Em
 
         logger.info("Manual embedding sync complete: %s", message)
 
-        return EmbeddingSyncResponse(
-            success=True,
-            message=message,
-            stats=stats
-        )
+        return EmbeddingSyncResponse(success=True, message=message, stats=stats)
 
     except Exception as e:
         logger.error("Manual embedding sync failed: %s", e)
-        return EmbeddingSyncResponse(
-            success=False,
-            message=f"Sync failed: {str(e)}",
-            stats=None
-        )
+        return EmbeddingSyncResponse(success=False, message=f"Sync failed: {str(e)}", stats=None)
 
 
 if __name__ == "__main__":

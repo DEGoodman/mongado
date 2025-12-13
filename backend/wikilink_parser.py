@@ -11,7 +11,7 @@ class WikilinkParser:
     """Parse [[note-id]] wikilinks from markdown content."""
 
     # Regex pattern for [[note-id]] or [[article-slug]]
-    WIKILINK_PATTERN = re.compile(r'\[\[([a-z0-9-]+)\]\]')
+    WIKILINK_PATTERN = re.compile(r"\[\[([a-z0-9-]+)\]\]")
 
     def extract_links(self, content: str) -> list[str]:
         """Extract all [[note-id]] links from content.
@@ -27,9 +27,7 @@ class WikilinkParser:
         logger.debug("Extracted %d wikilinks from content", len(unique_links))
         return unique_links
 
-    def validate_links(
-        self, content: str, existing_ids: set[str]
-    ) -> tuple[list[str], list[str]]:
+    def validate_links(self, content: str, existing_ids: set[str]) -> tuple[list[str], list[str]]:
         """Validate wikilinks against existing note/article IDs.
 
         Args:
@@ -48,9 +46,7 @@ class WikilinkParser:
 
         return valid, broken
 
-    def render_links_html(
-        self, content: str, notes_map: dict[str, dict[str, Any]]
-    ) -> str:
+    def render_links_html(self, content: str, notes_map: dict[str, dict[str, Any]]) -> str:
         """Convert [[note-id]] to clickable HTML links.
 
         Args:
@@ -84,9 +80,7 @@ class WikilinkParser:
 
         return self.WIKILINK_PATTERN.sub(replace_link, content)
 
-    def render_links_markdown(
-        self, content: str, notes_map: dict[str, dict[str, Any]]
-    ) -> str:
+    def render_links_markdown(self, content: str, notes_map: dict[str, dict[str, Any]]) -> str:
         """Convert [[note-id]] to markdown links.
 
         Useful for exporting notes while preserving links.
@@ -113,9 +107,7 @@ class WikilinkParser:
 
         return self.WIKILINK_PATTERN.sub(replace_link, content)
 
-    def get_link_context(
-        self, content: str, link_id: str, context_chars: int = 100
-    ) -> str | None:
+    def get_link_context(self, content: str, link_id: str, context_chars: int = 100) -> str | None:
         """Get surrounding context for a specific link.
 
         Useful for displaying backlink previews.
@@ -128,7 +120,7 @@ class WikilinkParser:
         Returns:
             Context string or None if link not found
         """
-        pattern = re.compile(r'\[\[' + re.escape(link_id) + r'\]\]')
+        pattern = re.compile(r"\[\[" + re.escape(link_id) + r"\]\]")
         match = pattern.search(content)
 
         if not match:

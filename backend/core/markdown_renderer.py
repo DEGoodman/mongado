@@ -34,11 +34,11 @@ def _highlight_code(code: str, lang: str, **_kwargs: Any) -> str:
         lexer = get_lexer_by_name(lang, stripall=True) if lang else guess_lexer(code)
     except ClassNotFound:
         # Fallback to plain text if language not found
-        return f'<pre><code>{code}</code></pre>'
+        return f"<pre><code>{code}</code></pre>"
 
     formatter = HtmlFormatter(
-        style='monokai',  # Dark theme similar to oneDark
-        cssclass='highlight',
+        style="monokai",  # Dark theme similar to oneDark
+        cssclass="highlight",
         noclasses=False,  # Use CSS classes for better control
     )
 
@@ -54,7 +54,7 @@ def _convert_wikilinks(html: str) -> str:
     Returns:
         HTML with wikilinks converted to anchor tags
     """
-    pattern = r'\[\[([a-z0-9-]+)\]\]'
+    pattern = r"\[\[([a-z0-9-]+)\]\]"
 
     def replace_wikilink(match: re.Match[str]) -> str:
         note_id = match.group(1)
@@ -74,10 +74,10 @@ def render_markdown_to_html(markdown_content: str) -> str:
     """
     # Configure markdown-it with plugins
     md = (
-        MarkdownIt('gfm-like', {'html': True, 'linkify': True, 'typographer': True})
+        MarkdownIt("gfm-like", {"html": True, "linkify": True, "typographer": True})
         .use(front_matter_plugin)
         .use(footnote_plugin)
-        .enable('table')
+        .enable("table")
     )
 
     # Override fence renderer to use Pygments
@@ -86,16 +86,16 @@ def render_markdown_to_html(markdown_content: str) -> str:
         """Custom fence renderer that uses Pygments for syntax highlighting."""
         token = tokens[idx]
         code = token.content
-        lang = token.info.strip() if token.info else ''
+        lang = token.info.strip() if token.info else ""
 
         if lang:
             return _highlight_code(code, lang)
         else:
             # Plain code block without language
-            return f'<pre><code>{code}</code></pre>'
+            return f"<pre><code>{code}</code></pre>"
 
     # Replace the default fence renderer
-    md.renderer.rules['fence'] = custom_fence  # type: ignore[attr-defined]
+    md.renderer.rules["fence"] = custom_fence  # type: ignore[attr-defined]
 
     # Render markdown to HTML
     html = md.render(markdown_content)
@@ -112,5 +112,5 @@ def get_pygments_css() -> str:
     Returns:
         CSS string for syntax highlighting styles
     """
-    formatter = HtmlFormatter(style='monokai', cssclass='highlight')
-    return str(formatter.get_style_defs('.highlight'))
+    formatter = HtmlFormatter(style="monokai", cssclass="highlight")
+    return str(formatter.get_style_defs(".highlight"))

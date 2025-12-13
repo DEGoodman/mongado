@@ -66,10 +66,7 @@ class TestRankDocumentsBySimilarity:
     def test_respects_top_k(self):
         """Should return at most top_k results."""
         query_emb = [1.0, 0.0]
-        docs = [
-            {"id": f"doc{i}", "embedding": [1.0, 0.0]}
-            for i in range(10)
-        ]
+        docs = [{"id": f"doc{i}", "embedding": [1.0, 0.0]} for i in range(10)]
 
         results = ai.rank_documents_by_similarity(query_emb, docs, top_k=3)
         assert len(results) == 3
@@ -112,10 +109,7 @@ class TestBuildContextFromDocuments:
 
     def test_respects_max_docs(self):
         """Should only include up to max_docs."""
-        docs = [
-            {"title": f"Doc {i}", "content": f"Content {i}"}
-            for i in range(10)
-        ]
+        docs = [{"title": f"Doc {i}", "content": f"Content {i}"} for i in range(10)]
 
         context = ai.build_context_from_documents(docs, max_docs=3)
 
@@ -206,7 +200,7 @@ class TestParseJSONResponse:
 
     def test_returns_none_for_invalid_json(self):
         """Invalid JSON should return None."""
-        response = 'This is not JSON at all'
+        response = "This is not JSON at all"
         result = ai.parse_json_response(response, expected_type="array")
         assert result is None
 
@@ -226,9 +220,7 @@ class TestPromptBuilders:
         current_tags = ["existing"]
         existing_tags = {"tag1", "tag2", "existing"}
 
-        prompt = ai.build_tag_suggestion_prompt(
-            title, content, current_tags, existing_tags
-        )
+        prompt = ai.build_tag_suggestion_prompt(title, content, current_tags, existing_tags)
 
         assert "Test Note" in prompt
         assert "management" in prompt
@@ -245,9 +237,7 @@ class TestPromptBuilders:
         ]
 
         candidates = ai.filter_link_candidates(
-            all_notes,
-            current_note_id="note-1",
-            existing_links=["note-2"]
+            all_notes, current_note_id="note-1", existing_links=["note-2"]
         )
 
         # Should exclude note-1 (current), note-2 (existing link), note-4 (no content)
@@ -263,9 +253,7 @@ class TestPromptBuilders:
             {"id": "note-2", "title": "Candidate 2", "content": "Content 2"},
         ]
 
-        prompt = ai.build_link_suggestion_prompt(
-            current_title, current_content, candidates
-        )
+        prompt = ai.build_link_suggestion_prompt(current_title, current_content, candidates)
 
         assert "Current Note" in prompt
         assert "Candidate 1" in prompt

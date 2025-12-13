@@ -299,11 +299,7 @@ class NotesService:
 
             if embedding:
                 self.neo4j.store_embedding(
-                    "Note",
-                    note_id,
-                    embedding,
-                    self.ollama.model,
-                    EMBEDDING_VERSION
+                    "Note", note_id, embedding, self.ollama.model, EMBEDDING_VERSION
                 )
                 logger.info("Generated and stored embedding for note: %s", note_id)
             else:

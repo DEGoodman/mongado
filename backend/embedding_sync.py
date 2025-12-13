@@ -105,14 +105,19 @@ def needs_embedding_regeneration(
 
     # Model changed
     if node.get("embedding_model") != current_model:
-        logger.debug("Model changed for %s: %s -> %s",
-                    node["id"], node.get("embedding_model"), current_model)
+        logger.debug(
+            "Model changed for %s: %s -> %s", node["id"], node.get("embedding_model"), current_model
+        )
         return True
 
     # Version changed (logic update)
     if node.get("embedding_version", 0) < current_version:
-        logger.debug("Version outdated for %s: %d < %d",
-                    node["id"], node.get("embedding_version", 0), current_version)
+        logger.debug(
+            "Version outdated for %s: %d < %d",
+            node["id"],
+            node.get("embedding_version", 0),
+            current_version,
+        )
         return True
 
     # Content changed
@@ -157,8 +162,13 @@ def _process_embeddings_for_nodes(
 
         if needs_embedding_regeneration(node, current_model, current_version, content):
             start_time = time.time()
-            logger.info("  [%d/%d] Generating embedding for %s: %s",
-                       idx, len(nodes), node_type.lower(), title)
+            logger.info(
+                "  [%d/%d] Generating embedding for %s: %s",
+                idx,
+                len(nodes),
+                node_type.lower(),
+                title,
+            )
 
             embedding = ollama_client.generate_embedding(content, use_cache=True)
 
@@ -167,16 +177,19 @@ def _process_embeddings_for_nodes(
                     node_type, node_id, embedding, current_model, current_version
                 )
                 duration = time.time() - start_time
-                logger.info("  [%d/%d] ✓ Embedding generated in %.1fs: %s",
-                           idx, len(nodes), duration, title)
+                logger.info(
+                    "  [%d/%d] ✓ Embedding generated in %.1fs: %s", idx, len(nodes), duration, title
+                )
                 stats["embeddings_generated"] += 1
                 stats[f"{stat_key}_processed"] += 1
             else:
-                logger.error("  [%d/%d] ✗ Failed to generate embedding for: %s",
-                            idx, len(nodes), title)
+                logger.error(
+                    "  [%d/%d] ✗ Failed to generate embedding for: %s", idx, len(nodes), title
+                )
         else:
-            logger.debug("  [%d/%d] %s has valid embedding: %s",
-                        idx, len(nodes), node_type, node_id)
+            logger.debug(
+                "  [%d/%d] %s has valid embedding: %s", idx, len(nodes), node_type, node_id
+            )
             stats["embeddings_cached"] += 1
             stats[f"{stat_key}_processed"] += 1
 
@@ -201,13 +214,21 @@ def sync_embeddings(
     """
     if not neo4j_adapter.is_available():
         logger.warning("Neo4j not available - skipping embedding sync")
-        return {"articles_processed": 0, "notes_processed": 0,
-                "embeddings_generated": 0, "embeddings_cached": 0}
+        return {
+            "articles_processed": 0,
+            "notes_processed": 0,
+            "embeddings_generated": 0,
+            "embeddings_cached": 0,
+        }
 
     if not ollama_client.is_available():
         logger.warning("Ollama not available - skipping embedding sync")
-        return {"articles_processed": 0, "notes_processed": 0,
-                "embeddings_generated": 0, "embeddings_cached": 0}
+        return {
+            "articles_processed": 0,
+            "notes_processed": 0,
+            "embeddings_generated": 0,
+            "embeddings_cached": 0,
+        }
 
     current_model = ollama_client.model
     current_version = EMBEDDING_VERSION
@@ -222,21 +243,27 @@ def sync_embeddings(
     # Process Articles
     articles = neo4j_adapter.get_all_articles()
     _process_embeddings_for_nodes(
-        articles, "Article", "articles",
-        current_model, current_version,
-        neo4j_adapter, ollama_client, stats
+        articles,
+        "Article",
+        "articles",
+        current_model,
+        current_version,
+        neo4j_adapter,
+        ollama_client,
+        stats,
     )
 
     # Process Notes
     notes = neo4j_adapter.get_all_notes()
     _process_embeddings_for_nodes(
-        notes, "Note", "notes",
-        current_model, current_version,
-        neo4j_adapter, ollama_client, stats
+        notes, "Note", "notes", current_model, current_version, neo4j_adapter, ollama_client, stats
     )
 
-    logger.info("Embedding sync complete: %d generated, %d cached",
-                stats["embeddings_generated"], stats["embeddings_cached"])
+    logger.info(
+        "Embedding sync complete: %d generated, %d cached",
+        stats["embeddings_generated"],
+        stats["embeddings_cached"],
+    )
 
     return stats
 

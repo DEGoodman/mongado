@@ -53,7 +53,9 @@ def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> float:
     return best_score
 
 
-def _get_all_resources(static_articles: list, user_resources_db: list, notes_service: Any) -> list[dict[str, Any]]:
+def _get_all_resources(
+    static_articles: list, user_resources_db: list, notes_service: Any
+) -> list[dict[str, Any]]:
     """Get all searchable resources (articles + notes).
 
     Notes are normalized to have 'note_id' field to distinguish from articles.
@@ -97,7 +99,7 @@ def _normalize_search_result(doc: dict[str, Any], query: str, score: float = 1.0
         title=doc.get("title", "Untitled"),
         content=content,
         snippet=snippet,
-        score=score
+        score=score,
     )
 
 
@@ -106,7 +108,7 @@ def create_search_router(
     get_user_resources_db: Any,  # Callable that returns current user resources
     notes_service: Any,
     ollama_client: Any,
-    neo4j_adapter: Any
+    neo4j_adapter: Any,
 ) -> APIRouter:
     """Create search router with dependencies injected.
 
@@ -140,7 +142,12 @@ def create_search_router(
         """
         start_time = time.time()
 
-        logger.info("Search request received: query=%s, semantic=%s, limit=%s", request.query, request.semantic, request.top_k)
+        logger.info(
+            "Search request received: query=%s, semantic=%s, limit=%s",
+            request.query,
+            request.semantic,
+            request.top_k,
+        )
         # Get current state dynamically (not captured at router creation time)
         static_articles = get_static_articles()
         user_resources_db = get_user_resources_db()
@@ -170,14 +177,17 @@ def create_search_router(
                             query_lower,
                             doc.get("title", "Unknown"),
                             "note" if is_note else "article",
-                            list(doc.keys())
+                            list(doc.keys()),
                         )
                         continue  # Skip resources with None IDs
                     scored_docs.append((doc, total_score))
 
             # Sort by score (descending) and take top_k
             scored_docs.sort(key=lambda x: x[1], reverse=True)
-            results = [_normalize_search_result(doc, request.query, score=score) for doc, score in scored_docs[:request.top_k]]
+            results = [
+                _normalize_search_result(doc, request.query, score=score)
+                for doc, score in scored_docs[: request.top_k]
+            ]
 
             duration = time.time() - start_time
             logger.info("Text search complete: %d results in %.2fs", len(results), duration)
@@ -207,17 +217,22 @@ def create_search_router(
                     if resource_id is None:
                         logger.warning(
                             "Skipping resource with None ID in fallback search: Title=%s",
-                            doc.get("title", "Unknown")
+                            doc.get("title", "Unknown"),
                         )
                         continue
                     scored_docs.append((doc, total_score))
 
             # Sort by score (descending) and take top_k
             scored_docs.sort(key=lambda x: x[1], reverse=True)
-            results = [_normalize_search_result(doc, request.query, score=score) for doc, score in scored_docs[:request.top_k]]
+            results = [
+                _normalize_search_result(doc, request.query, score=score)
+                for doc, score in scored_docs[: request.top_k]
+            ]
 
             duration = time.time() - start_time
-            logger.info("Fallback text search complete: %d results in %.2fs", len(results), duration)
+            logger.info(
+                "Fallback text search complete: %d results in %.2fs", len(results), duration
+            )
             return SearchResponse(results=results, count=len(results))
 
         # Try to use fast semantic search with precomputed embeddings from Neo4j
@@ -239,10 +254,13 @@ def create_search_router(
 
                     # Find the full document from all_resources
                     full_doc = next(
-                        (doc for doc in all_resources
-                         if (doc_type == "Article" and str(doc.get("id")) == doc_id) or
-                            (doc_type == "Note" and doc.get("note_id") == doc_id)),
-                        None
+                        (
+                            doc
+                            for doc in all_resources
+                            if (doc_type == "Article" and str(doc.get("id")) == doc_id)
+                            or (doc_type == "Note" and doc.get("note_id") == doc_id)
+                        ),
+                        None,
                     )
 
                     if full_doc:
@@ -262,14 +280,20 @@ def create_search_router(
                     for doc in semantic_results
                 ]
                 duration = time.time() - start_time
-                logger.info("Fast semantic search complete: %d results in %.2fs", len(results), duration)
+                logger.info(
+                    "Fast semantic search complete: %d results in %.2fs", len(results), duration
+                )
                 return SearchResponse(results=results, count=len(results))
             else:
-                logger.warning("No precomputed embeddings found, falling back to on-demand generation")
+                logger.warning(
+                    "No precomputed embeddings found, falling back to on-demand generation"
+                )
 
         # Fallback: Generate embeddings on-demand (slow but works without Neo4j)
         logger.info("Using on-demand embedding generation (slower)")
-        semantic_results = ollama_client.semantic_search(request.query, all_resources, request.top_k)
+        semantic_results = ollama_client.semantic_search(
+            request.query, all_resources, request.top_k
+        )
         results = [
             _normalize_search_result(doc, request.query, score=doc.get("score", 0.0))
             for doc in semantic_results
@@ -277,7 +301,5 @@ def create_search_router(
         duration = time.time() - start_time
         logger.info("Semantic search complete: %d results in %.2fs", len(results), duration)
         return SearchResponse(results=results, count=len(results))
-
-
 
     return router

@@ -51,12 +51,14 @@ def clean_notes() -> None:
 class TestCreateNote:
     """Tests for POST /api/notes endpoint."""
 
-    def test_create_note_with_admin_token(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_create_note_with_admin_token(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test creating a note with admin authentication."""
         response = client.post(
             "/api/notes",
             json={"content": "Test note", "title": "Test Title", "tags": ["test"]},
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         assert response.status_code == 201
@@ -69,10 +71,7 @@ class TestCreateNote:
 
     def test_create_note_without_auth(self, client: TestClient) -> None:
         """Test that creating note without authentication fails."""
-        response = client.post(
-            "/api/notes",
-            json={"content": "Test note"}
-        )
+        response = client.post("/api/notes", json={"content": "Test note"})
 
         assert response.status_code == 401
         assert "Authorization required" in response.json()["detail"]
@@ -82,18 +81,20 @@ class TestCreateNote:
         response = client.post(
             "/api/notes",
             json={"content": "Test note"},
-            headers={"Authorization": "Bearer invalid-token"}
+            headers={"Authorization": "Bearer invalid-token"},
         )
 
         assert response.status_code == 403
         assert "Invalid token" in response.json()["detail"]
 
-    def test_create_note_with_wikilinks(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_create_note_with_wikilinks(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that wikilinks are extracted from content."""
         response = client.post(
             "/api/notes",
             json={"content": "This note links to [[other-note]] and [[another-note]]"},
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         assert response.status_code == 201
@@ -116,16 +117,8 @@ class TestListNotes:
     def test_list_multiple_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test listing multiple notes."""
         # Create notes
-        client.post(
-            "/api/notes",
-            json={"content": "Note 1"},
-            headers=admin_headers
-        )
-        client.post(
-            "/api/notes",
-            json={"content": "Note 2"},
-            headers=admin_headers
-        )
+        client.post("/api/notes", json={"content": "Note 1"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Note 2"}, headers=admin_headers)
 
         # List notes
         response = client.get("/api/notes")
@@ -134,7 +127,9 @@ class TestListNotes:
         assert data["count"] == 2
         assert all(note["author"] == "Erik" for note in data["notes"])
 
-    def test_list_notes_ordered_by_created_at(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_ordered_by_created_at(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that notes are ordered by created_at descending (newest first)."""
         import time
 
@@ -154,13 +149,13 @@ class TestListNotes:
         assert notes[1]["content"] == "Second"
         assert notes[2]["content"] == "First"
 
-    def test_list_notes_default_excludes_embedding(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_default_excludes_embedding(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that default response excludes embeddings for performance."""
         # Create note (will have embedding if Neo4j is available)
         client.post(
-            "/api/notes",
-            json={"content": "Test note with embedding"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Test note with embedding"}, headers=admin_headers
         )
 
         # List notes with defaults
@@ -174,15 +169,13 @@ class TestListNotes:
         assert "embedding_model" not in notes[0]
         assert "embedding_version" not in notes[0]
 
-    def test_list_notes_default_returns_preview(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_default_returns_preview(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that default response returns content preview, not full content."""
         # Create note with long content (>200 chars)
         long_content = "A" * 300  # 300 characters
-        client.post(
-            "/api/notes",
-            json={"content": long_content},
-            headers=admin_headers
-        )
+        client.post("/api/notes", json={"content": long_content}, headers=admin_headers)
 
         # List notes with defaults
         response = client.get("/api/notes")
@@ -192,21 +185,21 @@ class TestListNotes:
         # Should have content_preview (truncated), not full content
         assert len(notes) == 1
         assert "content_preview" in notes[0]
-        assert "content" not in notes[0] or notes[0].get("content") == notes[0].get("content_preview")
+        assert "content" not in notes[0] or notes[0].get("content") == notes[0].get(
+            "content_preview"
+        )
         # Preview should be truncated to ~200 chars
         preview = notes[0]["content_preview"]
         assert len(preview) <= 203  # 200 + "..."
         assert preview.endswith("...")
 
-    def test_list_notes_include_full_content(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_include_full_content(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that include_full_content=true returns complete content."""
         # Create note with long content
         long_content = "B" * 300
-        client.post(
-            "/api/notes",
-            json={"content": long_content},
-            headers=admin_headers
-        )
+        client.post("/api/notes", json={"content": long_content}, headers=admin_headers)
 
         # List notes with full content
         response = client.get("/api/notes?include_full_content=true")
@@ -219,7 +212,9 @@ class TestListNotes:
         assert notes[0]["content"] == long_content
         assert len(notes[0]["content"]) == 300
 
-    def test_list_notes_include_embedding(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_include_embedding(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that include_embedding=true returns embedding vectors."""
         from notes_service import get_notes_service
 
@@ -231,9 +226,7 @@ class TestListNotes:
 
         # Create note
         response = client.post(
-            "/api/notes",
-            json={"content": "Test note for embedding"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Test note for embedding"}, headers=admin_headers
         )
         note_id = response.json()["id"]
 
@@ -244,7 +237,7 @@ class TestListNotes:
             node_id=note_id,
             embedding=test_embedding,
             model="test-model",
-            version=1
+            version=1,
         )
 
         # List notes with embedding
@@ -261,17 +254,15 @@ class TestListNotes:
         assert notes[0]["embedding_model"] == "test-model"
         assert notes[0]["embedding_version"] == 1
 
-    def test_list_notes_minimal_mode(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_minimal_mode(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that minimal=true returns only id and title."""
         # Create note with all fields
         client.post(
             "/api/notes",
-            json={
-                "content": "Full content here",
-                "title": "Test Title",
-                "tags": ["tag1", "tag2"]
-            },
-            headers=admin_headers
+            json={"content": "Full content here", "title": "Test Title", "tags": ["tag1", "tag2"]},
+            headers=admin_headers,
         )
 
         # List notes in minimal mode
@@ -295,20 +286,20 @@ class TestListNotes:
         assert "links" not in note
         assert "link_count" not in note
 
-    def test_list_notes_includes_link_count(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_list_notes_includes_link_count(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that default response includes link_count field."""
         # Create two notes with a link between them
         response1 = client.post(
-            "/api/notes",
-            json={"content": "First note", "title": "Note 1"},
-            headers=admin_headers
+            "/api/notes", json={"content": "First note", "title": "Note 1"}, headers=admin_headers
         )
         note1_id = response1.json()["id"]
 
         client.post(
             "/api/notes",
             json={"content": f"Second note linking to [[{note1_id}]]", "title": "Note 2"},
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         # List notes
@@ -333,9 +324,7 @@ class TestGetNote:
         """Test getting specific note."""
         # Create note
         create_response = client.post(
-            "/api/notes",
-            json={"content": "Test note", "title": "Title"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Test note", "title": "Title"}, headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -355,13 +344,13 @@ class TestGetNote:
 class TestUpdateNote:
     """Tests for PUT /api/notes/{note_id} endpoint."""
 
-    def test_update_note_with_admin_token(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_update_note_with_admin_token(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test updating note with admin authentication."""
         # Create note
         create_response = client.post(
-            "/api/notes",
-            json={"content": "Original content"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Original content"}, headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -369,7 +358,7 @@ class TestUpdateNote:
         response = client.put(
             f"/api/notes/{note_id}",
             json={"content": "Updated content", "title": "New Title", "tags": ["updated"]},
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         assert response.status_code == 200
@@ -378,31 +367,28 @@ class TestUpdateNote:
         assert data["title"] == "New Title"
         assert data["tags"] == ["updated"]
 
-    def test_update_note_without_auth(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_update_note_without_auth(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that updating note without authentication fails."""
         # Create note
         create_response = client.post(
-            "/api/notes",
-            json={"content": "Original"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Original"}, headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
         # Try to update without auth
-        response = client.put(
-            f"/api/notes/{note_id}",
-            json={"content": "Hacked"}
-        )
+        response = client.put(f"/api/notes/{note_id}", json={"content": "Hacked"})
 
         assert response.status_code == 401
 
-    def test_update_with_new_wikilinks(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_update_with_new_wikilinks(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that updating content updates wikilinks."""
         # Create note
         create_response = client.post(
-            "/api/notes",
-            json={"content": "Links to [[old-note]]"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Links to [[old-note]]"}, headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -410,7 +396,7 @@ class TestUpdateNote:
         response = client.put(
             f"/api/notes/{note_id}",
             json={"content": "Links to [[new-note]] and [[another-note]]"},
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         assert response.status_code == 200
@@ -421,13 +407,13 @@ class TestUpdateNote:
 class TestDeleteNote:
     """Tests for DELETE /api/notes/{note_id} endpoint."""
 
-    def test_delete_note_with_admin_token(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_delete_note_with_admin_token(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test deleting note with admin authentication."""
         # Create note
         create_response = client.post(
-            "/api/notes",
-            json={"content": "To be deleted"},
-            headers=admin_headers
+            "/api/notes", json={"content": "To be deleted"}, headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -440,13 +426,13 @@ class TestDeleteNote:
         get_response = client.get(f"/api/notes/{note_id}")
         assert get_response.status_code == 404
 
-    def test_delete_note_without_auth(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_delete_note_without_auth(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that deleting note without authentication fails."""
         # Create note
         create_response = client.post(
-            "/api/notes",
-            json={"content": "Protected"},
-            headers=admin_headers
+            "/api/notes", json={"content": "Protected"}, headers=admin_headers
         )
         note_id = create_response.json()["id"]
 
@@ -462,23 +448,17 @@ class TestBacklinks:
         """Test getting backlinks to a note."""
         # Create target note
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create notes with links
-        target = notes_service.create_note(
-            content="Target note",
-            title="Target"
-        )
+        target = notes_service.create_note(content="Target note", title="Target")
         target_id = target["id"]
 
-        source1 = notes_service.create_note(
-            content=f"Links to [[{target_id}]]",
-            title="Source 1"
-        )
+        source1 = notes_service.create_note(content=f"Links to [[{target_id}]]", title="Source 1")
 
         source2 = notes_service.create_note(
-            content=f"Also links to [[{target_id}]]",
-            title="Source 2"
+            content=f"Also links to [[{target_id}]]", title="Source 2"
         )
 
         # Get backlinks
@@ -495,6 +475,7 @@ class TestBacklinks:
         """Test getting backlinks when note has none."""
         # Create note with no backlinks
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         note = notes_service.create_note(content="Lonely note")
@@ -512,6 +493,7 @@ class TestOutboundLinks:
     def test_get_outbound_links(self, client: TestClient) -> None:
         """Test getting outbound links from a note."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create target notes
@@ -536,6 +518,7 @@ class TestOutboundLinks:
     def test_get_outbound_links_for_note_with_none(self, client: TestClient) -> None:
         """Test getting outbound links when note has none."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         note = notes_service.create_note(content="No links here")
@@ -566,13 +549,15 @@ class TestRandomNote:
         assert "content" in data
         assert data["content"] in ["Note 1", "Note 2", "Note 3"]
 
-    def test_get_random_note_returns_valid_structure(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_get_random_note_returns_valid_structure(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that random note returns complete note structure."""
         # Create note with all fields
         client.post(
             "/api/notes",
             json={"content": "Full note", "title": "Test Title", "tags": ["test"]},
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         response = client.get("/api/notes/random")
@@ -594,7 +579,9 @@ class TestRandomNote:
         assert response.status_code == 404
         assert "No notes available" in response.json()["detail"]
 
-    def test_get_random_note_different_results(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_get_random_note_different_results(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test that calling random multiple times can return different notes."""
         # Create 10 notes to increase chance of different results
         for i in range(10):
@@ -618,6 +605,7 @@ class TestOrphanDetection:
     def test_get_orphan_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test getting orphan notes (no links, no backlinks)."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create orphan note (no links)
@@ -625,9 +613,7 @@ class TestOrphanDetection:
 
         # Create connected notes
         connected1 = notes_service.create_note(content="Connected 1")
-        _ = notes_service.create_note(
-            content=f"Links to [[{connected1['id']}]]"
-        )
+        _ = notes_service.create_note(content=f"Links to [[{connected1['id']}]]")
 
         # Get orphans
         response = client.get("/api/notes/orphans")
@@ -640,13 +626,12 @@ class TestOrphanDetection:
     def test_get_dead_end_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test getting dead-end notes (no outbound links)."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create notes
         target = notes_service.create_note(content="Target note")
-        dead_end = notes_service.create_note(
-            content="Dead end - no outbound links"
-        )
+        dead_end = notes_service.create_note(content="Dead end - no outbound links")
         _ = notes_service.create_note(
             content=f"Links to [[{target['id']}]] and [[{dead_end['id']}]]"
         )
@@ -677,13 +662,11 @@ class TestEntryPointDiscovery:
     def test_get_hub_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test getting hub notes (many outbound links)."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create target notes
-        targets = [
-            notes_service.create_note(content=f"Target {i}")
-            for i in range(5)
-        ]
+        targets = [notes_service.create_note(content=f"Target {i}") for i in range(5)]
 
         # Create hub note with many links
         hub_content = " ".join([f"[[{t['id']}]]" for t in targets])
@@ -701,16 +684,16 @@ class TestEntryPointDiscovery:
         assert data["notes"][0]["id"] == hub["id"]
         assert data["notes"][0]["link_count"] == 5
 
-    def test_get_hub_notes_with_min_links(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_get_hub_notes_with_min_links(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test hub notes with custom min_links parameter."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create targets
-        targets = [
-            notes_service.create_note(content=f"Target {i}")
-            for i in range(3)
-        ]
+        targets = [notes_service.create_note(content=f"Target {i}") for i in range(3)]
 
         # Create note with 2 links
         hub_content = f"[[{targets[0]['id']}]] [[{targets[1]['id']}]]"
@@ -727,6 +710,7 @@ class TestEntryPointDiscovery:
     def test_get_central_notes(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Test getting central notes (many backlinks)."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create central concept note
@@ -745,9 +729,12 @@ class TestEntryPointDiscovery:
         assert data["notes"][0]["id"] == central["id"]
         assert data["notes"][0]["backlink_count"] == 5
 
-    def test_get_central_notes_with_min_backlinks(self, client: TestClient, admin_headers: dict[str, str]) -> None:
+    def test_get_central_notes_with_min_backlinks(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Test central notes with custom min_backlinks parameter."""
         from notes_service import get_notes_service
+
         notes_service = get_notes_service()
 
         # Create note with 2 backlinks
@@ -777,9 +764,7 @@ class TestEntryPointDiscovery:
 class TestIsReferenceField:
     """Tests for is_reference field (quick references vs insights)."""
 
-    def test_create_reference_note(
-        self, client: TestClient, admin_headers: dict[str, str]
-    ) -> None:
+    def test_create_reference_note(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         """Can create notes marked as references."""
         response = client.post(
             "/api/notes",

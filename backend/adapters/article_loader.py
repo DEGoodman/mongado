@@ -111,9 +111,11 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
 
     # Determine if we should include drafts (dev mode only)
     is_dev_mode = settings.debug
-    logger.info("Environment mode: %s (drafts %s)",
-                "development" if is_dev_mode else "production",
-                "visible" if is_dev_mode else "hidden")
+    logger.info(
+        "Environment mode: %s (drafts %s)",
+        "development" if is_dev_mode else "production",
+        "visible" if is_dev_mode else "hidden",
+    )
 
     for md_file in md_files:
         try:
@@ -125,7 +127,9 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
 
             # Skip drafts in production
             if is_draft and not is_dev_mode:
-                logger.info("Skipping draft article in production: %s", post.get("title", md_file.stem))
+                logger.info(
+                    "Skipping draft article in production: %s", post.get("title", md_file.stem)
+                )
                 continue
 
             # TODO: Re-enable server-side HTML rendering once fence renderer is fixed
@@ -154,17 +158,17 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
             }
 
             articles.append(article)
-            logger.debug("Loaded article: %s%s",
-                        article["title"],
-                        " [DRAFT]" if is_draft else "")
+            logger.debug("Loaded article: %s%s", article["title"], " [DRAFT]" if is_draft else "")
 
         except Exception as e:
             logger.error("Failed to load %s: %s", md_file, e)
             continue
 
-    logger.info("Successfully loaded %d articles (%d drafts filtered)",
-                len(articles),
-                len([a for a in articles if a.get("draft", False)]))
+    logger.info(
+        "Successfully loaded %d articles (%d drafts filtered)",
+        len(articles),
+        len([a for a in articles if a.get("draft", False)]),
+    )
 
     # Update cache
     _articles_cache = articles
@@ -205,9 +209,11 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
 
         # Determine if we should include drafts (dev mode only)
         is_dev_mode = settings.debug
-        logger.info("Environment mode: %s (drafts %s)",
-                    "development" if is_dev_mode else "production",
-                    "visible" if is_dev_mode else "hidden")
+        logger.info(
+            "Environment mode: %s (drafts %s)",
+            "development" if is_dev_mode else "production",
+            "visible" if is_dev_mode else "hidden",
+        )
 
         for obj in md_files:
             try:
@@ -223,7 +229,10 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
 
                 # Skip drafts in production
                 if is_draft and not is_dev_mode:
-                    logger.info("Skipping draft article in production: %s", post.get("title", Path(obj["Key"]).stem))
+                    logger.info(
+                        "Skipping draft article in production: %s",
+                        post.get("title", Path(obj["Key"]).stem),
+                    )
                     continue
 
                 # TODO: Re-enable server-side HTML rendering once fence renderer is fixed
@@ -251,9 +260,9 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
                 }
 
                 articles.append(article)
-                logger.debug("Loaded article from S3: %s%s",
-                            article["title"],
-                            " [DRAFT]" if is_draft else "")
+                logger.debug(
+                    "Loaded article from S3: %s%s", article["title"], " [DRAFT]" if is_draft else ""
+                )
 
             except Exception as e:
                 logger.error("Failed to load %s: %s", obj["Key"], e)
@@ -266,9 +275,11 @@ def load_static_articles_from_s3(bucket: str, prefix: str = "articles/") -> list
         logger.error("Failed to load articles from S3: %s", e)
         return articles
 
-    logger.info("Successfully loaded %d articles from S3 (%d drafts filtered)",
-                len(articles),
-                len([a for a in articles if a.get("draft", False)]))
+    logger.info(
+        "Successfully loaded %d articles from S3 (%d drafts filtered)",
+        len(articles),
+        len([a for a in articles if a.get("draft", False)]),
+    )
     return articles
 
 

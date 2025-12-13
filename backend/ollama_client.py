@@ -40,7 +40,9 @@ class OllamaClient:
                 logger.info("Ollama client initialized successfully at %s", self.host)
             except Exception as e:
                 logger.warning("Failed to initialize Ollama client: %s", e)
-                logger.warning("Ollama features will be disabled. Is Ollama running at %s?", self.host)
+                logger.warning(
+                    "Ollama features will be disabled. Is Ollama running at %s?", self.host
+                )
                 self.enabled = False
 
     def is_available(self) -> bool:
@@ -69,12 +71,15 @@ class OllamaClient:
             #
             # Check if running on Docker which typically doesn't pass through GPU
             import os
+
             in_docker = os.path.exists("/.dockerenv")
 
             # In Docker, GPU passthrough is rare unless specifically configured
             # For now, conservatively assume CPU-only in Docker
             if in_docker:
-                logger.info("Running in Docker - assuming CPU-only unless GPU explicitly configured")
+                logger.info(
+                    "Running in Docker - assuming CPU-only unless GPU explicitly configured"
+                )
                 return False
 
             # On native installs, Ollama will use GPU if available
@@ -116,7 +121,7 @@ class OllamaClient:
             response = self.client.embeddings(
                 model=self.embed_model,  # Use dedicated embedding model
                 prompt=text,
-                options={"num_ctx": self.num_ctx}  # Use consistent context size
+                options={"num_ctx": self.num_ctx},  # Use consistent context size
             )
             embedding: list[float] = response["embedding"]
 
@@ -132,10 +137,7 @@ class OllamaClient:
             return None
 
     def semantic_search_with_precomputed_embeddings(
-        self,
-        query: str,
-        documents_with_embeddings: list[dict[str, Any]],
-        top_k: int = 5
+        self, query: str, documents_with_embeddings: list[dict[str, Any]], top_k: int = 5
     ) -> list[dict[str, Any]]:
         """
         Perform semantic search using pre-computed embeddings (FAST!).
@@ -156,8 +158,11 @@ class OllamaClient:
             return []
 
         try:
-            logger.info("Starting semantic search with precomputed embeddings: query='%s', corpus_size=%d",
-                       query, len(documents_with_embeddings))
+            logger.info(
+                "Starting semantic search with precomputed embeddings: query='%s', corpus_size=%d",
+                query,
+                len(documents_with_embeddings),
+            )
 
             # Generate embedding for query only
             logger.info("Generating embedding for query...")
@@ -168,13 +173,18 @@ class OllamaClient:
             logger.info("Query embedding generated successfully")
 
             # Calculate similarities using precomputed embeddings
-            logger.info("Computing similarities with %d precomputed embeddings...", len(documents_with_embeddings))
+            logger.info(
+                "Computing similarities with %d precomputed embeddings...",
+                len(documents_with_embeddings),
+            )
             scored_docs = []
 
             for doc in documents_with_embeddings:
                 doc_embedding = doc.get("embedding")
                 if not doc_embedding:
-                    logger.warning("Document %s missing embedding, skipping", doc.get("id", "unknown"))
+                    logger.warning(
+                        "Document %s missing embedding, skipping", doc.get("id", "unknown")
+                    )
                     continue
 
                 # Calculate cosine similarity
@@ -189,9 +199,11 @@ class OllamaClient:
 
             logger.info("Semantic search complete: returning %d results", len(results))
             if results:
-                logger.info("Top result: '%s' (score: %.3f)",
-                           results[0].get("title", "Untitled"),
-                           results[0].get("score", 0.0))
+                logger.info(
+                    "Top result: '%s' (score: %.3f)",
+                    results[0].get("title", "Untitled"),
+                    results[0].get("score", 0.0),
+                )
 
             return results
 
@@ -217,13 +229,13 @@ class OllamaClient:
             logger.debug("Ollama not available, falling back to basic search")
             # Fallback to basic text search
             query_lower = query.lower()
-            results = [
-                doc for doc in documents if query_lower in doc.get("content", "").lower()
-            ]
+            results = [doc for doc in documents if query_lower in doc.get("content", "").lower()]
             return results[:top_k]
 
         try:
-            logger.info("Starting semantic search: query='%s', corpus_size=%d", query, len(documents))
+            logger.info(
+                "Starting semantic search: query='%s', corpus_size=%d", query, len(documents)
+            )
 
             # Generate embedding for query
             logger.info("Generating embedding for query...")
@@ -250,15 +262,24 @@ class OllamaClient:
                     embeddings_cached += 1
                 else:
                     embeddings_generated += 1
-                    logger.info("  [%d/%d] Generated embedding for: %s", idx, len(documents), doc.get("title", "Untitled")[:50])
+                    logger.info(
+                        "  [%d/%d] Generated embedding for: %s",
+                        idx,
+                        len(documents),
+                        doc.get("title", "Untitled")[:50],
+                    )
 
                 if doc_embedding:
                     # Calculate cosine similarity
                     similarity = self._cosine_similarity(query_embedding, doc_embedding)
                     scored_docs.append((similarity, doc))
 
-            logger.info("Embeddings complete: %d generated, %d cached, %d total",
-                       embeddings_generated, embeddings_cached, len(documents))
+            logger.info(
+                "Embeddings complete: %d generated, %d cached, %d total",
+                embeddings_generated,
+                embeddings_cached,
+                len(documents),
+            )
 
             # Sort by similarity (highest first) and return top_k
             scored_docs.sort(key=lambda x: x[0], reverse=True)
@@ -266,9 +287,11 @@ class OllamaClient:
 
             logger.info("Semantic search complete: returning %d results", len(results))
             if results:
-                logger.info("Top result: '%s' (score: %.3f)",
-                           results[0].get("title", "Untitled"),
-                           scored_docs[0][0])
+                logger.info(
+                    "Top result: '%s' (score: %.3f)",
+                    results[0].get("title", "Untitled"),
+                    scored_docs[0][0],
+                )
 
             return results
 
@@ -280,7 +303,7 @@ class OllamaClient:
         self,
         question: str,
         context_documents: list[dict[str, Any]],
-        allow_general_knowledge: bool = True
+        allow_general_knowledge: bool = True,
     ) -> str | None:
         """
         Answer a question based on context documents and/or general knowledge.
@@ -350,8 +373,8 @@ Answer:"""
                 prompt=prompt,
                 options={
                     "num_ctx": 8192,  # Larger context for Q&A with multiple documents
-                    "num_predict": 512  # Limit response length for faster generation
-                }
+                    "num_predict": 512,  # Limit response length for faster generation
+                },
             )
             answer: str = response["response"]
             return answer
@@ -384,7 +407,7 @@ Summary:"""
             response = self.client.generate(
                 model=self.chat_model,  # Use chat model for summarization
                 prompt=prompt,
-                options={"num_ctx": self.num_ctx}
+                options={"num_ctx": self.num_ctx},
             )
             summary: str = response["response"]
             return summary
@@ -416,8 +439,8 @@ Summary:"""
                 prompt="Hi",
                 options={
                     "num_predict": 1,  # Only generate 1 token
-                    "num_ctx": self.num_ctx  # Set context window for runner initialization
-                }
+                    "num_ctx": self.num_ctx,  # Set context window for runner initialization
+                },
             )
             logger.info("Ollama model warmed up and ready")
             return True

@@ -79,8 +79,7 @@ class TestAskQuestion:
     def test_ask_question_valid_request(self, client: TestClient) -> None:
         """Ask question accepts valid request and returns appropriate response."""
         response = client.post(
-            "/api/ask",
-            json={"question": "What is software delivery performance?"}
+            "/api/ask", json={"question": "What is software delivery performance?"}
         )
 
         # Either success (200) with answer, or 503 if Ollama unavailable
@@ -98,10 +97,7 @@ class TestAskQuestion:
 
     def test_ask_question_empty_question_handled(self, client: TestClient) -> None:
         """Ask question handles empty question gracefully."""
-        response = client.post(
-            "/api/ask",
-            json={"question": ""}
-        )
+        response = client.post("/api/ask", json={"question": ""})
 
         # Empty question is technically valid (str type), endpoint decides behavior
         # Either 200 (with response), 503 (Ollama unavailable), or 400/422 (validation)
@@ -109,10 +105,7 @@ class TestAskQuestion:
 
     def test_ask_question_missing_question_rejected(self, client: TestClient) -> None:
         """Ask question requires question field."""
-        response = client.post(
-            "/api/ask",
-            json={}
-        )
+        response = client.post("/api/ask", json={})
 
         assert response.status_code == 422
 
@@ -428,6 +421,7 @@ class TestSuggestStream:
         for line in content.split("\n\n"):
             if line.startswith("data: "):
                 import json
+
                 try:
                     event_data = json.loads(line[6:])  # Skip "data: "
                     events.append(event_data)
@@ -467,6 +461,7 @@ class TestSuggestStream:
         for line in content.split("\n\n"):
             if line.startswith("data: "):
                 import json
+
                 try:
                     event_data = json.loads(line[6:])
                     events.append(event_data)

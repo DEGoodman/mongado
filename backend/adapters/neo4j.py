@@ -229,7 +229,7 @@ class Neo4jAdapter:
             if not has_content and not has_timestamp:
                 logger.warning(
                     "Note %s found in Neo4j but has no content or timestamp (broken node)",
-                    note.get("id")
+                    note.get("id"),
                 )
                 return None
 
@@ -904,9 +904,7 @@ class Neo4jAdapter:
             )
             return True
 
-    def get_embedding(
-        self, node_type: str, node_id: str
-    ) -> dict[str, Any] | None:
+    def get_embedding(self, node_type: str, node_id: str) -> dict[str, Any] | None:
         """Get embedding for an article or note.
 
         Args:
@@ -941,9 +939,7 @@ class Neo4jAdapter:
                 "content_hash": record["content_hash"],
             }
 
-    def get_all_embeddings(
-        self, node_type: str | None = None
-    ) -> list[dict[str, Any]]:
+    def get_all_embeddings(self, node_type: str | None = None) -> list[dict[str, Any]]:
         """Get all embeddings for articles and/or notes.
 
         Args:

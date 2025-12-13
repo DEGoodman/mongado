@@ -38,9 +38,7 @@ def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
 
 
 def rank_documents_by_similarity(
-    query_embedding: list[float],
-    documents_with_embeddings: list[dict[str, Any]],
-    top_k: int = 5
+    query_embedding: list[float], documents_with_embeddings: list[dict[str, Any]], top_k: int = 5
 ) -> list[dict[str, Any]]:
     """Rank documents by cosine similarity to query embedding.
 
@@ -73,10 +71,7 @@ def rank_documents_by_similarity(
     return [doc for _, doc in scored_docs[:top_k]]
 
 
-def build_context_from_documents(
-    documents: list[dict[str, Any]],
-    max_docs: int = 5
-) -> str:
+def build_context_from_documents(documents: list[dict[str, Any]], max_docs: int = 5) -> str:
     """Build context string from documents for AI prompts.
 
     Pure function: No I/O, no side effects, deterministic.
@@ -101,9 +96,7 @@ def build_context_from_documents(
 
 
 def build_qa_prompt(
-    question: str,
-    context_documents: list[dict[str, Any]],
-    allow_general_knowledge: bool = True
+    question: str, context_documents: list[dict[str, Any]], allow_general_knowledge: bool = True
 ) -> str:
     """Build Q&A prompt with context and instructions.
 
@@ -169,10 +162,7 @@ Summary:"""
 
 
 def build_tag_suggestion_prompt(
-    title: str,
-    content: str,
-    current_tags: list[str],
-    existing_tags: set[str]
+    title: str, content: str, current_tags: list[str], existing_tags: set[str]
 ) -> str:
     """Build prompt for AI tag suggestions.
 
@@ -212,9 +202,7 @@ JSON:"""
 
 
 def filter_link_candidates(
-    all_notes: list[dict[str, Any]],
-    current_note_id: str,
-    existing_links: list[str]
+    all_notes: list[dict[str, Any]], current_note_id: str, existing_links: list[str]
 ) -> list[dict[str, Any]]:
     """Filter notes to get valid link candidates.
 
@@ -231,17 +219,14 @@ def filter_link_candidates(
     excluded_ids = set(existing_links)
     excluded_ids.add(current_note_id)
 
-    return [
-        note for note in all_notes
-        if note["id"] not in excluded_ids and note.get("content")
-    ]
+    return [note for note in all_notes if note["id"] not in excluded_ids and note.get("content")]
 
 
 def build_link_suggestion_prompt(
     current_title: str,
     current_content: str,
     candidate_notes: list[dict[str, Any]],
-    max_candidates: int = 50
+    max_candidates: int = 50,
 ) -> str:
     """Build prompt for AI link suggestions.
 
@@ -257,10 +242,12 @@ def build_link_suggestion_prompt(
         Complete prompt string for LLM
     """
     # Format candidate notes for the prompt (limit to avoid token limits)
-    candidates_text = "\n\n".join([
-        f"ID: {n['id']}\nTitle: {n.get('title', 'Untitled')}\nContent: {n.get('content', '')[:200]}..."
-        for n in candidate_notes[:max_candidates]
-    ])
+    candidates_text = "\n\n".join(
+        [
+            f"ID: {n['id']}\nTitle: {n.get('title', 'Untitled')}\nContent: {n.get('content', '')[:200]}..."
+            for n in candidate_notes[:max_candidates]
+        ]
+    )
 
     return f"""You are analyzing a note to suggest related notes that should be linked.
 
@@ -290,8 +277,7 @@ JSON:"""
 
 
 def parse_json_response(
-    raw_response: str,
-    expected_type: str = "array"
+    raw_response: str, expected_type: str = "array"
 ) -> list[dict[str, Any]] | dict[str, Any] | None:
     """Defensively parse JSON response from LLM.
 
@@ -344,9 +330,9 @@ def parse_json_response(
         # Fallback: Try line-by-line parsing (some models output newline-delimited JSON)
         if expected_type == "array":
             parsed_objects = []
-            for line in response.split('\n'):
+            for line in response.split("\n"):
                 line = line.strip()
-                if line and line.startswith('{'):
+                if line and line.startswith("{"):
                     try:
                         obj = json.loads(line)
                         parsed_objects.append(obj)

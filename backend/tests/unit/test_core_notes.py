@@ -110,15 +110,9 @@ class TestBuildGraphData:
                 "title": "First Note",
                 "author": "admin",
                 "tags": ["test"],
-                "links": []
+                "links": [],
             },
-            {
-                "id": "note-2",
-                "title": "Second Note",
-                "author": "visitor",
-                "tags": [],
-                "links": []
-            }
+            {"id": "note-2", "title": "Second Note", "author": "visitor", "tags": [], "links": []},
         ]
 
         graph = notes.build_graph_data(notes_list)
@@ -137,22 +131,10 @@ class TestBuildGraphData:
                 "title": "First",
                 "author": "admin",
                 "tags": [],
-                "links": ["note-2", "note-3"]
+                "links": ["note-2", "note-3"],
             },
-            {
-                "id": "note-2",
-                "title": "Second",
-                "author": "admin",
-                "tags": [],
-                "links": ["note-3"]
-            },
-            {
-                "id": "note-3",
-                "title": "Third",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            }
+            {"id": "note-2", "title": "Second", "author": "admin", "tags": [], "links": ["note-3"]},
+            {"id": "note-3", "title": "Third", "author": "admin", "tags": [], "links": []},
         ]
 
         graph = notes.build_graph_data(notes_list)
@@ -177,14 +159,7 @@ class TestBuildGraphData:
 
     def test_handles_missing_title(self):
         """Missing title should default to note ID."""
-        notes_list = [
-            {
-                "id": "note-1",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            }
-        ]
+        notes_list = [{"id": "note-1", "author": "admin", "tags": [], "links": []}]
 
         graph = notes.build_graph_data(notes_list)
         assert graph["nodes"][0]["title"] == "note-1"
@@ -196,13 +171,7 @@ class TestBuildLocalSubgraph:
     def test_includes_center_node(self):
         """Center node should always be included."""
         notes_list = [
-            {
-                "id": "center",
-                "title": "Center",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            }
+            {"id": "center", "title": "Center", "author": "admin", "tags": [], "links": []}
         ]
 
         subgraph = notes.build_local_subgraph(notes_list, "center", depth=1)
@@ -217,22 +186,16 @@ class TestBuildLocalSubgraph:
                 "title": "Center",
                 "author": "admin",
                 "tags": [],
-                "links": ["neighbor"]
+                "links": ["neighbor"],
             },
             {
                 "id": "neighbor",
                 "title": "Neighbor",
                 "author": "admin",
                 "tags": [],
-                "links": ["distant"]
+                "links": ["distant"],
             },
-            {
-                "id": "distant",
-                "title": "Distant",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            }
+            {"id": "distant", "title": "Distant", "author": "admin", "tags": [], "links": []},
         ]
 
         subgraph = notes.build_local_subgraph(notes_list, "center", depth=1)
@@ -246,34 +209,10 @@ class TestBuildLocalSubgraph:
     def test_respects_depth_limit(self):
         """Should only include nodes within depth hops."""
         notes_list = [
-            {
-                "id": "center",
-                "title": "Center",
-                "author": "admin",
-                "tags": [],
-                "links": ["hop1"]
-            },
-            {
-                "id": "hop1",
-                "title": "Hop 1",
-                "author": "admin",
-                "tags": [],
-                "links": ["hop2"]
-            },
-            {
-                "id": "hop2",
-                "title": "Hop 2",
-                "author": "admin",
-                "tags": [],
-                "links": ["hop3"]
-            },
-            {
-                "id": "hop3",
-                "title": "Hop 3",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            }
+            {"id": "center", "title": "Center", "author": "admin", "tags": [], "links": ["hop1"]},
+            {"id": "hop1", "title": "Hop 1", "author": "admin", "tags": [], "links": ["hop2"]},
+            {"id": "hop2", "title": "Hop 2", "author": "admin", "tags": [], "links": ["hop3"]},
+            {"id": "hop3", "title": "Hop 3", "author": "admin", "tags": [], "links": []},
         ]
 
         # depth=2 should include center, hop1, hop2 but not hop3
@@ -288,20 +227,8 @@ class TestBuildLocalSubgraph:
     def test_handles_disconnected_graph(self):
         """Disconnected nodes should not be included."""
         notes_list = [
-            {
-                "id": "center",
-                "title": "Center",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            },
-            {
-                "id": "isolated",
-                "title": "Isolated",
-                "author": "admin",
-                "tags": [],
-                "links": []
-            }
+            {"id": "center", "title": "Center", "author": "admin", "tags": [], "links": []},
+            {"id": "isolated", "title": "Isolated", "author": "admin", "tags": [], "links": []},
         ]
 
         subgraph = notes.build_local_subgraph(notes_list, "center", depth=1)
@@ -313,27 +240,15 @@ class TestBuildLocalSubgraph:
     def test_handles_cycles(self):
         """Should handle circular references without infinite loop."""
         notes_list = [
-            {
-                "id": "a",
-                "title": "A",
-                "author": "admin",
-                "tags": [],
-                "links": ["b"]
-            },
-            {
-                "id": "b",
-                "title": "B",
-                "author": "admin",
-                "tags": [],
-                "links": ["c"]
-            },
+            {"id": "a", "title": "A", "author": "admin", "tags": [], "links": ["b"]},
+            {"id": "b", "title": "B", "author": "admin", "tags": [], "links": ["c"]},
             {
                 "id": "c",
                 "title": "C",
                 "author": "admin",
                 "tags": [],
-                "links": ["a"]  # Cycle back to A
-            }
+                "links": ["a"],  # Cycle back to A
+            },
         ]
 
         # Should complete without hanging

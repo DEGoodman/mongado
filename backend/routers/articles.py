@@ -166,9 +166,7 @@ JSON:"""
         try:
             # Use qwen2.5:1.5b for structured output
             response_data = ollama_client.client.generate(
-                model="qwen2.5:1.5b",
-                prompt=prompt,
-                options={"num_ctx": 8192}
+                model="qwen2.5:1.5b", prompt=prompt, options={"num_ctx": 8192}
             )
 
             response = response_data.get("response", "")
@@ -197,9 +195,9 @@ JSON:"""
             except json.JSONDecodeError:
                 # Try line-by-line parsing
                 concepts_data = []
-                for line in response.split('\n'):
+                for line in response.split("\n"):
                     line = line.strip()
-                    if line and line.startswith('{'):
+                    if line and line.startswith("{"):
                         try:
                             obj = json.loads(line)
                             concepts_data.append(obj)
@@ -220,7 +218,7 @@ JSON:"""
                             concept=c.get("concept", ""),
                             excerpt=c.get("excerpt", ""),
                             confidence=c.get("confidence", 0.5),
-                            reason=c.get("reason", "")
+                            reason=c.get("reason", ""),
                         )
                     )
                 except Exception as e:
@@ -263,7 +261,9 @@ JSON:"""
             return BatchConceptExtractionResponse(concepts=[], count=0, articles_processed=0)
 
         # Extract concepts from each article
-        concept_map: dict[str, dict] = {}  # concept_name -> {excerpts, confidence, reasons, article_ids, article_titles}
+        concept_map: dict[
+            str, dict
+        ] = {}  # concept_name -> {excerpts, confidence, reasons, article_ids, article_titles}
 
         for article in articles:
             article_id = article["id"]
@@ -319,9 +319,7 @@ JSON:"""
         batch_concepts.sort(key=lambda x: x.confidence, reverse=True)
 
         logger.info(
-            "Extracted %d unique concepts from %d articles",
-            len(batch_concepts),
-            len(articles)
+            "Extracted %d unique concepts from %d articles", len(batch_concepts), len(articles)
         )
 
         return BatchConceptExtractionResponse(

@@ -139,9 +139,7 @@ def _optimize_with_cwebp(
     """
     try:
         # Check if cwebp is available
-        result = subprocess.run(
-            ["which", "cwebp"], capture_output=True, text=True, check=False
-        )
+        result = subprocess.run(["which", "cwebp"], capture_output=True, text=True, check=False)
         if result.returncode != 0:
             logger.warning(
                 "cwebp not found. Install with: brew install webp (macOS) or apt install webp (Linux)"

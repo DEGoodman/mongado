@@ -110,10 +110,7 @@ class MockOllamaClient:
         return results
 
     def semantic_search_with_precomputed_embeddings(
-        self,
-        query: str,
-        documents_with_embeddings: list[dict[str, Any]],
-        top_k: int = 5
+        self, query: str, documents_with_embeddings: list[dict[str, Any]], top_k: int = 5
     ) -> list[dict[str, Any]]:
         """Mock semantic search with precomputed embeddings."""
         if not self._available:
@@ -129,7 +126,7 @@ class MockOllamaClient:
         self,
         question: str,
         context_documents: list[dict[str, Any]],
-        allow_general_knowledge: bool = True
+        allow_general_knowledge: bool = True,
     ) -> str | None:
         """Mock Q&A response."""
         if not self._available:

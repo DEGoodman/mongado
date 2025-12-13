@@ -125,14 +125,14 @@ def main() -> None:
                         "MATCH (n:Note {id: $id}) SET n.tags = $tags",
                         id=note_id,
                         tags=new_tags,
-                )
+                    )
 
             updated_count += 1
             logger.info("  ✓ Updated\n")
 
-    logger.info(f"\n{'='*50}")
+    logger.info(f"\n{'=' * 50}")
     logger.info(f"Summary: Updated {updated_count} of {len(notes)} notes")
-    logger.info(f"{'='*50}")
+    logger.info(f"{'=' * 50}")
 
 
 if __name__ == "__main__":

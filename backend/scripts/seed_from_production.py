@@ -72,9 +72,9 @@ def seed_notes(notes_file: Path) -> None:
         except Exception as e:
             logger.error(f"✗ Failed to create {note_id}: {e}")
 
-    logger.info(f"\n{'='*50}")
+    logger.info(f"\n{'=' * 50}")
     logger.info(f"Summary: Created {created_count}, Skipped {skipped_count}")
-    logger.info(f"{'='*50}")
+    logger.info(f"{'=' * 50}")
 
 
 def main() -> None:
