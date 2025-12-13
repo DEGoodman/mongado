@@ -46,10 +46,7 @@ interface StreamEvent {
  * @param callbacks - Callbacks for handling stream events
  * @returns Cleanup function to close the connection
  */
-export function streamAISuggestions(
-  noteId: string,
-  callbacks: StreamCallbacks
-): () => void {
+export function streamAISuggestions(noteId: string, callbacks: StreamCallbacks): () => void {
   const streamLogger = logger.withContext("AIStream");
   const url = `${API_URL}/api/notes/${noteId}/suggest-stream`;
 

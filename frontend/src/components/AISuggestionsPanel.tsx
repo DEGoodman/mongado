@@ -345,13 +345,17 @@ export default function AISuggestionsPanel({
           {error && !loading && <div className={styles.errorBanner}>{error}</div>}
 
           {/* Empty State - only show when not loading and no suggestions */}
-          {!loading && !hasAnySuggestions && !error && streamPhase !== "tags" && streamPhase !== "links" && (
-            <p className={styles.emptyState}>
-              {mode === "on-demand"
-                ? "No suggestions yet. Click the button above to generate AI recommendations."
-                : "Suggestions will appear automatically as you type."}
-            </p>
-          )}
+          {!loading &&
+            !hasAnySuggestions &&
+            !error &&
+            streamPhase !== "tags" &&
+            streamPhase !== "links" && (
+              <p className={styles.emptyState}>
+                {mode === "on-demand"
+                  ? "No suggestions yet. Click the button above to generate AI recommendations."
+                  : "Suggestions will appear automatically as you type."}
+              </p>
+            )}
 
           {/* Outdated Warning */}
           {isOutdated && !loading && hasAnySuggestions && (
