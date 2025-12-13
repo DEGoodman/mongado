@@ -45,9 +45,21 @@ class MockOllamaClient:
 
         # Mock the internal ollama client
         self.client = MagicMock()
-        self.client.generate.return_value = {
-            "response": "This is a mock AI response for testing purposes."
-        }
+
+        def mock_generate(**kwargs: Any) -> Any:
+            """Mock generate that supports streaming."""
+            response_text = '[{"tag": "mock-tag", "confidence": 0.8, "reason": "mock reason"}]'
+            if kwargs.get("stream"):
+                # Return an iterator for streaming mode
+                def stream_generator() -> Generator[dict[str, Any]]:
+                    for char in response_text:
+                        yield {"response": char, "done": False}
+                    yield {"response": "", "done": True}
+
+                return stream_generator()
+            return {"response": response_text}
+
+        self.client.generate = mock_generate
         self.client.embeddings.return_value = {
             "embedding": [0.1] * 768  # Standard embedding dimension
         }

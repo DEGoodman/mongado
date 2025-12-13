@@ -454,12 +454,24 @@ def suggest_stream(
         )
 
         try:
-            # Generate tags using structured output model
-            tag_response = _ollama.client.generate(
-                model=_ollama.structured_model, prompt=tag_prompt, options={"num_ctx": 4096}
-            )
+            # Generate tags with token streaming for real-time progress
+            tag_text = ""
+            token_count = 0
+            for chunk in _ollama.client.generate(
+                model=_ollama.structured_model,
+                prompt=tag_prompt,
+                options={"num_ctx": 4096},
+                stream=True,
+            ):
+                if chunk.get("response"):
+                    tag_text += chunk["response"]
+                    token_count += 1
+                    # Send heartbeat every 10 tokens to show activity
+                    if token_count % 10 == 0:
+                        yield format_sse(
+                            {"type": "generating", "phase": "tags", "tokens": token_count}
+                        )
 
-            tag_text = tag_response.get("response", "")
             if tag_text:
                 tags_data = ai_core.parse_json_response(tag_text, expected_type="array")
                 if tags_data and isinstance(tags_data, list):
@@ -472,7 +484,7 @@ def suggest_stream(
                             }
                             yield format_sse({"type": "tag", "data": tag_suggestion})
 
-            logger.info("Streamed tag suggestions for note %s", note_id)
+            logger.info("Streamed tag suggestions for note %s (%d tokens)", note_id, token_count)
 
         except Exception as e:
             logger.error("Error generating tag suggestions during stream: %s", e)
@@ -497,12 +509,24 @@ def suggest_stream(
             )
 
             try:
-                # Generate links using structured output model
-                link_response = _ollama.client.generate(
-                    model=_ollama.structured_model, prompt=link_prompt, options={"num_ctx": 8192}
-                )
+                # Generate links with token streaming for real-time progress
+                link_text = ""
+                token_count = 0
+                for chunk in _ollama.client.generate(
+                    model=_ollama.structured_model,
+                    prompt=link_prompt,
+                    options={"num_ctx": 8192},
+                    stream=True,
+                ):
+                    if chunk.get("response"):
+                        link_text += chunk["response"]
+                        token_count += 1
+                        # Send heartbeat every 10 tokens to show activity
+                        if token_count % 10 == 0:
+                            yield format_sse(
+                                {"type": "generating", "phase": "links", "tokens": token_count}
+                            )
 
-                link_text = link_response.get("response", "")
                 if link_text:
                     links_data = ai_core.parse_json_response(link_text, expected_type="array")
                     if links_data and isinstance(links_data, list):
@@ -519,7 +543,9 @@ def suggest_stream(
                                     }
                                     yield format_sse({"type": "link", "data": link_suggestion})
 
-                logger.info("Streamed link suggestions for note %s", note_id)
+                logger.info(
+                    "Streamed link suggestions for note %s (%d tokens)", note_id, token_count
+                )
 
             except Exception as e:
                 logger.error("Error generating link suggestions during stream: %s", e)

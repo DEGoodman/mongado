@@ -509,6 +509,49 @@ class TestSuggestStream:
             assert "tags" in phases
             assert "links" in phases
 
+    def test_suggest_stream_generating_events(self, client: TestClient) -> None:
+        """Streaming generates 'generating' heartbeat events during token generation."""
+        notes_response = client.get("/api/notes")
+        if notes_response.status_code != 200:
+            pytest.skip("Notes endpoint not available")
+
+        notes = notes_response.json().get("notes", [])
+        if not notes:
+            pytest.skip("No notes available for testing")
+
+        note_id = notes[0]["id"]
+        response = client.get(f"/api/notes/{note_id}/suggest-stream")
+
+        assert response.status_code == 200
+        content = response.text
+
+        # Parse all events
+        events = []
+        for line in content.split("\n\n"):
+            if line.startswith("data: "):
+                import json
+
+                try:
+                    event_data = json.loads(line[6:])
+                    events.append(event_data)
+                except json.JSONDecodeError:
+                    pass
+
+        event_types = [e.get("type") for e in events]
+
+        # If not an error, should have generating events with token counts
+        if "error" not in event_types:
+            # The mock generates tokens character by character, so we get generating events
+            generating_events = [e for e in events if e.get("type") == "generating"]
+            # Should have at least some generating events (sent every 10 tokens)
+            # Mock returns ~60 chars so we expect at least 5-6 generating events
+            assert len(generating_events) >= 4
+            # Each should have phase and token count
+            for gen_event in generating_events:
+                assert "phase" in gen_event
+                assert "tokens" in gen_event
+                assert gen_event["tokens"] > 0
+
     @slow
     def test_suggest_stream_no_buffering_headers(self, client: TestClient) -> None:
         """Streaming endpoint sets proper no-buffering headers."""
