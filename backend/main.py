@@ -36,9 +36,9 @@ from notes_service import get_notes_service
 from ollama_client import get_ollama_client
 from routers.admin import create_admin_router
 from routers.ai import router as ai_router
-from routers.articles import create_articles_router
-from routers.notes import create_notes_router
-from routers.search import create_search_router
+from routers.articles import router as articles_router
+from routers.notes import router as notes_router
+from routers.search import router as search_router
 
 # Configure logging
 setup_logging(level="INFO")
@@ -224,26 +224,10 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(CacheControlMiddleware)
 
 # Create and include domain routers
-# AI router uses FastAPI Depends() - no factory needed
+# AI, Notes, Search, and Articles routers use FastAPI Depends() - no factory needed
 app.include_router(ai_router)
-
-# Other routers still use factory pattern (to be refactored in future)
-notes_router = create_notes_router(notes_service=notes_service, ollama_client=ollama_client)
 app.include_router(notes_router)
-
-search_router = create_search_router(
-    get_static_articles=lambda: static_articles,  # Callable returns current list
-    get_user_resources_db=lambda: user_resources_db,  # Callable returns current list
-    notes_service=notes_service,
-    ollama_client=ollama_client,
-    neo4j_adapter=neo4j_adapter,
-)
 app.include_router(search_router)
-
-articles_router = create_articles_router(
-    get_static_articles=lambda: static_articles,  # Callable returns current list
-    ollama_client=ollama_client,
-)
 app.include_router(articles_router)
 
 admin_router = create_admin_router(neo4j_adapter=neo4j_adapter)

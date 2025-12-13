@@ -13,35 +13,8 @@ from fastapi.testclient import TestClient
 
 import main
 
-
-@pytest.fixture(autouse=True)
-def clear_resources() -> Generator[None]:
-    """Clear user resources before and after each test (static articles remain)."""
-    main.user_resources_db.clear()
-    yield
-    main.user_resources_db.clear()
-
-
-@pytest.fixture
-def client() -> Generator[TestClient]:
-    """Get test client for API testing with lifespan context."""
-    with TestClient(main.app) as client:
-        yield client
-
-
-@pytest.fixture
-def sample_resource() -> dict[str, str | list[str]]:
-    """Get sample resource data for testing."""
-    return {
-        "title": "Test Resource",
-        "content": "This is test content",
-        "url": "https://example.com",
-        "tags": ["test", "example"],
-    }
-
-
 # ============================================================================
-# Ollama Mock Fixtures for AI Endpoint Testing
+# Mock Classes (defined first so fixtures can use them)
 # ============================================================================
 
 
@@ -167,6 +140,141 @@ class MockOllamaClient:
         return result
 
 
+class MockNotesService:
+    """Mock NotesService for testing without Neo4j."""
+
+    def __init__(self) -> None:
+        """Initialize with sample notes."""
+        self._notes: dict[str, dict[str, Any]] = {
+            "test-note-1": {
+                "id": "test-note-1",
+                "title": "Test Note 1",
+                "content": "This is test content for note 1. [[test-note-2]]",
+                "tags": ["test", "example"],
+                "is_reference": False,
+                "created_at": "2024-01-01T00:00:00Z",
+                "links": ["test-note-2"],
+            },
+            "test-note-2": {
+                "id": "test-note-2",
+                "title": "Test Note 2",
+                "content": "This is test content for note 2.",
+                "tags": ["test"],
+                "is_reference": False,
+                "created_at": "2024-01-02T00:00:00Z",
+                "links": [],
+            },
+        }
+
+    def list_notes(
+        self,
+        is_reference: bool | None = None,
+        include_full_content: bool = False,
+        include_embedding: bool = False,
+        minimal: bool = False,
+    ) -> list[dict[str, Any]]:
+        """List all notes."""
+        notes = list(self._notes.values())
+        if is_reference is not None:
+            notes = [n for n in notes if n.get("is_reference") == is_reference]
+        return notes
+
+    def get_note(self, note_id: str) -> dict[str, Any] | None:
+        """Get a single note by ID."""
+        return self._notes.get(note_id)
+
+    def create_note(
+        self,
+        content: str,
+        title: str | None = None,
+        tags: list[str] | None = None,
+        is_reference: bool = False,
+    ) -> dict[str, Any]:
+        """Create a note."""
+        note_id = f"mock-note-{len(self._notes) + 1}"
+        note = {
+            "id": note_id,
+            "title": title or "Untitled",
+            "content": content,
+            "tags": tags or [],
+            "is_reference": is_reference,
+            "created_at": "2024-01-01T00:00:00Z",
+            "links": [],
+        }
+        self._notes[note_id] = note
+        return note
+
+    def update_note(
+        self,
+        note_id: str,
+        content: str | None = None,
+        title: str | None = None,
+        tags: list[str] | None = None,
+        is_reference: bool | None = None,
+    ) -> dict[str, Any] | None:
+        """Update a note."""
+        if note_id not in self._notes:
+            return None
+        note = self._notes[note_id]
+        if content is not None:
+            note["content"] = content
+        if title is not None:
+            note["title"] = title
+        if tags is not None:
+            note["tags"] = tags
+        if is_reference is not None:
+            note["is_reference"] = is_reference
+        return note
+
+    def delete_note(self, note_id: str) -> bool:
+        """Delete a note."""
+        if note_id in self._notes:
+            del self._notes[note_id]
+            return True
+        return False
+
+    def get_backlinks(self, note_id: str) -> list[dict[str, Any]]:
+        """Get notes that link to this note."""
+        backlinks = []
+        for note in self._notes.values():
+            if note_id in note.get("links", []):
+                backlinks.append(note)
+        return backlinks
+
+    def get_outbound_links(self, note_id: str) -> list[dict[str, Any]]:
+        """Get notes this note links to."""
+        note = self._notes.get(note_id)
+        if not note:
+            return []
+        return [self._notes[lid] for lid in note.get("links", []) if lid in self._notes]
+
+    def get_random_note(self) -> dict[str, Any] | None:
+        """Get a random note."""
+        notes = list(self._notes.values())
+        return notes[0] if notes else None
+
+    def get_orphan_notes(self) -> list[dict[str, Any]]:
+        """Get orphan notes."""
+        return []
+
+    def get_dead_end_notes(self) -> list[dict[str, Any]]:
+        """Get dead-end notes."""
+        return []
+
+    def get_hub_notes(self, min_links: int = 3) -> list[dict[str, Any]]:
+        """Get hub notes."""
+        return []
+
+    def get_central_notes(self, min_backlinks: int = 3) -> list[dict[str, Any]]:
+        """Get central notes."""
+        return []
+
+
+# ============================================================================
+# Mock Fixtures
+# ============================================================================
+
+
 @pytest.fixture
 def mock_ollama_available() -> MockOllamaClient:
     """Get a mock OllamaClient that appears available (CPU-only)."""
@@ -186,25 +294,80 @@ def mock_ollama_unavailable() -> MockOllamaClient:
 
 
 @pytest.fixture
+def mock_notes_service() -> MockNotesService:
+    """Get a mock notes service with test data."""
+    return MockNotesService()
+
+
+# ============================================================================
+# Test Client Fixtures
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def clear_resources() -> Generator[None]:
+    """Clear user resources before and after each test (static articles remain)."""
+    main.user_resources_db.clear()
+    yield
+    main.user_resources_db.clear()
+
+
+@pytest.fixture
+def client(
+    mock_ollama_available: MockOllamaClient,
+    mock_notes_service: MockNotesService,
+) -> Generator[TestClient]:
+    """Get test client with mocked dependencies.
+
+    This is the default fixture for API testing - it uses mocks for
+    Ollama and Notes services to ensure fast, deterministic tests
+    that don't hit external services.
+
+    For tests that need real services, use `client_real_services` fixture.
+    """
+    from dependencies import get_notes, get_ollama
+
+    # Override dependencies with mocks
+    main.app.dependency_overrides[get_ollama] = lambda: mock_ollama_available
+    main.app.dependency_overrides[get_notes] = lambda: mock_notes_service
+
+    with TestClient(main.app) as client:
+        yield client
+
+    # Clear overrides
+    main.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_real_services() -> Generator[TestClient]:
+    """Get test client with real services (no mocks).
+
+    Use this for integration tests that need to hit real Ollama or Neo4j.
+    These tests should be marked @slow.
+    """
+    with TestClient(main.app) as client:
+        yield client
+
+
+@pytest.fixture
 def client_with_mock_ollama(
     mock_ollama_available: MockOllamaClient,
 ) -> Generator[tuple[TestClient, MockOllamaClient]]:
     """Get test client with mocked Ollama client.
 
-    This fixture patches the global ollama_client in main.py to use
-    the mock, enabling AI endpoint tests without a running Ollama instance.
+    Uses FastAPI dependency_overrides for clean mock injection.
+    This enables AI endpoint tests without a running Ollama instance.
     """
-    # Store original
-    original_client = main.ollama_client
+    from dependencies import get_ollama
 
-    # Replace with mock
-    main.ollama_client = mock_ollama_available  # type: ignore[assignment]
+    # Override the dependency
+    main.app.dependency_overrides[get_ollama] = lambda: mock_ollama_available
 
     with TestClient(main.app) as client:
         yield client, mock_ollama_available
 
-    # Restore original
-    main.ollama_client = original_client
+    # Clear the override
+    main.app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -215,10 +378,47 @@ def client_with_unavailable_ollama(
 
     Use this to test graceful degradation when AI is not available.
     """
-    original_client = main.ollama_client
-    main.ollama_client = mock_ollama_unavailable  # type: ignore[assignment]
+    from dependencies import get_ollama
+
+    # Override the dependency
+    main.app.dependency_overrides[get_ollama] = lambda: mock_ollama_unavailable
 
     with TestClient(main.app) as client:
         yield client, mock_ollama_unavailable
 
-    main.ollama_client = original_client
+    # Clear the override
+    main.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_with_mocks(
+    mock_ollama_available: MockOllamaClient,
+    mock_notes_service: MockNotesService,
+) -> Generator[TestClient]:
+    """Get test client with all dependencies mocked.
+
+    This is the recommended fixture for most tests - it provides
+    fast, deterministic behavior without hitting real services.
+    """
+    from dependencies import get_notes, get_ollama
+
+    # Override all dependencies
+    main.app.dependency_overrides[get_ollama] = lambda: mock_ollama_available
+    main.app.dependency_overrides[get_notes] = lambda: mock_notes_service
+
+    with TestClient(main.app) as client:
+        yield client
+
+    # Clear all overrides
+    main.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def sample_resource() -> dict[str, str | list[str]]:
+    """Get sample resource data for testing."""
+    return {
+        "title": "Test Resource",
+        "content": "This is test content",
+        "url": "https://example.com",
+        "tags": ["test", "example"],
+    }
