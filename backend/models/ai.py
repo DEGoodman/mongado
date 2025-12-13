@@ -29,6 +29,8 @@ class WarmupResponse(BaseModel):
 
     success: bool
     message: str
+    model: str | None = None  # Which model was warmed up
+    context: str | None = None  # The context used (chat, structured, embedding)
 
 
 class GPUStatusResponse(BaseModel):

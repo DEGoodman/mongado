@@ -416,37 +416,56 @@ Summary:"""
             logger.error("Failed to summarize article: %s", e)
             return None
 
-    def warmup(self) -> bool:
+    def warmup(self, context: str = "chat") -> tuple[bool, str]:
         """
-        Warm up the Ollama model by sending a small test request.
+        Warm up an Ollama model by sending a small test request.
 
-        This forces the llama runner to start (takes ~17 seconds) so that
-        subsequent requests are faster. Call this when the user opens the
-        Q&A panel or on app startup.
+        This forces the llama runner to start (takes ~15-20 seconds) so that
+        subsequent requests are faster.
+
+        Args:
+            context: Which model to warm up:
+                - "chat" (default): llama3.2:1b for Q&A and summaries
+                - "structured": qwen2.5:1.5b for JSON output (suggestions)
+                - "embedding": nomic-embed-text for semantic search
 
         Returns:
-            True if warmup succeeded, False otherwise
+            Tuple of (success: bool, model_name: str)
         """
         if not self.is_available() or self.client is None:
             logger.debug("Ollama not available, skipping warmup")
-            return False
+            return False, ""
+
+        # Select model based on context
+        if context == "structured":
+            model = self.structured_model
+        elif context == "embedding":
+            model = self.embed_model
+        else:  # Default to chat
+            model = self.chat_model
 
         try:
-            logger.info("Warming up Ollama chat model (this takes ~15-20 seconds)...")
-            # Send a minimal prompt to start the runner with our context window setting
-            self.client.generate(
-                model=self.chat_model,  # Warm up chat model
-                prompt="Hi",
-                options={
-                    "num_predict": 1,  # Only generate 1 token
-                    "num_ctx": self.num_ctx,  # Set context window for runner initialization
-                },
-            )
-            logger.info("Ollama model warmed up and ready")
-            return True
+            logger.info("Warming up Ollama %s model (%s)...", context, model)
+
+            if context == "embedding":
+                # Embeddings use a different API
+                self.client.embeddings(model=model, prompt="test")
+            else:
+                # Chat/structured models use generate
+                self.client.generate(
+                    model=model,
+                    prompt="Hi",
+                    options={
+                        "num_predict": 1,  # Only generate 1 token
+                        "num_ctx": self.num_ctx,
+                    },
+                )
+
+            logger.info("Ollama %s model (%s) warmed up and ready", context, model)
+            return True, model
         except Exception as e:
-            logger.error("Failed to warm up Ollama model: %s", e)
-            return False
+            logger.error("Failed to warm up Ollama %s model: %s", context, e)
+            return False, model
 
     def clear_cache(self) -> int:
         """

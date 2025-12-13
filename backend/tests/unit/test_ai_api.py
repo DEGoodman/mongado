@@ -332,14 +332,42 @@ class TestMockOllamaClientUnit:
         assert "mock summary" in summary.lower()
 
     def test_mock_warmup(self) -> None:
-        """Mock warmup returns availability status."""
+        """Mock warmup returns (success, model) tuple."""
         from tests.conftest import MockOllamaClient
 
         available_client = MockOllamaClient(available=True)
         unavailable_client = MockOllamaClient(available=False)
 
-        assert available_client.warmup() is True
-        assert unavailable_client.warmup() is False
+        # Available client returns success with model name
+        success, model = available_client.warmup()
+        assert success is True
+        assert model == "llama3.2:1b"  # Default chat model
+
+        # Unavailable client returns failure
+        success, model = unavailable_client.warmup()
+        assert success is False
+        assert model == ""
+
+    def test_mock_warmup_context(self) -> None:
+        """Mock warmup respects context parameter."""
+        from tests.conftest import MockOllamaClient
+
+        client = MockOllamaClient(available=True)
+
+        # Chat context (default)
+        success, model = client.warmup("chat")
+        assert success is True
+        assert model == "llama3.2:1b"
+
+        # Structured context
+        success, model = client.warmup("structured")
+        assert success is True
+        assert model == "qwen2.5:1.5b"
+
+        # Embedding context
+        success, model = client.warmup("embedding")
+        assert success is True
+        assert model == "nomic-embed-text"
 
     def test_mock_cosine_similarity(self) -> None:
         """Mock cosine similarity calculation works correctly."""

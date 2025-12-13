@@ -64,27 +64,52 @@ UserResourcesDep = Annotated[list[dict[str, Any]], Depends(get_user_resources)]
 
 
 @router.post("/ollama/warmup", response_model=WarmupResponse)
-def warmup_ollama(ollama: OllamaDep) -> WarmupResponse:
-    """Warm up the Ollama model by starting the llama runner.
+def warmup_ollama(ollama: OllamaDep, context: str = "chat") -> WarmupResponse:
+    """Warm up an Ollama model by starting the llama runner.
 
     This endpoint takes ~15-20 seconds to complete, but makes subsequent
-    AI requests much faster. Call this when the user opens the Q&A panel
-    or knowledge base page.
+    AI requests much faster.
 
-    **Optimization:** Pre-load the model before users need it.
+    **Context-aware warmup:** Warm up the model that will be used next:
+    - `chat` (default): For Q&A and summaries (llama3.2:1b)
+    - `structured`: For AI suggestions with JSON output (qwen2.5:1.5b)
+    - `embedding`: For semantic search (nomic-embed-text)
+
+    **Usage:**
+    - User opens Q&A panel → warmup with context=chat
+    - User enters note edit mode → warmup with context=structured
+    - User opens semantic search → warmup with context=embedding
     """
     if not ollama.is_available():
-        return WarmupResponse(success=False, message="Ollama is not available or not configured.")
+        return WarmupResponse(
+            success=False,
+            message="Ollama is not available or not configured.",
+            context=context,
+        )
 
-    success = ollama.warmup()
+    # Validate context
+    valid_contexts = {"chat", "structured", "embedding"}
+    if context not in valid_contexts:
+        return WarmupResponse(
+            success=False,
+            message=f"Invalid context '{context}'. Must be one of: {', '.join(valid_contexts)}",
+            context=context,
+        )
+
+    success, model = ollama.warmup(context=context)
     if success:
         return WarmupResponse(
             success=True,
-            message="Ollama model warmed up successfully. Subsequent requests will be faster.",
+            message=f"Ollama {context} model ({model}) warmed up successfully.",
+            model=model,
+            context=context,
         )
     else:
         return WarmupResponse(
-            success=False, message="Failed to warm up Ollama model. Check logs for details."
+            success=False,
+            message=f"Failed to warm up Ollama {context} model. Check logs for details.",
+            model=model,
+            context=context,
         )
 
 

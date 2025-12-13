@@ -116,9 +116,18 @@ class MockOllamaClient:
         preview = content[:100] + "..." if len(content) > 100 else content
         return f"This is a mock summary of the article: {preview}"
 
-    def warmup(self) -> bool:
+    def warmup(self, context: str = "chat") -> tuple[bool, str]:
         """Mock model warmup."""
-        return self._available
+        if not self._available:
+            return False, ""
+        # Return the appropriate model name based on context
+        if context == "structured":
+            model = self.structured_model
+        elif context == "embedding":
+            model = self.embed_model
+        else:
+            model = self.chat_model
+        return True, model
 
     def clear_cache(self) -> int:
         """Clear embedding cache."""
