@@ -197,10 +197,7 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
             response.headers["Cache-Control"] = "public, max-age=86400"
 
         # API responses - respect explicit cache headers, add defaults otherwise
-        elif (
-            request.url.path.startswith("/api/")
-            and "Cache-Control" not in response.headers
-        ):
+        elif request.url.path.startswith("/api/") and "Cache-Control" not in response.headers:
             # Allow browser to cache list/read operations for 60 seconds
             if request.method == "GET":
                 response.headers["Cache-Control"] = "public, max-age=60"

@@ -261,3 +261,193 @@
     grid-column: span 1;
   }
 }
+
+// ===== SERVER-RENDERED CONTENT =====
+// Styles for pre-rendered HTML from backend (includes footnotes, syntax highlighting)
+.renderedContent {
+  @include text-secondary;
+  line-height: $line-height-relaxed;
+
+  // === TYPOGRAPHY ===
+  h1, h2, h3, h4, h5, h6 {
+    color: $color-text-heading;
+    font-weight: $font-weight-semibold;
+    margin-top: $spacing-6;
+    margin-bottom: $spacing-3;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  h1 { font-size: $heading-h1-size; }
+  h2 { font-size: $heading-h2-size; }
+  h3 { font-size: $heading-h3-size; }
+  h4 { font-size: $heading-h4-size; }
+
+  p {
+    margin-top: $spacing-3;
+    margin-bottom: $spacing-3;
+  }
+
+  ul, ol {
+    margin-top: $spacing-3;
+    margin-bottom: $spacing-3;
+    padding-left: $spacing-6;
+  }
+
+  li {
+    margin-top: $spacing-1;
+    margin-bottom: $spacing-1;
+  }
+
+  a {
+    color: $color-link-default;
+    text-decoration: none;
+
+    &:hover {
+      color: $color-link-hover;
+      text-decoration: underline;
+    }
+  }
+
+  blockquote {
+    margin: $spacing-4 0;
+    padding: $spacing-3 $spacing-4;
+    border-left: $border-width-thick solid $color-border-strong;
+    background-color: $color-surface-secondary;
+    color: $color-text-secondary;
+    font-style: italic;
+  }
+
+  // === INLINE CODE ===
+  code {
+    background-color: $neutral-100;
+    color: $color-text-primary;
+    padding: $spacing-1 $spacing-2;
+    border-radius: $border-radius-sm;
+    font-family: $font-family-mono;
+    font-size: 0.875em;
+  }
+
+  // === CODE BLOCKS (Pygments) ===
+  .highlight {
+    margin: $spacing-4 0;
+    border-radius: $border-radius-lg;
+    overflow-x: auto;
+
+    pre {
+      margin: 0;
+      padding: $spacing-4;
+      background-color: $neutral-900;
+      border-radius: $border-radius-lg;
+      overflow-x: auto;
+
+      code {
+        background-color: transparent;
+        padding: 0;
+        color: $neutral-100;
+        font-size: $font-size-sm;
+        line-height: 1.7;
+      }
+    }
+  }
+
+  // === TABLES ===
+  table {
+    width: 100%;
+    margin: $spacing-4 0;
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+  }
+
+  th, td {
+    padding: $spacing-2 $spacing-3;
+    border: $border-default;
+    text-align: left;
+  }
+
+  th {
+    background-color: $color-surface-secondary;
+    font-weight: $font-weight-semibold;
+  }
+
+  // === WIKILINKS ===
+  .wikilink {
+    display: inline-block;
+    padding: 0 $spacing-1;
+    border-radius: $border-radius-sm;
+    background-color: $blue-50;
+    color: $blue-600;
+    text-decoration: none;
+    font-family: $font-family-mono;
+    font-size: 0.9em;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // === FOOTNOTES ===
+  // Reference numbers in body text (superscript)
+  .footnote-ref {
+    a {
+      color: $orange-600;
+      font-weight: $font-weight-medium;
+      text-decoration: none;
+      font-size: 0.75em;
+      vertical-align: super;
+      line-height: 0;
+      padding: 0 $spacing-1;
+
+      &:hover {
+        color: $orange-700;
+        text-decoration: underline;
+      }
+    }
+  }
+
+  // Horizontal rule separator before footnotes
+  .footnotes-sep {
+    margin: $spacing-8 0 $spacing-6;
+    border: none;
+    border-top: $border-width-thin solid $color-border-default;
+  }
+
+  // Footnotes section container
+  .footnotes {
+    margin-top: $spacing-6;
+    padding-top: $spacing-4;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+
+    // Footnotes ordered list
+    .footnotes-list {
+      margin: 0;
+      padding-left: $spacing-6;
+      list-style-type: decimal;
+
+      // Individual footnote item
+      .footnote-item {
+        margin-bottom: $spacing-3;
+        padding-left: $spacing-2;
+
+        p {
+          margin: 0;
+          display: inline;
+        }
+
+        // Back-reference link (↩)
+        .footnote-backref {
+          margin-left: $spacing-2;
+          color: $orange-600;
+          text-decoration: none;
+          font-size: 0.85em;
+
+          &:hover {
+            color: $orange-700;
+            text-decoration: none;
+          }
+        }
+      }
+    }
+  }
+}

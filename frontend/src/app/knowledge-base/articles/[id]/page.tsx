@@ -17,6 +17,7 @@ interface Article {
   id: number;
   title: string;
   content: string;
+  html_content?: string; // Pre-rendered HTML from backend
   content_type?: string;
   url?: string;
   tags: string[];
@@ -176,7 +177,14 @@ export default function ArticleDetailPage() {
           {/* Main Article Content */}
           <div className={styles.articleContent}>
             <article className={styles.articleCard}>
-              {article.content_type === "markdown" || article.content_type === undefined ? (
+              {article.html_content ? (
+                // Use pre-rendered HTML from backend (includes footnotes, syntax highlighting)
+                <div
+                  className={`${styles.renderedContent} prose prose-sm`}
+                  dangerouslySetInnerHTML={{ __html: article.html_content }}
+                />
+              ) : article.content_type === "markdown" || article.content_type === undefined ? (
+                // Fallback to client-side rendering
                 <MarkdownWithWikilinks content={article.content} />
               ) : (
                 <div className="prose prose-sm max-w-none">
