@@ -1,5 +1,6 @@
 """Authentication middleware for Zettelkasten notes system."""
 
+import hmac
 import logging
 from typing import Annotated
 
@@ -52,7 +53,7 @@ def verify_admin(
             detail="Server configuration error: admin token not set.",
         )
 
-    if token != expected_token:
+    if not hmac.compare_digest(token, expected_token):
         logger.warning("Invalid token attempt")
         raise HTTPException(status_code=403, detail="Invalid token.")
 

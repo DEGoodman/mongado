@@ -47,7 +47,8 @@ def list_articles(static_articles: ArticlesDep) -> ArticleMetadataListResponse:
         if date_str:
             try:
                 return parser.parse(str(date_str))
-            except Exception:
+            except Exception as e:
+                logger.warning("Failed to parse date '%s': %s, using epoch fallback", date_str, e)
                 return parser.parse("1970-01-01")
         return parser.parse("1970-01-01")
 
