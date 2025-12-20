@@ -12,6 +12,11 @@ neo4j==6.0.2  # Neo4j driver for graph database (notes)
 slowapi==0.1.9  # Rate limiting for FastAPI
 rapidfuzz==3.10.1  # Fuzzy string matching for search
 
+# Markdown rendering (server-side)
+markdown-it-py==4.0.0  # Markdown parser
+mdit-py-plugins==0.5.0  # Plugins for footnotes, front matter, etc.
+Pygments==2.19.2  # Syntax highlighting for code blocks
+
 # Production optimizations
 uvloop==0.21.0  # Fast event loop
 httptools==0.7.1  # Fast HTTP parsing
