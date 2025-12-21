@@ -1,9 +1,8 @@
 """Admin API routes for backup management and database operations."""
 
-import contextlib
+import json
 import logging
 import os
-import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -55,6 +54,25 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
             project_root = Path("/app").parent  # This gives us the project root from container
             return project_root / "backups"
 
+    def _get_directory_size(path: Path) -> str:
+        """Get human-readable size of a directory.
+
+        Args:
+            path: Directory path to measure
+
+        Returns:
+            Human-readable size string (e.g., "1.2M", "500K")
+        """
+        total_bytes = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+        size: float = float(total_bytes)
+
+        # Convert to human-readable format
+        for unit in ["B", "K", "M", "G"]:
+            if size < 1024:
+                return f"{size:.1f}{unit}" if unit != "B" else f"{int(size)}{unit}"
+            size /= 1024
+        return f"{size:.1f}T"
+
     def _get_script_path(script_name: str) -> Path:
         """Get path to backup/restore script.
 
@@ -91,15 +109,8 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         backups: list[BackupInfo] = []
         for backup_path in backup_dirs:
             try:
-                # Get size of backup directory
-                size_result = subprocess.run(
-                    ["du", "-sh", str(backup_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                    check=True,
-                )
-                size = size_result.stdout.split()[0] if size_result.stdout else "unknown"
+                # Get size of backup directory using pure Python
+                size = _get_directory_size(backup_path)
 
                 # Parse timestamp from directory name (neo4j_backup_20241201_120000)
                 timestamp_str = backup_path.name.replace("neo4j_backup_", "")
@@ -121,10 +132,11 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
 
     @router.post("/backup", response_model=BackupCreateResponse)
     async def create_backup(_admin: AdminUser) -> BackupCreateResponse:
-        """Trigger a new Neo4j backup.
+        """Create a new Neo4j backup using Python-based export.
 
-        WARNING: This causes ~30-60 seconds of downtime as the Neo4j container
-        is stopped during backup.
+        This is a logical backup that exports all notes and relationships
+        as JSON. Unlike the shell-based backup, this does NOT require
+        stopping Neo4j and causes zero downtime.
 
         Requires admin authentication.
 
@@ -134,84 +146,49 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         Raises:
             HTTPException: 500 if backup fails
         """
-        script_path = _get_script_path("backup_neo4j.sh")
-
-        if not script_path.exists():
-            logger.error("Backup script not found: %s", script_path)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Backup script not found: {script_path}",
-            )
-
         logger.info("Admin triggered backup via API")
 
         try:
-            # Execute backup script with non-interactive mode
-            env = os.environ.copy()
-            env["NON_INTERACTIVE"] = "true"
-            env["FORCE_BACKUP"] = "true"  # Force backup even if no changes detected
+            # Export database using Python method (no Docker required)
+            export_data = neo4j_adapter.export_database()
 
-            result = subprocess.run(
-                [str(script_path)],
-                capture_output=True,
-                text=True,
-                timeout=300,  # 5 minute timeout
-                env=env,
-                check=True,
+            # Create backup directory
+            backup_dir = _get_backup_dir()
+            backup_dir.mkdir(parents=True, exist_ok=True)
+
+            # Create timestamped backup file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_name = f"neo4j_backup_{timestamp}"
+            backup_path = backup_dir / backup_name
+            backup_path.mkdir(parents=True, exist_ok=True)
+
+            # Save as JSON
+            backup_file = backup_path / "backup.json"
+            with open(backup_file, "w") as f:
+                json.dump(export_data, f, indent=2)
+
+            # Get backup size
+            backup_size = backup_file.stat().st_size
+
+            note_count = export_data.get("metadata", {}).get("note_count", 0)
+            rel_count = export_data.get("metadata", {}).get("relationship_count", 0)
+
+            logger.info(
+                "Backup created: %s (%d notes, %d relationships, %d bytes)",
+                backup_name,
+                note_count,
+                rel_count,
+                backup_size,
             )
-
-            # Parse backup information from script output
-            output = result.stdout
-            logger.info("Backup output: %s", output)
-
-            # Extract backup filename from output (look for "Backup: neo4j_backup_...")
-            backup_file = "unknown"
-            for line in output.split("\n"):
-                if "Backup:" in line and "neo4j_backup_" in line:
-                    # Extract directory name
-                    parts = line.split("/")
-                    for part in parts:
-                        if part.startswith("neo4j_backup_"):
-                            backup_file = part.rstrip("/")
-                            break
-                    break
-
-            # Extract downtime from output
-            downtime = None
-            for line in output.split("\n"):
-                if "Downtime:" in line:
-                    with contextlib.suppress(ValueError, IndexError):
-                        downtime = int(line.split("Downtime:")[1].split("seconds")[0].strip())
-                    break
-
-            # Extract note count from output
-            note_count = None
-            for line in output.split("\n"):
-                if "Notes backed up:" in line:
-                    with contextlib.suppress(ValueError, IndexError):
-                        note_count = int(line.split("Notes backed up:")[1].strip())
-                    break
 
             return BackupCreateResponse(
                 status="success",
-                backup_file=backup_file,
+                backup_file=backup_name,
                 timestamp=datetime.now().isoformat(),
-                downtime_seconds=downtime,
+                downtime_seconds=0,  # No downtime with logical backup
                 note_count=note_count,
             )
 
-        except subprocess.TimeoutExpired as e:
-            logger.error("Backup script timed out after 5 minutes")
-            raise HTTPException(
-                status_code=500,
-                detail="Backup timed out after 5 minutes",
-            ) from e
-        except subprocess.CalledProcessError as e:
-            logger.error("Backup script failed: %s", e.stderr)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Backup failed: {e.stderr}",
-            ) from e
         except Exception as e:
             logger.error("Unexpected error during backup: %s", e)
             raise HTTPException(
@@ -224,9 +201,10 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         restore_req: RestoreRequest,
         _admin: AdminUser,
     ) -> RestoreResponse:
-        """Restore Neo4j database from a backup.
+        """Restore Neo4j database from a backup using Python-based import.
 
-        WARNING: This causes ~1-2 minutes of downtime and REPLACES the current database.
+        WARNING: This REPLACES the current database with the backup data.
+        Unlike the shell-based restore, this does NOT require stopping Neo4j.
 
         If backup_file is not specified, restores from the latest backup.
 
@@ -241,22 +219,13 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         Raises:
             HTTPException: 404 if backup not found, 500 if restore fails
         """
-        script_path = _get_script_path("restore_neo4j.sh")
+        backup_dir = _get_backup_dir()
 
-        if not script_path.exists():
-            logger.error("Restore script not found: %s", script_path)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Restore script not found: {script_path}",
-            )
-
-        # If backup_file specified, verify it exists and is within backup directory
+        # Determine which backup to restore
         if restore_req.backup_file:
-            backup_dir = _get_backup_dir()
             backup_path = backup_dir / restore_req.backup_file
 
             # Defense in depth: Resolve path and verify it's within backup_dir
-            # This prevents path traversal even if validator is bypassed
             try:
                 resolved_path = backup_path.resolve()
                 resolved_backup_dir = backup_dir.resolve()
@@ -276,100 +245,68 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
                     status_code=400,
                     detail="Invalid backup file path",
                 ) from e
-
-            if not backup_path.exists():
-                logger.error("Backup not found: %s", backup_path)
+        else:
+            # Find latest backup
+            backup_dirs = sorted(
+                [d for d in backup_dir.glob("neo4j_backup_*") if d.is_dir()],
+                key=lambda x: x.name,
+                reverse=True,
+            )
+            if not backup_dirs:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Backup not found: {restore_req.backup_file}",
+                    detail="No backups found",
                 )
+            backup_path = backup_dirs[0]
 
-        logger.info(
-            "Admin triggered restore via API: %s",
-            restore_req.backup_file or "latest",
-        )
-
-        try:
-            # Execute restore script with forced mode
-            env = os.environ.copy()
-            env["FORCE"] = "true"  # Skip confirmation prompts
-
-            # Build command with optional backup file argument
-            cmd = [str(script_path)]
-            if restore_req.backup_file:
-                cmd.append(restore_req.backup_file)
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=600,  # 10 minute timeout
-                env=env,
-                check=True,
+        # Check for backup.json (new format) or neo4j.dump (old format)
+        json_backup = backup_path / "backup.json"
+        if not json_backup.exists():
+            # Check if this is an old-format backup (neo4j.dump)
+            dump_backup = backup_path / "neo4j.dump"
+            if dump_backup.exists():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Backup {backup_path.name} uses old format (neo4j.dump). "
+                    "Use the host-based restore script for old backups.",
+                )
+            raise HTTPException(
+                status_code=404,
+                detail=f"Backup not found: {backup_path.name}",
             )
 
-            # Parse restore information from script output
-            output = result.stdout
-            logger.info("Restore output: %s", output)
+        logger.info("Admin triggered restore via API: %s", backup_path.name)
 
-            # Extract backup filename from output
-            restored_from = restore_req.backup_file or "latest"
-            for line in output.split("\n"):
-                if "Using" in line and "backup:" in line:
-                    parts = line.split("backup:")
-                    if len(parts) > 1:
-                        restored_from = parts[1].strip()
-                    break
+        try:
+            # Load backup data
+            with open(json_backup) as f:
+                backup_data = json.load(f)
 
-            # Extract downtime from output
-            downtime = None
-            for line in output.split("\n"):
-                if "Downtime:" in line:
-                    with contextlib.suppress(ValueError, IndexError):
-                        downtime = int(line.split("Downtime:")[1].split("seconds")[0].strip())
-                    break
+            # Import database using Python method
+            import_result = neo4j_adapter.import_database(backup_data, clear_existing=True)
 
-            # Extract note counts from output
-            notes_before = None
-            notes_after = None
-            for line in output.split("\n"):
-                if "Notes before restore:" in line or "Notes before:" in line:
-                    try:
-                        # Extract number after colon
-                        parts = line.split(":")
-                        if len(parts) > 1:
-                            notes_before = int(parts[-1].strip())
-                    except (ValueError, IndexError):
-                        pass
-                elif "Notes after:" in line:
-                    try:
-                        # Extract number after colon
-                        parts = line.split(":")
-                        if len(parts) > 1:
-                            notes_after = int(parts[-1].strip())
-                    except (ValueError, IndexError):
-                        pass
+            logger.info(
+                "Restore completed: %s (before: %d, imported: %d notes, %d relationships)",
+                backup_path.name,
+                import_result["notes_before"],
+                import_result["notes_imported"],
+                import_result["relationships_imported"],
+            )
 
             return RestoreResponse(
                 status="success",
-                restored_from=restored_from,
+                restored_from=backup_path.name,
                 timestamp=datetime.now().isoformat(),
-                downtime_seconds=downtime,
-                notes_before=notes_before,
-                notes_after=notes_after,
+                downtime_seconds=0,  # No downtime with logical restore
+                notes_before=import_result["notes_before"],
+                notes_after=import_result["notes_imported"],
             )
 
-        except subprocess.TimeoutExpired as e:
-            logger.error("Restore script timed out after 10 minutes")
+        except json.JSONDecodeError as e:
+            logger.error("Invalid backup file format: %s", e)
             raise HTTPException(
-                status_code=500,
-                detail="Restore timed out after 10 minutes",
-            ) from e
-        except subprocess.CalledProcessError as e:
-            logger.error("Restore script failed: %s", e.stderr)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Restore failed: {e.stderr}",
+                status_code=400,
+                detail=f"Invalid backup file format: {str(e)}",
             ) from e
         except Exception as e:
             logger.error("Unexpected error during restore: %s", e)

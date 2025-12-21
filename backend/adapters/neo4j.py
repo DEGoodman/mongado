@@ -988,6 +988,132 @@ class Neo4jAdapter:
     # ===== HELPER METHODS =====
     # (Removed _article_node_to_dict - now using unified _node_to_dict for both Notes and Articles)
 
+    # ===== BACKUP/RESTORE METHODS =====
+
+    def export_database(self) -> dict[str, Any]:
+        """Export all notes and relationships as a dict for backup.
+
+        This provides a logical backup that doesn't require Docker access.
+        Can be called from within the backend container.
+
+        Returns:
+            Dict with 'notes', 'relationships', and 'metadata'
+        """
+        if not self._available or not self.driver:
+            raise RuntimeError("Neo4j not available")
+
+        with self.driver.session(database=self.database) as session:
+            # Export all notes with all their properties
+            notes_result = session.run(
+                """
+                MATCH (n:Note)
+                RETURN n
+                ORDER BY n.created_at DESC
+                """
+            )
+
+            notes = []
+            for record in notes_result:
+                node = record["n"]
+                # Get all properties including embeddings
+                note_data = dict(node)
+                notes.append(note_data)
+
+            # Export all relationships
+            rels_result = session.run(
+                """
+                MATCH (source:Note)-[r:LINKS_TO]->(target:Note)
+                RETURN source.id AS source_id, target.id AS target_id
+                """
+            )
+
+            relationships = [
+                {"source_id": record["source_id"], "target_id": record["target_id"]}
+                for record in rels_result
+            ]
+
+            return {
+                "notes": notes,
+                "relationships": relationships,
+                "metadata": {
+                    "note_count": len(notes),
+                    "relationship_count": len(relationships),
+                    "exported_at": time.time(),
+                    "database": self.database,
+                },
+            }
+
+    def import_database(
+        self,
+        data: dict[str, Any],
+        clear_existing: bool = True,
+    ) -> dict[str, Any]:
+        """Import notes and relationships from a backup.
+
+        Args:
+            data: Dict with 'notes' and 'relationships' from export_database()
+            clear_existing: If True, delete all existing notes first (default: True)
+
+        Returns:
+            Dict with import statistics
+        """
+        if not self._available or not self.driver:
+            raise RuntimeError("Neo4j not available")
+
+        notes = data.get("notes", [])
+        relationships = data.get("relationships", [])
+
+        with self.driver.session(database=self.database) as session:
+            notes_before = 0
+            if clear_existing:
+                # Count existing notes
+                result = session.run("MATCH (n:Note) RETURN count(n) AS count")
+                record = result.single()
+                notes_before = record["count"] if record else 0
+
+                # Delete all existing notes and relationships
+                session.run("MATCH (n:Note) DETACH DELETE n")
+                logger.info("Cleared %d existing notes", notes_before)
+
+            # Import notes
+            notes_created = 0
+            for note_data in notes:
+                # Build SET clause for all properties
+                props = {k: v for k, v in note_data.items() if v is not None}
+
+                # Use MERGE to avoid duplicates
+                session.run(
+                    """
+                    MERGE (n:Note {id: $id})
+                    SET n = $props
+                    """,
+                    id=props.get("id"),
+                    props=props,
+                )
+                notes_created += 1
+
+            # Import relationships
+            rels_created = 0
+            for rel in relationships:
+                result = session.run(
+                    """
+                    MATCH (source:Note {id: $source_id})
+                    MATCH (target:Note {id: $target_id})
+                    MERGE (source)-[r:LINKS_TO]->(target)
+                    RETURN r
+                    """,
+                    source_id=rel["source_id"],
+                    target_id=rel["target_id"],
+                )
+                if result.single():
+                    rels_created += 1
+
+            return {
+                "notes_before": notes_before,
+                "notes_imported": notes_created,
+                "relationships_imported": rels_created,
+            }
+
 
 # Global instance
 _adapter: Neo4jAdapter | None = None
