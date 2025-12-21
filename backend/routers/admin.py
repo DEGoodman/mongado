@@ -40,6 +40,12 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         Returns:
             Path to backup directory
         """
+        # Check if we're in testing mode (CI or local tests)
+        if os.getenv("TESTING"):
+            # Use a local directory relative to current working directory
+            # This allows tests to run without Docker and without root permissions
+            return Path.cwd() / "backups"
+
         # Check if we're in production (docker-compose.prod.yml)
         compose_file = os.getenv("COMPOSE_FILE", "docker-compose.yml")
         if "prod" in compose_file:
