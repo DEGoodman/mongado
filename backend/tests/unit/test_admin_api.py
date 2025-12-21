@@ -130,6 +130,11 @@ class TestCreateBackup:
         This is an integration test - it uses the real Neo4j adapter.
         The response should have the expected fields even with test data.
         """
+        # First check if Neo4j is available (health endpoint doesn't require auth)
+        health_response = client.get("/api/admin/health/database")
+        if not health_response.json().get("neo4j_available", False):
+            pytest.skip("Neo4j not available - skipping backup integration test")
+
         response = client.post("/api/admin/backup", headers=admin_headers)
         # Should succeed (uses real adapter with test data)
         assert response.status_code == 200

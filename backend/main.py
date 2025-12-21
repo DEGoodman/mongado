@@ -39,6 +39,7 @@ from routers.ai import router as ai_router
 from routers.articles import router as articles_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
+from routers.templates import router as templates_router
 
 # Configure logging
 setup_logging(level="INFO")
@@ -229,6 +230,7 @@ app.include_router(ai_router)
 app.include_router(notes_router)
 app.include_router(search_router)
 app.include_router(articles_router)
+app.include_router(templates_router)
 
 admin_router = create_admin_router(neo4j_adapter=neo4j_adapter)
 app.include_router(admin_router)

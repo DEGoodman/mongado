@@ -288,6 +288,37 @@
   color: $color-text-tertiary;
 }
 
+.formSelect {
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  border: $border-default;
+  border-radius: $border-radius-button;
+  background-color: $white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: 0 0 0 3px rgba($blue-500, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.templateSelector {
+  margin-bottom: $spacing-4;
+}
+
+.loadingText {
+  margin-left: $spacing-2;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
 // ===== REFERENCE TOGGLE =====
 .referenceToggle {
   margin-top: $spacing-2;

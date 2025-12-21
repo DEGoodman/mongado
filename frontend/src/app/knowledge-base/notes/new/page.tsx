@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
 import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
+import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
 import { logger } from "@/lib/logger";
 import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
@@ -50,6 +51,8 @@ function NewNoteContent() {
   const [showFirstPersonReminder, setShowFirstPersonReminder] = useState(true);
   const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [templates, setTemplates] = useState<TemplateMetadata[]>([]);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   // Check authentication status after hydration (client-side only)
   useEffect(() => {
@@ -98,6 +101,40 @@ function NewNoteContent() {
 
     fetchNotes();
   }, []);
+
+  // Load available templates
+  useEffect(() => {
+    async function fetchTemplates() {
+      try {
+        const response = await listTemplates();
+        setTemplates(response.templates);
+        logger.info("Loaded templates", { count: response.count });
+      } catch (err) {
+        logger.error("Failed to load templates", err);
+      }
+    }
+
+    fetchTemplates();
+  }, []);
+
+  // Apply a template to the note
+  const handleApplyTemplate = async (templateId: string) => {
+    if (!templateId) return;
+
+    setLoadingTemplate(true);
+    try {
+      const template = await getTemplate(templateId);
+      setContent(template.content);
+      // Don't override title - let user fill it in
+      setShowFirstPersonReminder(false); // Hide tip after template is applied
+      logger.info("Template applied", { templateId });
+    } catch (err) {
+      logger.error("Failed to apply template", err);
+      setError("Failed to load template");
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
 
   // Check if content has wikilinks
   const hasWikilinks = (text: string): boolean => {
@@ -385,6 +422,30 @@ function NewNoteContent() {
         >
           {/* Editor Column */}
           <div className={styles.editorColumn}>
+            {/* Template Selector */}
+            {templates.length > 0 && (
+              <div className={styles.templateSelector}>
+                <label htmlFor="template" className={styles.formLabel}>
+                  Start from template (optional)
+                </label>
+                <select
+                  id="template"
+                  onChange={(e) => handleApplyTemplate(e.target.value)}
+                  className={styles.formSelect}
+                  disabled={loadingTemplate}
+                  defaultValue=""
+                >
+                  <option value="">Blank note</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.icon} {template.title}
+                    </option>
+                  ))}
+                </select>
+                {loadingTemplate && <span className={styles.loadingText}>Loading...</span>}
+              </div>
+            )}
+
             {/* Title (optional) */}
             <div>
               <label htmlFor="title" className={styles.formLabel}>
