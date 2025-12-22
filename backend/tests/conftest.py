@@ -290,6 +290,23 @@ class MockNotesService:
         """Get central notes."""
         return []
 
+    def get_ai_content(self, note_id: str) -> dict[str, Any] | None:
+        """Get pre-computed AI content (mock always returns test data)."""
+        if note_id not in self._notes:
+            return None
+        return {
+            "ai_summary": f"Mock summary for {note_id}",
+            "ai_summary_at": 1704067200.0,  # 2024-01-01
+            "ai_link_suggestions": [
+                {"note_id": "test-note-1", "title": "Test Note 1", "confidence": 0.85, "reason": "Mock reason"}
+            ],
+            "ai_link_suggestions_at": 1704067200.0,
+        }
+
+    def regenerate_ai_content(self, note_id: str) -> dict[str, Any] | None:
+        """Regenerate AI content (mock returns same as get_ai_content)."""
+        return self.get_ai_content(note_id)
+
 
 # ============================================================================
 # Mock Fixtures

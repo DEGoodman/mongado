@@ -305,25 +305,74 @@ def suggest_links(
     note_id: str,
     ollama: OllamaDep,
     notes_service: NotesDep,
+    refresh: bool = False,
 ) -> LinkSuggestionsResponse:
     """Suggest related notes that should be linked via wikilinks.
 
-    Analyzes note content and suggests other notes that are conceptually related.
-    Returns suggestions with confidence scores and reasoning.
+    Returns cached suggestions if available, or generates new ones.
 
-    Returns empty suggestions if Ollama is unavailable or note not found.
+    Args:
+        note_id: Note ID
+        refresh: If True, regenerate suggestions even if cached (default: False)
+
+    Returns:
+        Suggestions with confidence scores and cached indicator
     """
     # Get the current note
     note = notes_service.get_note(note_id)
     if not note:
         raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
 
-    # If Ollama unavailable, return empty suggestions
+    # Try to get cached suggestions first (unless refresh requested)
+    if not refresh:
+        ai_content = notes_service.get_ai_content(note_id)
+        if ai_content and ai_content.get("ai_link_suggestions"):
+            cached_suggestions = ai_content["ai_link_suggestions"]
+            suggestions = [
+                LinkSuggestion(
+                    note_id=s.get("note_id", ""),
+                    title=s.get("title", "Untitled"),
+                    confidence=s.get("confidence", 0.5),
+                    reason=s.get("reason", ""),
+                )
+                for s in cached_suggestions
+                if isinstance(s, dict)
+            ]
+            return LinkSuggestionsResponse(
+                suggestions=suggestions,
+                count=len(suggestions),
+                cached=True,
+                cached_at=ai_content.get("ai_link_suggestions_at"),
+            )
+
+    # No cache or refresh requested - generate new suggestions
     if not ollama.is_available():
         logger.warning("Ollama not available for link suggestions")
         return LinkSuggestionsResponse(suggestions=[], count=0)
 
-    # Get all other notes and filter candidates using pure function
+    # Force regeneration
+    if refresh:
+        ai_content = notes_service.regenerate_ai_content(note_id)
+        if ai_content and ai_content.get("ai_link_suggestions"):
+            cached_suggestions = ai_content["ai_link_suggestions"]
+            suggestions = [
+                LinkSuggestion(
+                    note_id=s.get("note_id", ""),
+                    title=s.get("title", "Untitled"),
+                    confidence=s.get("confidence", 0.5),
+                    reason=s.get("reason", ""),
+                )
+                for s in cached_suggestions
+                if isinstance(s, dict)
+            ]
+            return LinkSuggestionsResponse(
+                suggestions=suggestions,
+                count=len(suggestions),
+                cached=True,
+                cached_at=ai_content.get("ai_link_suggestions_at"),
+            )
+
+    # Fallback: generate on-demand (shouldn't normally reach here for new notes)
     all_notes = notes_service.list_notes()
     existing_links = note.get("links", [])
 
@@ -386,7 +435,7 @@ def suggest_links(
         suggestions = suggestions[:5]
 
         logger.info("Generated %d link suggestions for note %s", len(suggestions), note_id)
-        return LinkSuggestionsResponse(suggestions=suggestions, count=len(suggestions))
+        return LinkSuggestionsResponse(suggestions=suggestions, count=len(suggestions), cached=False)
 
     except Exception as e:
         logger.error("Error generating link suggestions: %s", e)

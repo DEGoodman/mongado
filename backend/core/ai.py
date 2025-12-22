@@ -143,18 +143,26 @@ Answer:"""
     return prompt
 
 
-def build_summary_prompt(content: str) -> str:
-    """Build prompt for article summarization.
+def build_summary_prompt(content: str, content_type: str = "article") -> str:
+    """Build prompt for content summarization.
 
     Pure function: No I/O, no side effects, deterministic.
 
     Args:
-        content: Article content to summarize
+        content: Content to summarize
+        content_type: Type of content ("article" or "note")
 
     Returns:
         Complete prompt string for LLM
     """
-    return f"""Please provide a concise 2-3 sentence summary of this article:
+    if content_type == "note":
+        return f"""Please provide a concise 1-2 sentence summary of this note:
+
+{content[:2000]}
+
+Summary:"""
+    else:
+        return f"""Please provide a concise 2-3 sentence summary of this article:
 
 {content}
 

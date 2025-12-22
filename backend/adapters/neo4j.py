@@ -988,6 +988,132 @@ class Neo4jAdapter:
     # ===== HELPER METHODS =====
     # (Removed _article_node_to_dict - now using unified _node_to_dict for both Notes and Articles)
 
+    # ===== AI CONTENT CACHING METHODS =====
+
+    def store_ai_content(
+        self,
+        node_type: str,  # "Article" or "Note"
+        node_id: str,
+        ai_summary: str | None = None,
+        ai_link_suggestions: list[dict[str, Any]] | None = None,
+    ) -> bool:
+        """Store pre-computed AI content for an article or note.
+
+        Args:
+            node_type: "Article" or "Note"
+            node_id: ID of the article or note
+            ai_summary: Pre-computed summary text
+            ai_link_suggestions: Pre-computed link suggestions (list of dicts)
+
+        Returns:
+            True if successful
+        """
+        if not self._available or not self.driver:
+            return False
+
+        import json
+        import time
+
+        with self.driver.session(database=self.database) as session:
+            set_clauses = []
+            params: dict[str, Any] = {"id": node_id}
+
+            if ai_summary is not None:
+                set_clauses.append("n.ai_summary = $ai_summary")
+                set_clauses.append("n.ai_summary_at = $ai_summary_at")
+                params["ai_summary"] = ai_summary
+                params["ai_summary_at"] = time.time()
+
+            if ai_link_suggestions is not None:
+                set_clauses.append("n.ai_link_suggestions = $ai_link_suggestions")
+                set_clauses.append("n.ai_link_suggestions_at = $ai_link_suggestions_at")
+                params["ai_link_suggestions"] = json.dumps(ai_link_suggestions)
+                params["ai_link_suggestions_at"] = time.time()
+
+            if not set_clauses:
+                return True  # Nothing to update
+
+            set_clause = ", ".join(set_clauses)
+            session.run(
+                f"""
+                MATCH (n:{node_type} {{id: $id}})
+                SET {set_clause}
+                """,
+                **params,
+            )
+            return True
+
+    def get_ai_content(
+        self, node_type: str, node_id: str
+    ) -> dict[str, Any] | None:
+        """Get pre-computed AI content for an article or note.
+
+        Args:
+            node_type: "Article" or "Note"
+            node_id: ID of the article or note
+
+        Returns:
+            Dict with ai_summary, ai_link_suggestions, and timestamps, or None
+        """
+        if not self._available or not self.driver:
+            return None
+
+        import json
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                f"""
+                MATCH (n:{node_type} {{id: $id}})
+                RETURN n.ai_summary as ai_summary,
+                       n.ai_summary_at as ai_summary_at,
+                       n.ai_link_suggestions as ai_link_suggestions,
+                       n.ai_link_suggestions_at as ai_link_suggestions_at
+                """,
+                id=node_id,
+            )
+            record = result.single()
+            if not record:
+                return None
+
+            # Parse link suggestions from JSON if present
+            link_suggestions = None
+            if record["ai_link_suggestions"]:
+                try:
+                    link_suggestions = json.loads(record["ai_link_suggestions"])
+                except json.JSONDecodeError:
+                    link_suggestions = None
+
+            return {
+                "ai_summary": record["ai_summary"],
+                "ai_summary_at": record["ai_summary_at"],
+                "ai_link_suggestions": link_suggestions,
+                "ai_link_suggestions_at": record["ai_link_suggestions_at"],
+            }
+
+    def clear_ai_content(self, node_type: str, node_id: str) -> bool:
+        """Clear pre-computed AI content for an article or note.
+
+        Args:
+            node_type: "Article" or "Note"
+            node_id: ID of the article or note
+
+        Returns:
+            True if successful
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                f"""
+                MATCH (n:{node_type} {{id: $id}})
+                REMOVE n.ai_summary, n.ai_summary_at,
+                       n.ai_link_suggestions, n.ai_link_suggestions_at
+                """,
+                id=node_id,
+            )
+            return True
+
     # ===== BACKUP/RESTORE METHODS =====
 
     def export_database(self) -> dict[str, Any]:

@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from adapters.neo4j import get_neo4j_adapter
+from core import ai as ai_core
 from embedding_sync import EMBEDDING_VERSION
 from note_id_generator import get_id_generator
 from ollama_client import get_ollama_client
@@ -93,6 +94,9 @@ class NotesService:
         # Generate and store embedding for immediate semantic search availability
         self._generate_and_store_embedding(note_id, content)
 
+        # Pre-compute AI content (summary, link suggestions)
+        self._generate_and_store_ai_content(note_id, content, title or "")
+
         return note
 
     def get_note(self, note_id: str) -> dict[str, Any] | None:
@@ -176,6 +180,9 @@ class NotesService:
 
         # Regenerate embedding after update for accurate semantic search
         self._generate_and_store_embedding(note_id, content)
+
+        # Re-compute AI content (summary, link suggestions)
+        self._generate_and_store_ai_content(note_id, content, title or "")
 
         return updated
 
@@ -307,6 +314,153 @@ class NotesService:
         except Exception as e:
             # Don't fail note creation/update if embedding generation fails
             logger.error("Error generating embedding for note %s: %s", note_id, e)
+
+    def _generate_and_store_ai_content(self, note_id: str, content: str, title: str) -> None:
+        """Generate and store AI summary and link suggestions for a note.
+
+        This is called automatically when creating or updating notes to ensure
+        AI content is pre-computed and cached in Neo4j.
+
+        Args:
+            note_id: Note ID
+            content: Note content
+            title: Note title
+        """
+        import os
+
+        # Skip in test mode to avoid hitting real Ollama
+        if os.environ.get("TESTING") == "1":
+            logger.debug("Skipping AI content generation for %s (test mode)", note_id)
+            return
+
+        if not self.ollama.is_available():
+            logger.debug("Skipping AI content generation for %s (Ollama unavailable)", note_id)
+            return
+
+        if not self.ollama.client:
+            return
+
+        # Generate summary
+        summary = None
+        try:
+            logger.debug("Generating AI summary for note: %s", note_id)
+            prompt = ai_core.build_summary_prompt(content, content_type="note")
+            response = self.ollama.client.generate(
+                model=self.ollama.chat_model,
+                prompt=prompt,
+                options={"num_ctx": 2048, "num_predict": 256},
+            )
+            summary = response.get("response", "").strip()
+            if summary:
+                logger.info("Generated AI summary for note: %s", note_id)
+        except Exception as e:
+            logger.error("Error generating summary for note %s: %s", note_id, e)
+
+        # Generate link suggestions
+        link_suggestions = None
+        try:
+            logger.debug("Generating link suggestions for note: %s", note_id)
+            all_notes = self.list_notes(minimal=True)
+            note_data = self.get_note(note_id)
+            existing_links = note_data.get("links", []) if note_data else []
+
+            candidate_notes = ai_core.filter_link_candidates(
+                all_notes=all_notes, current_note_id=note_id, existing_links=existing_links
+            )
+
+            if candidate_notes:
+                # Get full content for candidates (limited)
+                candidates_with_content = []
+                for cn in candidate_notes[:50]:
+                    full_note = self.get_note(cn["id"])
+                    if full_note:
+                        candidates_with_content.append(full_note)
+
+                prompt = ai_core.build_link_suggestion_prompt(
+                    current_title=title or note_id,
+                    current_content=content,
+                    candidate_notes=candidates_with_content,
+                    max_candidates=50,
+                )
+
+                response = self.ollama.client.generate(
+                    model=self.ollama.structured_model,
+                    prompt=prompt,
+                    options={"num_ctx": 8192},
+                )
+
+                response_text = response.get("response", "")
+                suggestions_data = ai_core.parse_json_response(response_text, expected_type="array")
+
+                if suggestions_data and isinstance(suggestions_data, list):
+                    # Validate and enrich suggestions
+                    note_map = {n["id"]: n for n in candidates_with_content}
+                    link_suggestions = []
+                    for s in suggestions_data[:5]:
+                        if isinstance(s, dict) and s.get("note_id") in note_map:
+                            link_suggestions.append({
+                                "note_id": s["note_id"],
+                                "title": note_map[s["note_id"]].get("title", "Untitled"),
+                                "confidence": s.get("confidence", 0.5),
+                                "reason": s.get("reason", ""),
+                            })
+                    if link_suggestions:
+                        logger.info(
+                            "Generated %d link suggestions for note: %s",
+                            len(link_suggestions),
+                            note_id,
+                        )
+        except Exception as e:
+            logger.error("Error generating link suggestions for note %s: %s", note_id, e)
+
+        # Store in Neo4j
+        if summary or link_suggestions:
+            try:
+                self.neo4j.store_ai_content(
+                    node_type="Note",
+                    node_id=note_id,
+                    ai_summary=summary,
+                    ai_link_suggestions=link_suggestions,
+                )
+                logger.info("Stored AI content for note: %s", note_id)
+            except Exception as e:
+                logger.error("Error storing AI content for note %s: %s", note_id, e)
+
+    def get_ai_content(self, note_id: str) -> dict[str, Any] | None:
+        """Get pre-computed AI content for a note.
+
+        Args:
+            note_id: Note ID
+
+        Returns:
+            Dict with ai_summary, ai_link_suggestions, and timestamps, or None
+        """
+        self._require_neo4j()
+        return self.neo4j.get_ai_content("Note", note_id)
+
+    def regenerate_ai_content(self, note_id: str) -> dict[str, Any] | None:
+        """Force regeneration of AI content for a note.
+
+        Args:
+            note_id: Note ID
+
+        Returns:
+            Updated AI content or None if note not found
+        """
+        self._require_neo4j()
+        note = self.get_note(note_id)
+        if not note:
+            return None
+
+        # Clear existing and regenerate
+        self.neo4j.clear_ai_content("Note", note_id)
+        self._generate_and_store_ai_content(
+            note_id=note_id,
+            content=note.get("content", ""),
+            title=note.get("title", ""),
+        )
+
+        return self.neo4j.get_ai_content("Note", note_id)
 
 
 # Global instance

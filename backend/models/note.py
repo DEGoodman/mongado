@@ -148,3 +148,5 @@ class LinkSuggestionsResponse(BaseModel):
 
     suggestions: list[LinkSuggestion]
     count: int
+    cached: bool = False  # True if returned from pre-computed cache
+    cached_at: float | None = None  # Unix timestamp when cached

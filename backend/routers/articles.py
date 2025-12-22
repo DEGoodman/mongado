@@ -71,14 +71,18 @@ def get_article(article_id: int, static_articles: ArticlesDep) -> ResourceRespon
 
 @router.get("/{article_id}/summary", response_model=SummaryResponse)
 def get_article_summary(
-    article_id: int, static_articles: ArticlesDep, ollama: OllamaDep
+    article_id: int, static_articles: ArticlesDep, ollama: OllamaDep, refresh: bool = False
 ) -> SummaryResponse:
-    """Generate an AI summary of a specific article using Ollama."""
-    if not ollama.is_available():
-        raise HTTPException(
-            status_code=503,
-            detail="AI summary feature is not available. Ollama is not running or not configured.",
-        )
+    """Get AI summary of an article (returns cached if available).
+
+    Args:
+        article_id: Article ID
+        refresh: If True, regenerate summary even if cached (default: False)
+
+    Returns:
+        Summary with cached indicator
+    """
+    from adapters.neo4j import get_neo4j_adapter
 
     # Find the article
     article = None
@@ -90,13 +94,44 @@ def get_article_summary(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
+    neo4j = get_neo4j_adapter()
+
+    # Try to get cached summary first (unless refresh requested)
+    if not refresh and neo4j.is_available():
+        ai_content = neo4j.get_ai_content("Article", str(article_id))
+        if ai_content and ai_content.get("ai_summary"):
+            return SummaryResponse(
+                summary=ai_content["ai_summary"],
+                cached=True,
+                cached_at=ai_content.get("ai_summary_at"),
+            )
+
+    # No cache or refresh requested - generate new summary
+    if not ollama.is_available():
+        raise HTTPException(
+            status_code=503,
+            detail="AI summary feature is not available. Ollama is not running or not configured.",
+        )
+
     # Generate summary
     summary = ollama.summarize_article(article["content"])
 
     if not summary:
         raise HTTPException(status_code=500, detail="Failed to generate summary. Please try again.")
 
-    return SummaryResponse(summary=summary)
+    # Cache the summary in Neo4j
+    if neo4j.is_available():
+        try:
+            neo4j.store_ai_content(
+                node_type="Article",
+                node_id=str(article_id),
+                ai_summary=summary,
+            )
+            logger.info("Cached summary for article %s", article_id)
+        except Exception as e:
+            logger.warning("Failed to cache summary for article %s: %s", article_id, e)
+
+    return SummaryResponse(summary=summary, cached=False)
 
 
 @router.post("/{article_id}/extract-concepts", response_model=ConceptExtractionResponse)

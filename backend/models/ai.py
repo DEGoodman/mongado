@@ -19,9 +19,11 @@ class QuestionResponse(BaseModel):
 
 
 class SummaryResponse(BaseModel):
-    """Response model for article summary."""
+    """Response model for article/note summary."""
 
     summary: str
+    cached: bool = False  # True if returned from pre-computed cache
+    cached_at: float | None = None  # Unix timestamp when cached
 
 
 class WarmupResponse(BaseModel):

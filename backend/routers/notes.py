@@ -317,24 +317,53 @@ async def get_graph_data(notes_service: NotesDep) -> dict[str, Any]:
 
 @router.get("/{note_id}/summary", response_model=SummaryResponse)
 async def get_note_summary(
-    note_id: str, notes_service: NotesDep, ollama: OllamaDep
+    note_id: str, notes_service: NotesDep, ollama: OllamaDep, refresh: bool = False
 ) -> SummaryResponse:
-    """Generate an AI summary of a specific note using Ollama."""
+    """Get AI summary of a note (returns cached if available).
+
+    Args:
+        note_id: Note ID
+        refresh: If True, regenerate summary even if cached (default: False)
+
+    Returns:
+        Summary with cached indicator
+    """
+    # Get the note first to verify it exists
+    note = notes_service.get_note(note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    # Try to get cached summary first (unless refresh requested)
+    if not refresh:
+        ai_content = notes_service.get_ai_content(note_id)
+        if ai_content and ai_content.get("ai_summary"):
+            return SummaryResponse(
+                summary=ai_content["ai_summary"],
+                cached=True,
+                cached_at=ai_content.get("ai_summary_at"),
+            )
+
+    # No cache or refresh requested - generate new summary
     if not ollama.is_available():
         raise HTTPException(
             status_code=503,
             detail="AI summary feature is not available. Ollama is not running or not configured.",
         )
 
-    # Get the note
-    note = notes_service.get_note(note_id)
-    if not note:
-        raise HTTPException(status_code=404, detail="Note not found")
+    # Force regeneration
+    if refresh:
+        ai_content = notes_service.regenerate_ai_content(note_id)
+        if ai_content and ai_content.get("ai_summary"):
+            return SummaryResponse(
+                summary=ai_content["ai_summary"],
+                cached=True,
+                cached_at=ai_content.get("ai_summary_at"),
+            )
 
-    # Generate summary from note content
+    # Fallback: generate on-demand (shouldn't normally reach here)
     summary = ollama.summarize_article(note.get("content", ""))
 
     if not summary:
         raise HTTPException(status_code=500, detail="Failed to generate summary. Please try again.")
 
-    return SummaryResponse(summary=summary)
+    return SummaryResponse(summary=summary, cached=False)
