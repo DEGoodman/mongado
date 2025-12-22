@@ -81,8 +81,16 @@ export default function NoteEditor({
 
       if (match) {
         const matchStart = pos - match[0].length;
+
+        // Check if there are closing ]] after the cursor and include them in replacement
+        const textAfter = editorView.state.doc.sliceString(
+          pos,
+          Math.min(editorView.state.doc.length, pos + 2)
+        );
+        const endPos = textAfter === "]]" ? pos + 2 : pos;
+
         editorView.dispatch({
-          changes: { from: matchStart, to: pos, insert: `[[${noteId}]]` },
+          changes: { from: matchStart, to: endPos, insert: `[[${noteId}]]` },
           selection: { anchor: matchStart + noteId.length + 4 },
         });
       }
