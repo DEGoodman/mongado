@@ -89,9 +89,13 @@ export default function NoteEditor({
         );
         const endPos = textAfter === "]]" ? pos + 2 : pos;
 
+        // Find the end of the current line to position cursor there
+        const line = editorView.state.doc.lineAt(pos);
+        const lineEnd = line.to;
+
         editorView.dispatch({
           changes: { from: matchStart, to: endPos, insert: `[[${noteId}]]` },
-          selection: { anchor: matchStart + noteId.length + 4 },
+          selection: { anchor: lineEnd },
         });
       }
 
