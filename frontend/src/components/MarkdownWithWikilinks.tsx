@@ -38,15 +38,31 @@ interface MarkdownWithWikilinksProps {
   content: string | null | undefined;
 }
 
-// Process children to convert [[note-id]] to Link components
+// Process children to convert [[note-id]] and [[article:id]] to Link components
 const processWikilinks = (children: React.ReactNode): React.ReactNode => {
   if (typeof children === "string") {
-    const parts = children.split(/(\[\[[a-z0-9-]+\]\])/g);
+    // Split on both note wikilinks and article wikilinks
+    const parts = children.split(/(\[\[(?:article:)?\d*[a-z0-9-]*\]\])/g);
     return parts.map((part, i) => {
-      const match = part.match(/\[\[([a-z0-9-]+)\]\]/);
-      if (match) {
+      // Check for article link first: [[article:123]]
+      const articleMatch = part.match(/\[\[article:(\d+)\]\]/);
+      if (articleMatch) {
         return (
-          <Link key={i} href={`/knowledge-base/notes/${match[1]}`} className={styles.wikilink}>
+          <Link
+            key={i}
+            href={`/knowledge-base/articles/${articleMatch[1]}`}
+            className={`${styles.wikilink} ${styles.articleLink}`}
+          >
+            📄 Article {articleMatch[1]}
+          </Link>
+        );
+      }
+
+      // Check for note link: [[note-id]]
+      const noteMatch = part.match(/\[\[([a-z0-9-]+)\]\]/);
+      if (noteMatch) {
+        return (
+          <Link key={i} href={`/knowledge-base/notes/${noteMatch[1]}`} className={styles.wikilink}>
             {part}
           </Link>
         );

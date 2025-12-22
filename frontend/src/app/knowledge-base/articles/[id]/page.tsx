@@ -27,6 +27,13 @@ interface Article {
   created_at: string; // Legacy fallback
 }
 
+interface RelatedNote {
+  id: string;
+  title: string;
+  content?: string;
+  score?: number;
+}
+
 export default function ArticleDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -36,6 +43,8 @@ export default function ArticleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -63,6 +72,31 @@ export default function ArticleDetailPage() {
 
     fetchArticle();
   }, [articleId, API_URL]);
+
+  // Fetch related notes after article is loaded
+  useEffect(() => {
+    async function fetchRelatedNotes() {
+      if (!article) return;
+
+      try {
+        setLoadingRelated(true);
+        const response = await fetch(`${API_URL}/api/articles/${articleId}/related-notes?limit=5`);
+
+        if (response.ok) {
+          const data = await response.json();
+          setRelatedNotes(data.notes || []);
+          logger.info("Related notes loaded", { count: data.count });
+        }
+      } catch (err) {
+        logger.warn("Failed to load related notes", err);
+        // Silently fail - related notes are optional
+      } finally {
+        setLoadingRelated(false);
+      }
+    }
+
+    fetchRelatedNotes();
+  }, [article, articleId, API_URL]);
 
   const handleTagClick = (tag: string) => {
     router.push(`/knowledge-base/articles?tag=${encodeURIComponent(tag)}`);
@@ -168,6 +202,16 @@ export default function ArticleDetailPage() {
               />
             </div>
           )}
+
+          {/* Create Note from Article */}
+          <div className={styles.actions}>
+            <Link
+              href={`/knowledge-base/notes/new?from_article=${article.id}&title=Notes on: ${encodeURIComponent(article.title)}&content=${encodeURIComponent(`See [[article:${article.id}]] for the full article.\n\n## Key Takeaways\n\n- `)}`}
+              className={styles.createNoteButton}
+            >
+              📝 Create Note from Article
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -217,6 +261,34 @@ export default function ArticleDetailPage() {
           <div className={styles.tocSidebar}>
             {(article.content_type === "markdown" || article.content_type === undefined) && (
               <ArticleTableOfContents content={article.content} />
+            )}
+
+            {/* Related Notes Section */}
+            {(relatedNotes.length > 0 || loadingRelated) && (
+              <div className={styles.relatedNotes}>
+                <h3 className={styles.relatedNotesTitle}>📝 Related Notes</h3>
+                {loadingRelated ? (
+                  <div className={styles.loadingNotes}>Finding related notes...</div>
+                ) : (
+                  <ul className={styles.relatedNotesList}>
+                    {relatedNotes.map((note) => (
+                      <li key={note.id} className={styles.relatedNoteItem}>
+                        <Link
+                          href={`/knowledge-base/notes/${note.id}`}
+                          className={styles.relatedNoteLink}
+                        >
+                          <span className={styles.noteTitle}>{note.title || note.id}</span>
+                          {note.score && (
+                            <span className={styles.noteScore}>
+                              {Math.round(note.score * 100)}% match
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
           </div>
         </div>

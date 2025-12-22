@@ -46,7 +46,7 @@ def _highlight_code(code: str, lang: str, **_kwargs: Any) -> str:
 
 
 def _convert_wikilinks(html: str) -> str:
-    """Convert [[note-id]] wikilinks to HTML links.
+    """Convert [[note-id]] and [[article:id]] wikilinks to HTML links.
 
     Args:
         html: HTML content with potential wikilinks
@@ -54,13 +54,26 @@ def _convert_wikilinks(html: str) -> str:
     Returns:
         HTML with wikilinks converted to anchor tags
     """
-    pattern = r"\[\[([a-z0-9-]+)\]\]"
+    # First, handle article links [[article:id]]
+    article_pattern = r"\[\[article:(\d+)\]\]"
 
-    def replace_wikilink(match: re.Match[str]) -> str:
+    def replace_article_link(match: re.Match[str]) -> str:
+        article_id = match.group(1)
+        return (
+            f'<a href="/knowledge-base/articles/{article_id}" '
+            f'class="wikilink wikilink-article">📄 Article {article_id}</a>'
+        )
+
+    html = re.sub(article_pattern, replace_article_link, html)
+
+    # Then, handle note links [[note-id]]
+    note_pattern = r"\[\[([a-z0-9-]+)\]\]"
+
+    def replace_note_link(match: re.Match[str]) -> str:
         note_id = match.group(1)
         return f'<a href="/knowledge-base/notes/{note_id}" class="wikilink">{match.group(0)}</a>'
 
-    return re.sub(pattern, replace_wikilink, html)
+    return re.sub(note_pattern, replace_note_link, html)
 
 
 def render_markdown_to_html(markdown_content: str) -> str:

@@ -10,7 +10,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from dependencies import get_ollama, get_static_articles
+from dependencies import get_notes, get_ollama, get_static_articles
 from models import (
     ArticleMetadata,
     ArticleMetadataListResponse,
@@ -30,6 +30,7 @@ router = APIRouter(prefix="/api/articles", tags=["articles"])
 # Type aliases for cleaner signatures
 OllamaDep = Annotated[Any, Depends(get_ollama)]
 ArticlesDep = Annotated[list[dict[str, Any]], Depends(get_static_articles)]
+NotesDep = Annotated[Any, Depends(get_notes)]
 
 
 @router.get("", response_model=ArticleMetadataListResponse)
@@ -132,6 +133,78 @@ def get_article_summary(
             logger.warning("Failed to cache summary for article %s: %s", article_id, e)
 
     return SummaryResponse(summary=summary, cached=False)
+
+
+@router.get("/{article_id}/related-notes", response_model=dict[str, Any])
+def get_related_notes(
+    article_id: int,
+    static_articles: ArticlesDep,
+    notes_service: NotesDep,
+    ollama: OllamaDep,
+    limit: int = 5,
+) -> dict[str, Any]:
+    """Get notes semantically related to an article.
+
+    Uses embedding similarity to find notes that discuss similar topics.
+
+    Args:
+        article_id: Article ID
+        limit: Maximum number of related notes to return (default: 5)
+
+    Returns:
+        Dict with 'notes' array and 'count'
+    """
+    # Find the article
+    article = None
+    for a in static_articles:
+        if a["id"] == article_id:
+            article = a
+            break
+
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    # Get all notes with embeddings
+    try:
+        all_notes = notes_service.list_notes(include_embedding=True)
+    except Exception as e:
+        logger.warning("Could not list notes: %s", e)
+        return {"notes": [], "count": 0}
+
+    if not all_notes:
+        return {"notes": [], "count": 0}
+
+    # Filter notes that have embeddings
+    notes_with_embeddings = [n for n in all_notes if n.get("embedding")]
+
+    if not notes_with_embeddings:
+        return {"notes": [], "count": 0}
+
+    # Check if Ollama is available for generating article embedding
+    if not ollama.is_available():
+        logger.warning("Ollama not available for semantic search")
+        return {"notes": [], "count": 0}
+
+    # Use semantic search to find related notes
+    article_content = article.get("content", "")
+    if not article_content:
+        return {"notes": [], "count": 0}
+
+    try:
+        related = ollama.semantic_search_with_precomputed_embeddings(
+            query=article_content[:2000],  # Limit content for embedding
+            documents_with_embeddings=notes_with_embeddings,
+            top_k=limit,
+        )
+
+        # Clean up response (remove embeddings)
+        for note in related:
+            note.pop("embedding", None)
+
+        return {"notes": related, "count": len(related)}
+    except Exception as e:
+        logger.error("Error finding related notes: %s", e)
+        return {"notes": [], "count": 0}
 
 
 @router.post("/{article_id}/extract-concepts", response_model=ConceptExtractionResponse)

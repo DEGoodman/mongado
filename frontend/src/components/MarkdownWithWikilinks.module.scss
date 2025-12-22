@@ -22,7 +22,7 @@
   color: $neutral-500;
 }
 
-// Wikilink styling
+// Wikilink styling (for note links)
 .wikilink {
   display: inline-block;
   padding: 0 $spacing-1;
@@ -35,5 +35,16 @@
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+// Article link styling (distinct from note links)
+.articleLink {
+  background-color: $green-50;
+  color: $green-700;
+  font-family: inherit; // Use regular font, not monospace
+
+  &:hover {
+    background-color: $green-100;
   }
 }

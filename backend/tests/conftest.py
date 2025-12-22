@@ -198,6 +198,14 @@ class MockNotesService:
         notes = list(self._notes.values())
         if is_reference is not None:
             notes = [n for n in notes if n.get("is_reference") == is_reference]
+
+        # Add mock embeddings if requested
+        if include_embedding:
+            for note in notes:
+                # Generate a consistent mock embedding based on note ID
+                base_value = (hash(note["id"]) % 100) / 1000
+                note["embedding"] = [base_value + (i / 1000) for i in range(768)]
+
         return notes
 
     def get_note(self, note_id: str) -> dict[str, Any] | None:

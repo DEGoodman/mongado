@@ -95,3 +95,55 @@ def test_article_has_markdown_content(client: TestClient) -> None:
     detail_article = detail_response.json()["resource"]
     assert "content" in detail_article
     assert len(detail_article["content"]) > 0
+
+
+def test_get_article_related_notes(client: TestClient) -> None:
+    """Test getting notes related to an article using semantic search."""
+    # Get a valid article ID
+    response = client.get("/api/articles")
+    articles = response.json()["resources"]
+    assert len(articles) > 0, "No articles found"
+    article_id = articles[0]["id"]
+
+    # Get related notes
+    response = client.get(f"/api/articles/{article_id}/related-notes")
+    assert response.status_code == 200
+    data = response.json()
+
+    # Response should have correct structure
+    assert "notes" in data
+    assert "count" in data
+    assert isinstance(data["notes"], list)
+    assert data["count"] == len(data["notes"])
+
+    # Mock returns 2 notes with embeddings
+    assert data["count"] == 2
+
+    # Each note should have required fields and a score
+    for note in data["notes"]:
+        assert "id" in note
+        assert "score" in note
+        # Embeddings should be removed from response
+        assert "embedding" not in note
+
+
+def test_get_related_notes_nonexistent_article(client: TestClient) -> None:
+    """Test getting related notes for non-existent article returns 404."""
+    response = client.get("/api/articles/99999/related-notes")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Article not found"
+
+
+def test_get_related_notes_with_limit(client: TestClient) -> None:
+    """Test limiting number of related notes returned."""
+    # Get a valid article ID
+    response = client.get("/api/articles")
+    articles = response.json()["resources"]
+    article_id = articles[0]["id"]
+
+    # Request with limit=1
+    response = client.get(f"/api/articles/{article_id}/related-notes?limit=1")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["count"] <= 1

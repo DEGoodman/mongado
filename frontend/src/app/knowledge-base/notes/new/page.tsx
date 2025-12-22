@@ -60,8 +60,21 @@ function NewNoteContent() {
     setAiAvailable(isAuthenticated() || config.allowUnauthenticatedAI);
   }, []);
 
-  // Load draft from localStorage on mount
+  // Load draft from localStorage on mount, or pre-fill from URL params (e.g., from article)
   useEffect(() => {
+    // Check if coming from an article (URL params take precedence over drafts)
+    const urlTitle = searchParams.get("title");
+    const urlContent = searchParams.get("content");
+
+    if (urlTitle || urlContent) {
+      // Pre-fill from URL parameters (from "Create Note from Article" button)
+      if (urlTitle) setTitle(urlTitle);
+      if (urlContent) setContent(urlContent);
+      logger.info("Note pre-filled from URL parameters");
+      return; // Don't load draft if URL params present
+    }
+
+    // Otherwise, try to restore draft
     const draft = loadDraft();
     if (draft) {
       setTitle(draft.title);
@@ -75,7 +88,7 @@ function NewNoteContent() {
         savedAt: new Date(draft.savedAt).toISOString(),
       });
     }
-  }, []);
+  }, [searchParams]);
 
   // Auto-save draft to localStorage (debounced)
   useEffect(() => {
