@@ -309,14 +309,9 @@
   }
 }
 
-.templateSelector {
-  margin-bottom: $spacing-4;
-}
-
-.loadingText {
-  margin-left: $spacing-2;
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
+// Template selector row - compact button placement
+.templateRow {
+  margin-bottom: $spacing-2;
 }
 
 // ===== REFERENCE TOGGLE =====

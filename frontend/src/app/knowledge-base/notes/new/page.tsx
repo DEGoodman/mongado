@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
+import TemplateSelector from "@/components/TemplateSelector";
 import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
 import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
 import { logger } from "@/lib/logger";
@@ -24,8 +25,8 @@ function NewNoteContent() {
 
   // Check if AI features should be available
   // AI is available if: user is authenticated OR unauthenticated AI is allowed
-  // Use state to avoid hydration mismatch (localStorage only available on client)
-  const [aiAvailable, setAiAvailable] = useState(config.allowUnauthenticatedAI);
+  // Initialize to false to avoid hydration mismatch (updated client-side only)
+  const [aiAvailable, setAiAvailable] = useState(false);
 
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
@@ -422,29 +423,15 @@ function NewNoteContent() {
         >
           {/* Editor Column */}
           <div className={styles.editorColumn}>
-            {/* Template Selector */}
-            {templates.length > 0 && (
-              <div className={styles.templateSelector}>
-                <label htmlFor="template" className={styles.formLabel}>
-                  Start from template (optional)
-                </label>
-                <select
-                  id="template"
-                  onChange={(e) => handleApplyTemplate(e.target.value)}
-                  className={styles.formSelect}
-                  disabled={loadingTemplate}
-                  defaultValue=""
-                >
-                  <option value="">Blank note</option>
-                  {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.icon} {template.title}
-                    </option>
-                  ))}
-                </select>
-                {loadingTemplate && <span className={styles.loadingText}>Loading...</span>}
-              </div>
-            )}
+            {/* Template Selector - compact button */}
+            <div className={styles.templateRow}>
+              <TemplateSelector
+                templates={templates}
+                onSelectTemplate={handleApplyTemplate}
+                disabled={loadingTemplate}
+                loading={loadingTemplate}
+              />
+            </div>
 
             {/* Title (optional) */}
             <div>
