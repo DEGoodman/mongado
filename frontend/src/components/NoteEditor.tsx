@@ -91,11 +91,18 @@ export default function NoteEditor({
 
         // Find the end of the current line to position cursor there
         const line = editorView.state.doc.lineAt(pos);
-        const lineEnd = line.to;
 
+        // Calculate the change in text length to adjust line end position
+        const removedLength = endPos - matchStart;
+        const insertedLength = noteId.length + 4; // [[noteId]]
+        const delta = insertedLength - removedLength;
+        const newLineEnd = line.to + delta;
+
+        // Focus editor first, then dispatch changes with new selection
+        editorView.focus();
         editorView.dispatch({
           changes: { from: matchStart, to: endPos, insert: `[[${noteId}]]` },
-          selection: { anchor: lineEnd },
+          selection: { anchor: newLineEnd },
         });
       }
 
