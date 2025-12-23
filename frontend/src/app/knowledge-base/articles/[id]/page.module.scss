@@ -194,7 +194,7 @@
       background-color: $green-500;
       color: white;
       border-radius: $border-radius-md;
-      font-size: $text-sm-size;
+      font-size: $font-size-sm;
       font-weight: $font-weight-medium;
       text-decoration: none;
       transition: background-color 0.15s ease;
@@ -293,8 +293,7 @@
   border: $border-default;
 
   .relatedNotesTitle {
-    @include text-primary;
-    font-size: $text-sm-size;
+    font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     margin-bottom: $spacing-3;
     color: $color-text-heading;
@@ -302,7 +301,7 @@
 
   .loadingNotes {
     @include text-secondary;
-    font-size: $text-xs-size;
+    font-size: $font-size-xs;
     color: $color-text-secondary;
     font-style: italic;
   }
@@ -328,7 +327,7 @@
     border-radius: $border-radius-sm;
     text-decoration: none;
     background-color: $color-surface-elevated;
-    border: $border-thin solid transparent;
+    border: $border-width-thin solid transparent;
     transition: all 0.15s ease;
 
     &:hover {
@@ -343,7 +342,7 @@
     }
 
     .noteScore {
-      font-size: $text-xs-size;
+      font-size: $font-size-xs;
       color: $color-text-secondary;
       margin-top: $spacing-1;
     }
