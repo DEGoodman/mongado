@@ -281,6 +281,50 @@ class NotesService:
         self._require_neo4j()
         return self.neo4j.get_central_notes(min_backlinks=min_backlinks)
 
+    def get_stale_notes(
+        self, days_threshold: int = 60, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """Get notes not updated in the specified number of days.
+
+        Args:
+            days_threshold: Number of days since last update (default: 60)
+            limit: Maximum number of notes to return (default: 50)
+
+        Returns:
+            List of stale notes sorted by oldest first
+        """
+        self._require_neo4j()
+        return self.neo4j.get_stale_notes(days_threshold=days_threshold, limit=limit)
+
+    def get_random_stale_note(self, days_threshold: int = 60) -> dict[str, Any] | None:
+        """Get a random note not updated in the specified number of days.
+
+        Args:
+            days_threshold: Number of days since last update (default: 60)
+
+        Returns:
+            Random stale note or None if no stale notes exist
+        """
+        self._require_neo4j()
+        return self.neo4j.get_random_stale_note(days_threshold=days_threshold)
+
+    def mark_note_reviewed(self, note_id: str) -> dict[str, Any] | None:
+        """Mark a note as reviewed by updating its updated_at timestamp.
+
+        This resets the staleness clock without requiring content changes.
+
+        Args:
+            note_id: Note ID
+
+        Returns:
+            Updated note dict or None if not found
+        """
+        self._require_neo4j()
+        result = self.neo4j.touch_note_updated_at(note_id)
+        if result:
+            logger.info("Marked note as reviewed: %s", note_id)
+        return result
+
     def _get_all_note_ids(self) -> set[str]:
         """Get all existing note IDs (for collision detection)."""
         self._require_neo4j()

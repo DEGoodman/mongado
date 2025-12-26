@@ -15,16 +15,19 @@ interface Note {
   title?: string;
   link_count?: number;
   backlink_count?: number;
+  days_stale?: number;
 }
 
 interface QuickListsData {
   orphans: Note[];
   hubs: Note[];
   central_concepts: Note[];
+  stale: Note[];
   counts: {
     orphans: number;
     hubs: number;
     central_concepts: number;
+    stale: number;
   };
 }
 
@@ -37,6 +40,7 @@ interface QuickListsSectionProps {
   description: string;
   isExpanded: boolean;
   onToggle: () => void;
+  showDaysStale?: boolean;
 }
 
 function QuickListsSection({
@@ -48,6 +52,7 @@ function QuickListsSection({
   description,
   isExpanded,
   onToggle,
+  showDaysStale = false,
 }: QuickListsSectionProps) {
   return (
     <div className={`${styles.section} ${className}`}>
@@ -101,6 +106,9 @@ function QuickListsSection({
                   {note.id}
                   {note.link_count !== undefined && ` · ${note.link_count} links`}
                   {note.backlink_count !== undefined && ` · ${note.backlink_count} backlinks`}
+                  {showDaysStale && note.days_stale !== undefined && (
+                    <span className={styles.daysStale}> · {note.days_stale}d stale</span>
+                  )}
                 </div>
               </Link>
             ))}
@@ -193,6 +201,18 @@ export default function QuickLists() {
         description="No central concept notes yet - highly referenced notes will appear here."
         isExpanded={expandedSections.has("central")}
         onToggle={() => toggleSection("central")}
+      />
+
+      <QuickListsSection
+        title="Stale Notes"
+        icon="🕰️"
+        notes={data.stale}
+        count={data.counts.stale}
+        className={styles.stale}
+        description="No stale notes - your knowledge base is well maintained!"
+        isExpanded={expandedSections.has("stale")}
+        onToggle={() => toggleSection("stale")}
+        showDaysStale={true}
       />
     </div>
   );

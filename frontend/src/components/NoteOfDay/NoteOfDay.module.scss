@@ -1,0 +1,125 @@
+/**
+ * NoteOfDay Component Styles
+ * Homepage widget for resurfacing stale notes
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.noteOfDay {
+  background-color: $color-surface-default;
+  border: $border-default;
+  border-radius: $border-radius-lg;
+  padding: $spacing-5;
+  margin-top: $spacing-6;
+
+  &.stale {
+    border-color: $color-stale-border;
+    background-color: $color-stale-bg;
+  }
+}
+
+.header {
+  @include flex-start;
+  gap: $spacing-2;
+  margin-bottom: $spacing-3;
+
+  .icon {
+    font-size: $font-size-xl;
+    line-height: 1;
+  }
+
+  .title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-heading;
+    margin: 0;
+  }
+
+  .staleBadge {
+    display: inline-flex;
+    padding: 0.125rem $spacing-2;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-full;
+    background-color: $color-stale-text;
+    color: white;
+  }
+}
+
+.noteCard {
+  display: block;
+  padding: $spacing-3;
+  background-color: $color-surface-default;
+  border: $border-default;
+  border-radius: $border-radius-md;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: $shadow-card-sm;
+    border-color: $color-border-hover;
+  }
+}
+
+.noteTitle {
+  font-weight: $font-weight-medium;
+  font-size: $font-size-base;
+  color: $color-text-primary;
+  margin-bottom: $spacing-2;
+}
+
+.notePreview {
+  @include text-secondary;
+  font-size: $font-size-sm;
+  margin: 0 0 $spacing-2;
+  line-height: $line-height-relaxed;
+}
+
+.noteMeta {
+  @include flex-start;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+}
+
+.noteId {
+  @include text-secondary;
+  font-size: $font-size-xs;
+  font-family: $font-family-mono;
+}
+
+.daysStale {
+  font-size: $font-size-xs;
+  color: $color-stale-text;
+  font-style: italic;
+}
+
+.message {
+  @include text-secondary;
+  font-size: $font-size-sm;
+  margin: $spacing-3 0 0;
+  font-style: italic;
+}
+
+.skeleton {
+  height: 150px;
+  background: linear-gradient(
+    90deg,
+    $neutral-100 25%,
+    $neutral-50 50%,
+    $neutral-100 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: $border-radius-md;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

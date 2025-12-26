@@ -936,3 +936,251 @@ class TestIsReferenceField:
         data = response.json()
         assert "is_reference" in data
         assert data["is_reference"] is True
+
+
+class TestStaleNotes:
+    """Tests for GET /api/notes/stale endpoint."""
+
+    def test_get_stale_notes_empty_when_all_fresh(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that no notes are stale when all recently created."""
+        # Create fresh notes
+        client.post("/api/notes", json={"content": "Fresh note 1"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Fresh note 2"}, headers=admin_headers)
+
+        # Get stale notes
+        response = client.get("/api/notes/stale")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 0
+        assert data["notes"] == []
+        assert data["days_threshold"] == 60
+
+    def test_get_stale_notes_custom_days(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test stale notes with custom days parameter."""
+        response = client.get("/api/notes/stale?days=30")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["days_threshold"] == 30
+
+    def test_get_stale_notes_custom_limit(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test stale notes with custom limit parameter."""
+        response = client.get("/api/notes/stale?limit=10")
+        assert response.status_code == 200
+        data = response.json()
+        # Should accept limit param (even if not enough stale notes)
+        assert "notes" in data
+
+    def test_stale_notes_response_structure(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that stale notes response has correct structure."""
+        response = client.get("/api/notes/stale")
+        assert response.status_code == 200
+        data = response.json()
+        assert "notes" in data
+        assert "count" in data
+        assert "days_threshold" in data
+        assert isinstance(data["notes"], list)
+        assert isinstance(data["count"], int)
+        assert isinstance(data["days_threshold"], int)
+
+
+class TestNoteOfDay:
+    """Tests for GET /api/notes/note-of-day endpoint."""
+
+    def test_note_of_day_returns_random_when_no_stale(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test note of day falls back to random note when no stale notes."""
+        # Create fresh note
+        client.post("/api/notes", json={"content": "Fresh note"}, headers=admin_headers)
+
+        response = client.get("/api/notes/note-of-day")
+        assert response.status_code == 200
+        data = response.json()
+        assert "note" in data
+        assert data["is_stale"] is False
+        assert "message" in data
+        assert data["message"] == "Random note for discovery"
+
+    def test_note_of_day_empty_database(self, client: TestClient) -> None:
+        """Test note of day with empty database."""
+        response = client.get("/api/notes/note-of-day")
+        assert response.status_code == 404
+        assert "No notes available" in response.json()["detail"]
+
+    def test_note_of_day_custom_days(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test note of day with custom days parameter."""
+        client.post("/api/notes", json={"content": "Fresh note"}, headers=admin_headers)
+
+        response = client.get("/api/notes/note-of-day?days=30")
+        assert response.status_code == 200
+        data = response.json()
+        assert "note" in data
+        assert "is_stale" in data
+        assert "message" in data
+
+    def test_note_of_day_response_structure(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that note of day response has correct structure."""
+        client.post(
+            "/api/notes",
+            json={"content": "Test note", "title": "Test Title"},
+            headers=admin_headers,
+        )
+
+        response = client.get("/api/notes/note-of-day")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check response structure
+        assert "note" in data
+        assert "is_stale" in data
+        assert "message" in data
+        assert isinstance(data["is_stale"], bool)
+        assert isinstance(data["message"], str)
+
+        # Check note has expected fields
+        note = data["note"]
+        assert "id" in note
+        assert "content" in note
+
+
+class TestMarkReviewed:
+    """Tests for POST /api/notes/{note_id}/review endpoint."""
+
+    def test_mark_note_reviewed_with_admin_token(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test marking a note as reviewed with admin authentication."""
+        import time
+
+        # Create note
+        create_response = client.post(
+            "/api/notes", json={"content": "Test note"}, headers=admin_headers
+        )
+        note_id = create_response.json()["id"]
+        original_updated_at = create_response.json()["updated_at"]
+
+        # Small delay to ensure timestamp changes
+        time.sleep(0.01)
+
+        # Mark as reviewed
+        response = client.post(f"/api/notes/{note_id}/review", headers=admin_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == note_id
+        assert data["updated_at"] > original_updated_at
+
+    def test_mark_note_reviewed_without_auth(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that marking note as reviewed without authentication fails."""
+        # Create note
+        create_response = client.post(
+            "/api/notes", json={"content": "Test note"}, headers=admin_headers
+        )
+        note_id = create_response.json()["id"]
+
+        # Try to mark as reviewed without auth
+        response = client.post(f"/api/notes/{note_id}/review")
+        assert response.status_code == 401
+
+    def test_mark_note_reviewed_not_found(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test marking non-existent note as reviewed."""
+        response = client.post("/api/notes/nonexistent-id/review", headers=admin_headers)
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"]
+
+    def test_mark_note_reviewed_preserves_content(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that marking as reviewed doesn't change content."""
+        # Create note with specific content
+        create_response = client.post(
+            "/api/notes",
+            json={"content": "Original content", "title": "Original Title", "tags": ["test"]},
+            headers=admin_headers,
+        )
+        note_id = create_response.json()["id"]
+
+        # Mark as reviewed
+        response = client.post(f"/api/notes/{note_id}/review", headers=admin_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["content"] == "Original content"
+        assert data["title"] == "Original Title"
+        assert data["tags"] == ["test"]
+
+
+class TestQuickListsWithStale:
+    """Tests for quick lists with stale notes."""
+
+    def test_quick_lists_includes_stale(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that quick lists includes stale notes section."""
+        response = client.get("/api/notes/quick-lists")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should include stale section
+        assert "stale" in data
+        assert "stale" in data["counts"]
+
+    def test_quick_lists_stale_custom_days(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test quick lists with custom stale_days parameter."""
+        response = client.get("/api/notes/quick-lists?stale_days=30")
+        assert response.status_code == 200
+        data = response.json()
+        assert "stale" in data
+
+    def test_quick_lists_stale_empty_when_all_fresh(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that stale list is empty when all notes are fresh."""
+        # Create fresh notes
+        client.post("/api/notes", json={"content": "Fresh note 1"}, headers=admin_headers)
+        client.post("/api/notes", json={"content": "Fresh note 2"}, headers=admin_headers)
+
+        response = client.get("/api/notes/quick-lists")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["counts"]["stale"] == 0
+        assert data["stale"] == []
+
+    def test_quick_lists_complete_structure(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Test that quick lists has complete structure with all sections."""
+        response = client.get("/api/notes/quick-lists")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check all sections exist
+        assert "orphans" in data
+        assert "hubs" in data
+        assert "central_concepts" in data
+        assert "stale" in data
+        assert "counts" in data
+
+        # Check counts has all keys
+        assert "orphans" in data["counts"]
+        assert "hubs" in data["counts"]
+        assert "central_concepts" in data["counts"]
+        assert "stale" in data["counts"]

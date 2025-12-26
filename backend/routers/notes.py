@@ -198,35 +198,104 @@ async def get_central_notes(notes_service: NotesDep, min_backlinks: int = 3) -> 
 
 @router.get("/quick-lists", response_model=dict[str, Any])
 async def get_quick_lists(
-    notes_service: NotesDep, min_hub_links: int = 3, min_central_backlinks: int = 3
+    notes_service: NotesDep,
+    min_hub_links: int = 3,
+    min_central_backlinks: int = 3,
+    stale_days: int = 60,
 ) -> dict[str, Any]:
     """Get categorized quick lists for knowledge base navigation.
 
-    Returns three categories of notes:
+    Returns four categories of notes:
     - orphans: Isolated notes needing integration (0 links, 0 backlinks)
     - hubs: Entry point notes with many outbound links (3+ links)
     - central_concepts: Highly referenced core concept notes (3+ backlinks)
+    - stale: Notes not updated in 60+ days (needs review)
 
     Args:
         min_hub_links: Minimum outbound links for hub notes (default: 3)
         min_central_backlinks: Minimum backlinks for central notes (default: 3)
+        stale_days: Days threshold for stale notes (default: 60)
 
     Returns:
-        Dict with orphans, hubs, and central_concepts arrays plus counts
+        Dict with orphans, hubs, central_concepts, and stale arrays plus counts
     """
     orphans = notes_service.get_orphan_notes()
     hubs = notes_service.get_hub_notes(min_links=min_hub_links)
     central = notes_service.get_central_notes(min_backlinks=min_central_backlinks)
+    stale = notes_service.get_stale_notes(days_threshold=stale_days, limit=10)
 
     return {
         "orphans": orphans,
         "hubs": hubs,
         "central_concepts": central,
+        "stale": stale,
         "counts": {
             "orphans": len(orphans),
             "hubs": len(hubs),
             "central_concepts": len(central),
+            "stale": len(stale),
         },
+    }
+
+
+@router.get("/stale", response_model=dict[str, Any])
+async def get_stale_notes(
+    notes_service: NotesDep,
+    days: int = 60,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Get stale notes (notes not updated in specified number of days).
+
+    These are notes that may need review or updating - good candidates for resurface.
+
+    Args:
+        days: Number of days threshold (default: 60)
+        limit: Maximum number of notes to return (default: 50)
+
+    Returns:
+        Dict with notes array, count, and days_threshold
+    """
+    stale = notes_service.get_stale_notes(days_threshold=days, limit=limit)
+    return {
+        "notes": stale,
+        "count": len(stale),
+        "days_threshold": days,
+    }
+
+
+@router.get("/note-of-day", response_model=dict[str, Any])
+async def get_note_of_day(notes_service: NotesDep, days: int = 60) -> dict[str, Any]:
+    """Get 'note of the day' for resurface widget.
+
+    Returns a random stale note if any exist, otherwise returns any random note.
+    Designed for homepage widgets to encourage knowledge base maintenance.
+
+    Args:
+        days: Staleness threshold in days (default: 60)
+
+    Returns:
+        Dict with note, is_stale indicator, and message
+    """
+    # Try to get a stale note first
+    stale_note = notes_service.get_random_stale_note(days_threshold=days)
+
+    if stale_note:
+        return {
+            "note": stale_note,
+            "is_stale": True,
+            "message": f"This note hasn't been updated in over {days} days",
+        }
+
+    # Fall back to any random note
+    random_note = notes_service.get_random_note()
+
+    if not random_note:
+        raise HTTPException(status_code=404, detail="No notes available")
+
+    return {
+        "note": random_note,
+        "is_stale": False,
+        "message": "Random note for discovery",
     }
 
 
@@ -298,6 +367,35 @@ async def get_outbound_links(note_id: str, notes_service: NotesDep) -> dict[str,
     links = notes_service.get_outbound_links(note_id)
 
     return {"links": links, "count": len(links)}
+
+
+@router.post("/{note_id}/review", response_model=dict[str, Any])
+async def mark_note_reviewed(
+    note_id: str,
+    _admin: AdminUser,
+    notes_service: NotesDep,
+) -> dict[str, Any]:
+    """Mark a note as reviewed (admin only).
+
+    Updates the note's updated_at timestamp without requiring content changes.
+    This resets the staleness clock for notes that have been reviewed but
+    don't need actual updates.
+
+    Args:
+        note_id: Note ID
+
+    Returns:
+        Updated note dict
+    """
+    updated: dict[str, Any] | None = notes_service.mark_note_reviewed(note_id)
+
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Note '{note_id}' not found",
+        )
+
+    return updated
 
 
 @router.get("/graph/data", response_model=dict[str, Any])

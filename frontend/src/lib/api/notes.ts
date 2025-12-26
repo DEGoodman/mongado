@@ -335,6 +335,83 @@ export async function getCentralNotes(minBacklinks: number = 3): Promise<NotesLi
   return data;
 }
 
+export interface StaleNotesResponse {
+  notes: Note[];
+  count: number;
+  days_threshold: number;
+}
+
+/**
+ * Get stale notes (notes not updated in specified days)
+ */
+export async function getStaleNotes(
+  days: number = 60,
+  limit: number = 50
+): Promise<StaleNotesResponse> {
+  const response = await fetch(`${API_URL}/api/notes/stale?days=${days}&limit=${limit}`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    logger.error("Failed to get stale notes", { status: response.status });
+    throw new Error("Failed to get stale notes");
+  }
+
+  const data = await response.json();
+  logger.info("Stale notes retrieved", { count: data.count, days_threshold: data.days_threshold });
+  return data;
+}
+
+export interface NoteOfDayResponse {
+  note: Note;
+  is_stale: boolean;
+  message: string;
+}
+
+/**
+ * Get note of the day (prioritizes stale notes, falls back to random)
+ */
+export async function getNoteOfDay(days: number = 60): Promise<NoteOfDayResponse> {
+  const response = await fetch(`${API_URL}/api/notes/note-of-day?days=${days}`, {
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("No notes available");
+    }
+    logger.error("Failed to get note of day", { status: response.status });
+    throw new Error("Failed to get note of day");
+  }
+
+  const data = await response.json();
+  logger.info("Note of day retrieved", { noteId: data.note.id, isStale: data.is_stale });
+  return data;
+}
+
+/**
+ * Mark a note as reviewed (updates updated_at without content changes)
+ */
+export async function markNoteReviewed(noteId: string): Promise<Note> {
+  const response = await fetch(`${API_URL}/api/notes/${noteId}/review`, {
+    method: "POST",
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Note not found");
+    }
+    const error = await response.json();
+    logger.error("Failed to mark note as reviewed", { noteId, status: response.status, error });
+    throw new Error(error.detail || "Failed to mark note as reviewed");
+  }
+
+  const note = await response.json();
+  logger.info("Note marked as reviewed", { id: note.id });
+  return note;
+}
+
 /**
  * Format date for display
  */

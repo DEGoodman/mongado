@@ -152,6 +152,27 @@
   }
 }
 
+// ===== STALE NOTES STYLING =====
+.stale {
+  .header {
+    background-color: $color-stale-bg;
+    border-color: $color-stale-border;
+
+    .title {
+      color: $color-stale-heading;
+    }
+
+    .count {
+      background-color: $color-stale-text;
+      color: white;
+    }
+
+    &:hover {
+      background-color: $color-stale-hover;
+    }
+  }
+}
+
 // ===== NOTE CARD IN LIST =====
 .noteCard {
   padding: $spacing-2 $spacing-3;
@@ -180,5 +201,10 @@
     @include text-secondary;
     font-size: $font-size-xs;
     font-family: $font-family-mono;
+  }
+
+  .daysStale {
+    color: $color-stale-text;
+    font-style: italic;
   }
 }

@@ -628,6 +628,120 @@ class Neo4jAdapter:
 
             return central
 
+    def get_stale_notes(
+        self, days_threshold: int = 60, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """Get notes not updated in the specified number of days.
+
+        Args:
+            days_threshold: Number of days since last update (default: 60)
+            limit: Maximum number of notes to return (default: 50)
+
+        Returns:
+            List of stale notes sorted by updated_at ascending (oldest first)
+        """
+        if not self._available or not self.driver:
+            return []
+
+        threshold_timestamp = time.time() - (days_threshold * 24 * 60 * 60)
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                WHERE n.updated_at < $threshold
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                WITH n, collect(target.id) AS links
+                RETURN n, links,
+                       toInteger((timestamp() / 1000 - n.updated_at) / 86400) AS days_stale
+                ORDER BY n.updated_at ASC
+                LIMIT $limit
+                """,
+                threshold=threshold_timestamp,
+                limit=limit,
+            )
+
+            stale_notes = []
+            for record in result:
+                note = self._node_to_dict(record["n"])
+                note["links"] = record["links"] or []
+                note["days_stale"] = record["days_stale"]
+                stale_notes.append(note)
+
+            return stale_notes
+
+    def get_random_stale_note(self, days_threshold: int = 60) -> dict[str, Any] | None:
+        """Get a random note not updated in the specified number of days.
+
+        Args:
+            days_threshold: Number of days since last update (default: 60)
+
+        Returns:
+            Random stale note or None if no stale notes exist
+        """
+        if not self._available or not self.driver:
+            return None
+
+        threshold_timestamp = time.time() - (days_threshold * 24 * 60 * 60)
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                WHERE n.updated_at < $threshold
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(target:Note)
+                WITH n, collect(target.id) AS links
+                ORDER BY rand()
+                LIMIT 1
+                RETURN n, links,
+                       toInteger((timestamp() / 1000 - n.updated_at) / 86400) AS days_stale
+                """,
+                threshold=threshold_timestamp,
+            )
+
+            record = result.single()
+            if not record:
+                return None
+
+            note = self._node_to_dict(record["n"])
+            note["links"] = record["links"] or []
+            note["days_stale"] = record["days_stale"]
+
+            return note
+
+    def touch_note_updated_at(self, note_id: str) -> dict[str, Any] | None:
+        """Update only the updated_at timestamp (for 'Mark as Reviewed').
+
+        This allows resetting the staleness clock without modifying content.
+
+        Args:
+            note_id: Note ID
+
+        Returns:
+            Updated note dict or None if not found
+        """
+        if not self._available or not self.driver:
+            return None
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                WHERE n.id = $id
+                SET n.updated_at = $updated_at
+                RETURN n
+                """,
+                id=note_id,
+                updated_at=time.time(),
+            )
+
+            record = result.single()
+            if not record:
+                return None
+
+            # Return full note with links
+            return self.get_note(note_id)
+
     def get_note_count(self) -> int:
         """Get total number of notes in the database.
 

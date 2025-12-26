@@ -1,4 +1,5 @@
 import { siteConfig } from "@/lib/site-config";
+import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
 import styles from "./page.module.scss";
 
 export default function Home() {
@@ -83,6 +84,9 @@ export default function Home() {
               </svg>
             </a>
           </div>
+
+          {/* Note of the Day Widget */}
+          <NoteOfDay />
         </div>
 
         {/* Other Projects Link */}
