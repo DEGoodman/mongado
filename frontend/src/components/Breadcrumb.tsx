@@ -11,7 +11,7 @@ import Link from "next/link";
 import styles from "./Breadcrumb.module.scss";
 
 interface BreadcrumbProps {
-  section: "articles" | "notes" | "toolbox";
+  section: "articles" | "notes" | "toolbox" | "inspire";
   /** Set to true on list pages to link back to /knowledge-base hub */
   toHub?: boolean;
   className?: string;
@@ -40,6 +40,10 @@ export default function Breadcrumb({ section, toHub = false, className = "" }: B
       href: "/knowledge-base/notes",
     },
     toolbox: {
+      label: "Back",
+      href: "/knowledge-base",
+    },
+    inspire: {
       label: "Back",
       href: "/knowledge-base",
     },

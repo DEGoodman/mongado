@@ -1228,6 +1228,113 @@ class Neo4jAdapter:
             )
             return True
 
+    # ===== INSPIRE/CONTENT SUGGESTION METHODS =====
+
+    def get_notes_with_stats(self) -> list[dict[str, Any]]:
+        """Get all notes with content length, link count, and backlink count.
+
+        Returns stats useful for finding underdeveloped topics.
+
+        Returns:
+            List of notes with stats fields
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                OPTIONAL MATCH (n)-[:LINKS_TO]->(outbound:Note)
+                OPTIONAL MATCH (inbound:Note)-[:LINKS_TO]->(n)
+                WITH n,
+                     count(DISTINCT outbound) AS link_count,
+                     count(DISTINCT inbound) AS backlink_count
+                RETURN n,
+                       link_count,
+                       backlink_count,
+                       size(n.content) AS content_length
+                ORDER BY n.created_at DESC
+                """
+            )
+
+            notes = []
+            for record in result:
+                note = self._node_to_dict(record["n"])
+                note["link_count"] = record["link_count"]
+                note["backlink_count"] = record["backlink_count"]
+                note["content_length"] = record["content_length"]
+                notes.append(note)
+
+            return notes
+
+    def get_notes_with_embeddings(self) -> list[dict[str, Any]]:
+        """Get notes that have embeddings for similarity analysis.
+
+        Returns only notes with computed embeddings.
+
+        Returns:
+            List of dicts with id, title, embedding
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n:Note)
+                WHERE n.embedding IS NOT NULL
+                RETURN n.id AS id,
+                       n.title AS title,
+                       n.embedding AS embedding
+                ORDER BY n.created_at DESC
+                """
+            )
+
+            return [
+                {
+                    "id": record["id"],
+                    "title": record["title"] or record["id"],
+                    "embedding": record["embedding"],
+                }
+                for record in result
+            ]
+
+    def get_all_links(self) -> dict[str, set[str]]:
+        """Get all note links as adjacency dict.
+
+        Returns bidirectional link map for detecting unlinked similar notes.
+
+        Returns:
+            Dict mapping note_id -> set of linked note_ids
+        """
+        if not self._available or not self.driver:
+            return {}
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (source:Note)-[:LINKS_TO]->(target:Note)
+                RETURN source.id AS source_id, target.id AS target_id
+                """
+            )
+
+            links: dict[str, set[str]] = {}
+            for record in result:
+                source_id = record["source_id"]
+                target_id = record["target_id"]
+
+                # Add both directions for easy lookup
+                if source_id not in links:
+                    links[source_id] = set()
+                links[source_id].add(target_id)
+
+                if target_id not in links:
+                    links[target_id] = set()
+                links[target_id].add(source_id)
+
+            return links
+
     # ===== BACKUP/RESTORE METHODS =====
 
     def export_database(self) -> dict[str, Any]:

@@ -325,6 +325,35 @@ class NotesService:
             logger.info("Marked note as reviewed: %s", note_id)
         return result
 
+    # ===== INSPIRE/CONTENT SUGGESTION METHODS =====
+
+    def get_notes_with_stats(self) -> list[dict[str, Any]]:
+        """Get all notes with content length, link count, and backlink count.
+
+        Returns:
+            List of notes with stats fields for gap analysis
+        """
+        self._require_neo4j()
+        return self.neo4j.get_notes_with_stats()
+
+    def get_notes_with_embeddings(self) -> list[dict[str, Any]]:
+        """Get notes that have embeddings for similarity analysis.
+
+        Returns:
+            List of dicts with id, title, embedding
+        """
+        self._require_neo4j()
+        return self.neo4j.get_notes_with_embeddings()
+
+    def get_all_links(self) -> dict[str, set[str]]:
+        """Get all note links as adjacency dict.
+
+        Returns:
+            Dict mapping note_id -> set of linked note_ids (bidirectional)
+        """
+        self._require_neo4j()
+        return self.neo4j.get_all_links()
+
     def _get_all_note_ids(self) -> set[str]:
         """Get all existing note IDs (for collision detection)."""
         self._require_neo4j()

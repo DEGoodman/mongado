@@ -29,6 +29,7 @@ export default function TopNavigation() {
   const isArticlesSection = pathname?.startsWith("/knowledge-base/articles");
   const isNotesSection = pathname?.startsWith("/knowledge-base/notes");
   const isToolboxSection = pathname?.startsWith("/knowledge-base/toolbox");
+  const isInspireSection = pathname?.startsWith("/knowledge-base/inspire");
 
   // Keyboard shortcut: Cmd/Ctrl+K to open search
   useEffect(() => {
@@ -73,6 +74,12 @@ export default function TopNavigation() {
               className={`${styles.navLink} ${isToolboxSection ? styles.active : ""}`}
             >
               Toolbox
+            </Link>
+            <Link
+              href="/knowledge-base/inspire"
+              className={`${styles.navLink} ${isInspireSection ? styles.active : ""}`}
+            >
+              Inspire
             </Link>
           </div>
 

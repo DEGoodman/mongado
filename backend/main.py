@@ -37,6 +37,7 @@ from ollama_client import get_ollama_client
 from routers.admin import create_admin_router
 from routers.ai import router as ai_router
 from routers.articles import router as articles_router
+from routers.inspire import router as inspire_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
 from routers.templates import router as templates_router
@@ -227,6 +228,7 @@ app.add_middleware(CacheControlMiddleware)
 # Create and include domain routers
 # AI, Notes, Search, and Articles routers use FastAPI Depends() - no factory needed
 app.include_router(ai_router)
+app.include_router(inspire_router)
 app.include_router(notes_router)
 app.include_router(search_router)
 app.include_router(articles_router)
