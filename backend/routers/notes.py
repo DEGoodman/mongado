@@ -8,7 +8,7 @@ import logging
 import os
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -53,6 +53,11 @@ Links are automatically parsed and stored as graph relationships.
 - `is_reference: false` (default) - Zettelkasten insights/atomic notes
 - `is_reference: true` - Quick references (checklists, frameworks, acronyms)
 
+**Background Processing:**
+Embedding and AI content (summary, link suggestions) are generated in the background
+after the note is saved. This makes note creation instant while still enabling
+semantic search and AI features within seconds.
+
 **Rate Limit:** 10 notes per minute per IP address
 """,
 )
@@ -62,6 +67,7 @@ async def create_note(
     note: NoteCreate,
     _admin: AdminUser,
     notes_service: NotesDep,
+    background_tasks: BackgroundTasks,
 ) -> dict[str, Any]:
     """Create a new note (admin only)."""
     created_note: dict[str, Any] = notes_service.create_note(
@@ -70,6 +76,15 @@ async def create_note(
         tags=note.tags,
         is_reference=note.is_reference,
     )
+
+    # Schedule embedding and AI content generation in background (non-blocking)
+    note_id = created_note.get("id", "")
+    content = note.content
+    title = note.title or ""
+
+    background_tasks.add_task(notes_service.generate_embedding_for_note, note_id, content)
+    background_tasks.add_task(notes_service.generate_ai_content_for_note, note_id, content, title)
+    logger.debug("Scheduled background tasks for note: %s", note_id)
 
     return created_note
 
@@ -316,8 +331,12 @@ async def update_note(
     note_update: NoteUpdate,
     _admin: AdminUser,
     notes_service: NotesDep,
+    background_tasks: BackgroundTasks,
 ) -> dict[str, Any]:
-    """Update a note (admin only)."""
+    """Update a note (admin only).
+
+    Embedding and AI content are regenerated in the background after save.
+    """
     updated: dict[str, Any] | None = notes_service.update_note(
         note_id=note_id,
         content=note_update.content,
@@ -331,6 +350,14 @@ async def update_note(
             status_code=404,
             detail=f"Note '{note_id}' not found",
         )
+
+    # Schedule embedding and AI content regeneration in background (non-blocking)
+    content = note_update.content
+    title = note_update.title or ""
+
+    background_tasks.add_task(notes_service.generate_embedding_for_note, note_id, content)
+    background_tasks.add_task(notes_service.generate_ai_content_for_note, note_id, content, title)
+    logger.debug("Scheduled background tasks for note update: %s", note_id)
 
     return updated
 

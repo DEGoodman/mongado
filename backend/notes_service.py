@@ -91,11 +91,8 @@ class NotesService:
         )
         logger.info("Created note: %s", note_id)
 
-        # Generate and store embedding for immediate semantic search availability
-        self._generate_and_store_embedding(note_id, content)
-
-        # Pre-compute AI content (summary, link suggestions)
-        self._generate_and_store_ai_content(note_id, content, title or "")
+        # Note: Embedding and AI content generation moved to background tasks
+        # in routers/notes.py to avoid blocking the API response
 
         return note
 
@@ -178,11 +175,8 @@ class NotesService:
         )
         logger.info("Updated note: %s", note_id)
 
-        # Regenerate embedding after update for accurate semantic search
-        self._generate_and_store_embedding(note_id, content)
-
-        # Re-compute AI content (summary, link suggestions)
-        self._generate_and_store_ai_content(note_id, content, title or "")
+        # Note: Embedding and AI content regeneration moved to background tasks
+        # in routers/notes.py to avoid blocking the API response
 
         return updated
 
@@ -359,16 +353,23 @@ class NotesService:
         self._require_neo4j()
         return self.neo4j.get_all_note_ids()
 
-    def _generate_and_store_embedding(self, note_id: str, content: str) -> None:
+    def generate_embedding_for_note(self, note_id: str, content: str) -> None:
         """Generate and store embedding for a note in Neo4j.
 
-        This is called automatically when creating or updating notes to ensure
-        embeddings are immediately available for semantic search.
+        This can be called as a background task to avoid blocking API responses.
+        Embeddings are stored in Neo4j for fast semantic search.
 
         Args:
             note_id: Note ID
             content: Note content to generate embedding from
         """
+        import os
+
+        # Skip in test mode to avoid hitting real Ollama
+        if os.environ.get("TESTING") == "1":
+            logger.debug("Skipping embedding generation for %s (test mode)", note_id)
+            return
+
         if not self.ollama.is_available():
             logger.debug("Skipping embedding generation for %s (Ollama unavailable)", note_id)
             return
@@ -388,11 +389,11 @@ class NotesService:
             # Don't fail note creation/update if embedding generation fails
             logger.error("Error generating embedding for note %s: %s", note_id, e)
 
-    def _generate_and_store_ai_content(self, note_id: str, content: str, title: str) -> None:
+    def generate_ai_content_for_note(self, note_id: str, content: str, title: str) -> None:
         """Generate and store AI summary and link suggestions for a note.
 
-        This is called automatically when creating or updating notes to ensure
-        AI content is pre-computed and cached in Neo4j.
+        This can be called as a background task to avoid blocking API responses.
+        AI content (summary, link suggestions) is stored in Neo4j for fast retrieval.
 
         Args:
             note_id: Note ID
@@ -527,7 +528,7 @@ class NotesService:
 
         # Clear existing and regenerate
         self.neo4j.clear_ai_content("Note", note_id)
-        self._generate_and_store_ai_content(
+        self.generate_ai_content_for_note(
             note_id=note_id,
             content=note.get("content", ""),
             title=note.get("title", ""),
