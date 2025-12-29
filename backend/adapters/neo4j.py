@@ -814,18 +814,18 @@ class Neo4jAdapter:
             source_id: Source note ID
             target_ids: List of target note IDs
         """
-        for target_id in target_ids:
-            # Only create link if both source and target notes exist
+        # Batch create all links in a single query using UNWIND
+        # Reduces N+1 queries to 1 query regardless of number of links
+        if target_ids:
             session.run(
                 """
-                MATCH (source:Note)
-                WHERE source.id = $source_id
-                MATCH (target:Note)
-                WHERE target.id = $target_id
+                MATCH (source:Note {id: $source_id})
+                UNWIND $target_ids AS target_id
+                MATCH (target:Note {id: target_id})
                 MERGE (source)-[:LINKS_TO]->(target)
                 """,
                 source_id=source_id,
-                target_id=target_id,
+                target_ids=target_ids,
             )
 
     def _delete_links(self, session: Session, source_id: str) -> None:
