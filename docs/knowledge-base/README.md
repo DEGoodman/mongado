@@ -116,8 +116,8 @@ GET    /api/articles/{id}/summary         # AI-generated article summary
 
 ### Frontend Stack
 - **Framework**: Next.js 14 with App Router
-- **UI**: React 18 + TypeScript + Tailwind CSS
-- **Graph**: react-force-graph or @xyflow/react
+- **UI**: React 18 + TypeScript + SCSS Modules
+- **Graph**: react-force-graph (2D/3D force-directed graphs)
 - **Editor**: TipTap (markdown with wikilink autocomplete)
 
 ### Authentication
@@ -137,16 +137,27 @@ backend/
 ├── static/
 │   ├── articles/              # Markdown articles (source control)
 │   │   ├── 001-topic.md
-│   │   └── 002-another.md
+│   │   └── ...
+│   ├── templates/             # Note templates (person, book, concept, project)
 │   └── assets/               # Static media files
 │       ├── images/           # WebP images
 │       ├── icons/            # SVG icons
 │       └── downloads/        # PDFs, etc.
-├── models/                   # Pydantic models
-├── services/                 # Business logic
-│   ├── article_service.py    # Article loading/caching
-│   ├── note_service.py       # Note CRUD operations
-│   └── ai_service.py         # Ollama integration
+├── core/                     # Pure business logic (Functional Core)
+│   ├── ai.py                 # AI algorithms (cosine similarity, prompts)
+│   ├── notes.py              # Graph/wikilink algorithms
+│   ├── inspire.py            # Content inspiration logic
+│   └── markdown_renderer.py  # Markdown processing
+├── routers/                  # API endpoints (Imperative Shell)
+│   ├── ai.py                 # AI feature endpoints
+│   ├── articles.py           # Article endpoints
+│   ├── notes.py              # Notes CRUD/graph endpoints
+│   ├── inspire.py            # Content inspiration endpoints
+│   └── search.py             # Search endpoints
+├── adapters/                 # Data access layer
+│   └── neo4j.py             # Neo4j database operations
+├── notes_service.py          # Service layer (orchestrates adapters + core)
+├── ollama_client.py          # Ollama LLM client
 └── main.py                   # FastAPI app
 
 frontend/
@@ -156,10 +167,11 @@ frontend/
     │       ├── page.tsx          # Landing page
     │       ├── articles/         # Article views
     │       └── notes/            # Note views + graph
-    └── components/
-        ├── NoteEditor.tsx        # Markdown editor with wikilinks
-        ├── NoteGraph.tsx         # Graph visualization
-        └── BacklinksPanel.tsx    # Backlinks display
+    ├── components/
+    │   └── knowledge-base/       # KB-specific components
+    └── styles/
+        ├── design-tokens/        # Color, spacing, typography tokens
+        └── mixins/               # Reusable SCSS patterns
 ```
 
 ## Testing Strategy
@@ -254,9 +266,11 @@ Navigate to `/knowledge-base/notes/graph` to see the full interactive graph visu
 
 - **[ARTICLES.md](ARTICLES.md)** - Complete guide to creating and managing articles
 - **[NOTES.md](NOTES.md)** - Complete guide to the Zettelkasten note system
+- **[BACKUP_RESTORE.md](BACKUP_RESTORE.md)** - Backup and restore procedures
 - **[../SETUP.md](../SETUP.md)** - Environment setup and 1Password configuration
 - **[../TESTING.md](../TESTING.md)** - Testing tools and commands
-- **[../ROADMAP.md](../ROADMAP.md)** - Future enhancements and TODOs
+- **[../ARCHITECTURE.md](../ARCHITECTURE.md)** - Backend architecture (Functional Core / Imperative Shell)
+- **[GitHub Issues](https://github.com/DEGoodman/mongado/issues)** - Active work tracking and planning
 
 ## Support
 

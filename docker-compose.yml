@@ -96,7 +96,9 @@ services:
       - /app/.next
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NODE_ENV=development
+      # NODE_ENV is automatically set by Next.js commands:
+      # - 'npm run dev' sets NODE_ENV=development
+      # - 'npm run build' sets NODE_ENV=production
     depends_on:
       - backend
     networks:

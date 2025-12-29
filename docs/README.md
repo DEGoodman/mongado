@@ -36,32 +36,42 @@ The Knowledge Base is a separate subproject with its own documentation:
 - **[knowledge-base/NOTES.md](knowledge-base/NOTES.md)** - Zettelkasten note system
 - **[knowledge-base/BACKUP_RESTORE.md](knowledge-base/BACKUP_RESTORE.md)** - Backup and restore procedures
 
-### Archived Documentation
+### UI/Design System
 
-- **[archive/](archive/)** - Historical documentation and implementation notes (kept for reference)
+- **[UI_MIGRATION_GUIDE.md](UI_MIGRATION_GUIDE.md)** - SCSS module system (replaced Tailwind)
+- **[DESIGN_TOKENS.md](DESIGN_TOKENS.md)** - Color, spacing, typography tokens
+- **[COLOR_PALETTE.md](COLOR_PALETTE.md)** - Color scheme documentation
+- **[COMPONENT_REFERENCE.md](COMPONENT_REFERENCE.md)** - Component styling patterns
 
 ## Quick Reference
 
-### Backend Commands
+### Common Commands (use `make` from project root)
 
 ```bash
-cd backend
-make run        # Start dev server
-make test       # Run tests
-make ci         # Full CI pipeline
-make profile    # Profile performance
+make up                    # Start all services
+make down                  # Stop all services
+make logs                  # View all logs
+make test                  # Run all tests (backend + frontend)
+make ci                    # Full CI pipeline
+make rebuild               # Rebuild and start all services
 ```
 
-See [TESTING.md](TESTING.md) for complete command reference.
-
-### Frontend Commands
+### Backend Commands (via Docker)
 
 ```bash
-cd frontend
-npm run dev     # Start dev server
-npm test        # Run tests
-npm run test:all  # Full test suite
-npm run build:analyze  # Bundle analysis
+make test-backend          # Run backend tests
+make test-backend-cov      # Tests with coverage
+make lint-backend          # Lint with ruff
+make typecheck-backend     # Type check with mypy
+```
+
+### Frontend Commands (via Docker)
+
+```bash
+make test-frontend         # Run frontend tests
+make lint-frontend         # ESLint
+make typecheck-frontend    # TypeScript check
+make build-frontend        # Production build
 ```
 
 See [TESTING.md](TESTING.md) for complete command reference.
@@ -79,12 +89,16 @@ docs/
 ├── DEPENDENCIES.md              # Dependency management
 ├── DEPLOYMENT.md                # Production deployment guide
 ├── DISASTER_RECOVERY.md         # Backup and recovery procedures
-├── knowledge-base/              # Knowledge Base documentation
-│   ├── README.md                # KB architecture overview
-│   ├── ARTICLES.md              # Article authoring guide
-│   ├── NOTES.md                 # Notes/Zettelkasten guide
-│   └── BACKUP_RESTORE.md        # KB backup/restore procedures
-└── archive/                     # Historical documentation (reference only)
+├── UI_MIGRATION_GUIDE.md        # SCSS module system guide
+├── DESIGN_TOKENS.md             # Design token documentation
+├── COLOR_PALETTE.md             # Color scheme documentation
+├── COMPONENT_REFERENCE.md       # Component styling patterns
+├── DOCKER_DATA_SAFETY.md        # Docker volume safety info
+└── knowledge-base/              # Knowledge Base documentation
+    ├── README.md                # KB architecture overview
+    ├── ARTICLES.md              # Article authoring guide
+    ├── NOTES.md                 # Notes/Zettelkasten guide
+    └── BACKUP_RESTORE.md        # KB backup/restore procedures
 ```
 
 ## External Resources

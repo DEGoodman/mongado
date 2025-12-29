@@ -117,7 +117,7 @@ docker compose logs -f backend  # View logs
 
 **Frontend:**
 - Next.js 14, React 18, TypeScript
-- Tailwind CSS, Vitest, Playwright
+- SCSS Modules (design tokens + mixins), Vitest, Playwright
 
 **DevOps:**
 - Docker, 1Password (optional secrets management)
@@ -157,18 +157,25 @@ All existing infrastructure (components, styling, config) is reusable. The `Proj
 - [PROFILING.md](docs/PROFILING.md) - Performance profiling
 - [DEPENDENCIES.md](docs/DEPENDENCIES.md) - Dependency management
 
-## Roadmap
+## Current Features
 
-### Knowledge Base
-- AI-powered search and context retrieval
-- Database persistence (PostgreSQL/MongoDB)
-- Full-text search
-- Advanced tag filtering
+### Knowledge Base (Implemented)
+- AI-powered semantic search (Ollama embeddings)
+- Q&A with context from knowledge base
+- Neo4j graph database for notes
+- Zettelkasten-style bidirectional wikilinks
+- Graph visualization with force-directed layout
+- AI-generated summaries and link suggestions
+- Note templates for structured content
+- Stale note resurfacing ("Note of the Day")
 
-### Future Projects
-- Additional portfolio projects
-- Blog/articles section
-- Integration with other services
+### In Progress / Planned
+See [GitHub Issues](https://github.com/DEGoodman/mongado/issues) for active work tracking.
+
+Key open items:
+- AI writing assistant in note editor (#146)
+- Articles pagination and categorization (#113, #114)
+- Homepage portfolio buildout
 
 ## License
 

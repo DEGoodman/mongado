@@ -1,40 +1,110 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { getSuggestions, Suggestion } from "@/lib/api/inspire";
+import {
+  getSuggestions,
+  getKnowledgeGaps,
+  getConnectionOpportunities,
+  Suggestion,
+  GapNote,
+  ConnectionOpportunity,
+} from "@/lib/api/inspire";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
 import styles from "./page.module.scss";
 
+type LoadingPhase = "initial" | "fast-data" | "ai-enhancing" | "complete";
+
 export default function InspirePage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>("initial");
   const [error, setError] = useState<string | null>(null);
   const [hasLlm, setHasLlm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchSuggestions = async () => {
+  // Convert raw data to suggestion format for quick display
+  const buildQuickSuggestions = useCallback(
+    (gaps: GapNote[], connections: ConnectionOpportunity[]): Suggestion[] => {
+      const quickSuggestions: Suggestion[] = [];
+
+      // Add gap suggestions
+      gaps.slice(0, 3).forEach((gap) => {
+        quickSuggestions.push({
+          type: "gap",
+          title: gap.title || gap.note_id,
+          description: `This note is ${gap.is_short ? "short" : ""}${gap.is_short && gap.has_few_links ? " and " : ""}${gap.has_few_links ? "has few connections" : ""}. Consider expanding it.`,
+          related_notes: [gap.note_id],
+          action_text: "Expand Note",
+        });
+      });
+
+      // Add connection suggestions
+      connections.slice(0, 3).forEach((conn) => {
+        quickSuggestions.push({
+          type: "connection",
+          title: `Link ${conn.note_a_title || conn.note_a_id} ↔ ${conn.note_b_title || conn.note_b_id}`,
+          description: `These notes are ${Math.round(conn.similarity * 100)}% similar but not linked.`,
+          related_notes: [conn.note_a_id, conn.note_b_id],
+          action_text: "View Note",
+        });
+      });
+
+      return quickSuggestions;
+    },
+    []
+  );
+
+  const fetchSuggestions = useCallback(async () => {
+    setError(null);
+
+    // Phase 1: Quickly fetch raw data (no LLM)
+    setLoadingPhase("fast-data");
     try {
-      const response = await getSuggestions(6);
-      setSuggestions(response.suggestions);
-      setHasLlm(response.has_llm);
-      logger.info("Suggestions loaded", { count: response.suggestions.length });
+      const [gapsResponse, connectionsResponse] = await Promise.all([
+        getKnowledgeGaps(500, 1, 5),
+        getConnectionOpportunities(0.7, 5),
+      ]);
+
+      // Show quick suggestions immediately
+      const quickSuggestions = buildQuickSuggestions(
+        gapsResponse.gaps,
+        connectionsResponse.connections
+      );
+      setSuggestions(quickSuggestions);
+      logger.info("Quick suggestions ready", { count: quickSuggestions.length });
+
+      // Phase 2: Fetch AI-enhanced suggestions
+      if (quickSuggestions.length > 0) {
+        setLoadingPhase("ai-enhancing");
+        try {
+          const aiResponse = await getSuggestions(6);
+          if (aiResponse.suggestions.length > 0) {
+            setSuggestions(aiResponse.suggestions);
+            setHasLlm(aiResponse.has_llm);
+            logger.info("AI suggestions ready", {
+              count: aiResponse.suggestions.length,
+              hasLlm: aiResponse.has_llm,
+            });
+          }
+        } catch (aiErr) {
+          // AI failed but we still have quick suggestions, just log it
+          logger.warn("AI enhancement failed, keeping quick suggestions", aiErr);
+        }
+      }
+
+      setLoadingPhase("complete");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load suggestions";
       setError(message);
+      setLoadingPhase("complete");
       logger.error("Failed to load suggestions", err);
     }
-  };
+  }, [buildQuickSuggestions]);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      await fetchSuggestions();
-      setLoading(false);
-    };
-    load();
-  }, []);
+    fetchSuggestions();
+  }, [fetchSuggestions]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -42,7 +112,8 @@ export default function InspirePage() {
     setRefreshing(false);
   };
 
-  if (loading) {
+  // Show skeleton only on initial load
+  if (loadingPhase === "initial") {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContainer}>
@@ -104,15 +175,22 @@ export default function InspirePage() {
       <main className={styles.main}>
         {/* AI Status */}
         <div className={styles.aiStatus}>
-          {hasLlm ? (
+          {loadingPhase === "ai-enhancing" ? (
+            <span className={styles.aiLoading}>
+              <span className={styles.spinner}></span>
+              AI is enhancing suggestions...
+            </span>
+          ) : hasLlm ? (
             <span className={styles.aiEnabled}>AI-powered suggestions</span>
-          ) : (
+          ) : loadingPhase === "complete" ? (
             <span className={styles.aiDisabled}>Basic suggestions (AI unavailable)</span>
+          ) : (
+            <span className={styles.aiLoading}>Loading suggestions...</span>
           )}
         </div>
 
-        {/* Empty State */}
-        {suggestions.length === 0 && (
+        {/* Empty State - only show when complete with no suggestions */}
+        {loadingPhase === "complete" && suggestions.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🎉</div>
             <h3 className={styles.emptyTitle}>Your knowledge base looks great!</h3>

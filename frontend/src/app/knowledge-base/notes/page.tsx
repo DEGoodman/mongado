@@ -11,6 +11,7 @@ import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
+import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
@@ -355,6 +356,9 @@ function NotesContent() {
                 Clear all filters
               </button>
             )}
+
+            {/* Note of the Day - shown when no filters active */}
+            {!hasActiveFilters && <NoteOfDay />}
 
             {/* Quick Lists */}
             {!hasActiveFilters && <QuickLists />}
