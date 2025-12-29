@@ -9,7 +9,7 @@ import logging
 from collections.abc import Generator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from core import ai as ai_core
@@ -24,6 +24,7 @@ from models import (
     TagSuggestionsResponse,
     WarmupResponse,
 )
+from rate_limiter import RATE_LIMITS, limiter
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,10 @@ UserResourcesDep = Annotated[list[dict[str, Any]], Depends(get_user_resources)]
 
 
 @router.post("/ollama/warmup", response_model=WarmupResponse)
-def warmup_ollama(ollama: OllamaDep, context: str = "chat") -> WarmupResponse:
+@limiter.limit(RATE_LIMITS["ai_warmup"])
+def warmup_ollama(
+    request: Request, ollama: OllamaDep, context: str = "chat"
+) -> WarmupResponse:
     """Warm up an Ollama model by starting the llama runner.
 
     This endpoint takes ~15-20 seconds to complete, but makes subsequent
@@ -142,8 +146,10 @@ def get_gpu_status(ollama: OllamaDep) -> GPUStatusResponse:
 
 
 @router.post("/ask", response_model=QuestionResponse)
+@limiter.limit(RATE_LIMITS["ai_ask"])
 def ask_question(
-    request: QuestionRequest,
+    request: Request,
+    question_request: QuestionRequest,
     ollama: OllamaDep,
     notes_service: NotesDep,
     neo4j: Neo4jDep,
@@ -202,7 +208,7 @@ def ask_question(
 
             # Perform fast semantic search
             relevant_docs = ollama.semantic_search_with_precomputed_embeddings(
-                request.question, documents_with_embeddings, top_k=5
+                question_request.question, documents_with_embeddings, top_k=5
             )
             logger.info("Q&A: Fast semantic search found %d relevant docs", len(relevant_docs))
         else:
@@ -213,10 +219,10 @@ def ask_question(
     # Fallback: Generate embeddings on-demand (slow but works without Neo4j)
     if not relevant_docs:
         logger.info("Q&A: Using on-demand embedding generation (slower)")
-        relevant_docs = ollama.semantic_search(request.question, all_resources, top_k=5)
+        relevant_docs = ollama.semantic_search(question_request.question, all_resources, top_k=5)
 
     # Generate answer with hybrid mode (KB + general knowledge)
-    answer = ollama.ask_question(request.question, relevant_docs, allow_general_knowledge=True)
+    answer = ollama.ask_question(question_request.question, relevant_docs, allow_general_knowledge=True)
 
     if not answer:
         raise HTTPException(status_code=500, detail="Failed to generate answer. Please try again.")
@@ -225,7 +231,9 @@ def ask_question(
 
 
 @router.post("/notes/{note_id}/suggest-tags", response_model=TagSuggestionsResponse)
+@limiter.limit(RATE_LIMITS["ai_suggest"])
 def suggest_tags(
+    request: Request,
     note_id: str,
     ollama: OllamaDep,
     notes_service: NotesDep,
@@ -301,7 +309,9 @@ def suggest_tags(
 
 
 @router.post("/notes/{note_id}/suggest-links", response_model=LinkSuggestionsResponse)
+@limiter.limit(RATE_LIMITS["ai_suggest"])
 def suggest_links(
+    request: Request,
     note_id: str,
     ollama: OllamaDep,
     notes_service: NotesDep,
@@ -443,7 +453,9 @@ def suggest_links(
 
 
 @router.get("/notes/{note_id}/suggest-stream")
+@limiter.limit(RATE_LIMITS["ai_stream"])
 def suggest_stream(
+    request: Request,
     note_id: str,
     ollama: OllamaDep,
     notes_service: NotesDep,

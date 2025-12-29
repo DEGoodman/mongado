@@ -11,6 +11,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
 import { logger } from "@/lib/logger";
+import { sanitizeHtml } from "@/lib/sanitize";
 import styles from "./page.module.scss";
 
 interface Article {
@@ -223,9 +224,10 @@ export default function ArticleDetailPage() {
             <article className={styles.articleCard}>
               {article.html_content ? (
                 // Use pre-rendered HTML from backend (includes footnotes, syntax highlighting)
+                // Sanitize to prevent XSS attacks
                 <div
                   className={`${styles.renderedContent} prose prose-sm`}
-                  dangerouslySetInnerHTML={{ __html: article.html_content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.html_content) }}
                 />
               ) : article.content_type === "markdown" || article.content_type === undefined ? (
                 // Fallback to client-side rendering

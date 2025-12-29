@@ -15,6 +15,27 @@ logger = logging.getLogger(__name__)
 class Neo4jAdapter:
     """Adapter for Neo4j graph database operations."""
 
+    # Valid node types to prevent Cypher injection
+    VALID_NODE_TYPES = frozenset({"Article", "Note"})
+
+    def _validate_node_type(self, node_type: str) -> str:
+        """Validate node_type to prevent Cypher injection.
+
+        Args:
+            node_type: Node type to validate ("Article" or "Note")
+
+        Returns:
+            The validated node_type string
+
+        Raises:
+            ValueError: If node_type is not in VALID_NODE_TYPES
+        """
+        if node_type not in self.VALID_NODE_TYPES:
+            raise ValueError(
+                f"Invalid node_type '{node_type}'. Must be one of: {self.VALID_NODE_TYPES}"
+            )
+        return node_type
+
     def __init__(self) -> None:
         """Initialize Neo4j connection."""
         settings = get_settings()
@@ -1003,10 +1024,13 @@ class Neo4jAdapter:
         if not self._available or not self.driver:
             return False
 
+        # Validate node_type to prevent Cypher injection
+        validated_type = self._validate_node_type(node_type)
+
         with self.driver.session(database=self.database) as session:
             session.run(
                 f"""
-                MATCH (n:{node_type} {{id: $id}})
+                MATCH (n:{validated_type} {{id: $id}})
                 SET n.embedding = $embedding,
                     n.embedding_model = $model,
                     n.embedding_version = $version
@@ -1031,10 +1055,13 @@ class Neo4jAdapter:
         if not self._available or not self.driver:
             return None
 
+        # Validate node_type to prevent Cypher injection
+        validated_type = self._validate_node_type(node_type)
+
         with self.driver.session(database=self.database) as session:
             result = session.run(
                 f"""
-                MATCH (n:{node_type} {{id: $id}})
+                MATCH (n:{validated_type} {{id: $id}})
                 RETURN n.embedding as embedding,
                        n.embedding_model as model,
                        n.embedding_version as version,
@@ -1067,11 +1094,13 @@ class Neo4jAdapter:
 
         with self.driver.session(database=self.database) as session:
             if node_type:
+                # Validate node_type to prevent Cypher injection
+                validated_type = self._validate_node_type(node_type)
                 query = f"""
-                    MATCH (n:{node_type})
+                    MATCH (n:{validated_type})
                     WHERE n.embedding IS NOT NULL
                     RETURN n.id as id,
-                           '{node_type}' as type,
+                           '{validated_type}' as type,
                            n.embedding as embedding,
                            n.embedding_model as model,
                            n.embedding_version as version
@@ -1125,6 +1154,9 @@ class Neo4jAdapter:
         if not self._available or not self.driver:
             return False
 
+        # Validate node_type to prevent Cypher injection
+        validated_type = self._validate_node_type(node_type)
+
         import json
         import time
 
@@ -1150,7 +1182,7 @@ class Neo4jAdapter:
             set_clause = ", ".join(set_clauses)
             session.run(
                 f"""
-                MATCH (n:{node_type} {{id: $id}})
+                MATCH (n:{validated_type} {{id: $id}})
                 SET {set_clause}
                 """,
                 **params,
@@ -1172,12 +1204,15 @@ class Neo4jAdapter:
         if not self._available or not self.driver:
             return None
 
+        # Validate node_type to prevent Cypher injection
+        validated_type = self._validate_node_type(node_type)
+
         import json
 
         with self.driver.session(database=self.database) as session:
             result = session.run(
                 f"""
-                MATCH (n:{node_type} {{id: $id}})
+                MATCH (n:{validated_type} {{id: $id}})
                 RETURN n.ai_summary as ai_summary,
                        n.ai_summary_at as ai_summary_at,
                        n.ai_link_suggestions as ai_link_suggestions,
@@ -1217,10 +1252,13 @@ class Neo4jAdapter:
         if not self._available or not self.driver:
             return False
 
+        # Validate node_type to prevent Cypher injection
+        validated_type = self._validate_node_type(node_type)
+
         with self.driver.session(database=self.database) as session:
             session.run(
                 f"""
-                MATCH (n:{node_type} {{id: $id}})
+                MATCH (n:{validated_type} {{id: $id}})
                 REMOVE n.ai_summary, n.ai_summary_at,
                        n.ai_link_suggestions, n.ai_link_suggestions_at
                 """,

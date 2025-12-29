@@ -8,12 +8,13 @@ import logging
 import time
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from rapidfuzz import fuzz
 
 from core.search import extract_snippet
 from dependencies import get_neo4j, get_notes, get_ollama, get_static_articles, get_user_resources
 from models import SearchRequest, SearchResponse, SearchResult
+from rate_limiter import RATE_LIMITS, limiter
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +119,10 @@ def _normalize_search_result(doc: dict[str, Any], query: str, score: float = 1.0
 
 
 @router.post("/search", response_model=SearchResponse)
+@limiter.limit(RATE_LIMITS["search"])
 def search_resources(
-    request: SearchRequest,
+    request: Request,
+    search_request: SearchRequest,
     static_articles: ArticlesDep,
     user_resources: UserResourcesDep,
     notes_service: NotesDep,
@@ -145,17 +148,17 @@ def search_resources(
 
     logger.info(
         "Search request received: query=%s, semantic=%s, limit=%s",
-        request.query,
-        request.semantic,
-        request.top_k,
+        search_request.query,
+        search_request.semantic,
+        search_request.top_k,
     )
     # Get current state dynamically (not captured at router creation time)
     all_resources = _get_all_resources(static_articles, user_resources, notes_service)
 
     # Default: Fast text search with fuzzy matching
-    if not request.semantic:
+    if not search_request.semantic:
         logger.debug("Using fast text search with fuzzy matching")
-        query_lower = request.query.lower()
+        query_lower = search_request.query.lower()
 
         # Score each document based on title and content matches
         scored_docs = []
@@ -184,8 +187,8 @@ def search_resources(
         # Sort by score (descending) and take top_k
         scored_docs.sort(key=lambda x: x[1], reverse=True)
         results = [
-            _normalize_search_result(doc, request.query, score=score)
-            for doc, score in scored_docs[: request.top_k]
+            _normalize_search_result(doc, search_request.query, score=score)
+            for doc, score in scored_docs[: search_request.top_k]
         ]
 
         duration = time.time() - start_time
@@ -198,7 +201,7 @@ def search_resources(
     # Check if Ollama is available
     if not ollama.is_available():
         logger.warning("Ollama not available, falling back to text search with fuzzy matching")
-        query_lower = request.query.lower()
+        query_lower = search_request.query.lower()
 
         # Score each document based on title and content matches (same logic as text search)
         scored_docs = []
@@ -224,8 +227,8 @@ def search_resources(
         # Sort by score (descending) and take top_k
         scored_docs.sort(key=lambda x: x[1], reverse=True)
         results = [
-            _normalize_search_result(doc, request.query, score=score)
-            for doc, score in scored_docs[: request.top_k]
+            _normalize_search_result(doc, search_request.query, score=score)
+            for doc, score in scored_docs[: search_request.top_k]
         ]
 
         duration = time.time() - start_time
@@ -269,11 +272,11 @@ def search_resources(
 
             # Perform fast semantic search
             semantic_results = ollama.semantic_search_with_precomputed_embeddings(
-                request.query, documents_with_embeddings, request.top_k
+                search_request.query, documents_with_embeddings, search_request.top_k
             )
 
             results = [
-                _normalize_search_result(doc, request.query, score=doc.get("score", 0.0))
+                _normalize_search_result(doc, search_request.query, score=doc.get("score", 0.0))
                 for doc in semantic_results
             ]
             duration = time.time() - start_time
@@ -286,9 +289,9 @@ def search_resources(
 
     # Fallback: Generate embeddings on-demand (slow but works without Neo4j)
     logger.info("Using on-demand embedding generation (slower)")
-    semantic_results = ollama.semantic_search(request.query, all_resources, request.top_k)
+    semantic_results = ollama.semantic_search(search_request.query, all_resources, search_request.top_k)
     results = [
-        _normalize_search_result(doc, request.query, score=doc.get("score", 0.0))
+        _normalize_search_result(doc, search_request.query, score=doc.get("score", 0.0))
         for doc in semantic_results
     ]
     duration = time.time() - start_time

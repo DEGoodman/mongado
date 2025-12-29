@@ -12,9 +12,8 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from adapters.article_loader import load_static_articles
@@ -34,6 +33,7 @@ from models import (
 )
 from notes_service import get_notes_service
 from ollama_client import get_ollama_client
+from rate_limiter import RATE_LIMITS, limiter
 from routers.admin import create_admin_router
 from routers.ai import router as ai_router
 from routers.articles import router as articles_router
@@ -52,9 +52,6 @@ secret_manager: SecretManager = get_secret_manager()
 ollama_client = get_ollama_client()
 neo4j_adapter = get_neo4j_adapter()
 notes_service = get_notes_service()
-
-# Create rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 # Static articles (loaded from files/S3, read-only)
 static_articles: list[dict[str, Any]] = []
@@ -209,20 +206,73 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Process request and add security headers."""
+        response: Response = await call_next(request)
+
+        # Prevent clickjacking - deny all framing
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # Enable XSS filter (legacy browsers)
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Referrer policy - only send origin for cross-origin requests
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Permissions policy - disable unnecessary browser features
+        response.headers["Permissions-Policy"] = (
+            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+            "magnetometer=(), microphone=(), payment=(), usb=()"
+        )
+
+        # Content Security Policy for API responses
+        # More permissive for API since frontend handles its own CSP
+        if request.url.path.startswith("/api/"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; frame-ancestors 'none'"
+            )
+
+        # HSTS - enforce HTTPS (only in production)
+        # Note: Uncomment when deployed with HTTPS
+        # response.headers["Strict-Transport-Security"] = (
+        #     "max-age=31536000; includeSubDomains"
+        # )
+
+        return response
+
+
 # Configure middleware (order matters!)
 # 1. CORS - must be first
+# Only allow specific methods and headers for security
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+    ],
+    expose_headers=["Content-Length", "Content-Type"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
 
 # 2. GZip compression for all responses
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# 3. Cache control
+# 3. Security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 4. Cache control
 app.add_middleware(CacheControlMiddleware)
 
 # Create and include domain routers
@@ -240,6 +290,18 @@ app.include_router(admin_router)
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+# File upload security limits
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+# Magic bytes for common image formats
+IMAGE_MAGIC_BYTES = {
+    b"\xff\xd8\xff": "image/jpeg",  # JPEG
+    b"\x89PNG\r\n\x1a\n": "image/png",  # PNG
+    b"GIF87a": "image/gif",  # GIF87a
+    b"GIF89a": "image/gif",  # GIF89a
+    b"RIFF": "image/webp",  # WebP (starts with RIFF, then has WEBP)
+}
 
 # Static assets directory (checked into source control)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -306,25 +368,89 @@ def readiness_check() -> ReadyResponse:
     )
 
 
-@app.post("/api/upload-image", response_model=ImageUploadResponse)
-async def upload_image(file: Annotated[UploadFile, File()]) -> ImageUploadResponse:
-    """Upload an image file, optimize to WebP, and return its URL."""
-    # Validate file type
-    allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-    if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed.")
+def _validate_image_magic_bytes(content: bytes) -> str | None:
+    """Validate image file by checking magic bytes.
 
-    # Generate unique filename for temporary upload
-    file_extension = Path(file.filename or "image.jpg").suffix
-    temp_filename = f"{uuid.uuid4()}{file_extension}"
+    Args:
+        content: File content bytes
+
+    Returns:
+        Detected MIME type or None if invalid
+    """
+    for magic, mime_type in IMAGE_MAGIC_BYTES.items():
+        if content.startswith(magic):
+            # WebP needs additional check for "WEBP" signature
+            if magic == b"RIFF" and len(content) >= 12 and content[8:12] != b"WEBP":
+                continue
+            return mime_type
+    return None
+
+
+@app.post("/api/upload-image", response_model=ImageUploadResponse)
+@limiter.limit(RATE_LIMITS["upload"])
+async def upload_image(
+    request: Request, file: Annotated[UploadFile, File()]
+) -> ImageUploadResponse:
+    """Upload an image file, optimize to WebP, and return its URL.
+
+    Rate limited to prevent abuse.
+
+    Security validations:
+    - File size limit (10 MB max)
+    - Content-Type header validation
+    - Magic bytes validation (actual file content)
+    - Sanitized filename (UUID-based)
+    """
+    # 1. Validate Content-Type header
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type '{file.content_type}'. Allowed: {', '.join(ALLOWED_IMAGE_TYPES)}",
+        )
+
+    # 2. Read content with size limit
+    try:
+        content = await file.read()
+    except Exception as e:
+        logger.error("Error reading uploaded file: %s", e)
+        raise HTTPException(status_code=400, detail="Failed to read uploaded file") from e
+
+    # 3. Validate file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)} MB",
+        )
+
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Empty file uploaded")
+
+    # 4. Validate magic bytes (actual file content, not just header)
+    detected_type = _validate_image_magic_bytes(content)
+    if detected_type is None:
+        raise HTTPException(
+            status_code=400,
+            detail="File content does not match a valid image format",
+        )
+
+    # Log if Content-Type doesn't match detected type (potential spoofing attempt)
+    if detected_type != file.content_type:
+        logger.warning(
+            "Content-Type mismatch: header=%s, detected=%s",
+            file.content_type,
+            detected_type,
+        )
+
+    # 5. Generate sanitized filename (UUID-based, ignore user-provided filename)
+    # This prevents path traversal and other filename-based attacks
+    temp_filename = f"{uuid.uuid4()}.tmp"
     temp_path = UPLOAD_DIR / temp_filename
 
     # Save file temporarily
     try:
-        content = await file.read()
         with open(temp_path, "wb") as f:
             f.write(content)
-        logger.info("Image uploaded: %s", temp_filename)
+        logger.info("Image uploaded: %s (size=%d, type=%s)", temp_filename, len(content), detected_type)
     except Exception as e:
         logger.error("Error uploading image: %s", e)
         raise HTTPException(status_code=500, detail="Failed to upload image") from e
