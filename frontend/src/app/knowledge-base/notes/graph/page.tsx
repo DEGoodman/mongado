@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import * as d3 from "d3";
@@ -29,6 +29,22 @@ interface GraphData {
     edges: number;
   };
 }
+
+// Tag color map - module-level constant for consistent coloring
+const TAG_COLOR_MAP: Record<string, string> = {
+  ml: "#8b5cf6",
+  testing: "#3b82f6",
+  experimentation: "#10b981",
+  sre: "#f59e0b",
+  management: "#ef4444",
+  saas: "#ec4899",
+  writing: "#06b6d4",
+  productivity: "#84cc16",
+  "incident-management": "#dc2626",
+  culture: "#7c3aed",
+  rollouts: "#0ea5e9",
+  "technical-debt": "#f97316",
+};
 
 function NotesGraphContent() {
   const router = useRouter();
@@ -133,24 +149,9 @@ function NotesGraphContent() {
   }, [nodeParam, graphData]);
 
   // Tag color utilities
-  const tagColorMap: Record<string, string> = {
-    ml: "#8b5cf6",
-    testing: "#3b82f6",
-    experimentation: "#10b981",
-    sre: "#f59e0b",
-    management: "#ef4444",
-    saas: "#ec4899",
-    writing: "#06b6d4",
-    productivity: "#84cc16",
-    "incident-management": "#dc2626",
-    culture: "#7c3aed",
-    rollouts: "#0ea5e9",
-    "technical-debt": "#f97316",
-  };
-
-  const getTagColor = (tag: string): string => {
-    if (tagColorMap[tag.toLowerCase()]) {
-      return tagColorMap[tag.toLowerCase()];
+  const getTagColor = useCallback((tag: string): string => {
+    if (TAG_COLOR_MAP[tag.toLowerCase()]) {
+      return TAG_COLOR_MAP[tag.toLowerCase()];
     }
     let hash = 0;
     for (let i = 0; i < tag.length; i++) {
@@ -158,14 +159,17 @@ function NotesGraphContent() {
     }
     const hue = hash % 360;
     return `hsl(${hue}, 65%, 55%)`;
-  };
+  }, []);
 
-  const getNodeColor = (node: GraphNode): string => {
-    if (!node.tags || node.tags.length === 0) {
-      return "#94a3b8";
-    }
-    return getTagColor(node.tags[0]);
-  };
+  const getNodeColor = useCallback(
+    (node: GraphNode): string => {
+      if (!node.tags || node.tags.length === 0) {
+        return "#94a3b8";
+      }
+      return getTagColor(node.tags[0]);
+    },
+    [getTagColor]
+  );
 
   const getAllTags = (): Array<{ tag: string; count: number; color: string }> => {
     if (!graphData) return [];
@@ -572,7 +576,7 @@ function NotesGraphContent() {
     return () => {
       simulation.stop();
     };
-  }, [graphData]);
+  }, [graphData, getNodeColor]);
 
   // Separate effect for visual updates (selection, filters) without recreating simulation
   useEffect(() => {
