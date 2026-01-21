@@ -115,7 +115,7 @@ function NotesContent() {
       return (
         note.id.toLowerCase().includes(query) ||
         (note.title && note.title.toLowerCase().includes(query)) ||
-        note.content.toLowerCase().includes(query) ||
+        (note.content && note.content.toLowerCase().includes(query)) ||
         note.tags.some((tag) => tag.toLowerCase().includes(query))
       );
     })
