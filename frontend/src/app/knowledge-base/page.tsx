@@ -136,7 +136,9 @@ export default function KnowledgeBasePage() {
 
       {/* Header */}
       <header className={styles.header}>
-        <h1 className={styles.title}>Knowledge Base</h1>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Knowledge Base</h1>
+        </div>
       </header>
 
       <main className={styles.main}>

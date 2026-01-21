@@ -25,37 +25,12 @@
 
   .headerContent {
     @include container;
-    padding-top: $spacing-3; // Even smaller on mobile
-    padding-bottom: $spacing-3;
-    @include flex-between;
+    padding-top: $spacing-6;
+    padding-bottom: $spacing-6;
 
-    @media (min-width: 640px) {
-      padding-top: $spacing-4;
-      padding-bottom: $spacing-4;
-    }
-
-    .nav {
-      @include flex-start;
-      gap: $spacing-3; // Reduced from 16px to 12px
-
-      .homeLink {
-        @include link-default;
-        font-size: $font-size-xs; // Reduced from sm (12px) to xs (10px)
-
-        &:hover {
-          color: $color-primary-hover;
-        }
-      }
-
-      .title {
-        @include heading-h1;
-        font-size: $font-size-2xl; // Even smaller on mobile
-        margin: 0;
-
-        @media (min-width: 640px) {
-          font-size: $font-size-3xl;
-        }
-      }
+    .title {
+      @include heading-h1;
+      margin: 0;
     }
   }
 }
