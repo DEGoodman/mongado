@@ -22,6 +22,22 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: siteConfig.metadata.title,
   description: siteConfig.metadata.description,
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  openGraph: {
+    title: siteConfig.metadata.title,
+    description: siteConfig.metadata.description,
+    siteName: siteConfig.name,
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: siteConfig.metadata.title,
+    description: siteConfig.metadata.description,
+  },
 };
 
 export const viewport: Viewport = {
