@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     static_articles_s3_bucket: str | None = None
     static_articles_s3_prefix: str = "articles/"
 
+    # LLM feature flag (master switch for all AI/LLM features)
+    llm_features_enabled: bool = False  # Default off to save resources in production
+
     # Ollama settings
     ollama_host: str = "http://localhost:11434"  # Default Ollama endpoint
     ollama_embed_model: str = "nomic-embed-text"  # Embedding model (small, fast, optimized)

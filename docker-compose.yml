@@ -70,6 +70,7 @@ services:
       - NEO4J_PASSWORD=mongado-dev-password
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_ENABLED=true
+      - LLM_FEATURES_ENABLED=true
     env_file:
       - ./backend/.env
     networks:
@@ -96,6 +97,7 @@ services:
       - /app/.next
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_LLM_FEATURES_ENABLED=true
       # NODE_ENV is automatically set by Next.js commands:
       # - 'npm run dev' sets NODE_ENV=development
       # - 'npm run build' sets NODE_ENV=production

@@ -61,6 +61,7 @@ class StatusResponse(BaseModel):
     message: str
     version: str
     onepassword_enabled: bool  # Changed from "1password_enabled" for valid Python identifier
+    llm_features_enabled: bool = False  # Whether LLM/AI features are active
 
 
 class HealthResponse(BaseModel):

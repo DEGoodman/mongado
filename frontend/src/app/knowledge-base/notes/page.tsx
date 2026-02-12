@@ -12,6 +12,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
+import { config } from "@/lib/config";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
@@ -219,11 +220,15 @@ function NotesContent() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel */}
-      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      {/* AI Panel (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && (
+        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      )}
 
-      {/* AI Button */}
-      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {/* AI Button (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && !aiPanelOpen && (
+        <AIButton onClick={() => setAiPanelOpen(true)} />
+      )}
 
       {/* Header */}
       <div className={styles.header}>

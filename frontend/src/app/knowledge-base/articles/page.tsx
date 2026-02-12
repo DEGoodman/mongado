@@ -10,6 +10,7 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
+import { config } from "@/lib/config";
 import styles from "./page.module.scss";
 
 interface ArticleMetadata {
@@ -154,11 +155,15 @@ function ArticlesContent() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel */}
-      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      {/* AI Panel (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && (
+        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      )}
 
-      {/* AI Button */}
-      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {/* AI Button (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && !aiPanelOpen && (
+        <AIButton onClick={() => setAiPanelOpen(true)} />
+      )}
 
       {/* Header */}
       <header className={styles.header}>

@@ -7,6 +7,8 @@ from unittest.mock import MagicMock
 
 # Set TESTING environment variable BEFORE any imports
 os.environ["TESTING"] = "1"
+# Enable LLM features in tests so AI endpoints are registered
+os.environ["LLM_FEATURES_ENABLED"] = "true"
 
 import pytest
 from fastapi.testclient import TestClient
