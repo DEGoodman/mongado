@@ -21,7 +21,6 @@ from adapters.neo4j import get_neo4j_adapter
 from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from dependencies import get_neo4j, get_ollama, set_static_articles, set_user_resources
-from embedding_sync import sync_embeddings_on_startup
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
 from models import (
@@ -32,10 +31,8 @@ from models import (
     StatusResponse,
 )
 from notes_service import get_notes_service
-from ollama_client import get_ollama_client
 from rate_limiter import RATE_LIMITS, limiter
 from routers.admin import create_admin_router
-from routers.ai import router as ai_router
 from routers.articles import router as articles_router
 from routers.inspire import router as inspire_router
 from routers.notes import router as notes_router
@@ -49,9 +46,19 @@ logger = logging.getLogger(__name__)
 # Load settings and initialize services
 settings: Settings = get_settings()
 secret_manager: SecretManager = get_secret_manager()
-ollama_client = get_ollama_client()
 neo4j_adapter = get_neo4j_adapter()
 notes_service = get_notes_service()
+
+# Only initialize Ollama when LLM features are enabled
+if settings.llm_features_enabled:
+    from embedding_sync import sync_embeddings_on_startup
+    from ollama_client import get_ollama_client
+    from routers.ai import router as ai_router
+
+    ollama_client = get_ollama_client()
+else:
+    ollama_client = None
+    logger.info("LLM features disabled (LLM_FEATURES_ENABLED=false)")
 
 # Static articles (loaded from files/S3, read-only)
 static_articles: list[dict[str, Any]] = []
@@ -128,7 +135,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     _auto_seed_notes_if_empty()
 
     # Conditionally start embedding sync in background (non-blocking)
-    if settings.sync_embeddings_on_startup:
+    if not settings.llm_features_enabled:
+        logger.info("Skipping embedding sync (LLM_FEATURES_ENABLED=false)")
+        _embedding_sync_ready = True
+    elif settings.sync_embeddings_on_startup:
         logger.info("Starting background embedding sync (SYNC_EMBEDDINGS_ON_STARTUP=true)...")
         _embedding_sync_task = asyncio.create_task(_sync_embeddings_background())
     else:
@@ -277,7 +287,8 @@ app.add_middleware(CacheControlMiddleware)
 
 # Create and include domain routers
 # AI, Notes, Search, and Articles routers use FastAPI Depends() - no factory needed
-app.include_router(ai_router)
+if settings.llm_features_enabled:
+    app.include_router(ai_router)
 app.include_router(inspire_router)
 app.include_router(notes_router)
 app.include_router(search_router)
@@ -321,6 +332,7 @@ def read_root() -> StatusResponse:
         message=settings.app_name,
         version=settings.app_version,
         onepassword_enabled=secret_manager.is_available(),
+        llm_features_enabled=settings.llm_features_enabled,
     )
 
 
@@ -511,6 +523,11 @@ def trigger_embedding_sync(
 
     Requires authentication via Bearer token in Authorization header.
     """
+    if not settings.llm_features_enabled:
+        return EmbeddingSyncResponse(
+            success=False, message="LLM features are disabled (LLM_FEATURES_ENABLED=false)", stats=None
+        )
+
     if not neo4j.is_available():
         return EmbeddingSyncResponse(
             success=False, message="Neo4j not available - cannot sync embeddings", stats=None

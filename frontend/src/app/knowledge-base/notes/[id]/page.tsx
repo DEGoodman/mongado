@@ -35,8 +35,9 @@ export default function NoteDetailPage() {
   const { settings } = useSettings();
 
   // Check if AI features should be available
-  // AI is available if: user is authenticated OR unauthenticated AI is allowed
-  const aiAvailable = isAuthenticated() || config.allowUnauthenticatedAI;
+  // AI is available if: LLM features enabled AND (user is authenticated OR unauthenticated AI is allowed)
+  const aiAvailable =
+    config.llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI);
 
   const [note, setNote] = useState<Note | null>(null);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
@@ -362,11 +363,15 @@ export default function NoteDetailPage() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel */}
-      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      {/* AI Panel (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && (
+        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      )}
 
-      {/* AI Button */}
-      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {/* AI Button (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && !aiPanelOpen && (
+        <AIButton onClick={() => setAiPanelOpen(true)} />
+      )}
 
       <div className={styles.main}>
         <div className={styles.contentGrid}>
@@ -671,13 +676,15 @@ export default function NoteDetailPage() {
         </div>
       )}
 
-      {/* Post-Save AI Suggestions Modal */}
-      <PostSaveAISuggestions
-        noteId={noteId}
-        isOpen={showPostSaveSuggestions}
-        onClose={handleCloseSuggestions}
-        onInsertLink={handleInsertLinkFromSuggestion}
-      />
+      {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && (
+        <PostSaveAISuggestions
+          noteId={noteId}
+          isOpen={showPostSaveSuggestions}
+          onClose={handleCloseSuggestions}
+          onInsertLink={handleInsertLinkFromSuggestion}
+        />
+      )}
     </div>
   );
 }

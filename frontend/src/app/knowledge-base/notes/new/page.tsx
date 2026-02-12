@@ -57,7 +57,9 @@ function NewNoteContent() {
 
   // Check authentication status after hydration (client-side only)
   useEffect(() => {
-    setAiAvailable(isAuthenticated() || config.allowUnauthenticatedAI);
+    setAiAvailable(
+      config.llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI)
+    );
   }, []);
 
   // Load draft from localStorage on mount, or pre-fill from URL params (e.g., from article)
@@ -343,11 +345,15 @@ function NewNoteContent() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel */}
-      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      {/* AI Panel (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && (
+        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      )}
 
-      {/* AI Button */}
-      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {/* AI Button (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && !aiPanelOpen && (
+        <AIButton onClick={() => setAiPanelOpen(true)} />
+      )}
 
       <div className={styles.main}>
         {/* Header */}
@@ -666,8 +672,8 @@ function NewNoteContent() {
         </div>
       )}
 
-      {/* Post-Save AI Suggestions Modal */}
-      {savedNoteId && (
+      {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && savedNoteId && (
         <PostSaveAISuggestions
           noteId={savedNoteId}
           isOpen={showPostSaveSuggestions}

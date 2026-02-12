@@ -15,6 +15,7 @@ import { useState, useRef, useEffect } from "react";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
+import { config } from "@/lib/config";
 import styles from "./Settings.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -88,51 +89,61 @@ export default function Settings() {
           <div className={styles.dropdownContent}>
             {/* AI Assistance Section */}
             <div className={styles.section}>
-              {isWarmingUp && <div className={styles.warmupIndicator}>Warming up...</div>}
+              {config.llmFeaturesEnabled ? (
+                <>
+                  {isWarmingUp && <div className={styles.warmupIndicator}>Warming up...</div>}
 
-              {/* Segmented Control */}
-              <div className={styles.segmentedControl}>
-                <button
-                  onClick={() => handleModeChange("off")}
-                  className={`${styles.segmentButton} ${preferences.aiMode === "off" ? styles.active : styles.inactive}`}
-                  title="No AI suggestions"
-                >
-                  Off
-                </button>
-                <button
-                  onClick={() => handleModeChange("on-demand")}
-                  className={`${styles.segmentButton} ${preferences.aiMode === "on-demand" ? styles.active : styles.inactive}`}
-                  title="Click to get AI suggestions"
-                >
-                  On-demand
-                </button>
-                <button
-                  onClick={() => handleModeChange("real-time")}
-                  className={`${styles.segmentButton} ${preferences.aiMode === "real-time" ? styles.active : styles.inactive}`}
-                  title="Automatic AI suggestions"
-                >
-                  Automatic
-                </button>
-              </div>
+                  {/* Segmented Control */}
+                  <div className={styles.segmentedControl}>
+                    <button
+                      onClick={() => handleModeChange("off")}
+                      className={`${styles.segmentButton} ${preferences.aiMode === "off" ? styles.active : styles.inactive}`}
+                      title="No AI suggestions"
+                    >
+                      Off
+                    </button>
+                    <button
+                      onClick={() => handleModeChange("on-demand")}
+                      className={`${styles.segmentButton} ${preferences.aiMode === "on-demand" ? styles.active : styles.inactive}`}
+                      title="Click to get AI suggestions"
+                    >
+                      On-demand
+                    </button>
+                    <button
+                      onClick={() => handleModeChange("real-time")}
+                      className={`${styles.segmentButton} ${preferences.aiMode === "real-time" ? styles.active : styles.inactive}`}
+                      title="Automatic AI suggestions"
+                    >
+                      Automatic
+                    </button>
+                  </div>
 
-              {/* Mode descriptions */}
-              <div className={styles.modeDescription}>
-                {preferences.aiMode === "off" && (
-                  <p>No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.</p>
-                )}
-                {preferences.aiMode === "on-demand" && (
-                  <p>
-                    Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach with
-                    no overhead while writing.
-                  </p>
-                )}
-                {preferences.aiMode === "real-time" && (
-                  <p>
-                    Automatically generate suggestions in the background as you type. Panel stays
-                    collapsed until you open it.
-                  </p>
-                )}
-              </div>
+                  {/* Mode descriptions */}
+                  <div className={styles.modeDescription}>
+                    {preferences.aiMode === "off" && (
+                      <p>
+                        No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.
+                      </p>
+                    )}
+                    {preferences.aiMode === "on-demand" && (
+                      <p>
+                        Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach
+                        with no overhead while writing.
+                      </p>
+                    )}
+                    {preferences.aiMode === "real-time" && (
+                      <p>
+                        Automatically generate suggestions in the background as you type. Panel
+                        stays collapsed until you open it.
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.modeDescription}>
+                  <p>AI features are not available in this environment.</p>
+                </div>
+              )}
             </div>
 
             {/* Future sections can be added here:

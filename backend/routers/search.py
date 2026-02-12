@@ -11,6 +11,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from rapidfuzz import fuzz
 
+from config import get_settings
 from core.search import extract_snippet
 from dependencies import get_neo4j, get_notes, get_ollama, get_static_articles, get_user_resources
 from models import SearchRequest, SearchResponse, SearchResult
@@ -154,6 +155,11 @@ def search_resources(
     )
     # Get current state dynamically (not captured at router creation time)
     all_resources = _get_all_resources(static_articles, user_resources, notes_service)
+
+    # Force text search if LLM features are disabled
+    if not get_settings().llm_features_enabled and search_request.semantic:
+        logger.info("Semantic search requested but LLM features are disabled, using text search")
+        search_request.semantic = False
 
     # Default: Fast text search with fuzzy matching
     if not search_request.semantic:

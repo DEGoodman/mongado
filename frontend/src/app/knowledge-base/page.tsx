@@ -6,6 +6,7 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
+import { config } from "@/lib/config";
 import styles from "./page.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -128,11 +129,15 @@ export default function KnowledgeBasePage() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel */}
-      <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      {/* AI Panel (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && (
+        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      )}
 
-      {/* AI Button */}
-      {!aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {/* AI Button (only when LLM features enabled) */}
+      {config.llmFeaturesEnabled && !aiPanelOpen && (
+        <AIButton onClick={() => setAiPanelOpen(true)} />
+      )}
 
       {/* Header */}
       <header className={styles.header}>
@@ -170,8 +175,8 @@ export default function KnowledgeBasePage() {
             </div>
           </form>
           <p className={styles.searchHint}>
-            Live search enabled - results appear as you type. For AI-powered semantic search, use
-            the AI Assistant.
+            Live search enabled - results appear as you type.
+            {config.llmFeaturesEnabled && " For AI-powered semantic search, use the AI Assistant."}
           </p>
 
           {/* Search Error */}
