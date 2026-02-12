@@ -139,18 +139,20 @@ export default function SettingsDropdown() {
                   {/* Mode descriptions */}
                   <div className={styles.modeDescription}>
                     {settings.aiMode === "off" && (
-                      <p>No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.</p>
+                      <p>
+                        No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.
+                      </p>
                     )}
                     {settings.aiMode === "on-demand" && (
                       <p>
-                        Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach with
-                        no overhead while writing.
+                        Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach
+                        with no overhead while writing.
                       </p>
                     )}
                     {settings.aiMode === "real-time" && (
                       <p>
-                        Automatically generate suggestions in the background as you type. Panel stays
-                        collapsed until you open it.
+                        Automatically generate suggestions in the background as you type. Panel
+                        stays collapsed until you open it.
                       </p>
                     )}
                   </div>

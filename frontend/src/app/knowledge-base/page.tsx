@@ -176,8 +176,7 @@ export default function KnowledgeBasePage() {
           </form>
           <p className={styles.searchHint}>
             Live search enabled - results appear as you type.
-            {config.llmFeaturesEnabled &&
-              " For AI-powered semantic search, use the AI Assistant."}
+            {config.llmFeaturesEnabled && " For AI-powered semantic search, use the AI Assistant."}
           </p>
 
           {/* Search Error */}

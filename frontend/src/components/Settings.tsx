@@ -121,18 +121,20 @@ export default function Settings() {
                   {/* Mode descriptions */}
                   <div className={styles.modeDescription}>
                     {preferences.aiMode === "off" && (
-                      <p>No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.</p>
+                      <p>
+                        No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.
+                      </p>
                     )}
                     {preferences.aiMode === "on-demand" && (
                       <p>
-                        Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach with
-                        no overhead while writing.
+                        Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach
+                        with no overhead while writing.
                       </p>
                     )}
                     {preferences.aiMode === "real-time" && (
                       <p>
-                        Automatically generate suggestions in the background as you type. Panel stays
-                        collapsed until you open it.
+                        Automatically generate suggestions in the background as you type. Panel
+                        stays collapsed until you open it.
                       </p>
                     )}
                   </div>
