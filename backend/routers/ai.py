@@ -177,7 +177,8 @@ def ask_question(
     relevant_docs = []
 
     # Try to use fast semantic search with precomputed embeddings from Neo4j
-    if neo4j.is_available():
+    # (needs Ollama for the query embedding even when generation uses the API)
+    if neo4j.is_available() and ollama.embeddings_available():
         logger.info("Q&A: Using fast semantic search with precomputed embeddings from Neo4j")
 
         # Fetch precomputed embeddings for articles and notes

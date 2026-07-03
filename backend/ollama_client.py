@@ -1,6 +1,7 @@
 """Ollama integration for AI-powered features."""
 
 import logging
+import time
 from collections.abc import Generator
 from typing import Any
 
@@ -9,6 +10,9 @@ from utils import calculate_content_hash
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+# Minimum seconds between reconnection attempts when Ollama is unreachable
+RECONNECT_COOLDOWN_SECONDS = 30.0
 
 
 class OllamaClient:
@@ -25,30 +29,55 @@ class OllamaClient:
         self.model = settings.ollama_chat_model  # Backwards compatibility
         self.num_ctx = settings.ollama_num_ctx
         self.client: Any | None = None
+        self._last_connect_attempt = 0.0
 
         # Embedding cache: {content_hash: embedding_vector}
         # This prevents regenerating embeddings for the same content
         self.embedding_cache: dict[str, list[float]] = {}
 
         if self.enabled:
-            try:
-                import ollama
+            self._try_connect()
 
-                # Create client with host configuration
-                self.client = ollama.Client(host=self.host)
-                # Test connection
-                self.client.list()
-                logger.info("Ollama client initialized successfully at %s", self.host)
-            except Exception as e:
-                logger.warning("Failed to initialize Ollama client: %s", e)
-                logger.warning(
-                    "Ollama features will be disabled. Is Ollama running at %s?", self.host
-                )
-                self.enabled = False
+    def _try_connect(self) -> bool:
+        """Attempt to connect to Ollama. Safe to call repeatedly.
+
+        A failed attempt does NOT disable the client permanently - the backend
+        can boot before the Ollama container is ready (prod compose ordering),
+        so is_available() retries after RECONNECT_COOLDOWN_SECONDS.
+        """
+        self._last_connect_attempt = time.monotonic()
+        try:
+            import ollama
+
+            client = ollama.Client(host=self.host)
+            # Test connection
+            client.list()
+            self.client = client
+            logger.info("Ollama client connected at %s", self.host)
+            return True
+        except Exception as e:
+            self.client = None
+            logger.warning(
+                "Ollama not reachable at %s (%s) - will retry in %.0fs",
+                self.host,
+                e,
+                RECONNECT_COOLDOWN_SECONDS,
+            )
+            return False
 
     def is_available(self) -> bool:
-        """Check if Ollama is available and enabled."""
-        return self.enabled and self.client is not None
+        """Check if Ollama is available, reconnecting if the last attempt failed."""
+        if not self.enabled:
+            return False
+        if self.client is not None:
+            return True
+        if time.monotonic() - self._last_connect_attempt >= RECONNECT_COOLDOWN_SECONDS:
+            return self._try_connect()
+        return False
+
+    def embeddings_available(self) -> bool:
+        """Check if embedding generation is possible (requires Ollama)."""
+        return self.is_available()
 
     def has_gpu(self) -> bool:
         """Check if GPU acceleration is available.

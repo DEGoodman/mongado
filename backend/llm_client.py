@@ -273,6 +273,14 @@ class RoutingLLMClient:
         available: bool = self._generation_backend().is_available()
         return available
 
+    def embeddings_available(self) -> bool:
+        """Whether embedding generation is possible (always requires Ollama).
+
+        Distinct from is_available(): in API mode generation can be healthy
+        while Ollama (and therefore semantic search) is down.
+        """
+        return self.ollama.is_available()
+
     def has_gpu(self) -> bool:
         """Hosted APIs are treated as accelerated; Ollama reports its own state."""
         if self._use_api():

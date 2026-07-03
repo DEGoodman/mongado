@@ -531,7 +531,7 @@ def trigger_embedding_sync(
             success=False, message="Neo4j not available - cannot sync embeddings", stats=None
         )
 
-    if not ollama.is_available():
+    if not ollama.embeddings_available():
         return EmbeddingSyncResponse(
             success=False, message="Ollama not available - cannot generate embeddings", stats=None
         )

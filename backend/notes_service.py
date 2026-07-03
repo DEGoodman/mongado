@@ -370,7 +370,7 @@ class NotesService:
             logger.debug("Skipping embedding generation for %s (test mode)", note_id)
             return
 
-        if not self.ollama.is_available():
+        if not self.ollama.embeddings_available():
             logger.debug("Skipping embedding generation for %s (Ollama unavailable)", note_id)
             return
 

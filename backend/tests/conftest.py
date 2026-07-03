@@ -70,6 +70,10 @@ class MockOllamaClient:
         """Check if Ollama is available."""
         return self._available
 
+    def embeddings_available(self) -> bool:
+        """Check if embedding generation is possible."""
+        return self._available
+
     def has_gpu(self) -> bool:
         """Check if GPU is available."""
         return self._has_gpu if self._available else False

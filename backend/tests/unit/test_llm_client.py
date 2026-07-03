@@ -254,6 +254,15 @@ class TestRoutingLLMClient:
         # .model tags stored embeddings - must stay Ollama's even in API mode
         assert routing.model == "ollama-model"
 
+    def test_embeddings_available_tracks_ollama_not_api(self, flag_state: dict[str, bool]) -> None:
+        """In API mode, generation can be up while embeddings (Ollama) are down."""
+        flag_state["llm_use_api"] = True
+        ollama = MockBackend("ollama", available=False)
+        api = MockBackend("api")
+        routing = RoutingLLMClient(ollama, api)  # type: ignore[arg-type]
+        assert routing.is_available() is True
+        assert routing.embeddings_available() is False
+
 
 # ============================================================================
 # Provider construction from settings
