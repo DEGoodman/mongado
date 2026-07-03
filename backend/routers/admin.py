@@ -5,16 +5,21 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from auth import AdminUser
+from feature_flags import FeatureFlagService, get_feature_flags
 from models import (
     BackupCreateResponse,
     BackupInfo,
     BackupListResponse,
     DatabaseHealthResponse,
+    FeatureFlagInfo,
+    FeatureFlagsResponse,
+    FeatureFlagUpdateRequest,
+    FeatureFlagUpdateResponse,
     RestoreRequest,
     RestoreResponse,
 )
@@ -320,6 +325,67 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
                 status_code=500,
                 detail=f"Restore failed: {str(e)}",
             ) from e
+
+    @router.get("/feature-flags", response_model=FeatureFlagsResponse)
+    async def list_feature_flags(
+        _admin: AdminUser,
+        response: Response,
+        service: Annotated[FeatureFlagService, Depends(get_feature_flags)],
+    ) -> FeatureFlagsResponse:
+        """List all feature flags and their current values.
+
+        Requires admin authentication.
+        """
+        # Flags change at runtime - never let the browser cache this
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        current = service.all_flags()
+        flags = [
+            FeatureFlagInfo(
+                name=name,
+                enabled=current[name],
+                description=definition.description,
+            )
+            for name, definition in service.definitions.items()
+        ]
+        return FeatureFlagsResponse(flags=flags)
+
+    @router.put("/feature-flags/{flag_name}", response_model=FeatureFlagUpdateResponse)
+    async def update_feature_flag(
+        flag_name: str,
+        update: FeatureFlagUpdateRequest,
+        _admin: AdminUser,
+        service: Annotated[FeatureFlagService, Depends(get_feature_flags)],
+    ) -> FeatureFlagUpdateResponse:
+        """Enable or disable a feature flag at runtime.
+
+        The value is persisted in Neo4j and takes effect immediately -
+        no restart or redeploy required.
+
+        Requires admin authentication.
+        """
+        try:
+            persisted = service.set_flag(flag_name, update.enabled)
+        except KeyError:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Unknown feature flag: {flag_name}. "
+                f"Known flags: {', '.join(service.definitions)}",
+            ) from None
+
+        logger.info(
+            "Admin set feature flag '%s' to %s (persisted=%s)",
+            flag_name,
+            update.enabled,
+            persisted,
+        )
+        return FeatureFlagUpdateResponse(
+            flag=FeatureFlagInfo(
+                name=flag_name,
+                enabled=update.enabled,
+                description=service.definitions[flag_name].description,
+            ),
+            persisted=persisted,
+        )
 
     @router.get("/health/database", response_model=DatabaseHealthResponse)
     async def database_health() -> DatabaseHealthResponse:

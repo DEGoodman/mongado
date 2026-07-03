@@ -5,6 +5,10 @@ from models.admin import (
     BackupInfo,
     BackupListResponse,
     DatabaseHealthResponse,
+    FeatureFlagInfo,
+    FeatureFlagsResponse,
+    FeatureFlagUpdateRequest,
+    FeatureFlagUpdateResponse,
     RestoreRequest,
     RestoreResponse,
 )
@@ -50,6 +54,10 @@ __all__ = [
     "BackupInfo",
     "BackupListResponse",
     "DatabaseHealthResponse",
+    "FeatureFlagInfo",
+    "FeatureFlagsResponse",
+    "FeatureFlagUpdateRequest",
+    "FeatureFlagUpdateResponse",
     "RestoreRequest",
     "RestoreResponse",
     # AI models

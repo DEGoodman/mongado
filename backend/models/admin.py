@@ -82,6 +82,35 @@ class RestoreResponse(BaseModel):
     notes_after: int | None = Field(None, description="Note count after restore")
 
 
+class FeatureFlagInfo(BaseModel):
+    """A single feature flag with its current state."""
+
+    name: str = Field(..., description="Flag name (e.g., 'llm_features')")
+    enabled: bool = Field(..., description="Whether the flag is currently enabled")
+    description: str = Field(..., description="What the flag controls")
+
+
+class FeatureFlagsResponse(BaseModel):
+    """Response listing all feature flags."""
+
+    flags: list[FeatureFlagInfo] = Field(..., description="All known feature flags")
+
+
+class FeatureFlagUpdateRequest(BaseModel):
+    """Request to update a feature flag."""
+
+    enabled: bool = Field(..., description="New value for the flag")
+
+
+class FeatureFlagUpdateResponse(BaseModel):
+    """Response after updating a feature flag."""
+
+    flag: FeatureFlagInfo = Field(..., description="The updated flag")
+    persisted: bool = Field(
+        ..., description="False if Neo4j was unavailable (value resets on restart)"
+    )
+
+
 class DatabaseHealthResponse(BaseModel):
     """Response for database health check."""
 

@@ -11,9 +11,9 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from rapidfuzz import fuzz
 
-from config import get_settings
 from core.search import extract_snippet
 from dependencies import get_neo4j, get_notes, get_ollama, get_static_articles, get_user_resources
+from feature_flags import FeatureFlagService, get_feature_flags
 from models import SearchRequest, SearchResponse, SearchResult
 from rate_limiter import RATE_LIMITS, limiter
 
@@ -27,6 +27,7 @@ NotesDep = Annotated[Any, Depends(get_notes)]
 Neo4jDep = Annotated[Any, Depends(get_neo4j)]
 ArticlesDep = Annotated[list[dict[str, Any]], Depends(get_static_articles)]
 UserResourcesDep = Annotated[list[dict[str, Any]], Depends(get_user_resources)]
+FeatureFlagsDep = Annotated[FeatureFlagService, Depends(get_feature_flags)]
 
 
 def _fuzzy_match_text(query: str, text: str, threshold: int = 80) -> float:
@@ -129,6 +130,7 @@ def search_resources(
     notes_service: NotesDep,
     ollama: OllamaDep,
     neo4j: Neo4jDep,
+    feature_flags: FeatureFlagsDep,
 ) -> SearchResponse:
     """
     Search across all resources (articles + notes).
@@ -157,7 +159,7 @@ def search_resources(
     all_resources = _get_all_resources(static_articles, user_resources, notes_service)
 
     # Force text search if LLM features are disabled
-    if not get_settings().llm_features_enabled and search_request.semantic:
+    if not feature_flags.is_enabled("llm_features") and search_request.semantic:
         logger.info("Semantic search requested but LLM features are disabled, using text search")
         search_request.semantic = False
 
@@ -295,7 +297,9 @@ def search_resources(
 
     # Fallback: Generate embeddings on-demand (slow but works without Neo4j)
     logger.info("Using on-demand embedding generation (slower)")
-    semantic_results = ollama.semantic_search(search_request.query, all_resources, search_request.top_k)
+    semantic_results = ollama.semantic_search(
+        search_request.query, all_resources, search_request.top_k
+    )
     results = [
         _normalize_search_result(doc, search_request.query, score=doc.get("score", 0.0))
         for doc in semantic_results

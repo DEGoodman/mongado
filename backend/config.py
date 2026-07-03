@@ -50,7 +50,9 @@ class Settings(BaseSettings):
     static_articles_s3_bucket: str | None = None
     static_articles_s3_prefix: str = "articles/"
 
-    # LLM feature flag (master switch for all AI/LLM features)
+    # LLM feature flag seed default. Only used when the flag has never been
+    # toggled via the admin UI (/api/admin/feature-flags) - the persisted
+    # value in Neo4j always wins over this setting.
     llm_features_enabled: bool = False  # Default off to save resources in production
 
     # Ollama settings
