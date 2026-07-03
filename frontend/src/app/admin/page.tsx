@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import TopNavigation from "@/components/TopNavigation";
 import { isAuthenticated } from "@/lib/api/client";
 import { getFeatureFlags, updateFeatureFlag, type FeatureFlag } from "@/lib/api/admin";
-import { refreshFeatureFlags } from "@/hooks/useFeatureFlags";
+import { applyFeatureFlag } from "@/hooks/useFeatureFlags";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
 
@@ -47,11 +47,11 @@ export default function AdminPage() {
       );
       if (!result.persisted) {
         setWarning(
-          "Saved in memory only - the database is unavailable, so this value will reset when the backend restarts."
+          "Saved in memory only - the database is unavailable, so this value may revert shortly."
         );
       }
-      // Update the rest of the app immediately
-      await refreshFeatureFlags();
+      // Update the rest of the app immediately from the authoritative response
+      applyFeatureFlag(result.flag.name, result.flag.enabled);
     } catch (err) {
       adminLogger.error("Failed to update feature flag:", err);
       setError(`Failed to update "${flag.name}". Try again.`);

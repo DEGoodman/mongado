@@ -21,7 +21,7 @@ import styles from "./Settings.module.scss";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Settings() {
-  const { llmFeaturesEnabled } = useFeatureFlags();
+  const { llmFeaturesEnabled, loaded: flagsLoaded } = useFeatureFlags();
   const { preferences, updatePreferences } = useUserPreferences();
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
@@ -90,7 +90,7 @@ export default function Settings() {
           <div className={styles.dropdownContent}>
             {/* AI Assistance Section */}
             <div className={styles.section}>
-              {llmFeaturesEnabled ? (
+              {!flagsLoaded ? null : llmFeaturesEnabled ? (
                 <>
                   {isWarmingUp && <div className={styles.warmupIndicator}>Warming up...</div>}
 

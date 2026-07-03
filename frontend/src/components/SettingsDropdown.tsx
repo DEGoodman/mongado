@@ -13,7 +13,7 @@ import styles from "./SettingsDropdown.module.scss";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function SettingsDropdown() {
-  const { llmFeaturesEnabled } = useFeatureFlags();
+  const { llmFeaturesEnabled, loaded: flagsLoaded } = useFeatureFlags();
   const { settings, updateSettings } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
@@ -108,7 +108,7 @@ export default function SettingsDropdown() {
         {isOpen && (
           <div className={styles.dropdown}>
             <div className={styles.dropdownContent}>
-              {llmFeaturesEnabled ? (
+              {!flagsLoaded ? null : llmFeaturesEnabled ? (
                 <>
                   <div className={styles.header}>
                     <h3 className={styles.title}>AI Suggestions</h3>

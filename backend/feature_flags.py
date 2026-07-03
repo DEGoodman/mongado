@@ -6,6 +6,7 @@ provide the default when a flag has never been set.
 """
 
 import logging
+import time
 from dataclasses import dataclass
 
 from fastapi import HTTPException
@@ -39,21 +40,25 @@ def _flag_definitions() -> dict[str, FlagDefinition]:
 
 
 class FeatureFlagService:
-    """Read/write feature flags with an in-memory cache over Neo4j.
+    """Read/write feature flags with a TTL cache over Neo4j.
 
-    The cache is loaded lazily on first read and kept authoritative for the
-    process lifetime (only the admin API mutates flags, and this is a
-    single-process app).
+    Production runs multiple uvicorn workers, each with its own service
+    instance. A toggle lands on one worker; the others pick up the new
+    value from Neo4j when their cache expires (within CACHE_TTL_SECONDS).
     """
+
+    CACHE_TTL_SECONDS = 15.0
 
     def __init__(self, neo4j: Neo4jAdapter) -> None:
         self.neo4j = neo4j
         self.definitions = _flag_definitions()
         self._cache: dict[str, bool] | None = None
+        self._loaded_at: float = 0.0
 
     def _load(self) -> dict[str, bool]:
-        """Load flags: persisted values override defaults."""
-        if self._cache is None:
+        """Load flags: persisted values override defaults. Reloads after TTL."""
+        now = time.monotonic()
+        if self._cache is None or now - self._loaded_at >= self.CACHE_TTL_SECONDS:
             flags = {name: d.default for name, d in self.definitions.items()}
             try:
                 persisted = self.neo4j.get_feature_flags()
@@ -64,6 +69,7 @@ class FeatureFlagService:
                 if name in flags:
                     flags[name] = enabled
             self._cache = flags
+            self._loaded_at = now
         return self._cache
 
     def is_enabled(self, name: str) -> bool:
@@ -90,12 +96,16 @@ class FeatureFlagService:
         """
         if name not in self.definitions:
             raise KeyError(name)
-        persisted = self.neo4j.set_feature_flag(name, enabled)
+        try:
+            persisted = self.neo4j.set_feature_flag(name, enabled)
+        except Exception as e:
+            logger.error("Failed to persist feature flag '%s' to Neo4j: %s", name, e)
+            persisted = False
         self._load()[name] = enabled
         if not persisted:
             logger.warning(
                 "Feature flag '%s' set in memory only - Neo4j unavailable, "
-                "value will reset on restart",
+                "value will revert when the cache expires or the app restarts",
                 name,
             )
         return persisted
@@ -103,6 +113,7 @@ class FeatureFlagService:
     def reset_cache(self) -> None:
         """Clear the in-memory cache (reloads from Neo4j on next read)."""
         self._cache = None
+        self._loaded_at = 0.0
 
 
 _service: FeatureFlagService | None = None

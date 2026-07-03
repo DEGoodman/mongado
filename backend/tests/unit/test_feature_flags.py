@@ -68,9 +68,7 @@ def admin_headers() -> dict[str, str]:
 class TestFeatureFlagService:
     """Tests for the FeatureFlagService (pure-ish logic over a mock adapter)."""
 
-    def test_defaults_used_when_nothing_persisted(
-        self, flag_service: FeatureFlagService
-    ) -> None:
+    def test_defaults_used_when_nothing_persisted(self, flag_service: FeatureFlagService) -> None:
         # conftest sets LLM_FEATURES_ENABLED=true, so the seed default is True
         assert flag_service.is_enabled("llm_features") is True
 
@@ -96,14 +94,51 @@ class TestFeatureFlagService:
         with pytest.raises(KeyError):
             flag_service.set_flag("nonexistent_flag", True)
 
-    def test_set_flag_without_neo4j_is_memory_only(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_set_flag_without_neo4j_is_memory_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
         unavailable = MockNeo4jFlags(available=False)
         service = FeatureFlagService(unavailable)  # type: ignore[arg-type]
         persisted = service.set_flag("llm_features", False)
         assert persisted is False
         assert service.is_enabled("llm_features") is False
+
+    def test_other_workers_pick_up_changes_after_ttl(
+        self, mock_neo4j: MockNeo4jFlags, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Simulate two uvicorn workers sharing Neo4j but not memory."""
+        worker_a = FeatureFlagService(mock_neo4j)  # type: ignore[arg-type]
+        worker_b = FeatureFlagService(mock_neo4j)  # type: ignore[arg-type]
+
+        # Both workers warm their caches with the default (True)
+        assert worker_a.is_enabled("llm_features") is True
+        assert worker_b.is_enabled("llm_features") is True
+
+        # Admin toggle lands on worker A only
+        worker_a.set_flag("llm_features", False)
+        assert worker_a.is_enabled("llm_features") is False
+        # Worker B still serves its cache within the TTL
+        assert worker_b.is_enabled("llm_features") is True
+
+        # After the TTL expires, worker B reloads from Neo4j
+        import feature_flags as ff
+
+        real_monotonic = ff.time.monotonic
+        monkeypatch.setattr(
+            ff.time,
+            "monotonic",
+            lambda: real_monotonic() + FeatureFlagService.CACHE_TTL_SECONDS + 1,
+        )
+        assert worker_b.is_enabled("llm_features") is False
+
+    def test_set_flag_survives_neo4j_write_error(
+        self, flag_service: FeatureFlagService, mock_neo4j: MockNeo4jFlags
+    ) -> None:
+        def boom(name: str, enabled: bool) -> bool:
+            raise RuntimeError("transient write failure")
+
+        mock_neo4j.set_feature_flag = boom  # type: ignore[method-assign]
+        persisted = flag_service.set_flag("llm_features", False)
+        assert persisted is False
+        assert flag_service.is_enabled("llm_features") is False
 
     def test_ignores_persisted_unknown_flags(
         self, flag_service: FeatureFlagService, mock_neo4j: MockNeo4jFlags
@@ -132,9 +167,7 @@ class TestFeatureFlagsAPI:
         assert flags["llm_features"]["enabled"] is True
         assert flags["llm_features"]["description"]
 
-    def test_list_flags_not_cached(
-        self, client: TestClient, admin_headers: dict[str, str]
-    ) -> None:
+    def test_list_flags_not_cached(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         response = client.get("/api/admin/feature-flags", headers=admin_headers)
         assert "no-store" in response.headers["Cache-Control"]
 
@@ -205,9 +238,7 @@ class TestRuntimeGating:
         app.dependency_overrides[get_notes] = lambda: mock_notes_service
         try:
             with TestClient(app) as client:
-                response = client.post(
-                    "/api/search", json={"query": "test", "semantic": True}
-                )
+                response = client.post("/api/search", json={"query": "test", "semantic": True})
                 assert response.status_code == 200
         finally:
             app.dependency_overrides.clear()

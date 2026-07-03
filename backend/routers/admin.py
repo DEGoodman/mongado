@@ -5,12 +5,12 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from auth import AdminUser
-from feature_flags import get_feature_flags
+from feature_flags import FeatureFlagService, get_feature_flags
 from models import (
     BackupCreateResponse,
     BackupInfo,
@@ -327,19 +327,22 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
             ) from e
 
     @router.get("/feature-flags", response_model=FeatureFlagsResponse)
-    async def list_feature_flags(_admin: AdminUser, response: Response) -> FeatureFlagsResponse:
+    async def list_feature_flags(
+        _admin: AdminUser,
+        response: Response,
+        service: Annotated[FeatureFlagService, Depends(get_feature_flags)],
+    ) -> FeatureFlagsResponse:
         """List all feature flags and their current values.
 
         Requires admin authentication.
         """
         # Flags change at runtime - never let the browser cache this
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        service = get_feature_flags()
         current = service.all_flags()
         flags = [
             FeatureFlagInfo(
                 name=name,
-                enabled=current.get(name, definition.default),
+                enabled=current[name],
                 description=definition.description,
             )
             for name, definition in service.definitions.items()
@@ -351,6 +354,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         flag_name: str,
         update: FeatureFlagUpdateRequest,
         _admin: AdminUser,
+        service: Annotated[FeatureFlagService, Depends(get_feature_flags)],
     ) -> FeatureFlagUpdateResponse:
         """Enable or disable a feature flag at runtime.
 
@@ -359,7 +363,6 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
 
         Requires admin authentication.
         """
-        service = get_feature_flags()
         try:
             persisted = service.set_flag(flag_name, update.enabled)
         except KeyError:

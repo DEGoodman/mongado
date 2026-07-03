@@ -29,10 +29,6 @@ function getSnapshot(): FeatureFlags {
   return flags;
 }
 
-function getServerSnapshot(): FeatureFlags {
-  return flags;
-}
-
 function setFlags(next: FeatureFlags): void {
   flags = next;
   listeners.forEach((listener) => listener());
@@ -56,11 +52,13 @@ async function fetchFlags(): Promise<void> {
 }
 
 /**
- * Re-fetch flags from the backend (e.g., after an admin toggles a flag).
+ * Apply a flag value directly to the store (from an authoritative source,
+ * e.g. the response of an admin PUT). Backend flag names map to store fields.
  */
-export function refreshFeatureFlags(): Promise<void> {
-  fetchStarted = true;
-  return fetchFlags();
+export function applyFeatureFlag(name: string, enabled: boolean): void {
+  if (name === "llm_features") {
+    setFlags({ ...flags, llmFeaturesEnabled: enabled, loaded: true });
+  }
 }
 
 /**
@@ -74,5 +72,5 @@ export function useFeatureFlags(): FeatureFlags {
     fetchStarted = true;
     void fetchFlags();
   }
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
