@@ -1,0 +1,19 @@
+#!/bin/bash
+# commit-msg hook: append a DCO Signed-off-by trailer if missing.
+# CI enforces DCO on all commits; this makes every local commit compliant
+# without having to remember `git commit -s`.
+
+MSG_FILE="$1"
+NAME=$(git config user.name)
+EMAIL=$(git config user.email)
+
+if [ -z "$NAME" ] || [ -z "$EMAIL" ]; then
+    echo "commit-msg hook: git user.name/user.email not set; cannot add Signed-off-by" >&2
+    exit 1
+fi
+
+SOB="Signed-off-by: $NAME <$EMAIL>"
+
+if ! grep -qs "^$SOB" "$MSG_FILE"; then
+    printf '\n%s\n' "$SOB" >> "$MSG_FILE"
+fi

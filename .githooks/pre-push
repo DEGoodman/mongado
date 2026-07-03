@@ -16,6 +16,43 @@ NC='\033[0m' # No Color
 # Track if any checks fail
 FAILED=0
 
+# DCO sign-off check (CI enforces this on every commit)
+# Reads the refs being pushed from stdin - must run before anything else
+# consumes stdin.
+echo "✍️  DCO Sign-off Check"
+echo "====================="
+ZERO_SHA="0000000000000000000000000000000000000000"
+UNSIGNED=""
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    # Branch deletion - nothing to check
+    [ "$local_sha" = "$ZERO_SHA" ] && continue
+    if [ "$remote_sha" = "$ZERO_SHA" ]; then
+        # New remote branch - check commits not already on origin/main
+        range="origin/main..$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    for commit in $(git rev-list --no-merges "$range" 2>/dev/null); do
+        if ! git show -s --format=%B "$commit" | grep -q "^Signed-off-by:"; then
+            UNSIGNED="$UNSIGNED $commit"
+        fi
+    done
+done
+
+if [ -n "$UNSIGNED" ]; then
+    echo -e "  ${RED}✗ Commits missing Signed-off-by:${NC}"
+    for commit in $UNSIGNED; do
+        echo "    $(git log -1 --format='%h %s' "$commit")"
+    done
+    echo -e "${RED}  Fix with: git rebase --signoff origin/main${NC}"
+    echo "  (The commit-msg hook adds sign-offs automatically - run ./setup-hooks.sh if commits are missing them)"
+    FAILED=1
+else
+    echo -e "  Sign-offs... ${GREEN}✓${NC}"
+fi
+
+echo ""
+
 # Backend checks
 echo "📦 Backend Quality Checks"
 echo "========================="

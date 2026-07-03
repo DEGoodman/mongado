@@ -14,11 +14,19 @@ This configures git to use the `.githooks` directory for all hooks.
 
 ## Available Hooks
 
+### commit-msg
+
+Appends a DCO `Signed-off-by:` trailer to every commit automatically (CI
+enforces DCO on all commits). Equivalent to always passing `git commit -s`.
+
 ### pre-push
 
 Runs before `git push` to catch issues before they reach CI.
 
 **Checks performed:**
+
+- ✓ DCO sign-off on every commit being pushed (backstop for commits made
+  before the commit-msg hook was installed; fix with `git rebase --signoff origin/main`)
 
 Backend:
 - ✓ Linting (ruff)
