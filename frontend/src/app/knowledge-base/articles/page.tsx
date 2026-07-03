@@ -157,14 +157,10 @@ function ArticlesContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
-        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
-      )}
+      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && (
-        <AIButton onClick={() => setAiPanelOpen(true)} />
-      )}
+      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       {/* Header */}
       <header className={styles.header}>

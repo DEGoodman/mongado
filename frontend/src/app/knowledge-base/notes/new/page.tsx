@@ -59,9 +59,7 @@ function NewNoteContent() {
 
   // Check authentication status after hydration (client-side only)
   useEffect(() => {
-    setAiAvailable(
-      llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI)
-    );
+    setAiAvailable(llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI));
   }, [llmFeaturesEnabled]);
 
   // Load draft from localStorage on mount, or pre-fill from URL params (e.g., from article)
@@ -348,14 +346,10 @@ function NewNoteContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
-        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
-      )}
+      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && (
-        <AIButton onClick={() => setAiPanelOpen(true)} />
-      )}
+      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       <div className={styles.main}>
         {/* Header */}

@@ -38,8 +38,7 @@ export default function NoteDetailPage() {
 
   // Check if AI features should be available
   // AI is available if: LLM features enabled AND (user is authenticated OR unauthenticated AI is allowed)
-  const aiAvailable =
-    llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI);
+  const aiAvailable = llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI);
 
   const [note, setNote] = useState<Note | null>(null);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
@@ -366,14 +365,10 @@ export default function NoteDetailPage() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
-        <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
-      )}
+      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && (
-        <AIButton onClick={() => setAiPanelOpen(true)} />
-      )}
+      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
 
       <div className={styles.main}>
         <div className={styles.contentGrid}>

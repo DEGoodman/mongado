@@ -67,7 +67,9 @@ export default function AdminPage() {
         <header className={styles.header}>
           <div className={styles.headerContent}>
             <h1 className={styles.title}>Admin Settings</h1>
-            <p className={styles.subtitle}>Runtime feature flags - changes take effect immediately</p>
+            <p className={styles.subtitle}>
+              Runtime feature flags - changes take effect immediately
+            </p>
           </div>
         </header>
 
