@@ -6,8 +6,8 @@ from typing import Any
 from adapters.neo4j import get_neo4j_adapter
 from core import ai as ai_core
 from embedding_sync import EMBEDDING_VERSION
+from llm_client import get_llm_client
 from note_id_generator import get_id_generator
-from ollama_client import get_ollama_client
 from wikilink_parser import get_wikilink_parser
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class NotesService:
         self.neo4j = get_neo4j_adapter()
         self.id_generator = get_id_generator()
         self.wikilink_parser = get_wikilink_parser()
-        self.ollama = get_ollama_client()
+        self.ollama = get_llm_client()
 
         if self.neo4j.is_available():
             logger.info("NotesService initialized with Neo4j")
@@ -411,20 +411,13 @@ class NotesService:
             logger.debug("Skipping AI content generation for %s (Ollama unavailable)", note_id)
             return
 
-        if not self.ollama.client:
-            return
-
         # Generate summary
         summary = None
         try:
             logger.debug("Generating AI summary for note: %s", note_id)
             prompt = ai_core.build_summary_prompt(content, content_type="note")
-            response = self.ollama.client.generate(
-                model=self.ollama.chat_model,
-                prompt=prompt,
-                options={"num_ctx": 2048, "num_predict": 256},
-            )
-            summary = response.get("response", "").strip()
+            response = self.ollama.generate(prompt, role="chat", num_ctx=2048, max_tokens=256)
+            summary = (response or "").strip()
             if summary:
                 logger.info("Generated AI summary for note: %s", note_id)
         except Exception as e:
@@ -457,13 +450,9 @@ class NotesService:
                     max_candidates=50,
                 )
 
-                response = self.ollama.client.generate(
-                    model=self.ollama.structured_model,
-                    prompt=prompt,
-                    options={"num_ctx": 8192},
+                response_text = (
+                    self.ollama.generate(prompt, role="structured", num_ctx=8192) or ""
                 )
-
-                response_text = response.get("response", "")
                 suggestions_data = ai_core.parse_json_response(response_text, expected_type="array")
 
                 if suggestions_data and isinstance(suggestions_data, list):

@@ -22,27 +22,31 @@ Usage in tests:
 from typing import Any
 
 from adapters.neo4j import Neo4jAdapter, get_neo4j_adapter
+from llm_client import RoutingLLMClient, get_llm_client
 from notes_service import NotesService
 from notes_service import get_notes_service as _get_notes_service
-from ollama_client import OllamaClient, get_ollama_client
 
 # Module-level instances (created once at import)
 # These are the "real" instances used in production
-_ollama_client: OllamaClient | None = None
+_llm: RoutingLLMClient | None = None
 _neo4j_adapter: Neo4jAdapter | None = None
 _notes_service: NotesService | None = None
 
 
-def get_ollama() -> OllamaClient:
-    """Get the Ollama client instance.
+def get_llm() -> RoutingLLMClient:
+    """Get the LLM client (routes between Ollama and hosted APIs).
 
     This dependency can be overridden in tests:
-        app.dependency_overrides[get_ollama] = lambda: mock_client
+        app.dependency_overrides[get_llm] = lambda: mock_client
     """
-    global _ollama_client
-    if _ollama_client is None:
-        _ollama_client = get_ollama_client()
-    return _ollama_client
+    global _llm
+    if _llm is None:
+        _llm = get_llm_client()
+    return _llm
+
+
+# Backwards-compatible alias (pre-API-provider name)
+get_ollama = get_llm
 
 
 def get_neo4j() -> Neo4jAdapter:
@@ -110,9 +114,9 @@ def reset_dependencies() -> None:
 
     Call this in test fixtures to ensure clean state between tests.
     """
-    global _ollama_client, _neo4j_adapter, _notes_service
+    global _llm, _neo4j_adapter, _notes_service
     global _static_articles, _user_resources
-    _ollama_client = None
+    _llm = None
     _neo4j_adapter = None
     _notes_service = None
     _static_articles = []

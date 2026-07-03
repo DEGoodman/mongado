@@ -11,6 +11,7 @@ git config core.hooksPath .githooks
 echo "✓ Git hooks configured successfully!"
 echo ""
 echo "The following hooks are now active:"
-echo "  • pre-push: Runs quality checks before pushing"
+echo "  • commit-msg: Adds DCO Signed-off-by trailer automatically"
+echo "  • pre-push: Runs quality checks and DCO verification before pushing"
 echo ""
 echo "To skip hooks temporarily, use: git push --no-verify"

@@ -55,6 +55,22 @@ class Settings(BaseSettings):
     # value in Neo4j always wins over this setting.
     llm_features_enabled: bool = False  # Default off to save resources in production
 
+    # LLM API provider seed default for the "llm_use_api" feature flag.
+    # When enabled (via admin UI), AI generation (Q&A, summaries, suggestions)
+    # is routed to hosted APIs (Groq primary, Gemini fallback) instead of
+    # local Ollama. Embeddings always stay on Ollama regardless of this flag.
+    llm_use_api: bool = False
+
+    # Hosted API providers (OpenAI-compatible chat completions)
+    groq_api_key: str | None = None
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    groq_model: str = "llama-3.1-8b-instant"  # Free tier: 14,400 req/day
+    gemini_api_key: str | None = None
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    gemini_model: str = "gemini-flash-latest"  # Free tier: 1,500 req/day
+    llm_api_timeout: float = 30.0  # Per-provider request timeout (seconds)
+    llm_api_max_tokens: int = 1024  # Default response cap for API generation
+
     # Ollama settings
     ollama_host: str = "http://localhost:11434"  # Default Ollama endpoint
     ollama_embed_model: str = "nomic-embed-text"  # Embedding model (small, fast, optimized)

@@ -75,6 +75,8 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
           NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           # Pass secrets to remote server via SSH command arguments
           ssh $DO_USER@$DO_HOST "bash -s" \
@@ -82,7 +84,9 @@ jobs:
             "$OP_SERVICE_ACCOUNT_TOKEN" \
             "$ADMIN_PASSKEY" \
             "$NEXT_PUBLIC_API_URL" \
-            "$NEO4J_PASSWORD" << 'EOF'
+            "$NEO4J_PASSWORD" \
+            "$GROQ_API_KEY" \
+            "$GEMINI_API_KEY" << 'EOF'
             set -e
 
             # Receive arguments
@@ -91,6 +95,8 @@ jobs:
             ADMIN_PASSKEY="$3"
             NEXT_PUBLIC_API_URL="$4"
             NEO4J_PASSWORD="$5"
+            GROQ_API_KEY="$6"
+            GEMINI_API_KEY="$7"
 
             echo "📦 Deploying Mongado to production..."
 
@@ -115,6 +121,9 @@ jobs:
             echo "CORS_ORIGINS=$CORS_ORIGINS" >> backend/.env
             echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN" >> backend/.env
             echo "ADMIN_TOKEN=$ADMIN_PASSKEY" >> backend/.env
+            # Hosted LLM API keys (empty until the GitHub secrets are set - see issue #190)
+            echo "GROQ_API_KEY=$GROQ_API_KEY" >> backend/.env
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> backend/.env
 
             # Root .env file for docker-compose (so env vars persist across manual runs)
             echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env

@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from core import ai as ai_core
-from dependencies import get_neo4j, get_notes, get_ollama, get_static_articles, get_user_resources
+from dependencies import get_llm, get_neo4j, get_notes, get_static_articles, get_user_resources
 from models import (
     GPUStatusResponse,
     LinkSuggestion,
@@ -57,7 +57,7 @@ def _get_all_resources(
 
 
 # Type aliases for cleaner signatures
-OllamaDep = Annotated[Any, Depends(get_ollama)]
+OllamaDep = Annotated[Any, Depends(get_llm)]
 NotesDep = Annotated[Any, Depends(get_notes)]
 Neo4jDep = Annotated[Any, Depends(get_neo4j)]
 ArticlesDep = Annotated[list[dict[str, Any]], Depends(get_static_articles)]
@@ -135,9 +135,13 @@ def get_gpu_status(ollama: OllamaDep) -> GPUStatusResponse:
 
     has_gpu = ollama.has_gpu()
     if has_gpu:
-        return GPUStatusResponse(
-            has_gpu=True, message="GPU acceleration is available. AI features will be fast."
+        provider = getattr(ollama, "active_provider", "ollama")
+        message = (
+            f"AI generation served by hosted API ({provider}). AI features will be fast."
+            if provider != "ollama"
+            else "GPU acceleration is available. AI features will be fast."
         )
+        return GPUStatusResponse(has_gpu=True, message=message)
     else:
         return GPUStatusResponse(
             has_gpu=False,
@@ -273,14 +277,10 @@ def suggest_tags(
     )
 
     try:
-        # Use structured output model (qwen2.5:1.5b) for reliable JSON
-        response_data = ollama.client.generate(
-            model=ollama.structured_model, prompt=prompt, options={"num_ctx": 4096}
-        )
-
-        response = response_data.get("response", "")
+        # Use the structured-output role (Ollama: qwen2.5:1.5b; API: hosted model)
+        response = ollama.generate(prompt, role="structured", num_ctx=4096)
         if not response:
-            logger.error("Empty response from Ollama for tag suggestions")
+            logger.error("Empty response from LLM for tag suggestions")
             return TagSuggestionsResponse(suggestions=[], count=0)
 
         # Parse JSON response using pure function
@@ -406,16 +406,10 @@ def suggest_links(
     )
 
     try:
-        # Use structured output model (qwen2.5:1.5b) for reliable JSON
-        response_data = ollama.client.generate(
-            model=ollama.structured_model,
-            prompt=prompt,
-            options={"num_ctx": 8192},  # Larger context for multiple notes
-        )
-
-        response = response_data.get("response", "")
+        # Use the structured-output role; larger context for multiple notes
+        response = ollama.generate(prompt, role="structured", num_ctx=8192)
         if not response:
-            logger.error("Empty response from Ollama for link suggestions")
+            logger.error("Empty response from LLM for link suggestions")
             return LinkSuggestionsResponse(suggestions=[], count=0)
 
         # Parse JSON response using pure function
@@ -518,20 +512,14 @@ def suggest_stream(
             # Generate tags with token streaming for real-time progress
             tag_text = ""
             token_count = 0
-            for chunk in _ollama.client.generate(
-                model=_ollama.structured_model,
-                prompt=tag_prompt,
-                options={"num_ctx": 4096},
-                stream=True,
-            ):
-                if chunk.get("response"):
-                    tag_text += chunk["response"]
-                    token_count += 1
-                    # Send heartbeat every 10 tokens to show activity
-                    if token_count % 10 == 0:
-                        yield format_sse(
-                            {"type": "generating", "phase": "tags", "tokens": token_count}
-                        )
+            for text in _ollama.generate_stream(tag_prompt, role="structured", num_ctx=4096):
+                tag_text += text
+                token_count += 1
+                # Send heartbeat every 10 tokens to show activity
+                if token_count % 10 == 0:
+                    yield format_sse(
+                        {"type": "generating", "phase": "tags", "tokens": token_count}
+                    )
 
             if tag_text:
                 tags_data = ai_core.parse_json_response(tag_text, expected_type="array")
@@ -573,20 +561,16 @@ def suggest_stream(
                 # Generate links with token streaming for real-time progress
                 link_text = ""
                 token_count = 0
-                for chunk in _ollama.client.generate(
-                    model=_ollama.structured_model,
-                    prompt=link_prompt,
-                    options={"num_ctx": 8192},
-                    stream=True,
+                for text in _ollama.generate_stream(
+                    link_prompt, role="structured", num_ctx=8192
                 ):
-                    if chunk.get("response"):
-                        link_text += chunk["response"]
-                        token_count += 1
-                        # Send heartbeat every 10 tokens to show activity
-                        if token_count % 10 == 0:
-                            yield format_sse(
-                                {"type": "generating", "phase": "links", "tokens": token_count}
-                            )
+                    link_text += text
+                    token_count += 1
+                    # Send heartbeat every 10 tokens to show activity
+                    if token_count % 10 == 0:
+                        yield format_sse(
+                            {"type": "generating", "phase": "links", "tokens": token_count}
+                        )
 
                 if link_text:
                     links_data = ai_core.parse_json_response(link_text, expected_type="array")
