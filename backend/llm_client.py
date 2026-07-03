@@ -121,11 +121,19 @@ class ApiLLMClient:
                 )
                 response.raise_for_status()
                 data = response.json()
-                content: str | None = data["choices"][0]["message"]["content"]
+                choices = data.get("choices") or []
+                message = choices[0].get("message", {}) if choices else {}
+                content: str | None = message.get("content")
                 if content:
                     logger.debug("Generated %d chars via %s", len(content), provider.name)
                     return content
-                logger.warning("Empty completion from %s, trying next provider", provider.name)
+                # e.g. Gemini spends the whole max_tokens budget on internal
+                # reasoning and returns finish_reason=length with no content
+                logger.warning(
+                    "Empty completion from %s (finish_reason=%s), trying next provider",
+                    provider.name,
+                    choices[0].get("finish_reason") if choices else "n/a",
+                )
             except Exception as e:
                 logger.warning("Provider %s failed (%s), trying next provider", provider.name, e)
         logger.error("All API providers failed for generation")
