@@ -6,13 +6,14 @@ import Link from "next/link";
 import { useSettings } from "@/hooks/useSettings";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
-import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
 import styles from "./SettingsDropdown.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function SettingsDropdown() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const { settings, updateSettings } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
@@ -107,7 +108,7 @@ export default function SettingsDropdown() {
         {isOpen && (
           <div className={styles.dropdown}>
             <div className={styles.dropdownContent}>
-              {config.llmFeaturesEnabled ? (
+              {llmFeaturesEnabled ? (
                 <>
                   <div className={styles.header}>
                     <h3 className={styles.title}>AI Suggestions</h3>
@@ -163,9 +164,12 @@ export default function SettingsDropdown() {
                 </div>
               )}
 
-              {/* Logout section */}
+              {/* Admin section */}
               {isUserAuthenticated && (
                 <div className={styles.logoutSection}>
+                  <Link href="/admin" className={styles.adminLink} onClick={() => setIsOpen(false)}>
+                    Admin Settings
+                  </Link>
                   <button onClick={handleLogout} className={styles.logoutButton}>
                     Sign Out
                   </button>

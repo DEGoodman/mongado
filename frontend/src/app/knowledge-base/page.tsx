@@ -6,7 +6,7 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
-import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import styles from "./page.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -40,6 +40,7 @@ function highlightText(text: string, query: string): React.ReactNode {
 }
 
 export default function KnowledgeBasePage() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -130,12 +131,12 @@ export default function KnowledgeBasePage() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && !aiPanelOpen && (
+      {llmFeaturesEnabled && !aiPanelOpen && (
         <AIButton onClick={() => setAiPanelOpen(true)} />
       )}
 
@@ -176,7 +177,7 @@ export default function KnowledgeBasePage() {
           </form>
           <p className={styles.searchHint}>
             Live search enabled - results appear as you type.
-            {config.llmFeaturesEnabled && " For AI-powered semantic search, use the AI Assistant."}
+            {llmFeaturesEnabled && " For AI-powered semantic search, use the AI Assistant."}
           </p>
 
           {/* Search Error */}

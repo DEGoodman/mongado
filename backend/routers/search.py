@@ -11,9 +11,9 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from rapidfuzz import fuzz
 
-from config import get_settings
 from core.search import extract_snippet
 from dependencies import get_neo4j, get_notes, get_ollama, get_static_articles, get_user_resources
+from feature_flags import get_feature_flags
 from models import SearchRequest, SearchResponse, SearchResult
 from rate_limiter import RATE_LIMITS, limiter
 
@@ -157,7 +157,7 @@ def search_resources(
     all_resources = _get_all_resources(static_articles, user_resources, notes_service)
 
     # Force text search if LLM features are disabled
-    if not get_settings().llm_features_enabled and search_request.semantic:
+    if not get_feature_flags().is_enabled("llm_features") and search_request.semantic:
         logger.info("Semantic search requested but LLM features are disabled, using text search")
         search_request.semantic = False
 

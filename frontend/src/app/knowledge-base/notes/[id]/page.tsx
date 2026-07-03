@@ -26,9 +26,11 @@ import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import styles from "./page.module.scss";
 
 export default function NoteDetailPage() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const params = useParams();
   const router = useRouter();
   const noteId = params.id as string;
@@ -37,7 +39,7 @@ export default function NoteDetailPage() {
   // Check if AI features should be available
   // AI is available if: LLM features enabled AND (user is authenticated OR unauthenticated AI is allowed)
   const aiAvailable =
-    config.llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI);
+    llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI);
 
   const [note, setNote] = useState<Note | null>(null);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
@@ -364,12 +366,12 @@ export default function NoteDetailPage() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && !aiPanelOpen && (
+      {llmFeaturesEnabled && !aiPanelOpen && (
         <AIButton onClick={() => setAiPanelOpen(true)} />
       )}
 
@@ -677,7 +679,7 @@ export default function NoteDetailPage() {
       )}
 
       {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <PostSaveAISuggestions
           noteId={noteId}
           isOpen={showPostSaveSuggestions}

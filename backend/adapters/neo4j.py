@@ -777,6 +777,43 @@ class Neo4jAdapter:
             record = result.single()
             return record["count"] if record else 0
 
+    def get_feature_flags(self) -> dict[str, bool]:
+        """Get all persisted feature flags.
+
+        Returns:
+            Mapping of flag name to enabled state (empty if unavailable)
+        """
+        if not self._available or not self.driver:
+            return {}
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run("MATCH (f:FeatureFlag) RETURN f.name AS name, f.enabled AS enabled")
+            return {record["name"]: bool(record["enabled"]) for record in result}
+
+    def set_feature_flag(self, name: str, enabled: bool) -> bool:
+        """Persist a feature flag value (upsert).
+
+        Args:
+            name: Flag name
+            enabled: Whether the flag is enabled
+
+        Returns:
+            True if persisted, False if Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                """
+                MERGE (f:FeatureFlag {name: $name})
+                SET f.enabled = $enabled, f.updated_at = datetime()
+                """,
+                name=name,
+                enabled=enabled,
+            )
+            return True
+
     def get_all_note_ids(self) -> set[str]:
         """Get all note IDs (for collision detection).
 

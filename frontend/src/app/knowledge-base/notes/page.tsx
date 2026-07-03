@@ -12,12 +12,13 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
-import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
 
 function NotesContent() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagsParam = searchParams.get("tags");
@@ -221,12 +222,12 @@ function NotesContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && !aiPanelOpen && (
+      {llmFeaturesEnabled && !aiPanelOpen && (
         <AIButton onClick={() => setAiPanelOpen(true)} />
       )}
 

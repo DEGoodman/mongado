@@ -11,7 +11,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
 import { logger } from "@/lib/logger";
-import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { sanitizeHtml } from "@/lib/sanitize";
 import styles from "./page.module.scss";
 
@@ -37,6 +37,7 @@ interface RelatedNote {
 }
 
 export default function ArticleDetailPage() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const params = useParams();
   const router = useRouter();
   const articleId = parseInt(params.id as string);
@@ -136,12 +137,12 @@ export default function ArticleDetailPage() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && !aiPanelOpen && (
+      {llmFeaturesEnabled && !aiPanelOpen && (
         <AIButton onClick={() => setAiPanelOpen(true)} />
       )}
 

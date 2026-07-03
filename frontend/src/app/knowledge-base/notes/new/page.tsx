@@ -15,10 +15,12 @@ import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
 import styles from "./page.module.scss";
 
 function NewNoteContent() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { settings } = useSettings();
@@ -58,9 +60,9 @@ function NewNoteContent() {
   // Check authentication status after hydration (client-side only)
   useEffect(() => {
     setAiAvailable(
-      config.llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI)
+      llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI)
     );
-  }, []);
+  }, [llmFeaturesEnabled]);
 
   // Load draft from localStorage on mount, or pre-fill from URL params (e.g., from article)
   useEffect(() => {
@@ -346,12 +348,12 @@ function NewNoteContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && !aiPanelOpen && (
+      {llmFeaturesEnabled && !aiPanelOpen && (
         <AIButton onClick={() => setAiPanelOpen(true)} />
       )}
 
@@ -673,7 +675,7 @@ function NewNoteContent() {
       )}
 
       {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && savedNoteId && (
+      {llmFeaturesEnabled && savedNoteId && (
         <PostSaveAISuggestions
           noteId={savedNoteId}
           isOpen={showPostSaveSuggestions}

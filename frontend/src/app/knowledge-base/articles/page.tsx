@@ -10,7 +10,7 @@ import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
-import { config } from "@/lib/config";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import styles from "./page.module.scss";
 
 interface ArticleMetadata {
@@ -28,6 +28,7 @@ interface ArticleMetadata {
 type SortOption = "newest" | "oldest" | "recently-updated" | "alphabetical";
 
 function ArticlesContent() {
+  const { llmFeaturesEnabled } = useFeatureFlags();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagsParam = searchParams.get("tags");
@@ -156,12 +157,12 @@ function ArticlesContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && (
+      {llmFeaturesEnabled && (
         <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {config.llmFeaturesEnabled && !aiPanelOpen && (
+      {llmFeaturesEnabled && !aiPanelOpen && (
         <AIButton onClick={() => setAiPanelOpen(true)} />
       )}
 

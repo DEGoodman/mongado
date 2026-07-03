@@ -21,6 +21,7 @@ from adapters.neo4j import get_neo4j_adapter
 from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from dependencies import get_neo4j, get_ollama, set_static_articles, set_user_resources
+from feature_flags import get_feature_flags, require_llm_features
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
 from models import (
@@ -33,6 +34,7 @@ from models import (
 from notes_service import get_notes_service
 from rate_limiter import RATE_LIMITS, limiter
 from routers.admin import create_admin_router
+from routers.ai import router as ai_router
 from routers.articles import router as articles_router
 from routers.inspire import router as inspire_router
 from routers.notes import router as notes_router
@@ -49,16 +51,8 @@ secret_manager: SecretManager = get_secret_manager()
 neo4j_adapter = get_neo4j_adapter()
 notes_service = get_notes_service()
 
-# Only initialize Ollama when LLM features are enabled
-if settings.llm_features_enabled:
-    from embedding_sync import sync_embeddings_on_startup
-    from ollama_client import get_ollama_client
-    from routers.ai import router as ai_router
-
-    ollama_client = get_ollama_client()
-else:
-    ollama_client = None
-    logger.info("LLM features disabled (LLM_FEATURES_ENABLED=false)")
+# LLM features are gated at runtime via feature flags (see feature_flags.py).
+# The Ollama client is created lazily on first use (dependencies.get_ollama).
 
 # Static articles (loaded from files/S3, read-only)
 static_articles: list[dict[str, Any]] = []
@@ -76,10 +70,12 @@ async def _sync_embeddings_background() -> None:
     global _embedding_sync_ready
 
     try:
+        from embedding_sync import sync_embeddings_on_startup
+
         # Run the sync in a thread pool (it's blocking I/O)
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
-            None, sync_embeddings_on_startup, static_articles, ollama_client, neo4j_adapter
+            None, sync_embeddings_on_startup, static_articles, get_ollama(), neo4j_adapter
         )
         _embedding_sync_ready = True
         logger.info("Background embedding sync completed - app is fully ready")
@@ -135,8 +131,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     _auto_seed_notes_if_empty()
 
     # Conditionally start embedding sync in background (non-blocking)
-    if not settings.llm_features_enabled:
-        logger.info("Skipping embedding sync (LLM_FEATURES_ENABLED=false)")
+    if not get_feature_flags().is_enabled("llm_features"):
+        logger.info("Skipping embedding sync (llm_features flag disabled)")
         _embedding_sync_ready = True
     elif settings.sync_embeddings_on_startup:
         logger.info("Starting background embedding sync (SYNC_EMBEDDINGS_ON_STARTUP=true)...")
@@ -287,8 +283,8 @@ app.add_middleware(CacheControlMiddleware)
 
 # Create and include domain routers
 # AI, Notes, Search, and Articles routers use FastAPI Depends() - no factory needed
-if settings.llm_features_enabled:
-    app.include_router(ai_router)
+# AI endpoints return 503 when the llm_features flag is disabled
+app.include_router(ai_router, dependencies=[Depends(require_llm_features)])
 app.include_router(inspire_router)
 app.include_router(notes_router)
 app.include_router(search_router)
@@ -332,7 +328,7 @@ def read_root() -> StatusResponse:
         message=settings.app_name,
         version=settings.app_version,
         onepassword_enabled=secret_manager.is_available(),
-        llm_features_enabled=settings.llm_features_enabled,
+        llm_features_enabled=get_feature_flags().is_enabled("llm_features"),
     )
 
 
@@ -523,9 +519,11 @@ def trigger_embedding_sync(
 
     Requires authentication via Bearer token in Authorization header.
     """
-    if not settings.llm_features_enabled:
+    if not get_feature_flags().is_enabled("llm_features"):
         return EmbeddingSyncResponse(
-            success=False, message="LLM features are disabled (LLM_FEATURES_ENABLED=false)", stats=None
+            success=False,
+            message="LLM features are disabled (enable via /api/admin/feature-flags)",
+            stats=None,
         )
 
     if not neo4j.is_available():
