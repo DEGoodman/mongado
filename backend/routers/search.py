@@ -206,8 +206,9 @@ def search_resources(
     # Semantic mode: Use Ollama for AI-powered search (opt-in)
     logger.info("Using semantic search via Ollama (corpus size: %d)", len(all_resources))
 
-    # Check if Ollama is available
-    if not ollama.is_available():
+    # Semantic search needs Ollama for the query embedding regardless of
+    # which backend serves generation (llm_use_api flag)
+    if not ollama.embeddings_available():
         logger.warning("Ollama not available, falling back to text search with fuzzy matching")
         query_lower = search_request.query.lower()
 

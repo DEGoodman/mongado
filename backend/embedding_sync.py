@@ -221,7 +221,7 @@ def sync_embeddings(
             "embeddings_cached": 0,
         }
 
-    if not ollama_client.is_available():
+    if not ollama_client.embeddings_available():
         logger.warning("Ollama not available - skipping embedding sync")
         return {
             "articles_processed": 0,

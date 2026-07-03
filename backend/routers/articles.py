@@ -180,8 +180,9 @@ def get_related_notes(
     if not notes_with_embeddings:
         return {"notes": [], "count": 0}
 
-    # Check if Ollama is available for generating article embedding
-    if not ollama.is_available():
+    # Related-notes search needs Ollama to embed the article, regardless of
+    # which backend serves generation
+    if not ollama.embeddings_available():
         logger.warning("Ollama not available for semantic search")
         return {"notes": [], "count": 0}
 
