@@ -3,9 +3,9 @@
  * Base styles, CSS reset, and typography for the retro-modern UI
  */
 
-@use 'design-tokens' as *;
-@use 'mixins' as *;
-@use 'utilities';
+@use "design-tokens" as *;
+@use "mixins" as *;
+@use "utilities";
 
 // ===== CSS RESET =====
 *,
@@ -31,6 +31,9 @@ body {
   color: $color-text-primary;
   background-color: $color-bg-canvas;
   min-height: 100vh;
+  // Guardrail: a single overflowing element must not make the whole page
+  // pannable on mobile (clip, unlike hidden, keeps position:sticky working)
+  overflow-x: clip;
 }
 
 // ===== HEADINGS =====

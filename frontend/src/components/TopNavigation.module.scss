@@ -3,8 +3,8 @@
  * Persistent navigation bar for Knowledge Base section
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .topNav {
   position: sticky;
@@ -146,21 +146,42 @@
   }
 }
 
+// Small screens: two-row layout. Row 1: logo + actions, row 2: section links.
+// Everything fits the viewport - no horizontal page scroll (issue #195).
 @media (max-width: 640px) {
   .container {
-    height: 56px;
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: $spacing-2;
+    row-gap: 0;
+  }
+
+  .left {
+    flex: 1;
+    min-width: 0;
   }
 
   .logoText {
     font-size: 1.125rem;
   }
 
+  .right {
+    flex-shrink: 0;
+  }
+
   .center {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
     gap: 0;
+    padding: $spacing-1 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .navLink {
     padding: $spacing-2 $spacing-2;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
   }
 }

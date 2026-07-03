@@ -3,12 +3,16 @@
  * Matches production Tailwind design with blue theme
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
 }
 
 // ===== LOADING STATE =====
@@ -38,7 +42,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -87,11 +92,13 @@
   // Slightly bluer at top, more transparent at bottom for badge visibility
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,              // Bluer, more saturated top
-    $slate-blue-100 50%,             // Transition to lighter
-    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+    $slate-blue-200 0%,
+    // Bluer, more saturated top
+    $slate-blue-100 50%,
+    // Transition to lighter
+    rgba($slate-blue-50, 0.7) 100% // More transparent bottom
   );
-  border-bottom: 1px solid $slate-blue-300;  // Refined 1px border
+  border-bottom: 1px solid $slate-blue-300; // Refined 1px border
   box-shadow: $shadow-card-sm;
   padding-top: $spacing-3;
   padding-bottom: $spacing-3;
@@ -234,6 +241,8 @@
 }
 
 .articleContent {
+  min-width: 0; // let wide markdown (code, tables) shrink instead of widening the grid track
+
   @media (min-width: 1024px) {
     grid-column: span 3;
   }
@@ -279,6 +288,8 @@
 }
 
 .tocSidebar {
+  min-width: 0;
+
   @media (min-width: 1024px) {
     grid-column: span 1;
   }
@@ -356,7 +367,12 @@
   line-height: $line-height-relaxed;
 
   // === TYPOGRAPHY ===
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: $color-text-heading;
     font-weight: $font-weight-semibold;
     margin-top: $spacing-6;
@@ -364,17 +380,26 @@
     letter-spacing: $letter-spacing-wide;
   }
 
-  h1 { font-size: $heading-h1-size; }
-  h2 { font-size: $heading-h2-size; }
-  h3 { font-size: $heading-h3-size; }
-  h4 { font-size: $heading-h4-size; }
+  h1 {
+    font-size: $heading-h1-size;
+  }
+  h2 {
+    font-size: $heading-h2-size;
+  }
+  h3 {
+    font-size: $heading-h3-size;
+  }
+  h4 {
+    font-size: $heading-h4-size;
+  }
 
   p {
     margin-top: $spacing-3;
     margin-bottom: $spacing-3;
   }
 
-  ul, ol {
+  ul,
+  ol {
     margin-top: $spacing-3;
     margin-bottom: $spacing-3;
     padding-left: $spacing-6;
@@ -446,7 +471,8 @@
     overflow-x: auto;
   }
 
-  th, td {
+  th,
+  td {
     padding: $spacing-2 $spacing-3;
     border: $border-default;
     text-align: left;
