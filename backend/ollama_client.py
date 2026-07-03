@@ -1,6 +1,7 @@
 """Ollama integration for AI-powered features."""
 
 import logging
+from collections.abc import Generator
 from typing import Any
 
 from config import get_settings
@@ -135,6 +136,71 @@ class OllamaClient:
         except Exception as e:
             logger.error("Failed to generate embedding: %s", e)
             return None
+
+    def _model_for_role(self, role: str) -> str:
+        """Map a generation role to the configured Ollama model."""
+        return self.structured_model if role == "structured" else self.chat_model
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        role: str = "chat",
+        num_ctx: int | None = None,
+        max_tokens: int | None = None,
+    ) -> str | None:
+        """Generate a completion using the model configured for the role.
+
+        Args:
+            prompt: The full prompt text
+            role: "chat" (llama) or "structured" (qwen, reliable JSON)
+            num_ctx: Context window size (defaults to configured num_ctx)
+            max_tokens: Response length cap (Ollama num_predict)
+
+        Returns:
+            Generated text, or None if unavailable or failed
+        """
+        if not self.is_available() or self.client is None:
+            logger.debug("Ollama not available, cannot generate")
+            return None
+
+        options: dict[str, int] = {"num_ctx": num_ctx or self.num_ctx}
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+
+        try:
+            response = self.client.generate(
+                model=self._model_for_role(role), prompt=prompt, options=options
+            )
+            text: str = response.get("response", "")
+            return text
+        except Exception as e:
+            logger.error("Failed to generate completion: %s", e)
+            return None
+
+    def generate_stream(
+        self,
+        prompt: str,
+        *,
+        role: str = "chat",
+        num_ctx: int | None = None,
+        max_tokens: int | None = None,
+    ) -> Generator[str]:
+        """Stream a completion as text chunks (see generate for args)."""
+        if not self.is_available() or self.client is None:
+            logger.debug("Ollama not available, cannot stream")
+            return
+
+        options: dict[str, int] = {"num_ctx": num_ctx or self.num_ctx}
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+
+        for chunk in self.client.generate(
+            model=self._model_for_role(role), prompt=prompt, options=options, stream=True
+        ):
+            text = chunk.get("response")
+            if text:
+                yield text
 
     def semantic_search_with_precomputed_embeddings(
         self, query: str, documents_with_embeddings: list[dict[str, Any]], top_k: int = 5

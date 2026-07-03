@@ -35,6 +35,15 @@ def _flag_definitions() -> dict[str, FlagDefinition]:
             description="AI/LLM features: semantic search, Q&A, summaries, link suggestions",
             default=settings.llm_features_enabled,
         ),
+        FlagDefinition(
+            name="llm_use_api",
+            description=(
+                "Route AI generation to hosted APIs (Groq primary, Gemini fallback) "
+                "instead of local Ollama. Requires GROQ_API_KEY/GEMINI_API_KEY; "
+                "without keys this flag has no effect. Embeddings stay on Ollama."
+            ),
+            default=settings.llm_use_api,
+        ),
     ]
     return {d.name: d for d in definitions}
 

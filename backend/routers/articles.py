@@ -272,14 +272,10 @@ Example: [{{"concept": "DORA metrics", "excerpt": "Four key metrics...", "confid
 JSON:"""
 
     try:
-        # Use qwen2.5:1.5b for structured output
-        response_data = ollama.client.generate(
-            model="qwen2.5:1.5b", prompt=prompt, options={"num_ctx": 8192}
-        )
-
-        response = response_data.get("response", "")
+        # Use the structured-output role for reliable JSON
+        response = ollama.generate(prompt, role="structured", num_ctx=8192)
         if not response:
-            logger.error("Empty response from Ollama for concept extraction")
+            logger.error("Empty response from LLM for concept extraction")
             return ConceptExtractionResponse(concepts=[], count=0)
 
         # Defensive JSON parsing (same pattern as other endpoints)

@@ -73,7 +73,7 @@ def get_suggestions(
     suggestions: list[dict[str, Any]] = []
     has_llm = False
 
-    if ollama.is_available() and ollama.client and (gap_notes or connection_opportunities):
+    if ollama.is_available() and (gap_notes or connection_opportunities):
         try:
             # Build prompt for LLM
             prompt = inspire_core.build_inspiration_prompt(
@@ -82,13 +82,10 @@ def get_suggestions(
             )
 
             # Generate suggestions
-            response_data = ollama.client.generate(
-                model=ollama.structured_model,
-                prompt=prompt,
-                options={"num_ctx": 4096, "num_predict": 1024},
+            response_text = ollama.generate(
+                prompt, role="structured", num_ctx=4096, max_tokens=1024
             )
 
-            response_text = response_data.get("response", "")
             if response_text:
                 parsed = inspire_core.parse_inspiration_response(response_text)
                 if parsed:

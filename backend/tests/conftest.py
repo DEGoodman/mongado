@@ -130,6 +130,33 @@ class MockOllamaClient:
         preview = content[:100] + "..." if len(content) > 100 else content
         return f"This is a mock summary of the article: {preview}"
 
+    def generate(
+        self,
+        prompt: str,
+        *,
+        role: str = "chat",
+        num_ctx: int | None = None,
+        max_tokens: int | None = None,
+    ) -> str | None:
+        """Mock generation (same JSON payload as the raw client mock)."""
+        if not self._available:
+            return None
+        return '[{"tag": "mock-tag", "confidence": 0.8, "reason": "mock reason"}]'
+
+    def generate_stream(
+        self,
+        prompt: str,
+        *,
+        role: str = "chat",
+        num_ctx: int | None = None,
+        max_tokens: int | None = None,
+    ) -> Generator[str]:
+        """Mock streaming generation yielding text chunks."""
+        if not self._available:
+            return
+        response = self.generate(prompt, role=role) or ""
+        yield from response
+
     def warmup(self, context: str = "chat") -> tuple[bool, str]:
         """Mock model warmup."""
         if not self._available:
