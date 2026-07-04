@@ -48,7 +48,11 @@ export default function ThemeToggle() {
       title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
     >
       {/* Render both and pick via CSS-free state to avoid hydration mismatch */}
-      {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+      {theme === "dark" ? (
+        <Sun size={18} aria-hidden="true" />
+      ) : (
+        <Moon size={18} aria-hidden="true" />
+      )}
     </button>
   );
 }
