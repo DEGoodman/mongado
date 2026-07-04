@@ -73,8 +73,8 @@
   }
 
   &.active {
-    background-color: $blue-50;
-    color: $blue-700;
+    background-color: $orange-50;
+    color: $orange-700;
     font-weight: 600;
   }
 }
@@ -111,7 +111,9 @@
 }
 
 .searchIcon {
-  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-tertiary;
 }
 
 .searchLabel {

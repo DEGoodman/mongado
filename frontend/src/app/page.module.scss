@@ -1,6 +1,6 @@
 /**
  * Home Page Styles
- * Matches production Tailwind design
+ * Grounded typographic hero on the warm grey page - no card, no gradient.
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,180 +8,158 @@
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $blue-50 0%, $white 50%, $indigo-50 100%);
+  background-color: $color-page-bg;
+}
+
+.themeCorner {
+  position: absolute;
+  top: $spacing-4;
+  right: $spacing-4;
 }
 
 .main {
   @include container;
-  padding-top: $spacing-8; // Reduced from 48px to 32px
-  padding-bottom: $spacing-6; // Reduced from 48px to 24px
+  max-width: 52rem;
+  padding-top: $spacing-16;
+  padding-bottom: $spacing-8;
 
-  @media (min-width: 768px) {
-    padding-top: $spacing-8; // Reduced from 64px to 32px
-    padding-bottom: $spacing-8; // Reduced from 64px to 32px
+  @media (max-width: 640px) {
+    // Clear the theme toggle pinned to the top-right corner
+    padding-top: $spacing-16;
   }
 }
 
 // ===== HERO SECTION =====
-.heroCard {
-  @include card-elevated;
-  margin-bottom: $spacing-6; // Reduced from 32px to 24px
-  text-align: center;
-  background-color: $color-surface-elevated;
+.hero {
+  margin-bottom: $spacing-16;
 
-  .header {
-    margin-bottom: $spacing-6; // Reduced from 32px to 24px
+  .eyebrow {
+    @include text-label-mono;
+    color: $color-link-hover;
+    margin-bottom: $spacing-3;
+  }
 
-    .title {
-      @include heading-h1;
-      margin-bottom: $spacing-3; // Reduced from 16px to 12px (tighter gap)
-      color: $neutral-900;
-      font-size: clamp(2.5rem, 5vw, 3rem); // Slightly smaller: 40-48px instead of 48-60px
-    }
+  .title {
+    @include heading-h1;
+    color: $neutral-900;
+    font-size: clamp(2.75rem, 7vw, 4rem);
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+  }
 
-    .subtitle {
-      font-size: $font-size-lg; // Reduced from xl (18px) to lg (16px)
-      color: $color-text-secondary;
-      margin-bottom: $spacing-2; // Keep 8px gap
-    }
-
-    .location {
-      font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
-      color: $color-text-tertiary;
-    }
+  .rule {
+    width: 4rem;
+    height: 3px;
+    background-color: $color-interactive-primary;
+    margin: $spacing-6 0;
   }
 
   .bio {
-    max-width: 48rem;
-    margin: 0 auto $spacing-6; // Reduced from 32px to 24px
-    font-size: $font-size-base; // Reduced from lg (16px) to base (14px)
-    line-height: $line-height-relaxed; // 1.6 (already optimized)
+    max-width: 40rem;
+    font-size: $font-size-lg;
+    line-height: $line-height-relaxed;
     color: $color-text-secondary;
-  }
-
-  .socialLinks {
-    @include cluster($spacing-3); // Reduced gap from 16px to 12px
-    justify-content: center;
-    margin-top: $spacing-6; // Reduced from 32px to 24px
+    margin: 0 0 $spacing-6;
   }
 }
 
-// ===== SOCIAL LINK BUTTONS =====
-.socialLink {
-  @include flex-center;
-  gap: $spacing-2;
-  padding: $spacing-3 $spacing-6;
-  border-radius: $border-radius-button;
-  font-weight: $font-weight-semibold;
-  text-decoration: none;
-  box-shadow: $shadow-button;
-  transition: all 0.2s ease;
+// ===== SOCIAL LINKS (quiet mono text links) =====
+.socialLinks {
+  @include cluster($spacing-6);
 
-  svg {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  &:hover {
-    box-shadow: $shadow-button-hover;
-    transform: translateY(-1px);
-  }
-
-  &.github {
-    background-color: $color-social-github-bg;
-    color: $color-social-github-text;
+  a {
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+    letter-spacing: $letter-spacing-wide;
+    color: $color-link-hover;
+    text-decoration: none;
+    border-bottom: 1px solid $orange-300;
+    padding-bottom: 2px;
+    transition: color 0.2s ease, border-color 0.2s ease;
 
     &:hover {
-      background-color: $color-social-github-bg-hover;
+      color: $color-link-active;
+      border-color: $color-link-hover;
     }
-  }
 
-  &.linkedin {
-    background-color: $color-social-linkedin-bg;
-    color: $color-social-linkedin-text;
-
-    &:hover {
-      background-color: $color-social-linkedin-bg-hover;
-    }
-  }
-
-  &.email {
-    background-color: $color-social-email-bg;
-    color: $color-social-email-text;
-    border: $border-default;
-
-    &:hover {
-      background-color: $color-social-email-bg-hover;
+    &:focus-visible {
+      outline: 2px solid $color-interactive-primary-focus;
+      outline-offset: 3px;
+      border-radius: 2px;
     }
   }
 }
 
 // ===== KNOWLEDGE BASE SECTION =====
 .kbSection {
-  @include card-elevated;
-  margin-bottom: $spacing-6; // Reduced from 32px to 24px
-  background: linear-gradient(to bottom right, $orange-50 0%, $white 50%, $gray-50 100%);
+  border-top: 1px solid $color-border-default;
+  padding-top: $spacing-10;
+  margin-bottom: $spacing-12;
 
-  .kbIcon {
-    font-size: 2.5rem; // Reduced from 3rem (48px) to 2.5rem (40px)
-    margin-bottom: $spacing-4; // Reduced from 24px to 16px
-    line-height: 1;
+  .kbEyebrow {
+    @include text-label-mono;
+    margin-bottom: $spacing-3;
   }
 
   .kbTitle {
     @include heading-h2;
-    margin-bottom: $spacing-4; // Reduced from 24px to 16px (tighter gap)
     color: $neutral-900;
+    margin-bottom: $spacing-4;
+    text-wrap: balance;
   }
 
   .kbDescription {
-    max-width: 56rem;
-    margin: 0 auto $spacing-6; // Reduced from 32px to 24px
-    font-size: $font-size-base; // Reduced from lg (16px) to base (14px)
-    line-height: $line-height-relaxed; // 1.6 (already optimized)
+    max-width: 40rem;
+    font-size: $font-size-base;
+    line-height: $line-height-relaxed;
     color: $color-text-secondary;
-  }
-
-  .kbButtonContainer {
-    display: flex;
-    justify-content: center;
+    margin: 0 0 $spacing-6;
   }
 
   .kbButton {
-    @include flex-center;
+    display: inline-flex;
+    align-items: center;
     gap: $spacing-2;
-    padding: $spacing-3 $spacing-6; // Reduced from spacing-4/8 (16/32px) to spacing-3/6 (12/24px)
+    padding: $spacing-3 $spacing-6;
     border-radius: $border-radius-button;
-    font-size: $font-size-base; // Reduced from lg (16px) to base (14px)
+    font-size: $font-size-base;
     font-weight: $font-weight-semibold;
     text-decoration: none;
-    color: white;
-    background: linear-gradient(to right, $orange-500, $orange-600);
-    box-shadow: $shadow-card-md;
-    transition: all 0.2s ease;
-
-    svg {
-      width: 1.125rem; // Reduced from 1.25rem
-      height: 1.125rem;
-    }
+    color: $color-interactive-primary-text;
+    background-color: $color-interactive-primary;
+    box-shadow: $shadow-button;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 
     &:hover {
-      background: linear-gradient(to right, $orange-600, $orange-700);
-      box-shadow: $shadow-card-lg;
-      transform: translateY(-2px);
+      background-color: $color-interactive-primary-hover;
+      box-shadow: $shadow-button-hover;
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-interactive-primary-focus;
+      outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+
+      &:hover {
+        transform: none;
+      }
     }
   }
 }
 
 // ===== OTHER SECTIONS =====
 .projectsLink {
-  text-align: center;
-  margin-bottom: $spacing-6; // Reduced from 32px to 24px
+  margin-bottom: $spacing-8;
 
   a {
     @include link-default;
     color: $color-text-secondary;
-    font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
+    font-size: $font-size-sm;
 
     &:hover {
       color: $color-primary;
@@ -190,9 +168,9 @@
 }
 
 .footer {
-  margin-top: $spacing-8; // Reduced from 48px to 32px
-  padding: $spacing-6 0; // Reduced padding from implicit spacing
-  text-align: center;
+  margin-top: $spacing-8;
+  padding: $spacing-6 0;
+  border-top: 1px solid $color-border-default;
   @include text-secondary;
 
   p {
@@ -200,6 +178,7 @@
   }
 
   .copyright {
+    font-family: $font-family-mono;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
     margin-top: $spacing-2;

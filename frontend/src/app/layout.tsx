@@ -52,7 +52,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${spaceMono.variable}`}
+      // The theme script below sets data-theme before hydration; the
+      // attribute intentionally differs from the server-rendered HTML.
+      suppressHydrationWarning
+    >
+      <head>
+        {/* Apply the stored theme choice before first paint (no flash). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light"){document.documentElement.dataset.theme=t;}}catch(e){}`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

@@ -137,3 +137,20 @@
   font-size: 0.9em;
   letter-spacing: $letter-spacing-tight;
 }
+
+// Metadata voice: dates, eyebrows, reading time, tag labels, note IDs.
+// Space Mono is the site's "terminal layer" - use this for every
+// machine-ish fact that sits next to human prose.
+@mixin text-meta-mono {
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  letter-spacing: $letter-spacing-wide;
+  color: $color-text-tertiary;
+}
+
+// Uppercase variant for eyebrows and category labels (ART / NOTE / REF).
+@mixin text-label-mono {
+  @include text-meta-mono;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wider;
+}

@@ -163,11 +163,11 @@
   // Cool slate blue header zone (consistent across KB)
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,              // Bluer, more saturated top
-    $slate-blue-100 50%,             // Transition to lighter
-    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $slate-blue-300;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
 
   .headerContent {

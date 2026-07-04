@@ -146,7 +146,7 @@ export default function KnowledgeBasePage() {
       <main className={styles.main}>
         {/* Search Section */}
         <div className={styles.searchSection}>
-          <h2 className={styles.searchTitle}>🔍 Search Everything</h2>
+          <h2 className={styles.searchTitle}>Search everything</h2>
           <form onSubmit={handleSearch} className={styles.searchForm}>
             <div className={styles.searchRow}>
               <input
@@ -199,7 +199,7 @@ export default function KnowledgeBasePage() {
                   >
                     <div className={styles.resultMeta}>
                       <span className={styles.resultType}>
-                        {result.type === "article" ? "📚 Article" : "📝 Note"}
+                        {result.type === "article" ? "ART" : "NOTE"}
                       </span>
                       <span className={styles.resultScore}>Score: {result.score.toFixed(1)}</span>
                     </div>
@@ -272,7 +272,7 @@ export default function KnowledgeBasePage() {
           {/* Toolbox Card */}
           <div className={`${styles.contentCard} ${styles.toolbox}`}>
             <div className={styles.cardBadge}>
-              <span className={styles.toolboxBadge}>Reference</span>
+              <span className={styles.toolboxBadge}>REF</span>
             </div>
             <h3 className={styles.cardTitle}>Toolbox</h3>
             <p className={styles.cardDescription}>
@@ -292,7 +292,7 @@ export default function KnowledgeBasePage() {
 
         {/* Info Section */}
         <div className={styles.infoSection}>
-          <h3 className={styles.infoTitle}>💡 How to Use</h3>
+          <h3 className={styles.infoTitle}>How to use</h3>
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}>
               <strong>Articles</strong> are long-form, polished content for deep exploration of

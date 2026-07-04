@@ -16,11 +16,11 @@
   // Cool slate blue header zone (consistent across KB)
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,              // Bluer, more saturated top
-    $slate-blue-100 50%,             // Transition to lighter
-    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $slate-blue-300;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
 
   .headerContent {
@@ -91,7 +91,7 @@
     &:focus {
       outline: none;
       border-color: $color-input-border-focus;
-      box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+      box-shadow: $shadow-focus-primary;
     }
 
     &::placeholder {
@@ -125,11 +125,11 @@
     &:focus {
       outline: none;
       border-color: $color-input-border-focus;
-      box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+      box-shadow: $shadow-focus-primary;
     }
 
     &:hover {
-      border-color: $blue-300;
+      border-color: $color-border-hover;
     }
   }
 }
@@ -176,13 +176,15 @@
       }
 
       &.tagBadgeActive {
-        background-color: $blue-500;
-        border-color: $blue-600;
+        // Selected = interactive, so it takes the orange accent.
+        // orange-700 keeps white text at >4.5:1 contrast.
+        background-color: $orange-700;
+        border-color: $orange-800;
         color: $white;
 
         &:hover {
-          background-color: $blue-600;
-          border-color: $blue-700;
+          background-color: $orange-800;
+          border-color: $orange-900;
         }
       }
 
@@ -208,13 +210,13 @@
   .showMoreButton {
     margin-top: $spacing-3;
     @include text-secondary;
-    color: $blue-600;
+    color: $color-link-default;
     cursor: pointer;
     font-weight: $font-weight-medium;
     transition: all 0.2s ease;
 
     &:hover {
-      color: $blue-800;
+      color: $color-link-hover;
       text-decoration: underline;
     }
   }
@@ -225,18 +227,18 @@
   width: 100%;
   padding: $spacing-3 $spacing-4;
   background-color: $white;
-  border: $border-width-thin solid $blue-300;
+  border: $border-width-thin solid $orange-300;
   border-radius: $border-radius-button;
   @include text-secondary;
-  color: $blue-600;
+  color: $color-link-default;
   font-weight: $font-weight-medium;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: $blue-50;
-    border-color: $blue-400;
-    color: $blue-700;
+    background-color: $orange-50;
+    border-color: $orange-400;
+    color: $color-link-hover;
   }
 }
 
@@ -288,7 +290,7 @@
 
   .clearSearchButton {
     @include text-secondary;
-    color: $blue-600;
+    color: $color-link-default;
     cursor: pointer;
     text-decoration: none;
 
@@ -308,7 +310,7 @@
 
   &:hover {
     .articleTitle {
-      color: $blue-600;
+      color: $color-link-default;
     }
   }
 
@@ -329,7 +331,7 @@
     }
 
     .articleMeta {
-      @include text-secondary;
+      @include text-meta-mono;
     }
   }
 
@@ -348,17 +350,13 @@
     margin-top: $spacing-4;
     @include text-secondary;
     font-weight: $font-weight-medium;
-    color: $blue-600;
+    color: $color-link-default;
   }
 }
 
 // Draft article styling
 .draftCard {
-  background: linear-gradient(
-    to bottom right,
-    rgba($neutral-100, 0.5),
-    rgba($neutral-50, 0.3)
-  );
+  background-color: $color-surface-tertiary;
   border-left: 3px solid $neutral-400;
 }
 

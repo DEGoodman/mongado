@@ -23,28 +23,29 @@
 }
 
 // Wikilink styling (for note links)
+// Note links are the interactive accent: orange, in the mono metadata voice.
 .wikilink {
   display: inline-block;
   padding: 0 $spacing-1;
   border-radius: $border-radius-sm;
   @include text-secondary;
-  background-color: $blue-50;
-  color: $blue-600;
+  background-color: $color-interactive-primary-bg-subtle;
+  color: $color-link-hover;
   text-decoration: none;
-  font-family: monospace;
+  font-family: $font-family-mono;
 
   &:hover {
     text-decoration: underline;
   }
 }
 
-// Article link styling (distinct from note links)
+// Article link styling (distinct from note links: slate, body face)
 .articleLink {
-  background-color: $green-50;
-  color: $green-700;
+  background-color: $slate-blue-50;
+  color: $slate-blue-700;
   font-family: inherit; // Use regular font, not monospace
 
   &:hover {
-    background-color: $green-100;
+    background-color: $slate-blue-100;
   }
 }

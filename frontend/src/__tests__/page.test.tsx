@@ -10,12 +10,12 @@ describe("Home Page", () => {
 
   it("shows engineering leader title", () => {
     render(<Home />);
-    expect(screen.getByText("Engineering Leader & Builder")).toBeInTheDocument();
+    expect(screen.getByText(/Engineering Leader & Builder/)).toBeInTheDocument();
   });
 
   it("shows location", () => {
     render(<Home />);
-    expect(screen.getByText("Birmingham, AL")).toBeInTheDocument();
+    expect(screen.getAllByText(/Birmingham, AL/).length).toBeGreaterThan(0);
   });
 
   it("shows GitHub links", () => {

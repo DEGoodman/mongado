@@ -71,10 +71,7 @@ export default function NoteOfDay() {
   return (
     <div className={`${styles.noteOfDay} ${is_stale ? styles.stale : ""}`}>
       <div className={styles.header}>
-        <span className={styles.icon} aria-hidden="true">
-          {is_stale ? "🕰️" : "💡"}
-        </span>
-        <h3 className={styles.title}>{is_stale ? "Note to Revisit" : "Note of the Day"}</h3>
+        <h3 className={styles.title}>{is_stale ? "Note to revisit" : "Note of the day"}</h3>
         {is_stale && <span className={styles.staleBadge}>Needs Review</span>}
       </div>
 

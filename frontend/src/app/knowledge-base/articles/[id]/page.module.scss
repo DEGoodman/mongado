@@ -168,10 +168,11 @@
     .metadata {
       margin-bottom: $spacing-4;
       @include stack($spacing-1);
-      @include text-secondary;
+      @include text-meta-mono;
+      font-size: $font-size-sm;
 
       @media (max-width: 640px) {
-        font-size: $font-size-sm;
+        font-size: $font-size-xs;
       }
 
       .metaItem {

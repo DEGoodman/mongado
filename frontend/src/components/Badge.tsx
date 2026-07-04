@@ -1,7 +1,7 @@
 /**
  * Badge component for indicating content type
  * Used to distinguish between Articles (read-only) and Notes (editable)
- * Migrated to CSS Modules with retro-modern color scheme
+ * Uppercase mono labels - category identity via typography, not hue.
  */
 
 import styles from "./Badge.module.scss";
@@ -14,16 +14,16 @@ interface BadgeProps {
 export default function Badge({ type, className = "" }: BadgeProps) {
   const config = {
     article: {
-      icon: "📚",
       label: "Article",
+      short: "ART",
     },
     note: {
-      icon: "📝",
       label: "Note",
+      short: "NOTE",
     },
   };
 
-  const { icon, label } = config[type];
+  const { label, short } = config[type];
 
   return (
     <span
@@ -32,10 +32,7 @@ export default function Badge({ type, className = "" }: BadgeProps) {
       role="status"
       aria-label={`Content type: ${label}`}
     >
-      <span className={styles.icon} aria-hidden="true">
-        {icon}
-      </span>
-      {label}
+      {short}
     </span>
   );
 }
