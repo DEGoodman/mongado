@@ -36,7 +36,8 @@
   }
 
   .icon {
-    font-size: $font-size-base;
+    display: inline-flex;
+    align-items: center;
     line-height: 1;
   }
 
@@ -115,7 +116,7 @@
   @include transition-default;
 
   &:hover {
-    background-color: $blue-50;
+    background-color: $color-surface-hover;
   }
 
   &:not(:last-child) {

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { TemplateMetadata } from "@/lib/api/templates";
+import { FileText } from "@phosphor-icons/react";
 import styles from "./TemplateSelector.module.scss";
 
 interface TemplateSelectorProps {
@@ -67,7 +68,9 @@ export default function TemplateSelector({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span className={styles.icon}>📄</span>
+        <span className={styles.icon} aria-hidden="true">
+          <FileText size={18} />
+        </span>
         <span className={styles.label}>{loading ? "Loading..." : "Template"}</span>
         <svg
           className={`${styles.chevron} ${isOpen ? styles.open : ""}`}

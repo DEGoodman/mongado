@@ -28,6 +28,9 @@
 }
 
 .title {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $neutral-900;
@@ -57,7 +60,7 @@
   display: inline-block;
   width: 2rem;
   height: 2rem;
-  border: 4px solid $blue-600;
+  border: 4px solid $color-interactive-primary;
   border-right-color: transparent;
   border-radius: $border-radius-full;
   animation: spin 1s linear infinite;
@@ -114,8 +117,8 @@
   @include transition-default;
 
   &:hover {
-    border-color: $blue-300;
-    background-color: $blue-50;
+    border-color: $color-interactive-primary;
+    background-color: $color-interactive-ghost-hover;
   }
 }
 
@@ -160,12 +163,12 @@
   white-space: nowrap;
   border-radius: $border-radius-sm;
   @include text-secondary;
-  background-color: $blue-600;
-  color: $white;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
   @include transition-default;
 
   &:hover {
-    background-color: $blue-700;
+    background-color: $color-interactive-primary-hover;
   }
 }
 

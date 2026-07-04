@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { CheckCircle } from "@phosphor-icons/react";
 import styles from "./Toast.module.scss";
 
 interface ToastProps {
@@ -26,7 +27,9 @@ export default function Toast({ message, isVisible, onClose, duration = 4000 }: 
   return (
     <div className={styles.toast}>
       <div className={styles.toastContent}>
-        <span className={styles.icon}>✨</span>
+        <span className={styles.icon} aria-hidden="true">
+          <CheckCircle size={18} />
+        </span>
         <span className={styles.message}>{message}</span>
         <button onClick={onClose} className={styles.closeButton} aria-label="Close">
           <svg className={styles.closeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -99,7 +99,7 @@
     height: 1rem;
     border-radius: $border-radius-sm;
     border-color: $neutral-300;
-    color: $blue-600;
+    accent-color: $color-interactive-primary;
 
     &:focus {
       @include focus-ring;
@@ -136,6 +136,10 @@
 
 .modeButton {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-1;
   padding: $spacing-2 $spacing-3;
   border-radius: $border-radius-md;
   @include text-secondary;
@@ -143,8 +147,8 @@
   @include transition-default;
 
   &.active {
-    background-color: $blue-600;
-    color: $white;
+    background-color: $color-interactive-primary;
+    color: $color-interactive-primary-text;
   }
 
   &.inactive {
@@ -190,16 +194,19 @@
 .performanceNotice {
   margin-top: $spacing-4;
   padding: $spacing-3;
-  border: $border-width-thin solid $yellow-200;
+  border: $border-width-thin solid $color-warning-border;
   border-radius: $border-radius-md;
-  background-color: $yellow-50;
+  background-color: $color-warning-bg;
   text-align: left;
 }
 
 .noticeTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-1;
   @include text-tertiary;
   font-weight: $font-weight-medium;
-  color: $neutral-900;
+  color: $color-warning-text;
 }
 
 .noticeDescription {
@@ -227,8 +234,8 @@
   border-radius: $border-radius-md;
 
   &.userMessage {
-    background-color: $blue-600;
-    color: $white;
+    background-color: $color-interactive-primary;
+    color: $color-interactive-primary-text;
   }
 
   &.assistantMessage {
@@ -269,7 +276,26 @@
 .sourceTitle {
   @include text-tertiary;
   font-weight: $font-weight-medium;
-  color: $blue-600;
+  color: $color-text-primary;
+}
+
+.sourceType {
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  letter-spacing: $letter-spacing-wide;
+
+  &[data-type='article'] {
+    color: $orange-700;
+  }
+
+  &[data-type='note'] {
+    color: $color-text-secondary;
+  }
+
+  &[data-type='reference'],
+  &:not([data-type='article']):not([data-type='note']) {
+    color: $color-text-tertiary;
+  }
 }
 
 .sourceScore {
@@ -279,7 +305,7 @@
 
 .sourceLink {
   @include text-tertiary;
-  color: $blue-600;
+  color: $color-link-default;
   text-decoration: none;
 
   &:hover {
@@ -384,12 +410,12 @@
   padding: $spacing-2 $spacing-4;
   border-radius: $border-radius-md;
   @include text-secondary;
-  background-color: $blue-600;
-  color: $white;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
   @include transition-default;
 
   &:hover:not(:disabled) {
-    background-color: $blue-700;
+    background-color: $color-interactive-primary-hover;
   }
 
   &:disabled {
