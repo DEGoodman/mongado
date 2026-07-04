@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { config } from "@/lib/config";
 import { logger } from "@/lib/logger";
 
@@ -68,9 +68,14 @@ export function applyFeatureFlag(name: string, enabled: boolean): void {
  * to distinguish "disabled" from "still loading" when needed.
  */
 export function useFeatureFlags(): FeatureFlags {
-  if (typeof window !== "undefined" && !fetchStarted) {
-    fetchStarted = true;
-    void fetchFlags();
-  }
+  // Start the fetch after mount, not during render: if it resolved before
+  // hydration finished, the client tree would no longer match the server
+  // HTML (hydration error on e.g. the AIButton).
+  useEffect(() => {
+    if (!fetchStarted) {
+      fetchStarted = true;
+      void fetchFlags();
+    }
+  }, []);
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
