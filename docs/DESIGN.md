@@ -76,6 +76,12 @@ in both themes).
 - Icons come from [`@phosphor-icons/react`](https://phosphoricons.com/)
   (weight: regular, ~16–18px). No emoji in UI chrome; emoji in prose content
   is fine.
+- **Keep `optimizePackageImports: ['@phosphor-icons/react']` in both
+  `next.config.mjs` and `next.config.production.mjs`.** Without it, the
+  package's barrel import drags all ~9,000 icons into every route that
+  renders the nav (10k+ webpack modules, 10s+ dev compiles). Import icons
+  from the package root as usual — the config rewrites them to per-icon
+  entry points.
 
 ## Dark mode / theme toggle
 
