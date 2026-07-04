@@ -4,15 +4,25 @@ import { Suspense, useState, useEffect } from "react";
 import { ClockCounterClockwise, Lightbulb, Sparkle, X, Check } from "@phosphor-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import NoteEditor from "@/components/NoteEditor";
+import dynamic from "next/dynamic";
+
+// Heavy editor (CodeMirror) and AI panels load on demand, not in first-load JS
+const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
+  ssr: false,
+  loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
+});
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
+const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
+  ssr: false,
+});
+const PostSaveAISuggestions = dynamic(() => import("@/components/PostSaveAISuggestions"), {
+  ssr: false,
+});
 import TemplateSelector from "@/components/TemplateSelector";
 import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
 import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
 import { logger } from "@/lib/logger";
-import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
-import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
-import AISuggestionsPanel from "@/components/AISuggestionsPanel";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";

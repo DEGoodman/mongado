@@ -3,10 +3,12 @@
 import { Suspense } from "react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
+const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
 import { useRouter, useSearchParams } from "next/navigation";
 import { logger } from "@/lib/logger";
-import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
-import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";

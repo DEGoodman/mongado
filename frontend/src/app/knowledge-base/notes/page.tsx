@@ -3,10 +3,12 @@
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 import { useRouter, useSearchParams } from "next/navigation";
 import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
-import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";

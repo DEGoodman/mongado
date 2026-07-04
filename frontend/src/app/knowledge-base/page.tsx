@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 import { useState, useEffect, useRef } from "react";
-import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
