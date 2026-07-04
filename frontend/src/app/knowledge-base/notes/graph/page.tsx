@@ -9,6 +9,11 @@ import styles from "./page.module.scss";
 
 const graphLog = logger.withContext("Graph");
 
+// Distinguishes parallel or zombie component instances in the logs — the
+// signature failure mode for this page is a stale scene from a dead instance
+// (Fast Refresh / polluted .next) swallowing events meant for the live one
+let instanceCounter = 0;
+
 interface GraphNode extends d3.SimulationNodeDatum {
   id: string;
   title: string;
@@ -75,10 +80,24 @@ function NotesGraphContent() {
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphEdge> | null>(null);
   const selectedNodeIdRef = useRef<string | null>(null);
 
+  const instanceRef = useRef(0);
+  if (instanceRef.current === 0) instanceRef.current = ++instanceCounter;
+  const iid = instanceRef.current;
+  const ilog = useCallback(
+    (msg: string, data?: unknown) =>
+      data === undefined ? graphLog.info(`i${iid} ${msg}`) : graphLog.info(`i${iid} ${msg}`, data),
+    [iid]
+  );
+
   // Keep ref in sync with state
   useEffect(() => {
     selectedNodeIdRef.current = selectedNode?.id || null;
   }, [selectedNode]);
+
+  useEffect(() => {
+    ilog("component mounted");
+    return () => ilog("component unmounted");
+  }, [ilog]);
 
   // Drop a stale ?node= param so it can't re-select the old node
   const clearNodeParam = useCallback(() => {
@@ -88,9 +107,13 @@ function NotesGraphContent() {
   }, [router]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
     async function fetchGraphData() {
       try {
         setLoading(true);
+        ilog("fetching graph data");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
         const token = localStorage.getItem("admin_token");
@@ -104,6 +127,7 @@ function NotesGraphContent() {
         const response = await fetch(`${apiUrl}/api/notes/graph/data`, {
           headers,
           credentials: "include",
+          signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -139,22 +163,31 @@ function NotesGraphContent() {
           };
         });
 
+        if (cancelled) {
+          ilog("fetch resolved after cleanup — ignored");
+          return;
+        }
         setGraphData(data);
-        logger.info("Graph data loaded", {
-          nodes: data.count.nodes,
-          edges: data.count.edges,
-        });
+        ilog("graph data loaded", { nodes: data.count.nodes, edges: data.count.edges });
       } catch (err) {
+        if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
+          ilog("fetch aborted by cleanup");
+          return;
+        }
         const message = err instanceof Error ? err.message : "Failed to load graph";
         setError(message);
         logger.error("Failed to load graph data", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchGraphData();
-  }, []);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [ilog]);
 
   // Handle URL parameter for pre-selected node
   useEffect(() => {
@@ -211,7 +244,10 @@ function NotesGraphContent() {
   useEffect(() => {
     if (!graphData || !svgRef.current) return;
 
-    graphLog.info("simulation effect: (re)building svg scene and handlers");
+    ilog("simulation effect: (re)building svg scene and handlers", {
+      nodes: graphData.nodes.length,
+      edges: graphData.edges.length,
+    });
     const svg = d3.select(svgRef.current);
     const width = 900;
     const height = 622;
@@ -509,14 +545,14 @@ function NotesGraphContent() {
     }
 
     function handleNodeClick(event: MouseEvent) {
-      graphLog.info("node click fired", { defaultPrevented: event.defaultPrevented });
+      ilog("node click fired", { defaultPrevented: event.defaultPrevented });
       // Selection happens on mousedown (drag start); this handler only
       // shields the svg background-deselect handler from the bubbled click
       event.stopPropagation();
     }
 
     function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
-      graphLog.info("node dblclick -> navigating", { id: clickedNode.id });
+      ilog("node dblclick -> navigating", { id: clickedNode.id });
       event.preventDefault();
       router.push(`/knowledge-base/notes/${clickedNode.id}`);
     }
@@ -535,7 +571,7 @@ function NotesGraphContent() {
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
       .on("start", (_event, d) => {
-        graphLog.info("mousedown (drag start) -> selecting node", { id: d.id });
+        ilog("mousedown (drag start) -> selecting node", { id: d.id });
         // Select on mousedown: real trackpad clicks often travel >10px
         // between down and up, which makes d3's drag suppression swallow
         // the click event entirely (#208). mousedown always fires.
@@ -612,18 +648,54 @@ function NotesGraphContent() {
     // Click anywhere in the graph that isn't a node (background, edges,
     // labels) to deselect. Node clicks stopPropagation so they never land here.
     svg.on("click", (event) => {
-      graphLog.info("svg background click -> deselect", {
-        target: (event.target as Element).tagName,
-      });
+      ilog("svg background click -> deselect", { target: (event.target as Element).tagName });
       setSelectedNode(null);
       clearNodeParam();
     });
 
-    // Cleanup
+    // Diagnostic probe: logs what hit-testing sees for EVERY press inside
+    // the svg, plus where the nearest data node believes it is. If target
+    // is "svg" while nearestDistance <= nearestRadius, hit-testing is
+    // broken (pointer-events); if nearestDistance is large, the visible
+    // scene does not match this instance's data (zombie scene).
+    svg.on("pointerdown.diag", (event: PointerEvent) => {
+      const [mx, my] = d3.pointer(event, svg.node());
+      let nearest: GraphNode | null = null;
+      let best = Infinity;
+      for (const n of nodes) {
+        const dist = Math.hypot((n.x ?? 0) - mx, (n.y ?? 0) - my);
+        if (dist < best) {
+          best = dist;
+          nearest = n;
+        }
+      }
+      ilog("pointerdown probe", {
+        target: (event.target as Element).tagName,
+        graphXY: [Math.round(mx), Math.round(my)],
+        nearestNode: nearest?.id,
+        nearestDistance: Math.round(best),
+        nearestRadius: nearest?.radius,
+        hitTest: document.elementFromPoint(event.clientX, event.clientY)?.tagName,
+        svgScenesInDocument: document.querySelectorAll("svg[role='img']").length,
+        circlesInDocument: document.querySelectorAll("svg[role='img'] circle").length,
+      });
+    });
+
+    ilog("scene built", {
+      circlesInThisScene: nodeElements.size(),
+      circlesInDocument: document.querySelectorAll("svg[role='img'] circle").length,
+      svgScenesInDocument: document.querySelectorAll("svg[role='img']").length,
+    });
+
+    // Cleanup: stop the sim AND remove this instance's scene + handlers so
+    // an unmounting instance can never leave a visible-but-dead graph behind
     return () => {
+      ilog("simulation effect cleanup: tearing down scene");
       simulation.stop();
+      svg.on("click", null).on("pointerdown.diag", null);
+      svg.selectAll("*").remove();
     };
-  }, [graphData, getNodeColor, router, clearNodeParam]);
+  }, [graphData, getNodeColor, router, clearNodeParam, ilog]);
 
   // Separate effect for visual updates (selection, filters) without recreating simulation
   useEffect(() => {
@@ -638,7 +710,7 @@ function NotesGraphContent() {
 
     const edges = graphData.edges;
     const selectedNodeId = selectedNode?.id || null;
-    graphLog.info("selection state applied", { selectedNodeId });
+    ilog("selection state applied", { selectedNodeId });
     const selectedTagsArray = Array.from(selectedTags);
     const isFiltering = selectedTags.size > 0;
 
@@ -787,7 +859,7 @@ function NotesGraphContent() {
 
       labelElements.transition().duration(150).style("opacity", 0);
     }
-  }, [selectedNode, selectedTags, filterLogic, graphData]);
+  }, [selectedNode, selectedTags, filterLogic, graphData, ilog]);
 
   // Handle deselect
   const handleDeselect = () => {
