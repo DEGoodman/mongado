@@ -39,6 +39,7 @@ The Knowledge Base is a separate subproject with its own documentation:
 ### UI/Design System
 
 - **[UI_MIGRATION_GUIDE.md](UI_MIGRATION_GUIDE.md)** - SCSS module system (replaced Tailwind)
+- **[DESIGN.md](DESIGN.md)** - Design system guide: palette, theming, typography, checklist
 - **[DESIGN_TOKENS.md](DESIGN_TOKENS.md)** - Color, spacing, typography tokens
 - **[COLOR_PALETTE.md](COLOR_PALETTE.md)** - Color scheme documentation
 - **[COMPONENT_REFERENCE.md](COMPONENT_REFERENCE.md)** - Component styling patterns
