@@ -29,7 +29,8 @@ export default function TopNavigation() {
 
   // Determine active section
   const isArticlesSection = pathname?.startsWith("/knowledge-base/articles");
-  const isNotesSection = pathname?.startsWith("/knowledge-base/notes");
+  const isGraphSection = pathname?.startsWith("/knowledge-base/notes/graph");
+  const isNotesSection = pathname?.startsWith("/knowledge-base/notes") && !isGraphSection;
   const isToolboxSection = pathname?.startsWith("/knowledge-base/toolbox");
   const isInspireSection = pathname?.startsWith("/knowledge-base/inspire");
 
@@ -70,6 +71,12 @@ export default function TopNavigation() {
               className={`${styles.navLink} ${isNotesSection ? styles.active : ""}`}
             >
               Notes
+            </Link>
+            <Link
+              href="/knowledge-base/notes/graph"
+              className={`${styles.navLink} ${isGraphSection ? styles.active : ""}`}
+            >
+              Graph
             </Link>
             <Link
               href="/knowledge-base/toolbox"
