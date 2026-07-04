@@ -281,16 +281,25 @@
   }
 
   .showMoreButton {
+    display: inline-flex;
+    align-items: center;
     margin-top: $spacing-3;
+    padding: $spacing-2 $spacing-3;
+    background-color: $white;
+    border: $border-width-thin solid $color-border-default;
+    border-radius: $border-radius-full;
     @include text-secondary;
-    color: $color-link-default;
+    // link-hover (orange-700/orange-300) instead of link-default: the only
+    // orange step that clears 4.5:1 on $white in both themes at this size
+    color: $color-link-hover;
     cursor: pointer;
     font-weight: $font-weight-medium;
     transition: all 0.2s ease;
 
     &:hover {
+      background-color: $color-surface-hover;
+      border-color: $color-border-hover;
       color: $color-text-primary;
-      text-decoration: underline;
     }
   }
 }
