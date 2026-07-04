@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
+import { useResolvedTheme } from "@/hooks/useResolvedTheme";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorView } from "@codemirror/view";
 import { logger } from "@/lib/logger";
@@ -23,6 +24,7 @@ export default function NoteEditor({
   allNotes = [],
   onNoteClick,
 }: NoteEditorProps) {
+  const theme = useResolvedTheme();
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteQuery, setAutocompleteQuery] = useState("");
   const [autocompletePosition, setAutocompletePosition] = useState({ top: 0, left: 0 });
@@ -139,6 +141,7 @@ export default function NoteEditor({
     <div className={styles.container}>
       <div className={styles.editorWrapper} style={{ minHeight: "400px", resize: "both" }}>
         <CodeMirror
+          theme={theme}
           value={content}
           height="400px"
           extensions={[

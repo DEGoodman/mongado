@@ -3,8 +3,8 @@
  * Color-coded collapsible sections for note categories
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .quickLists {
   @include stack($spacing-4);
@@ -33,7 +33,8 @@
       gap: $spacing-2;
 
       .icon {
-        font-size: $font-size-lg;
+        display: inline-flex;
+        align-items: center;
         line-height: 1;
       }
 

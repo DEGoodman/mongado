@@ -7,6 +7,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CircleDashed, MapTrifold, Star, ClockCounterClockwise } from "@phosphor-icons/react";
 import Link from "next/link";
 import styles from "./QuickLists.module.scss";
 
@@ -33,7 +34,7 @@ interface QuickListsData {
 
 interface QuickListsSectionProps {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   notes: Note[];
   count: number;
   className: string;
@@ -172,7 +173,7 @@ export default function QuickLists() {
     <div className={styles.quickLists}>
       <QuickListsSection
         title="Orphan Notes"
-        icon="🏝️"
+        icon={<CircleDashed size={18} />}
         notes={data.orphans}
         count={data.counts.orphans}
         className={styles.orphans}
@@ -183,7 +184,7 @@ export default function QuickLists() {
 
       <QuickListsSection
         title="Hub Notes"
-        icon="🗺️"
+        icon={<MapTrifold size={18} />}
         notes={data.hubs}
         count={data.counts.hubs}
         className={styles.hubs}
@@ -194,7 +195,7 @@ export default function QuickLists() {
 
       <QuickListsSection
         title="Central Concepts"
-        icon="⭐"
+        icon={<Star size={18} />}
         notes={data.central_concepts}
         count={data.counts.central_concepts}
         className={styles.central}
@@ -205,7 +206,7 @@ export default function QuickLists() {
 
       <QuickListsSection
         title="Stale Notes"
-        icon="🕰️"
+        icon={<ClockCounterClockwise size={18} />}
         notes={data.stale}
         count={data.counts.stale}
         className={styles.stale}

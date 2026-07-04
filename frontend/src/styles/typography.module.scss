@@ -3,8 +3,8 @@
  * Reusable typography styles for headings, body text, and links
  */
 
-@use 'mixins' as *;
-@use 'design-tokens' as *;
+@use "mixins" as *;
+@use "design-tokens" as *;
 
 // ===== HEADINGS =====
 .h1 {

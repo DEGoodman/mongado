@@ -3,7 +3,7 @@
  * Uppercase mono labels: articles carry the orange accent, notes stay grey.
  */
 
-@use '@/styles/design-tokens' as *;
+@use "@/styles/design-tokens" as *;
 
 .badge {
   display: inline-flex;
@@ -20,13 +20,13 @@
   transition: border-color 0.2s ease;
 
   // Article badge - orange accent
-  &[data-type='article'] {
+  &[data-type="article"] {
     color: $orange-700;
     border-color: $orange-300;
   }
 
   // Note badge - quiet grey
-  &[data-type='note'] {
+  &[data-type="note"] {
     color: $color-text-secondary;
     border-color: $color-border-strong;
   }

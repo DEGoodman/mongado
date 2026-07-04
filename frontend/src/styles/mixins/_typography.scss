@@ -3,7 +3,7 @@
  * Reusable typography styles for headings, body text, and links
  */
 
-@use '../design-tokens' as *;
+@use "../design-tokens" as *;
 
 // ===== HEADING MIXINS =====
 @mixin heading-h1 {
@@ -118,7 +118,9 @@
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
 
   &:hover {
     color: $color-primary-hover;

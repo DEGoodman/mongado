@@ -3,15 +3,15 @@
  * Matches production Tailwind design
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 // Success (authenticated) state
 .bannerSuccess {
   margin-bottom: $spacing-4;
   padding: $spacing-3;
-  border-left: 4px solid $green-500;
-  background-color: $green-50;
+  border-left: 4px solid $color-success-border;
+  background-color: $color-success-bg;
 
   .content {
     @include flex-start;
@@ -20,7 +20,7 @@
       width: 1.25rem;
       height: 1.25rem;
       margin-right: $spacing-3;
-      color: $green-500;
+      color: $color-success-border;
     }
 
     .textContent {
@@ -29,13 +29,13 @@
       .title {
         @include text-secondary;
         font-weight: $font-weight-medium;
-        color: $green-700;
+        color: $color-success-text;
       }
 
       .description {
         margin-top: 0.125rem; // 2px
         @include text-tertiary;
-        color: $green-700;
+        color: $color-success-text;
       }
     }
 
@@ -43,8 +43,8 @@
       margin-left: $spacing-3;
       padding: $spacing-1 $spacing-3;
       border-radius: $border-radius-sm;
-      background-color: $green-100;
-      color: $green-700;
+      background-color: $color-surface-tertiary;
+      color: $color-success-text;
       @include text-tertiary;
       font-weight: $font-weight-medium;
       cursor: pointer;
@@ -52,8 +52,7 @@
       @include transition-colors;
 
       &:hover {
-        background-color: $green-100;
-        filter: brightness(0.95);
+        background-color: $color-surface-hover;
       }
     }
   }
@@ -63,8 +62,8 @@
 .bannerWarning {
   margin-bottom: $spacing-4;
   padding: $spacing-4;
-  border-left: 4px solid $yellow-300;
-  background-color: $yellow-50;
+  border-left: 4px solid $color-warning-border;
+  background-color: $color-warning-bg;
 
   .content {
     @include flex-start;
@@ -75,7 +74,7 @@
       height: 1.25rem;
       margin-right: $spacing-3;
       margin-top: 0.125rem; // 2px to align with text
-      color: $yellow-300;
+      color: $color-warning-border;
     }
 
     .textContent {
@@ -96,7 +95,7 @@
       .divider {
         margin-top: $spacing-3;
         padding-top: $spacing-3;
-        border-top: $border-width-thin solid $yellow-200;
+        border-top: $border-width-thin solid $color-warning-border;
       }
 
       .loginPrompt {
@@ -124,12 +123,12 @@
   @include text-tertiary;
 
   &.authenticated {
-    background-color: $green-500;
-    color: $white;
+    background-color: $color-success-bg;
+    color: $color-success-text;
   }
 
   &.unauthenticated {
-    background-color: $yellow-100;
-    color: $neutral-900;
+    background-color: $color-warning-bg;
+    color: $color-warning-text;
   }
 }

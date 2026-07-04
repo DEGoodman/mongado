@@ -3,8 +3,8 @@
  * Matches production Tailwind design with blue theme
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .projectTile {
   display: block;
@@ -18,15 +18,15 @@
 
   &:hover {
     transform: translateY(-4px);
-    border-color: $blue-400;
+    border-color: $color-interactive-primary;
     box-shadow: $shadow-popover;
 
     .title {
-      color: $blue-600;
+      color: $color-link-default;
     }
 
     .arrow {
-      color: $blue-600;
+      color: $color-link-default;
     }
   }
 }

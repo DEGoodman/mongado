@@ -3,12 +3,16 @@
  * Matches production Tailwind design with blue/purple theme
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
 }
 
 // ===== HEADER =====
@@ -159,7 +163,8 @@
         color: $color-text-primary;
 
         mark {
-          background-color: $yellow-200;
+          background-color: $mustard-200;
+          color: $neutral-cool-800;
           font-weight: $font-weight-semibold;
         }
       }
@@ -169,7 +174,8 @@
         @include line-clamp(2);
 
         mark {
-          background-color: $yellow-200;
+          background-color: $mustard-200;
+          color: $neutral-cool-800;
           font-weight: $font-weight-medium;
         }
       }

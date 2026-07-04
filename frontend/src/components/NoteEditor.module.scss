@@ -4,8 +4,8 @@
  * Matches production Tailwind design
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 // Main container
 .container {
@@ -24,7 +24,7 @@
   transition: border-color 0.2s ease;
 
   &:focus-within {
-    border-color: $color-input-border-focus;  // Orange focus
+    border-color: $color-input-border-focus; // Orange focus
     outline: none;
   }
 }
@@ -55,7 +55,7 @@
   }
 
   &:hover {
-    background-color: $teal-50;           // Cool teal hover (technical feature)
+    background-color: $teal-50; // Cool teal hover (technical feature)
   }
 
   &.selected {
@@ -66,7 +66,7 @@
 .autocompleteNoteId {
   margin-bottom: $spacing-1;
   @include text-tertiary;
-  color: $teal-600;                       // Cool teal for note IDs
+  color: $teal-600; // Cool teal for note IDs
   font-family: monospace;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .helpLink {
-  color: $blue-600;
+  color: $color-link-default;
   text-decoration: none;
 
   &:hover {

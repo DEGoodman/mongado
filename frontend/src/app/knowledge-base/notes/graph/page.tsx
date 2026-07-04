@@ -78,6 +78,13 @@ function NotesGraphContent() {
     selectedNodeIdRef.current = selectedNode?.id || null;
   }, [selectedNode]);
 
+  // Drop a stale ?node= param so it can't re-select the old node
+  const clearNodeParam = useCallback(() => {
+    if (window.location.search.includes("node=")) {
+      router.replace("/knowledge-base/notes/graph", { scroll: false });
+    }
+  }, [router]);
+
   useEffect(() => {
     async function fetchGraphData() {
       try {
@@ -501,7 +508,11 @@ function NotesGraphContent() {
     function handleNodeClick(event: MouseEvent, clickedNode: GraphNode) {
       // d3.drag preventDefaults the click that follows a real drag gesture
       if (event.defaultPrevented) return;
+      // Keep the svg background handler from treating this as a deselect
+      event.stopPropagation();
       setSelectedNode(clickedNode);
+      // A stale ?node= param would otherwise re-select the old node
+      clearNodeParam();
     }
 
     function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
@@ -590,18 +601,18 @@ function NotesGraphContent() {
         .attr("text-anchor", (d) => ((d.x || 0) > labelThreshold ? "end" : "start"));
     });
 
-    // Click on SVG background to deselect
-    svg.on("click", (event) => {
-      if (event.target === svg.node()) {
-        setSelectedNode(null);
-      }
+    // Click anywhere in the graph that isn't a node (background, edges,
+    // labels) to deselect. Node clicks stopPropagation so they never land here.
+    svg.on("click", () => {
+      setSelectedNode(null);
+      clearNodeParam();
     });
 
     // Cleanup
     return () => {
       simulation.stop();
     };
-  }, [graphData, getNodeColor, router]);
+  }, [graphData, getNodeColor, router, clearNodeParam]);
 
   // Separate effect for visual updates (selection, filters) without recreating simulation
   useEffect(() => {
@@ -769,8 +780,7 @@ function NotesGraphContent() {
   // Handle deselect
   const handleDeselect = () => {
     setSelectedNode(null);
-    // Remove node query param from URL
-    router.push("/knowledge-base/notes/graph");
+    clearNodeParam();
   };
 
   if (loading) {

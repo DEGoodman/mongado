@@ -3,8 +3,8 @@
  * Global app settings dropdown (available to all users)
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   position: relative;
@@ -78,7 +78,7 @@
 
 .warmupIndicator {
   font-size: 0.75rem;
-  color: $blue-600;
+  color: $color-text-secondary;
   text-align: center;
   margin-bottom: $spacing-2;
 }

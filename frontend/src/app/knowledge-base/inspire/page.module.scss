@@ -3,12 +3,16 @@
  * Content suggestions for knowledge base improvement
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
 }
 
 // ===== LOADING STATE =====
@@ -42,7 +46,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -119,7 +124,7 @@
       .title {
         @include heading-h1;
         margin: 0;
-        color: $teal-900;
+        color: $color-text-heading;
 
         @media (max-width: 640px) {
           font-size: $font-size-2xl;
@@ -128,7 +133,7 @@
 
       .subtitle {
         margin-top: $spacing-2;
-        color: $teal-700;
+        color: $color-text-secondary;
         font-size: $font-size-lg;
 
         @media (max-width: 640px) {
@@ -150,8 +155,8 @@
         padding: $spacing-2 $spacing-4;
         border: none;
         border-radius: $border-radius-button;
-        background-color: $teal-600;
-        color: white;
+        background-color: $color-interactive-primary;
+        color: $color-interactive-primary-text;
         font-weight: $font-weight-medium;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -163,7 +168,7 @@
         }
 
         &:hover:not(:disabled) {
-          background-color: $teal-700;
+          background-color: $color-interactive-primary-hover;
         }
 
         &:disabled {
@@ -192,15 +197,11 @@
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-2 $spacing-4;
-    background-color: $teal-100;
-    border: 1px solid $teal-200;
+    background-color: $color-info-cool-bg;
+    border: 1px solid $color-info-cool-border;
     border-radius: $border-radius-full;
     font-size: $font-size-sm;
-    color: $teal-700;
-
-    &::before {
-      content: "✨";
-    }
+    color: $color-info-cool-text;
   }
 
   .aiDisabled {
@@ -220,17 +221,17 @@
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-2 $spacing-4;
-    background-color: $teal-50;
-    border: 1px solid $teal-200;
+    background-color: $color-info-cool-bg;
+    border: 1px solid $color-info-cool-border;
     border-radius: $border-radius-full;
     font-size: $font-size-sm;
-    color: $teal-700;
+    color: $color-info-cool-text;
 
     .spinner {
       width: 14px;
       height: 14px;
-      border: 2px solid $teal-200;
-      border-top-color: $teal-600;
+      border: 2px solid $color-info-cool-border;
+      border-top-color: $color-info-cool-text;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -248,8 +249,8 @@
   padding: $spacing-12;
   text-align: center;
   @include card;
-  border: $border-width-medium dashed $teal-300;
-  background-color: $teal-50;
+  border: $border-width-medium dashed $color-border-strong;
+  background-color: $color-surface-tertiary;
 
   .emptyIcon {
     font-size: 3rem;
@@ -259,12 +260,12 @@
   .emptyTitle {
     @include heading-h3;
     margin-bottom: $spacing-2;
-    color: $teal-900;
+    color: $color-text-heading;
   }
 
   .emptyMessage {
     @include text-secondary;
-    color: $teal-700;
+    color: $color-text-secondary;
     margin-bottom: $spacing-6;
     max-width: 400px;
     margin-left: auto;
@@ -276,15 +277,15 @@
     align-items: center;
     padding: $spacing-3 $spacing-6;
     border-radius: $border-radius-button;
-    background-color: $teal-600;
-    color: white;
+    background-color: $color-interactive-primary;
+    color: $color-interactive-primary-text;
     font-weight: $font-weight-medium;
     text-decoration: none;
     box-shadow: $shadow-button;
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: $teal-700;
+      background-color: $color-interactive-primary-hover;
       box-shadow: $shadow-button-hover;
     }
   }
@@ -454,7 +455,9 @@
     gap: $spacing-3;
 
     .helpIcon {
-      font-size: $font-size-xl;
+      display: inline-flex;
+      align-items: center;
+      color: $color-text-secondary;
       flex-shrink: 0;
     }
 
