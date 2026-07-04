@@ -31,7 +31,7 @@
   &:focus {
     outline: none;
     border-color: $color-input-border-focus;
-    box-shadow: 0 0 0 2px rgba($color-input-border-focus, 0.2);
+    box-shadow: 0 0 0 2px rgba($orange-600, 0.2);
   }
 
   &:disabled {
@@ -206,7 +206,7 @@
       border-color: $color-error-border;
 
       &:focus {
-        box-shadow: 0 0 0 2px rgba($color-error-border, 0.2);
+        box-shadow: 0 0 0 2px rgba($red-500, 0.2);
       }
     }
   }
@@ -271,7 +271,7 @@
   border-color: $color-success-border;
 
   &:focus {
-    box-shadow: 0 0 0 2px rgba($color-success-border, 0.2);
+    box-shadow: 0 0 0 2px rgba($sage-500, 0.2);
   }
 }
 
@@ -282,7 +282,7 @@
   border-color: $color-error-border;
 
   &:focus {
-    box-shadow: 0 0 0 2px rgba($color-error-border, 0.2);
+    box-shadow: 0 0 0 2px rgba($red-500, 0.2);
   }
 }
 
@@ -293,6 +293,6 @@
   border-color: $color-warning-border;
 
   &:focus {
-    box-shadow: 0 0 0 2px rgba($color-warning-border, 0.2);
+    box-shadow: 0 0 0 2px rgba($mustard-500, 0.2);
   }
 }

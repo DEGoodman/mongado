@@ -126,7 +126,7 @@
     &:focus {
       outline: none;
       border-color: $color-input-border-focus;
-      box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+      box-shadow: $shadow-focus-primary;
     }
 
     &::placeholder {
@@ -160,7 +160,7 @@
     &:focus {
       outline: none;
       border-color: $color-input-border-focus;
-      box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+      box-shadow: $shadow-focus-primary;
     }
 
     &:hover {
@@ -350,11 +350,11 @@
   // Cool slate blue header zone (consistent across KB)
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,              // Bluer, more saturated top
-    $slate-blue-100 50%,             // Transition to lighter
-    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $slate-blue-300;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
 
   .headerContent {
@@ -622,21 +622,25 @@
 
         .noteId {
           padding: $spacing-1 $spacing-2;
-          background-color: rgba(196, 98, 79, 0.1);
+          background-color: $color-interactive-primary-bg-subtle;
           border-radius: $border-radius-sm;
           font-family: $font-family-mono;
           @include text-secondary;
-          color: $color-secondary;
+          color: $color-link-hover;
         }
 
         .referenceBadge {
           display: inline-block;
           padding: 2px 8px;
-          background-color: $amber-100;
-          color: $amber-800;
+          background-color: transparent;
+          border: $border-width-thin dashed $color-border-strong;
+          color: $color-text-secondary;
           border-radius: $border-radius-sm;
           font-size: 11px;
           font-weight: $font-weight-medium;
+          font-family: $font-family-mono;
+          letter-spacing: $letter-spacing-wide;
+          text-transform: uppercase;
         }
       }
 
@@ -659,7 +663,7 @@
         margin-bottom: $spacing-2;
         @include flex-start;
         gap: $spacing-4;
-        @include text-tertiary;
+        @include text-meta-mono;
       }
 
       .noteTags {

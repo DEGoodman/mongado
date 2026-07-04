@@ -99,11 +99,11 @@
   // Slightly bluer at top, more transparent at bottom for badge visibility
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,              // Bluer, more saturated top
-    $slate-blue-100 50%,             // Transition to lighter
-    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $slate-blue-300;  // Refined 1px border
+  border-bottom: 1px solid var(--color-header-border);  // Refined 1px border
   padding: $spacing-3xl $spacing-2xl $spacing-xl;
   margin-bottom: $spacing-2xl;
 
@@ -398,7 +398,7 @@
   &:focus {
     outline: none;
     border-color: $color-input-border-focus;
-    box-shadow: 0 0 0 3px rgba($blue-500, 0.1);
+    box-shadow: $shadow-focus-primary;
   }
 
   &::placeholder {

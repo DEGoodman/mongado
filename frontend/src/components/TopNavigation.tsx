@@ -14,9 +14,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Settings from "./Settings";
+import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import SearchModal from "./SearchModal";
 import styles from "./TopNavigation.module.scss";
@@ -90,10 +92,13 @@ export default function TopNavigation() {
               className={styles.searchButton}
               aria-label="Open search"
             >
-              <span className={styles.searchIcon}>🔍</span>
+              <span className={styles.searchIcon} aria-hidden="true">
+                <MagnifyingGlass size={16} />
+              </span>
               <span className={styles.searchLabel}>Search</span>
               <kbd className={styles.searchKbd}>⌘K</kbd>
             </button>
+            <ThemeToggle />
             <Settings />
             <UserMenu />
           </div>

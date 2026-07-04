@@ -32,16 +32,17 @@ $neutral-cool-900: #111827;   // Cool darkest
 
 // BALANCED NEUTRALS (Mix of both)
 // Surfaces = warm, Text = cool (best of both worlds)
-$neutral-50: $neutral-warm-50;     // Surfaces = warm
-$neutral-100: $neutral-warm-100;   // Surfaces = warm
-$neutral-200: $neutral-warm-200;   // Borders = warm
-$neutral-300: $neutral-warm-300;   // Borders = warm
-$neutral-400: $neutral-cool-400;   // Mid tones = cool
-$neutral-500: $neutral-cool-500;   // Text = cool (readable)
-$neutral-600: $neutral-cool-600;   // Text = cool
-$neutral-700: $neutral-cool-700;   // Headings = cool (sharp)
-$neutral-800: $neutral-cool-800;   // Body text = cool (legible)
-$neutral-900: $neutral-cool-900;   // Darkest = cool
+// Theme-aware: the ramp flips in dark mode (see styles/themes.scss).
+$neutral-50: var(--neutral-50);    // Surfaces = warm
+$neutral-100: var(--neutral-100);  // Surfaces = warm
+$neutral-200: var(--neutral-200);  // Borders = warm
+$neutral-300: var(--neutral-300);  // Borders = warm
+$neutral-400: var(--neutral-400);  // Mid tones = cool
+$neutral-500: var(--neutral-500);  // Text = cool (readable)
+$neutral-600: var(--neutral-600);  // Text = cool
+$neutral-700: var(--neutral-700);  // Headings = cool (sharp)
+$neutral-800: var(--neutral-800);  // Body text = cool (legible)
+$neutral-900: var(--neutral-900);  // Darkest = cool
 
 // === ORANGE (Primary - Warm) ===
 // Medium-dark orange - sophisticated, not loud
@@ -146,61 +147,62 @@ $red-600: #DC2626;
 $red-700: #B91C1C;
 $red-800: #991B1B;
 
-// === OLD COLOR SCALES (Keep for reference during migration) ===
-// Blues (Primary) - Tailwind blue scale
-$blue-50: #eff6ff;
-$blue-100: #dbeafe;
-$blue-200: #bfdbfe;
-$blue-300: #93c5fd;
-$blue-400: #60a5fa;
-$blue-500: #3b82f6;
-$blue-600: #2563eb;
-$blue-700: #1d4ed8;
-$blue-800: #1e40af;
-$blue-900: #1e3a8a;
+// === LEGACY SCALE ALIASES (Palette collapse) ===
+// These names remain for existing modules but now resolve into the
+// grey/orange/slate system. Blue and purple collapse to slate-blue (the
+// single cool accent); yellow and amber collapse to mustard (warnings /
+// highlights); green collapses to sage (success).
+$blue-50: $slate-blue-50;
+$blue-100: $slate-blue-100;
+$blue-200: $slate-blue-200;
+$blue-300: $slate-blue-300;
+$blue-400: $slate-blue-400;
+$blue-500: $slate-blue-500;
+$blue-600: $slate-blue-600;
+$blue-700: $slate-blue-700;
+$blue-800: $slate-blue-800;
+$blue-900: $slate-blue-900;
 
-// Purples (Secondary) - Tailwind purple scale
-$purple-50: #faf5ff;
-$purple-100: #f3e8ff;
-$purple-200: #e9d5ff;
-$purple-300: #d8b4fe;
-$purple-500: #a855f7;
-$purple-600: #9333ea;
-$purple-700: #7e22ce;
-$purple-800: #6b21a8;
-$purple-900: #581c87;
+$purple-50: $slate-blue-50;
+$purple-100: $slate-blue-100;
+$purple-200: $slate-blue-200;
+$purple-300: $slate-blue-300;
+$purple-500: $slate-blue-500;
+$purple-600: $slate-blue-600;
+$purple-700: $slate-blue-700;
+$purple-800: $slate-blue-800;
+$purple-900: $slate-blue-900;
 
-// Greens (Success) - Tailwind green scale
-$green-50: #f0fdf4;
-$green-100: #dcfce7;
-$green-500: #22c55e;
-$green-600: #16a34a;
-$green-700: #15803d;
+$green-50: $sage-50;
+$green-100: $sage-100;
+$green-500: $sage-500;
+$green-600: $sage-600;
+$green-700: $sage-700;
 
-// Yellows (Highlights/Search) - Tailwind yellow scale
-$yellow-50: #fefce8;
-$yellow-100: #fef9c3;
-$yellow-200: #fef08a;
-$yellow-300: #fde047;
+$yellow-50: $mustard-50;
+$yellow-100: $mustard-100;
+$yellow-200: $mustard-200;
+$yellow-300: $mustard-300;
 
-// Amber (Warnings) - Tailwind amber scale
-$amber-50: #fffbeb;
-$amber-100: #fef3c7;
-$amber-200: #fde68a;
-$amber-300: #fcd34d;
-$amber-400: #fbbf24;
-$amber-500: #f59e0b;
-$amber-600: #d97706;
-$amber-700: #b45309;
-$amber-800: #92400e;
-$amber-900: #78350f;
+$amber-50: $mustard-50;
+$amber-100: $mustard-100;
+$amber-200: $mustard-200;
+$amber-300: $mustard-300;
+$amber-400: $mustard-400;
+$amber-500: $mustard-500;
+$amber-600: $mustard-600;
+$amber-700: $mustard-700;
+$amber-800: $mustard-800;
+$amber-900: $mustard-800;
 
-// Gray (additional shades) - Tailwind gray scale
-$gray-50: #f9fafb;
-$gray-100: #f3f4f6;
+// Gray (additional shades) - theme-aware
+$gray-50: var(--gray-50);
+$gray-100: var(--gray-100);
 
 // White/Black
-$white: #ffffff;
+// $white is a *surface* color and flips to a dark surface in dark mode.
+// Use literal #fff only where true white is required regardless of theme.
+$white: var(--white);
 $black: #000000;
 
 // ============================================================================
@@ -210,214 +212,214 @@ $black: #000000;
 
 // === PAGE STRUCTURE ===
 // Warm to Cool gradient - warm cream to cool slate
-$color-page-bg: $neutral-warm-50;                  // Main page background (warm cream)
-$color-page-bg-gradient-start: $neutral-warm-50;   // Gradient start (warm cream)
-$color-page-bg-gradient-end: $indigo-50;           // Gradient end (cool slate)
-$color-page-bg-alt: $neutral-100;                  // Alternative page background (warm)
+$color-page-bg: var(--color-page-bg);                  // Main page background (warm cream)
+$color-page-bg-gradient-start: var(--color-page-bg-gradient-start);   // Gradient start (warm cream)
+$color-page-bg-gradient-end: var(--color-page-bg-gradient-end);           // Gradient end (cool slate)
+$color-page-bg-alt: var(--color-page-bg-alt);                  // Alternative page background (warm)
 
 // === SURFACES (Cards, Panels) ===
-$color-surface-default: $white;                    // Default card/surface background (neutral anchor)
-$color-surface-secondary: $neutral-warm-50;        // Secondary surfaces (warm cream - inviting)
-$color-surface-tertiary: $neutral-100;             // Tertiary surfaces (warm light grey)
-$color-surface-elevated: $white;                   // Elevated cards (white with warm shadow)
-$color-surface-hover: $neutral-warm-50;            // Surface hover state (warm)
-$color-surface-cool: $slate-blue-50;               // Cool surface variant (for contrast)
-$color-surface-hover-cool: $teal-50;               // Cool hover (alternative)
+$color-surface-default: var(--color-surface-default);                    // Default card/surface background (neutral anchor)
+$color-surface-secondary: var(--color-surface-secondary);        // Secondary surfaces (warm cream - inviting)
+$color-surface-tertiary: var(--color-surface-tertiary);             // Tertiary surfaces (warm light grey)
+$color-surface-elevated: var(--color-surface-elevated);                   // Elevated cards (white with warm shadow)
+$color-surface-hover: var(--color-surface-hover);            // Surface hover state (warm)
+$color-surface-cool: var(--color-surface-cool);               // Cool surface variant (for contrast)
+$color-surface-hover-cool: var(--color-surface-hover-cool);               // Cool hover (alternative)
 
 // === TEXT ===
-$color-text-primary: $neutral-cool-800;            // Primary text (cool dark grey - sharp, readable)
-$color-text-secondary: $neutral-cool-600;          // Secondary text (cool mid grey)
-$color-text-tertiary: $neutral-cool-500;           // Tertiary text (cool lighter grey)
-$color-text-heading: $neutral-cool-700;            // Headings (cool - clear hierarchy)
-$color-text-disabled: $neutral-cool-500;           // Disabled text
-$color-text-inverse: $white;                       // Text on dark backgrounds
-$color-text-warm: $neutral-warm-300;               // Warm text variant (for use on cool backgrounds)
+$color-text-primary: var(--color-text-primary);            // Primary text (cool dark grey - sharp, readable)
+$color-text-secondary: var(--color-text-secondary);          // Secondary text (cool mid grey)
+$color-text-tertiary: var(--color-text-tertiary);           // Tertiary text (cool lighter grey)
+$color-text-heading: var(--color-text-heading);            // Headings (cool - clear hierarchy)
+$color-text-disabled: var(--color-text-disabled);           // Disabled text
+$color-text-inverse: var(--color-text-inverse);                       // Text on dark backgrounds
+$color-text-warm: var(--color-text-warm);               // Warm text variant (for use on cool backgrounds)
 
 // === BORDERS ===
-$color-border-default: $neutral-warm-200;          // Default borders (warm - soft)
-$color-border-subtle: $neutral-warm-200;           // Subtle borders (warm)
-$color-border-strong: $neutral-cool-400;           // Strong borders (cool - more visible)
-$color-border-hover: $neutral-cool-400;            // Border hover (cool - more defined)
-$color-border-cool: $slate-blue-200;               // Cool border variant
+$color-border-default: var(--color-border-default);          // Default borders (warm - soft)
+$color-border-subtle: var(--color-border-subtle);           // Subtle borders (warm)
+$color-border-strong: var(--color-border-strong);           // Strong borders (cool - more visible)
+$color-border-hover: var(--color-border-hover);            // Border hover (cool - more defined)
+$color-border-cool: var(--color-border-cool);               // Cool border variant
 
 // === INTERACTIVE ELEMENTS ===
 
 // === PRIMARY ACTIONS (Orange - Warm) ===
-$color-interactive-primary: $orange-600;           // Orange (warm) primary button
-$color-interactive-primary-hover: $orange-700;     // Orange hover
-$color-interactive-primary-active: $orange-800;    // Orange active
-$color-interactive-primary-text: $white;           // Text on primary buttons
-$color-interactive-primary-bg-subtle: $orange-50;  // Subtle primary background
-$color-interactive-primary-focus: $orange-600;     // Primary focus ring
+$color-interactive-primary: var(--color-interactive-primary);           // Orange (warm) primary button
+$color-interactive-primary-hover: var(--color-interactive-primary-hover);     // Orange hover
+$color-interactive-primary-active: var(--color-interactive-primary-active);    // Orange active
+$color-interactive-primary-text: var(--color-interactive-primary-text);           // Text on primary buttons
+$color-interactive-primary-bg-subtle: var(--color-interactive-primary-bg-subtle);  // Subtle primary background
+$color-interactive-primary-focus: var(--color-interactive-primary-focus);     // Primary focus ring
 
 // === SECONDARY ACTIONS (Warm - Terracotta) ===
-$color-interactive-secondary: $terracotta-600;     // Terracotta (warm) secondary
-$color-interactive-secondary-hover: $terracotta-700;
-$color-interactive-secondary-active: $terracotta-800;
-$color-interactive-secondary-text: $white;
-$color-interactive-secondary-bg: $terracotta-50;
+$color-interactive-secondary: var(--color-interactive-secondary);     // Terracotta (warm) secondary
+$color-interactive-secondary-hover: var(--color-interactive-secondary-hover);
+$color-interactive-secondary-active: var(--color-interactive-secondary-active);
+$color-interactive-secondary-text: var(--color-interactive-secondary-text);
+$color-interactive-secondary-bg: var(--color-interactive-secondary-bg);
 
 // === SECONDARY COOL VARIANT (Cool - Teal) ===
 // Use for cool secondary actions (technical actions, code-related buttons)
-$color-interactive-secondary-cool: $teal-600;      // Teal (cool) secondary
-$color-interactive-secondary-cool-hover: $teal-700;
-$color-interactive-secondary-cool-active: $teal-800;
-$color-interactive-secondary-cool-text: $white;
-$color-interactive-secondary-cool-bg: $teal-50;
+$color-interactive-secondary-cool: var(--color-interactive-secondary-cool);      // Teal (cool) secondary
+$color-interactive-secondary-cool-hover: var(--color-interactive-secondary-cool-hover);
+$color-interactive-secondary-cool-active: var(--color-interactive-secondary-cool-active);
+$color-interactive-secondary-cool-text: var(--color-interactive-secondary-cool-text);
+$color-interactive-secondary-cool-bg: var(--color-interactive-secondary-cool-bg);
 
 // === TERTIARY ACTIONS (Neutral) ===
-$color-interactive-tertiary: $neutral-100;         // Warm light grey background
-$color-interactive-tertiary-hover: $neutral-200;   // Warm border grey
-$color-interactive-tertiary-active: $neutral-300;
-$color-interactive-tertiary-text: $neutral-cool-700; // Cool text for clarity
-$color-interactive-tertiary-bg: $neutral-100;
+$color-interactive-tertiary: var(--color-interactive-tertiary);         // Warm light grey background
+$color-interactive-tertiary-hover: var(--color-interactive-tertiary-hover);   // Warm border grey
+$color-interactive-tertiary-active: var(--color-interactive-tertiary-active);
+$color-interactive-tertiary-text: var(--color-interactive-tertiary-text); // Cool text for clarity
+$color-interactive-tertiary-bg: var(--color-interactive-tertiary-bg);
 
 // === GHOST ACTIONS (Warm) ===
-$color-interactive-ghost: transparent;
-$color-interactive-ghost-hover: $orange-50;        // Warm orange hover
-$color-interactive-ghost-text: $orange-600;        // Orange text
-$color-interactive-ghost-text-hover: $orange-700;
+$color-interactive-ghost: var(--color-interactive-ghost);
+$color-interactive-ghost-hover: var(--color-interactive-ghost-hover);        // Warm orange hover
+$color-interactive-ghost-text: var(--color-interactive-ghost-text);        // Orange text
+$color-interactive-ghost-text-hover: var(--color-interactive-ghost-text-hover);
 
 // === LINKS (Warm primary, Cool variants) ===
-$color-link-default: $orange-600;                  // Orange (warm) default link
-$color-link-hover: $orange-700;                    // Orange hover
-$color-link-visited: $terracotta-700;              // Terracotta (warm) visited
-$color-link-active: $orange-800;                   // Orange active
+$color-link-default: var(--color-link-default);                  // Orange (warm) default link
+$color-link-hover: var(--color-link-hover);                    // Orange hover
+$color-link-visited: var(--color-link-visited);              // Terracotta (warm) visited
+$color-link-active: var(--color-link-active);                   // Orange active
 
 // Cool link variants (for cool sections like code docs)
-$color-link-cool: $teal-600;                       // Teal (cool) link
-$color-link-cool-hover: $teal-700;                 // Teal hover
-$color-link-cool-visited: $slate-blue-700;         // Slate blue (cool) visited
+$color-link-cool: var(--color-link-cool);                       // Teal (cool) link
+$color-link-cool-hover: var(--color-link-cool-hover);                 // Teal hover
+$color-link-cool-visited: var(--color-link-cool-visited);         // Slate blue (cool) visited
 
 // === SEMANTIC STATES ===
 
 // === SUCCESS (Sage - Balanced Warm-Cool) ===
 // Sage green naturally balances warm and cool
-$color-success-bg: $sage-100;
-$color-success-border: $sage-500;
-$color-success-text: $sage-600;
+$color-success-bg: var(--color-success-bg);
+$color-success-border: var(--color-success-border);
+$color-success-text: var(--color-success-text);
 
 // === WARNING (Mustard - Warm) ===
-$color-warning-bg: $mustard-100;
-$color-warning-border: $mustard-500;
-$color-warning-text: $mustard-700;
+$color-warning-bg: var(--color-warning-bg);
+$color-warning-border: var(--color-warning-border);
+$color-warning-text: var(--color-warning-text);
 
 // === ERROR (Red - Warm) ===
-$color-error-bg: $red-50;
-$color-error-border: $red-500;
-$color-error-text: $red-700;
+$color-error-bg: var(--color-error-bg);
+$color-error-border: var(--color-error-border);
+$color-error-text: var(--color-error-text);
 
 // === INFO (Cool - Dusty Blue) ===
-$color-info-bg: $dusty-blue-100;                   // Cool blue
-$color-info-border: $dusty-blue-200;
-$color-info-text: $dusty-blue-700;
+$color-info-bg: var(--color-info-bg);                   // Cool blue
+$color-info-border: var(--color-info-border);
+$color-info-text: var(--color-info-text);
 
 // === INFO COOL VARIANT (Slate Blue) ===
 // Use for very technical/structural info
-$color-info-cool-bg: $slate-blue-100;              // Cooler slate
-$color-info-cool-border: $slate-blue-200;
-$color-info-cool-text: $slate-blue-700;
+$color-info-cool-bg: var(--color-info-cool-bg);              // Cooler slate
+$color-info-cool-border: var(--color-info-cool-border);
+$color-info-cool-text: var(--color-info-cool-text);
 
 // === BADGES ===
 
 // === ARTICLE BADGES (Warm - Orange) ===
-$color-badge-article-bg: $orange-200;     // More saturated (was orange-100)
-$color-badge-article-text: $orange-700;
-$color-badge-article-border: $orange-300;  // Stronger border (was orange-200)
+$color-badge-article-bg: var(--color-badge-article-bg);     // More saturated (was orange-100)
+$color-badge-article-text: var(--color-badge-article-text);
+$color-badge-article-border: var(--color-badge-article-border);  // Stronger border (was orange-200)
 
 // === NOTE BADGES (Warm - Terracotta) ===
-$color-badge-note-bg: $terracotta-200;     // More saturated (was terracotta-100)
-$color-badge-note-text: $terracotta-700;
-$color-badge-note-border: $terracotta-300;  // Stronger border (was terracotta-200)
+$color-badge-note-bg: var(--color-badge-note-bg);     // More saturated (was terracotta-100)
+$color-badge-note-text: var(--color-badge-note-text);
+$color-badge-note-border: var(--color-badge-note-border);  // Stronger border (was terracotta-200)
 
 // === NOTE BADGES COOL VARIANT (Teal) ===
 // Alternative for cool sections
-$color-badge-note-cool-bg: $teal-100;
-$color-badge-note-cool-text: $teal-700;
-$color-badge-note-cool-border: $teal-200;
+$color-badge-note-cool-bg: var(--color-badge-note-cool-bg);
+$color-badge-note-cool-text: var(--color-badge-note-cool-text);
+$color-badge-note-cool-border: var(--color-badge-note-cool-border);
 
 // === TAGS ===
 
 // === ARTICLE TAGS (Cool - Dusty Blue) ===
 // Cool blue tags for articles - clearly interactive
-$color-tag-article-bg: $dusty-blue-100;
-$color-tag-article-text: $dusty-blue-700;
-$color-tag-article-border: $dusty-blue-300;
-$color-tag-article-hover-bg: $dusty-blue-200;
-$color-tag-article-hover-text: $dusty-blue-800;
-$color-tag-article-hover-border: $dusty-blue-400;
+$color-tag-article-bg: var(--color-tag-article-bg);
+$color-tag-article-text: var(--color-tag-article-text);
+$color-tag-article-border: var(--color-tag-article-border);
+$color-tag-article-hover-bg: var(--color-tag-article-hover-bg);
+$color-tag-article-hover-text: var(--color-tag-article-hover-text);
+$color-tag-article-hover-border: var(--color-tag-article-hover-border);
 
 // === NOTE TAGS (Cool - Teal) ===
 // Cool teal tags for notes - distinguishes from articles
-$color-tag-note-bg: $teal-100;
-$color-tag-note-text: $teal-700;
-$color-tag-note-border: $teal-300;
-$color-tag-note-hover-bg: $teal-200;
-$color-tag-note-hover-text: $teal-800;
-$color-tag-note-hover-border: $teal-400;
+$color-tag-note-bg: var(--color-tag-note-bg);
+$color-tag-note-text: var(--color-tag-note-text);
+$color-tag-note-border: var(--color-tag-note-border);
+$color-tag-note-hover-bg: var(--color-tag-note-hover-bg);
+$color-tag-note-hover-text: var(--color-tag-note-hover-text);
+$color-tag-note-hover-border: var(--color-tag-note-hover-border);
 
 // === FORM ELEMENTS ===
 // Strategy: Warm borders at rest, cool on hover (more defined), warm orange on focus (friendly)
-$color-input-bg: $white;
-$color-input-border: $neutral-warm-200;            // Warm border (soft)
-$color-input-border-hover: $neutral-cool-400;      // Cool hover (more visible)
-$color-input-border-focus: $orange-600;            // Orange focus (warm)
-$color-input-text: $neutral-cool-800;              // Cool text (readable)
-$color-input-placeholder: $neutral-cool-500;       // Cool placeholder
-$color-input-disabled-bg: $neutral-100;            // Warm disabled
-$color-input-disabled-text: $neutral-cool-500;
+$color-input-bg: var(--color-input-bg);
+$color-input-border: var(--color-input-border);            // Warm border (soft)
+$color-input-border-hover: var(--color-input-border-hover);      // Cool hover (more visible)
+$color-input-border-focus: var(--color-input-border-focus);            // Orange focus (warm)
+$color-input-text: var(--color-input-text);              // Cool text (readable)
+$color-input-placeholder: var(--color-input-placeholder);       // Cool placeholder
+$color-input-disabled-bg: var(--color-input-disabled-bg);            // Warm disabled
+$color-input-disabled-text: var(--color-input-disabled-text);
 
 // === QUICK LISTS (Note Categories) ===
 
 // === ORPHAN NOTES (Warm - Mustard) ===
 // Semantic: "Attention needed" (warm, urgent)
-$color-orphan-bg: $mustard-100;
-$color-orphan-border: $mustard-200;
-$color-orphan-text: $mustard-500;
-$color-orphan-heading: $mustard-700;
-$color-orphan-hover: $mustard-50;
+$color-orphan-bg: var(--color-orphan-bg);
+$color-orphan-border: var(--color-orphan-border);
+$color-orphan-text: var(--color-orphan-text);
+$color-orphan-heading: var(--color-orphan-heading);
+$color-orphan-hover: var(--color-orphan-hover);
 
 // === HUB NOTES (Cool - Dusty Blue) ===
 // Semantic: "Structure/navigation" (cool, organized)
-$color-hub-bg: $dusty-blue-100;
-$color-hub-border: $dusty-blue-200;
-$color-hub-text: $dusty-blue-600;
-$color-hub-heading: $dusty-blue-700;
-$color-hub-hover: $dusty-blue-50;
+$color-hub-bg: var(--color-hub-bg);
+$color-hub-border: var(--color-hub-border);
+$color-hub-text: var(--color-hub-text);
+$color-hub-heading: var(--color-hub-heading);
+$color-hub-hover: var(--color-hub-hover);
 
 // === CENTRAL CONCEPT NOTES (Warm - Terracotta) ===
 // Semantic: "Foundation/importance" (warm, grounded)
-$color-central-bg: $terracotta-100;
-$color-central-border: $terracotta-200;
-$color-central-text: $terracotta-600;
-$color-central-heading: $terracotta-700;
-$color-central-hover: $terracotta-50;
+$color-central-bg: var(--color-central-bg);
+$color-central-border: var(--color-central-border);
+$color-central-text: var(--color-central-text);
+$color-central-heading: var(--color-central-heading);
+$color-central-hover: var(--color-central-hover);
 
 // === STALE NOTES (Cool - Slate Blue) ===
 // Semantic: "Needs attention/review" (cool, contemplative)
-$color-stale-bg: $slate-blue-100;
-$color-stale-border: $slate-blue-200;
-$color-stale-text: $slate-blue-600;
-$color-stale-heading: $slate-blue-700;
-$color-stale-hover: $slate-blue-50;
+$color-stale-bg: var(--color-stale-bg);
+$color-stale-border: var(--color-stale-border);
+$color-stale-text: var(--color-stale-text);
+$color-stale-heading: var(--color-stale-heading);
+$color-stale-hover: var(--color-stale-hover);
 
 // === SOCIAL LINKS ===
-$color-social-github-bg: $neutral-900;
-$color-social-github-bg-hover: $neutral-800;
-$color-social-github-text: $white;
+$color-social-github-bg: var(--color-social-github-bg);
+$color-social-github-bg-hover: var(--color-social-github-bg-hover);
+$color-social-github-text: var(--color-social-github-text);
 
-$color-social-linkedin-bg: $blue-600;
-$color-social-linkedin-bg-hover: $blue-700;
-$color-social-linkedin-text: $white;
+$color-social-linkedin-bg: var(--color-social-linkedin-bg);
+$color-social-linkedin-bg-hover: var(--color-social-linkedin-bg-hover);
+$color-social-linkedin-text: var(--color-social-linkedin-text);
 
-$color-social-email-bg: $gray-100;
-$color-social-email-bg-hover: $neutral-200;
-$color-social-email-text: $neutral-900;
-$color-social-email-border: $neutral-300;
+$color-social-email-bg: var(--color-social-email-bg);
+$color-social-email-bg-hover: var(--color-social-email-bg-hover);
+$color-social-email-text: var(--color-social-email-text);
+$color-social-email-border: var(--color-social-email-border);
 
 // === DISABLED STATES ===
-$color-disabled-bg: $neutral-400;
-$color-disabled-text: $neutral-500;
+$color-disabled-bg: var(--color-disabled-bg);
+$color-disabled-text: var(--color-disabled-text);
 
 // ============================================================================
 // BACKWARD COMPATIBILITY ALIASES
@@ -425,29 +427,29 @@ $color-disabled-text: $neutral-500;
 // Keep these for now to avoid breaking existing code
 // TODO: Phase these out over time
 
-$color-bg-canvas: $color-surface-secondary;
-$color-bg-secondary: $color-surface-tertiary;
-$color-bg-card: $color-surface-default;
-$color-bg-cool: $color-page-bg;
-$color-border: $color-border-default;
-$color-primary: $color-interactive-primary;
-$color-primary-hover: $color-interactive-primary-hover;
-$color-primary-active: $color-interactive-primary-active;
-$color-primary-light: $orange-50;  // Updated to orange
-$color-primary-dark: $orange-700;  // Updated to orange
-$color-secondary: $color-interactive-secondary;
-$color-secondary-hover: $color-interactive-secondary-hover;
-$color-secondary-light: $terracotta-50;  // Updated to terracotta
-$color-accent-blue: $dusty-blue-600;     // Updated to dusty blue (cool accent)
-$color-accent-blue-light: $dusty-blue-50;
-$color-accent-blue-border: $dusty-blue-200;
-$color-accent-blue-dark: $dusty-blue-700;
-$color-accent-purple: $terracotta-600;   // Updated to terracotta (warm secondary)
-$color-accent-purple-light: $terracotta-50;
-$color-accent-purple-border: $terracotta-200;
-$color-accent-purple-dark: $terracotta-700;
-$color-disabled-bg: $neutral-400;
-$color-disabled-text: $neutral-500;
-$color-success: $color-success-text;
-$color-warning: $color-warning-text;
-$color-info: $color-info-text;
+$color-bg-canvas: var(--color-bg-canvas);
+$color-bg-secondary: var(--color-bg-secondary);
+$color-bg-card: var(--color-bg-card);
+$color-bg-cool: var(--color-bg-cool);
+$color-border: var(--color-border);
+$color-primary: var(--color-primary);
+$color-primary-hover: var(--color-primary-hover);
+$color-primary-active: var(--color-primary-active);
+$color-primary-light: var(--color-primary-light);  // Updated to orange
+$color-primary-dark: var(--color-primary-dark);  // Updated to orange
+$color-secondary: var(--color-secondary);
+$color-secondary-hover: var(--color-secondary-hover);
+$color-secondary-light: var(--color-secondary-light);  // Updated to terracotta
+$color-accent-blue: var(--color-accent-blue);     // Updated to dusty blue (cool accent)
+$color-accent-blue-light: var(--color-accent-blue-light);
+$color-accent-blue-border: var(--color-accent-blue-border);
+$color-accent-blue-dark: var(--color-accent-blue-dark);
+$color-accent-purple: var(--color-accent-purple);   // Updated to terracotta (warm secondary)
+$color-accent-purple-light: var(--color-accent-purple-light);
+$color-accent-purple-border: var(--color-accent-purple-border);
+$color-accent-purple-dark: var(--color-accent-purple-dark);
+$color-disabled-bg: var(--color-disabled-bg);
+$color-disabled-text: var(--color-disabled-text);
+$color-success: var(--color-success);
+$color-warning: var(--color-warning);
+$color-info: var(--color-info);

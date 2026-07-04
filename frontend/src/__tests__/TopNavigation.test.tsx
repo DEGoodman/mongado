@@ -136,7 +136,9 @@ describe("TopNavigation", () => {
     it("renders search button with icon", () => {
       render(<TopNavigation />);
 
-      expect(screen.getByText("🔍")).toBeInTheDocument();
+      const searchButton = screen.getByRole("button", { name: "Open search" });
+      expect(searchButton).toBeInTheDocument();
+      expect(searchButton.querySelector("svg")).toBeInTheDocument();
     });
 
     it("renders search label", () => {

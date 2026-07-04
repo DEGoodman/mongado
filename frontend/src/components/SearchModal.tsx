@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import styles from "./SearchModal.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -156,7 +157,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Search Input */}
         <div className={styles.searchHeader}>
-          <span className={styles.searchIcon}>🔍</span>
+          <span className={styles.searchIcon} aria-hidden="true">
+            <MagnifyingGlass size={18} />
+          </span>
           <input
             ref={inputRef}
             type="text"
@@ -193,8 +196,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     onClick={handleResultClick}
                   >
                     <div className={styles.resultMeta}>
-                      <span className={styles.resultType}>
-                        {result.type === "article" ? "📚" : "📝"}
+                      <span className={styles.resultType} data-type={result.type}>
+                        {result.type === "article" ? "ART" : "NOTE"}
                       </span>
                       <span className={styles.resultScore}>{result.score.toFixed(1)}</span>
                     </div>

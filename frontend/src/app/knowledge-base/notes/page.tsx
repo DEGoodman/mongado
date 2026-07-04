@@ -433,7 +433,7 @@ function NotesContent() {
                           <div className={styles.noteIdRow}>
                             <code className={styles.noteId}>{note.id}</code>
                             {note.is_reference && (
-                              <span className={styles.referenceBadge}>Reference</span>
+                              <span className={styles.referenceBadge}>REF</span>
                             )}
                           </div>
 

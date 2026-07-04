@@ -1,6 +1,6 @@
 /**
  * Badge Component Styles
- * Retro-modern design with blue (articles) and purple (notes) colors
+ * Uppercase mono labels: articles carry the orange accent, notes stay grey.
  */
 
 @use '@/styles/design-tokens' as *;
@@ -8,30 +8,26 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: $spacing-1;
   padding: $spacing-1 $spacing-2;
+  font-family: $font-family-mono;
   font-size: $font-size-xs;
   font-weight: $font-weight-medium;
+  letter-spacing: $letter-spacing-wider;
+  text-transform: uppercase;
   border-radius: $border-radius-tag;
   border: $border-width-thin solid;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  background-color: transparent;
+  transition: border-color 0.2s ease;
 
-  // Article badge - Blue
+  // Article badge - orange accent
   &[data-type='article'] {
-    background-color: $color-badge-article-bg;
-    color: $color-badge-article-text;
-    border-color: $color-badge-article-border;
+    color: $orange-700;
+    border-color: $orange-300;
   }
 
-  // Note badge - Purple
+  // Note badge - quiet grey
   &[data-type='note'] {
-    background-color: $color-badge-note-bg;
-    color: $color-badge-note-text;
-    border-color: $color-badge-note-border;
-  }
-
-  // Icon styling
-  .icon {
-    line-height: 1;
+    color: $color-text-secondary;
+    border-color: $color-border-strong;
   }
 }

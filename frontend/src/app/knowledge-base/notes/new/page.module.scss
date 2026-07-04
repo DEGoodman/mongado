@@ -77,7 +77,7 @@
       &:focus {
         outline: none;
         border-color: $color-input-border-focus;
-        box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+        box-shadow: $shadow-focus-primary;
       }
 
       &::placeholder {
@@ -274,7 +274,7 @@
   &:focus {
     outline: none;
     border-color: $color-input-border-focus;
-    box-shadow: 0 0 0 3px rgba($blue-500, 0.1);
+    box-shadow: $shadow-focus-primary;
   }
 
   &::placeholder {
@@ -300,7 +300,7 @@
   &:focus {
     outline: none;
     border-color: $color-input-border-focus;
-    box-shadow: 0 0 0 3px rgba($blue-500, 0.1);
+    box-shadow: $shadow-focus-primary;
   }
 
   &:disabled {

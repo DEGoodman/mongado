@@ -13,16 +13,16 @@ $font-family-mono: var(--font-space-mono), 'SF Mono', 'Monaco', 'Inconsolata', '
   'Source Code Pro', monospace;
 
 // ===== FONT SIZES =====
-// Scaled down ~15% for more compact display
-$font-size-xs: 0.625rem; // 10px (was 12px)
-$font-size-sm: 0.75rem; // 12px (was 14px)
-$font-size-base: 0.875rem; // 14px (was 16px)
-$font-size-lg: 1rem; // 16px (was 18px)
-$font-size-xl: 1.125rem; // 18px (was 20px)
-$font-size-2xl: 1.3125rem; // 21px (was 24px)
-$font-size-3xl: 1.625rem; // 26px (was 30px)
-$font-size-4xl: 2rem; // 32px (was 36px)
-$font-size-5xl: 2.625rem; // 42px (was 48px)
+// Standard 16px base: long-form reading is the site's core job.
+$font-size-xs: 0.75rem; // 12px
+$font-size-sm: 0.875rem; // 14px
+$font-size-base: 1rem; // 16px
+$font-size-lg: 1.125rem; // 18px
+$font-size-xl: 1.25rem; // 20px
+$font-size-2xl: 1.5rem; // 24px
+$font-size-3xl: 1.875rem; // 30px
+$font-size-4xl: 2.25rem; // 36px
+$font-size-5xl: 3rem; // 48px
 
 // ===== FONT WEIGHTS =====
 $font-weight-normal: 400;

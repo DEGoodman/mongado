@@ -16,6 +16,7 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { GearSix } from "@phosphor-icons/react";
 import styles from "./Settings.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -81,7 +82,9 @@ export default function Settings() {
         aria-expanded={isOpen}
         title="Settings"
       >
-        <span className={styles.icon}>⚙️</span>
+        <span className={styles.icon} aria-hidden="true">
+          <GearSix size={18} />
+        </span>
       </button>
 
       {/* Dropdown menu */}

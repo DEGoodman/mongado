@@ -16,11 +16,11 @@
   // Cool slate blue header zone (consistent across KB)
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,              // Bluer, more saturated top
-    $slate-blue-100 50%,             // Transition to lighter
-    rgba($slate-blue-50, 0.7) 100%   // More transparent bottom
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $slate-blue-300;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
 
   .headerContent {
@@ -74,7 +74,7 @@
         &:focus {
           outline: none;
           border-color: $color-input-border-focus;
-          box-shadow: 0 0 0 2px rgba($blue-500, 0.2);
+          box-shadow: $shadow-focus-primary;
         }
 
         &::placeholder {
@@ -145,12 +145,11 @@
         gap: $spacing-2;
 
         .resultType {
-          @include text-secondary;
-          font-weight: $font-weight-medium;
+          @include text-label-mono;
         }
 
         .resultScore {
-          @include text-tertiary;
+          @include text-meta-mono;
         }
       }
 
@@ -204,30 +203,28 @@
   @include card-elevated;
   transition: all 0.2s ease;
 
+  // One card system: white surface, grey border. The featured card
+  // (articles) carries the single orange accent for the view.
+  background-color: $color-surface-default;
+  border-color: $color-border-default;
+
   &.articles {
-    background-color: rgba($blue-50, 0.3);
-    border-color: $blue-200;
-  }
-
-  &.notes {
-    background-color: rgba($purple-50, 0.3);
-    border-color: $purple-200;
-  }
-
-  &.toolbox {
-    background-color: rgba($amber-50, 0.3);
-    border-color: $amber-200;
+    border-left: $border-width-thick solid $color-interactive-primary;
   }
 
   .toolboxBadge {
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
-    background-color: $amber-100;
-    color: $amber-800;
+    background-color: transparent;
+    border: $border-width-thin dashed $color-border-strong;
+    color: $color-text-secondary;
     border-radius: $border-radius-sm;
     font-size: 11px;
     font-weight: $font-weight-medium;
+    font-family: $font-family-mono;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
   }
 
   .cardBadge {
@@ -261,8 +258,8 @@
     transition: all 0.2s ease;
 
     &.primary {
-      background-color: $color-primary;
-      color: white;
+      background-color: $color-interactive-primary;
+      color: $color-interactive-primary-text;
 
       &:hover {
         background-color: $color-primary-hover;
@@ -279,41 +276,18 @@
       }
     }
 
-    &.notePrimary {
-      background-color: $color-secondary;
-      color: white;
-
-      &:hover {
-        background-color: $color-secondary-hover;
-      }
-    }
-
-    &.noteSecondary {
-      background-color: transparent;
-      color: $color-secondary;
-      border: $border-width-thin solid $color-secondary;
-
-      &:hover {
-        background-color: $color-secondary-light;
-      }
-    }
-
-    &.toolboxPrimary {
-      background-color: $amber-600;
-      color: white;
-
-      &:hover {
-        background-color: $amber-700;
-      }
-    }
-
+    // One orange primary per view; every other card action is a ghost.
+    &.notePrimary,
+    &.toolboxPrimary,
+    &.noteSecondary,
     &.toolboxSecondary {
       background-color: transparent;
-      color: $amber-600;
-      border: $border-width-thin solid $amber-600;
+      color: $color-primary-dark;
+      border: $border-width-thin solid $orange-300;
 
       &:hover {
-        background-color: $amber-50;
+        background-color: $color-primary-light;
+        border-color: $color-primary;
       }
     }
   }
@@ -334,14 +308,14 @@
 // ===== INFO SECTION =====
 .infoSection {
   @include card;
-  background-color: $blue-50;
-  border-color: $blue-200;
+  background-color: $color-surface-secondary;
+  border-color: $color-border-default;
 
   .infoTitle {
     @include heading-h3;
     font-size: $font-size-xl; // Reduced from h3 (21px) to xl (18px)
     margin-bottom: $spacing-2; // Keep at 8px
-    color: $blue-900;
+    color: $color-text-heading;
   }
 
   .infoGrid {
@@ -351,7 +325,7 @@
     font-size: $font-size-sm; // Reduced from base (14px) to sm (12px)
     line-height: $line-height-relaxed; // 1.6 (already optimized)
     @include text-secondary;
-    color: $blue-800;
+    color: $color-text-secondary;
 
     @media (min-width: 768px) {
       grid-template-columns: repeat(2, 1fr);
@@ -360,15 +334,15 @@
     .infoItem {
       strong {
         font-weight: $font-weight-semibold;
-        color: $blue-900;
+        color: $color-text-heading;
       }
 
       a {
         text-decoration: underline;
-        color: $blue-700;
+        color: $color-link-default;
 
         &:hover {
-          color: $blue-600;
+          color: $color-link-hover;
         }
       }
     }

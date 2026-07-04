@@ -72,7 +72,7 @@ describe("SearchModal", () => {
 
     it("shows search icon", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
-      expect(screen.getByText("🔍")).toBeInTheDocument();
+      expect(document.querySelector("svg")).toBeInTheDocument();
     });
 
     it("shows escape hint", () => {
@@ -186,9 +186,9 @@ describe("SearchModal", () => {
         expect(screen.getByText(/Design Note/)).toBeInTheDocument();
       });
 
-      // Check icons for article vs note
-      expect(screen.getByText("📚")).toBeInTheDocument();
-      expect(screen.getByText("📝")).toBeInTheDocument();
+      // Check mono type labels for article vs note
+      expect(screen.getByText("ART")).toBeInTheDocument();
+      expect(screen.getByText("NOTE")).toBeInTheDocument();
 
       // Check snippets are displayed
       expect(screen.getByText("...contextual snippet...")).toBeInTheDocument();

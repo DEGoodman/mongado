@@ -1,0 +1,30 @@
+/**
+ * ThemeToggle Component Styles
+ */
+
+@use '@/styles/design-tokens' as *;
+@use '@/styles/mixins' as *;
+
+.toggle {
+  @include flex-center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid $neutral-300;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  color: $color-text-secondary;
+  cursor: pointer;
+  @include transition-default;
+
+  &:hover {
+    background-color: $color-surface-hover;
+    border-color: $color-border-hover;
+    color: $color-link-default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-interactive-primary-focus;
+    outline-offset: 2px;
+  }
+}
