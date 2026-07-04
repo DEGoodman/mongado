@@ -178,7 +178,7 @@
 .submitButton {
   width: 100%;
   padding: $spacing-2 $spacing-4;
-  background-color: $blue-600;
+  background-color: $color-link-default;
   color: $white;
   border: none;
   border-radius: $border-radius-button;
@@ -189,7 +189,7 @@
   transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    background-color: $blue-700;
+    background-color: $color-text-secondary;
   }
 
   &:focus {
