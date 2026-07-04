@@ -2,8 +2,8 @@
  * ThemeToggle Component Styles
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .toggle {
   @include flex-center;

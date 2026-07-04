@@ -24,7 +24,7 @@ $border-width-thick: 3px;
 
 // ===== BORDER STYLES =====
 // Import colors for border colors
-@use 'colors' as *;
+@use "colors" as *;
 
 // Standard borders
 $border-default: $border-width-thin solid $color-border;

@@ -3,8 +3,8 @@
  * Simple back navigation link
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .breadcrumb {
   margin-bottom: $spacing-4;

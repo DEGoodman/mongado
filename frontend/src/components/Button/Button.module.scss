@@ -3,8 +3,8 @@
  * Retro-modern design with blue primary colors
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .button {
   @include reset-button;

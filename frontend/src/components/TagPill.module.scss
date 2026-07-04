@@ -3,8 +3,8 @@
  * Cool-toned tags with warm-cool theme integration
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .tagPill {
   @include flex-center;
@@ -17,7 +17,7 @@
   @include transition-default;
 
   // === ARTICLE TAGS (Dusty Blue) ===
-  &[data-variant='article'] {
+  &[data-variant="article"] {
     background-color: $color-tag-article-bg;
     color: $color-tag-article-text;
     border-color: $color-tag-article-border;
@@ -36,7 +36,7 @@
   }
 
   // === NOTE TAGS (Teal) ===
-  &[data-variant='note'] {
+  &[data-variant="note"] {
     background-color: $color-tag-note-bg;
     color: $color-tag-note-text;
     border-color: $color-tag-note-border;

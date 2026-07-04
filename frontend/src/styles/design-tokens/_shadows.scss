@@ -5,19 +5,19 @@
 
 // ===== WARM SHADOWS (Default) =====
 // Orange-tinted shadows for warm elements
-$shadow-color-warm: rgba(217, 109, 50, 0.06);        // Orange tint (light)
-$shadow-color-warm-md: rgba(217, 109, 50, 0.10);     // Orange tint (medium)
-$shadow-color-warm-lg: rgba(217, 109, 50, 0.14);     // Orange tint (strong)
+$shadow-color-warm: rgba(217, 109, 50, 0.06); // Orange tint (light)
+$shadow-color-warm-md: rgba(217, 109, 50, 0.1); // Orange tint (medium)
+$shadow-color-warm-lg: rgba(217, 109, 50, 0.14); // Orange tint (strong)
 
-$shadow-color-charcoal: rgba(45, 45, 40, 0.08);      // Warm charcoal
-$shadow-color-charcoal-md: rgba(45, 45, 40, 0.12);   // Warm charcoal (medium)
-$shadow-color-charcoal-lg: rgba(45, 45, 40, 0.16);   // Warm charcoal (strong)
+$shadow-color-charcoal: rgba(45, 45, 40, 0.08); // Warm charcoal
+$shadow-color-charcoal-md: rgba(45, 45, 40, 0.12); // Warm charcoal (medium)
+$shadow-color-charcoal-lg: rgba(45, 45, 40, 0.16); // Warm charcoal (strong)
 
 // ===== COOL SHADOWS (Alternative) =====
 // Teal-tinted shadows for cool elements
-$shadow-color-cool: rgba(58, 138, 125, 0.06);        // Teal tint (light)
-$shadow-color-cool-md: rgba(58, 138, 125, 0.10);     // Teal tint (medium)
-$shadow-color-cool-lg: rgba(58, 138, 125, 0.14);     // Teal tint (strong)
+$shadow-color-cool: rgba(58, 138, 125, 0.06); // Teal tint (light)
+$shadow-color-cool-md: rgba(58, 138, 125, 0.1); // Teal tint (medium)
+$shadow-color-cool-lg: rgba(58, 138, 125, 0.14); // Teal tint (strong)
 
 // ===== CARD SHADOWS (Default - Warm) =====
 // Subtle shadow for resting cards
@@ -39,7 +39,7 @@ $shadow-card-cool-lg: 0 4px 16px $shadow-color-cool-lg;
 // Combines warm and cool shadows for maximum depth
 $shadow-elevated:
   0 2px 8px $shadow-color-warm-md,
-  0 4px 16px $shadow-color-cool;                     // Cool depth layer
+  0 4px 16px $shadow-color-cool; // Cool depth layer
 
 // ===== BUTTON SHADOWS =====
 $shadow-button: 0 1px 3px rgba(45, 45, 40, 0.12);

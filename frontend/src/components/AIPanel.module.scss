@@ -4,8 +4,8 @@
  * Matches production Tailwind design
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 // Main panel - slides in from right on desktop
 .panel {
@@ -284,16 +284,16 @@
   font-size: $font-size-xs;
   letter-spacing: $letter-spacing-wide;
 
-  &[data-type='article'] {
+  &[data-type="article"] {
     color: $orange-700;
   }
 
-  &[data-type='note'] {
+  &[data-type="note"] {
     color: $color-text-secondary;
   }
 
-  &[data-type='reference'],
-  &:not([data-type='article']):not([data-type='note']) {
+  &[data-type="reference"],
+  &:not([data-type="article"]):not([data-type="note"]) {
     color: $color-text-tertiary;
   }
 }
@@ -353,7 +353,8 @@
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {

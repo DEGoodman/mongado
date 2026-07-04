@@ -4,8 +4,8 @@
  * Matches production Tailwind design
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 // Backdrop overlay for mobile/tablet
 .backdrop {
@@ -92,7 +92,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

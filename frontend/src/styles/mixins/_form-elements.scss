@@ -3,7 +3,7 @@
  * Reusable patterns for inputs, selects, textareas, etc.
  */
 
-@use '../design-tokens' as *;
+@use "../design-tokens" as *;
 
 // ============================================================================
 // BASE INPUT
@@ -105,7 +105,7 @@
     border-color: $color-interactive-primary;
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       left: 4px;
       top: 1px;
@@ -147,7 +147,7 @@
     border-color: $color-interactive-primary;
 
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       left: 3px;
       top: 3px;

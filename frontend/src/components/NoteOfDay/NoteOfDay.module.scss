@@ -3,8 +3,8 @@
  * Homepage widget for resurfacing stale notes
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .noteOfDay {
   background-color: $color-surface-default;
@@ -104,12 +104,7 @@
 
 .skeleton {
   height: 150px;
-  background: linear-gradient(
-    90deg,
-    $neutral-100 25%,
-    $neutral-50 50%,
-    $neutral-100 75%
-  );
+  background: linear-gradient(90deg, $neutral-100 25%, $neutral-50 50%, $neutral-100 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: $border-radius-md;
