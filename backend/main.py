@@ -203,9 +203,13 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
 
         # API responses - respect explicit cache headers, add defaults otherwise
         elif request.url.path.startswith("/api/") and "Cache-Control" not in response.headers:
-            # Allow browser to cache list/read operations for 60 seconds
+            # Allow browser to cache list/read operations for 60 seconds;
+            # serve stale while revalidating so refreshes never block on the
+            # network for content that just changed underneath
             if request.method == "GET":
-                response.headers["Cache-Control"] = "public, max-age=60"
+                response.headers["Cache-Control"] = (
+                    "public, max-age=60, stale-while-revalidate=300"
+                )
             else:
                 response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
 

@@ -2,11 +2,27 @@
 
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
+import { prefetchOnce } from "@/lib/prefetch";
+import { getNote, getBacklinks, getOutboundLinks } from "@/lib/api/notes";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
+
+// Warm the browser HTTP cache with everything the note page fetches on load,
+// and pull in the (code-split) editor chunk the note page may need.
+function prefetchNote(noteId: string): void {
+  prefetchOnce(`note:${noteId}`, () =>
+    Promise.all([getNote(noteId), getBacklinks(noteId), getOutboundLinks(noteId)])
+  );
+}
+
+function prefetchEditorChunk(): void {
+  prefetchOnce("chunk:note-editor", () => import("@/components/NoteEditor"));
+}
 import { useRouter, useSearchParams } from "next/navigation";
 import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
-import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
@@ -255,7 +271,12 @@ function NotesContent() {
               >
                 {randomNoteLoading ? "Loading..." : "Random Note"}
               </button>
-              <Link href="/knowledge-base/notes/new" className={styles.newNoteButton}>
+              <Link
+                href="/knowledge-base/notes/new"
+                className={styles.newNoteButton}
+                onMouseEnter={prefetchEditorChunk}
+                onFocus={prefetchEditorChunk}
+              >
                 + New Note
               </Link>
             </div>
@@ -426,6 +447,8 @@ function NotesContent() {
                       key={note.id}
                       href={`/knowledge-base/notes/${note.id}`}
                       className={styles.noteCard}
+                      onMouseEnter={() => prefetchNote(note.id)}
+                      onFocus={() => prefetchNote(note.id)}
                     >
                       <div className={styles.noteCardContent}>
                         <div className={styles.noteInfo}>

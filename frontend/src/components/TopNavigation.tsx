@@ -15,6 +15,19 @@
 
 import { useState, useEffect } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { prefetchOnce } from "@/lib/prefetch";
+
+// The graph payload (100+ notes with edges) is the slowest KB fetch; warm the
+// browser HTTP cache while the user is still hovering the nav link.
+function prefetchGraphData(): void {
+  prefetchOnce("graph:data", () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const token = localStorage.getItem("admin_token");
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return fetch(`${apiUrl}/api/notes/graph/data`, { headers, credentials: "include" });
+  });
+}
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Settings from "./Settings";
@@ -75,6 +88,8 @@ export default function TopNavigation() {
             <Link
               href="/knowledge-base/notes/graph"
               className={`${styles.navLink} ${isGraphSection ? styles.active : ""}`}
+              onMouseEnter={prefetchGraphData}
+              onFocus={prefetchGraphData}
             >
               Graph
             </Link>

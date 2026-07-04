@@ -4,9 +4,13 @@ import { useEffect, useState } from "react";
 import { CalendarBlank, PencilSimple, NotePencil } from "@phosphor-icons/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
+import dynamic from "next/dynamic";
+
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
+// Fallback renderer only; articles normally arrive as pre-rendered HTML,
+// so keep the react-markdown stack out of the first load
+const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
 import ArticleTableOfContents from "@/components/ArticleTableOfContents";
-import AIPanel from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";

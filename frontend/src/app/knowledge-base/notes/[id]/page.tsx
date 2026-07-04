@@ -4,12 +4,23 @@ import { useEffect, useState } from "react";
 import { Sparkle } from "@phosphor-icons/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import NoteEditor from "@/components/NoteEditor";
-import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
-import AIPanel from "@/components/AIPanel";
+import { prefetchOnce } from "@/lib/prefetch";
+import dynamic from "next/dynamic";
+
+// Heavy editor (CodeMirror) and AI panels load on demand, not in first-load JS
+const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
+  ssr: false,
+  loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
+});
+const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
+const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
+const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
+  ssr: false,
+});
+const PostSaveAISuggestions = dynamic(() => import("@/components/PostSaveAISuggestions"), {
+  ssr: false,
+});
 import AIButton from "@/components/AIButton";
-import AISuggestionsPanel from "@/components/AISuggestionsPanel";
-import PostSaveAISuggestions from "@/components/PostSaveAISuggestions";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
@@ -431,6 +442,9 @@ export default function NoteDetailPage() {
                   </Link>
                   <button
                     onClick={() => setIsEditing(true)}
+                    onMouseEnter={() =>
+                      prefetchOnce("chunk:note-editor", () => import("@/components/NoteEditor"))
+                    }
                     className={`${styles.button} ${styles.editButton}`}
                     aria-label="Edit this note"
                   >
