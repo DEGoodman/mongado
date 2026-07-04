@@ -8,6 +8,7 @@ import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
+import { GearSix } from "@phosphor-icons/react";
 import styles from "./SettingsDropdown.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -93,7 +94,9 @@ export default function SettingsDropdown() {
           className={styles.settingsButton}
           aria-label="Settings"
         >
-          <span className={styles.icon}>⚙️</span>
+          <span className={styles.icon} aria-hidden="true">
+            <GearSix size={18} />
+          </span>
           <span className={styles.label}>Settings</span>
           <svg
             className={`${styles.chevron} ${isOpen ? styles.open : ""}`}

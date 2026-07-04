@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Sparkle } from "@phosphor-icons/react";
 import { logger } from "@/lib/logger";
 import styles from "./PostSaveAISuggestions.module.scss";
 
@@ -76,7 +77,9 @@ export default function PostSaveAISuggestions({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h3 className={styles.title}>✨ AI found related notes</h3>
+          <h3 className={styles.title}>
+            <Sparkle size={16} aria-hidden="true" /> AI found related notes
+          </h3>
           <button onClick={onClose} className={styles.closeButton} aria-label="Close">
             <svg className={styles.closeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path

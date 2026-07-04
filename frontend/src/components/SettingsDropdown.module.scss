@@ -20,12 +20,12 @@
   border-radius: $border-radius-md;
   @include text-secondary;
   font-weight: $font-weight-medium;
-  color: $blue-600;
+  color: $color-link-default;
   text-decoration: none;
   @include transition-default;
 
   &:hover {
-    background-color: $blue-50;
+    background-color: $color-interactive-ghost-hover;
   }
 }
 
@@ -50,7 +50,8 @@
   }
 
   .icon {
-    font-size: $font-size-lg;
+    display: inline-flex;
+    align-items: center;
     line-height: 1;
   }
 

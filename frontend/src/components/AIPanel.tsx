@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { MagnifyingGlass, ChatCircle, Warning } from "@phosphor-icons/react";
 import { logger } from "@/lib/logger";
 import styles from "./AIPanel.module.scss";
 
@@ -343,13 +344,13 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             onClick={() => handleModeChange("search")}
             className={`${styles.modeButton} ${mode === "search" ? styles.active : styles.inactive}`}
           >
-            🔍 Search
+            <MagnifyingGlass size={14} aria-hidden="true" /> Search
           </button>
           <button
             onClick={() => handleModeChange("chat")}
             className={`${styles.modeButton} ${mode === "chat" ? styles.active : styles.inactive}`}
           >
-            💬 Chat
+            <ChatCircle size={14} aria-hidden="true" /> Chat
           </button>
         </div>
       </div>
@@ -360,7 +361,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
           <div className={styles.emptyState}>
             {mode === "chat" ? (
               <>
-                <p className={styles.emptyTitle}>💬 Conversational Q&A</p>
+                <p className={styles.emptyTitle}>Conversational Q&A</p>
                 <p className={styles.emptyDescription}>
                   Ask questions like &quot;What is systems thinking?&quot; I&apos;ll search your
                   knowledge base and provide answers with context. For finding related content, use
@@ -368,7 +369,9 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                 </p>
                 {hasGPU === false && (
                   <div className={styles.performanceNotice}>
-                    <p className={styles.noticeTitle}>⚠️ Performance Notice</p>
+                    <p className={styles.noticeTitle}>
+                      <Warning size={14} aria-hidden="true" /> Performance Notice
+                    </p>
                     <p className={styles.noticeDescription}>
                       This feature is under active development and currently running on CPU-only
                       infrastructure. Response times may be 60-120 seconds. For faster results, use
@@ -379,7 +382,7 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
               </>
             ) : (
               <>
-                <p className={styles.emptyTitle}>🔍 AI Semantic Search</p>
+                <p className={styles.emptyTitle}>AI Semantic Search</p>
                 <p className={styles.emptyDescription}>
                   Find conceptually related content using AI embeddings. Discovers connections even
                   without exact keyword matches. Fast with pre-computed embeddings. For keyword
@@ -416,11 +419,13 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
                         <div className={styles.sourceHeader}>
                           <div className={styles.sourceInfo}>
                             <span className={styles.sourceTitle}>
-                              {source.type === "article"
-                                ? "📚"
-                                : source.type === "note"
-                                  ? "🔗"
-                                  : "📄"}{" "}
+                              <span className={styles.sourceType} data-type={source.type}>
+                                {source.type === "article"
+                                  ? "ART"
+                                  : source.type === "note"
+                                    ? "NOTE"
+                                    : "REF"}
+                              </span>{" "}
                               {source.title || `Document ${source.id}`}
                             </span>
                             {source.score && (

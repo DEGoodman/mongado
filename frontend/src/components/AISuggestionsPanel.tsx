@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Sparkle, Warning, Tag, LinkSimple } from "@phosphor-icons/react";
 import { logger } from "@/lib/logger";
 import type { AiMode } from "@/lib/settings";
 import Toast from "@/components/Toast";
@@ -286,7 +287,9 @@ export default function AISuggestionsPanel({
           {/* Header with close button for mobile/tablet */}
           <div className={styles.header}>
             <div className={styles.headerLeft}>
-              <h3 className={styles.title}>✨ AI Suggestions</h3>
+              <h3 className={styles.title}>
+                <Sparkle size={16} aria-hidden="true" /> AI Suggestions
+              </h3>
               {mode === "real-time" && (
                 <div className={styles.modeIndicator}>
                   {loading && <div className={styles.autoIndicatorDot}></div>}
@@ -369,14 +372,17 @@ export default function AISuggestionsPanel({
           {/* Outdated Warning */}
           {isOutdated && !loading && hasAnySuggestions && (
             <div className={styles.outdatedBanner}>
-              ⚠️ Suggestions may be outdated - content has changed since generation.
+              <Warning size={14} aria-hidden="true" /> Suggestions may be outdated - content has
+              changed since generation.
             </div>
           )}
 
           {/* Tag Suggestions - show progressively during streaming */}
           {tagSuggestions.length > 0 && (
             <div className={styles.suggestionsSection}>
-              <h4 className={styles.sectionTitle}>🏷️ Suggested Tags</h4>
+              <h4 className={styles.sectionTitle}>
+                <Tag size={14} aria-hidden="true" /> Suggested Tags
+              </h4>
               <div className={styles.suggestionsList}>
                 {tagSuggestions.map((suggestion, index) => (
                   <div key={index} className={`${styles.suggestionCard} ${styles.fadeIn}`}>
@@ -403,7 +409,9 @@ export default function AISuggestionsPanel({
           {/* Link Suggestions - show progressively during streaming */}
           {linkSuggestions.length > 0 && (
             <div className={styles.suggestionsSection}>
-              <h4 className={styles.sectionTitle}>🔗 Suggested Links</h4>
+              <h4 className={styles.sectionTitle}>
+                <LinkSimple size={14} aria-hidden="true" /> Suggested Links
+              </h4>
               <div className={styles.suggestionsList}>
                 {linkSuggestions.map((suggestion, index) => (
                   <div key={index} className={`${styles.suggestionCard} ${styles.fadeIn}`}>
