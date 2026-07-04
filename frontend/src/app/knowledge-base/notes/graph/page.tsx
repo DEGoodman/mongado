@@ -498,11 +498,14 @@ function NotesGraphContent() {
       }
     }
 
-    function handleNodeClick(_event: MouseEvent, clickedNode: GraphNode) {
+    function handleNodeClick(event: MouseEvent, clickedNode: GraphNode) {
+      // d3.drag preventDefaults the click that follows a real drag gesture
+      if (event.defaultPrevented) return;
       setSelectedNode(clickedNode);
     }
 
-    function handleNodeDoubleClick(_event: MouseEvent, clickedNode: GraphNode) {
+    function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
+      event.preventDefault();
       router.push(`/knowledge-base/notes/${clickedNode.id}`);
     }
 
@@ -516,12 +519,17 @@ function NotesGraphContent() {
     // Enable dragging
     const drag = d3
       .drag<SVGCircleElement, GraphNode>()
-      .on("start", (event, d) => {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+      // Tolerate small pointer movement so clicks/double-clicks aren't
+      // swallowed as micro-drags (default clickDistance is 0)
+      .clickDistance(10)
+      .on("start", (_event, d) => {
+        // Pin the node but don't reheat the simulation yet — reheating on
+        // mousedown makes nodes drift between the two clicks of a dblclick
         d.fx = d.x;
         d.fy = d.y;
       })
       .on("drag", (event, d) => {
+        simulation.alphaTarget(0.3).restart();
         d.fx = event.x;
         d.fy = event.y;
       })
@@ -884,8 +892,6 @@ function NotesGraphContent() {
                   <Link
                     href={`/knowledge-base/notes/${selectedNode.id}`}
                     className={styles.viewButton}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     aria-label={`View note: ${selectedNode.title || selectedNode.id}`}
                   >
                     View note
