@@ -505,14 +505,10 @@ function NotesGraphContent() {
       }
     }
 
-    function handleNodeClick(event: MouseEvent, clickedNode: GraphNode) {
-      // d3.drag preventDefaults the click that follows a real drag gesture
-      if (event.defaultPrevented) return;
-      // Keep the svg background handler from treating this as a deselect
+    function handleNodeClick(event: MouseEvent) {
+      // Selection happens on mousedown (drag start); this handler only
+      // shields the svg background-deselect handler from the bubbled click
       event.stopPropagation();
-      setSelectedNode(clickedNode);
-      // A stale ?node= param would otherwise re-select the old node
-      clearNodeParam();
     }
 
     function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
@@ -534,6 +530,12 @@ function NotesGraphContent() {
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
       .on("start", (_event, d) => {
+        // Select on mousedown: real trackpad clicks often travel >10px
+        // between down and up, which makes d3's drag suppression swallow
+        // the click event entirely (#208). mousedown always fires.
+        setSelectedNode(d);
+        // A stale ?node= param would otherwise re-select the old node
+        clearNodeParam();
         // Pin the node but don't reheat the simulation yet — reheating on
         // mousedown makes nodes drift between the two clicks of a dblclick
         d.fx = d.x;
