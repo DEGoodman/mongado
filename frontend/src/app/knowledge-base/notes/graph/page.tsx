@@ -31,19 +31,31 @@ interface GraphData {
 }
 
 // Tag color map - module-level constant for consistent coloring
+// Colors drawn from the design-system scales (orange/terracotta/mustard/
+// teal/slate/dusty-blue/sage) so the graph reads as part of the site.
 const TAG_COLOR_MAP: Record<string, string> = {
-  ml: "#8b5cf6",
-  testing: "#3b82f6",
-  experimentation: "#10b981",
-  sre: "#f59e0b",
-  management: "#ef4444",
-  saas: "#ec4899",
-  writing: "#06b6d4",
-  productivity: "#84cc16",
-  "incident-management": "#dc2626",
-  culture: "#7c3aed",
-  rollouts: "#0ea5e9",
-  "technical-debt": "#f97316",
+  ml: "#5B6F8F", // slate-blue-600
+  testing: "#4278A8", // dusty-blue-600
+  experimentation: "#3A8A7D", // teal-600
+  sre: "#D4A748", // mustard-500
+  management: "#C4624F", // terracotta-600
+  saas: "#D18573", // terracotta-500
+  writing: "#6BB8AB", // teal-400
+  productivity: "#7B9E7A", // sage-500
+  "incident-management": "#B91C1C", // red-700
+  culture: "#91A4BF", // slate-blue-400
+  rollouts: "#5790BF", // dusty-blue-500
+  "technical-debt": "#D96D32", // orange-600
+  operations: "#7388A8", // slate-blue-500
+  architecture: "#4A5A74", // slate-blue-700
+  leadership: "#9CB89B", // sage-400
+  "system-design": "#A8503E", // terracotta-700
+  engineering: "#E8773C", // orange-500
+  "data-engineering": "#4A9D8E", // teal-500
+  "best-practices": "#B8903D", // mustard-600
+  api: "#D99B8D", // terracotta-400
+  "ci-cd": "#6B8B6B", // sage-600
+  git: "#73A5CD", // dusty-blue-400
 };
 
 function NotesGraphContent() {
@@ -158,7 +170,7 @@ function NotesGraphContent() {
       hash = tag.charCodeAt(i) + ((hash << 5) - hash);
     }
     const hue = hash % 360;
-    return `hsl(${hue}, 65%, 55%)`;
+    return `hsl(${hue}, 35%, 55%)`;
   }, []);
 
   const getNodeColor = useCallback(
@@ -301,9 +313,9 @@ function NotesGraphContent() {
       .attr("filter", "url(#textShadow)")
       .style("font-size", "13px")
       .style("font-weight", "500")
-      .style("fill", "#1f2937")
+      .style("fill", "var(--color-text-primary)")
       .style("paint-order", "stroke")
-      .style("stroke", "#ffffff")
+      .style("stroke", "var(--color-surface-default)")
       .style("stroke-width", "4px")
       .style("stroke-linejoin", "round")
       .style("opacity", 0)
@@ -347,7 +359,7 @@ function NotesGraphContent() {
           if (d.id === currentSelectedId) return (d.radius || 10) * 1.4;
           return d.radius || 10;
         })
-        .attr("stroke", (d) => (d.id === currentSelectedId ? "#9333ea" : "#374151"))
+        .attr("stroke", (d) => (d.id === currentSelectedId ? "#D96D32" : "#374151"))
         .attr("stroke-width", (d) => (d.id === currentSelectedId ? 4 : 1))
         .attr("filter", null);
 
@@ -370,7 +382,7 @@ function NotesGraphContent() {
           const sourceId = typeof d.source === "string" ? d.source : d.source.id;
           const targetId = typeof d.target === "string" ? d.target : d.target.id;
           const isConnected = sourceId === currentSelectedId || targetId === currentSelectedId;
-          return isConnected ? "#9333ea" : "#9ca3af";
+          return isConnected ? "#D96D32" : "#9ca3af";
         });
 
       labelElements
@@ -462,7 +474,7 @@ function NotesGraphContent() {
           const sourceId = typeof d.source === "string" ? d.source : d.source.id;
           const targetId = typeof d.target === "string" ? d.target : d.target.id;
           const isConnected = sourceId === hoveredNode.id || targetId === hoveredNode.id;
-          return isConnected ? "#2563eb" : "#9ca3af";
+          return isConnected ? "#E8773C" : "#9ca3af";
         });
 
       // Show labels for hovered cluster
@@ -490,11 +502,16 @@ function NotesGraphContent() {
       setSelectedNode(clickedNode);
     }
 
+    function handleNodeDoubleClick(_event: MouseEvent, clickedNode: GraphNode) {
+      router.push(`/knowledge-base/notes/${clickedNode.id}`);
+    }
+
     // Attach event handlers
     nodeElements
       .on("mouseenter", handleNodeHover)
       .on("mouseleave", handleNodeLeave)
-      .on("click", handleNodeClick);
+      .on("click", handleNodeClick)
+      .on("dblclick", handleNodeDoubleClick);
 
     // Enable dragging
     const drag = d3
@@ -576,7 +593,7 @@ function NotesGraphContent() {
     return () => {
       simulation.stop();
     };
-  }, [graphData, getNodeColor]);
+  }, [graphData, getNodeColor, router]);
 
   // Separate effect for visual updates (selection, filters) without recreating simulation
   useEffect(() => {
@@ -625,7 +642,7 @@ function NotesGraphContent() {
           if (d.id === selectedNodeId) return (d.radius || 10) * 1.4;
           return d.radius || 10;
         })
-        .attr("stroke", (d) => (d.id === selectedNodeId ? "#9333ea" : "#374151"))
+        .attr("stroke", (d) => (d.id === selectedNodeId ? "#D96D32" : "#374151"))
         .attr("stroke-width", (d) => (d.id === selectedNodeId ? 4 : 1))
         .attr("filter", null);
 
@@ -648,7 +665,7 @@ function NotesGraphContent() {
           const sourceId = typeof d.source === "string" ? d.source : d.source.id;
           const targetId = typeof d.target === "string" ? d.target : d.target.id;
           const isConnected = sourceId === selectedNodeId || targetId === selectedNodeId;
-          return isConnected ? "#9333ea" : "#9ca3af";
+          return isConnected ? "#D96D32" : "#9ca3af";
         });
 
       labelElements
@@ -681,7 +698,7 @@ function NotesGraphContent() {
         .attr("stroke", (d) => {
           const matchedTags = selectedTagsArray.filter((tag) => d.tags?.includes(tag));
           if (filterLogic === "AND" && matchedTags.length === selectedTagsArray.length) {
-            return "#9333ea";
+            return "#D96D32";
           }
           return "#374151";
         })
@@ -836,8 +853,8 @@ function NotesGraphContent() {
               aria-label={`Interactive graph visualization showing ${graphData.count.nodes} notes and ${graphData.count.edges} connections. Use mouse to hover, click, and drag nodes.`}
             />
             <div className={styles.instructions}>
-              Hover over nodes to see titles and connections · Drag nodes to reposition · Larger
-              nodes = hub notes with more links
+              Click a node to select it · Double-click to open the note · Drag to reposition ·
+              Larger nodes = hub notes with more links
             </div>
           </div>
 

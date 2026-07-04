@@ -106,12 +106,12 @@
   .backLink {
     display: inline-block;
     margin-top: $spacing-4;
-    color: $blue-600;
+    color: $color-link-default;
     text-decoration: none;
     @include text-secondary;
 
     &:hover {
-      color: $blue-700;
+      color: $color-link-hover;
       text-decoration: underline;
     }
   }
@@ -126,12 +126,12 @@
   .backLink {
     display: inline-block;
     margin-bottom: $spacing-6;
-    color: $blue-600;
+    color: $color-link-default;
     @include text-secondary;
     text-decoration: none;
 
     &:hover {
-      color: $blue-700;
+      color: $color-link-hover;
       text-decoration: underline;
     }
   }
@@ -145,15 +145,15 @@
     display: inline-block;
     margin-top: $spacing-4;
     padding: $spacing-2 $spacing-4;
-    background-color: $blue-600;
-    color: white;
+    background-color: $color-interactive-primary;
+    color: $color-interactive-primary-text;
     border-radius: $border-radius-button;
     font-weight: $font-weight-medium;
     text-decoration: none;
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: $blue-700;
+      background-color: $color-link-hover;
     }
   }
 }
@@ -187,11 +187,11 @@
 
       .breadcrumbLink {
         font-size: 13px;
-        color: $blue-600;
+        color: $color-link-default;
         text-decoration: none;
 
         &:hover {
-          color: $blue-700;
+          color: $color-link-hover;
           text-decoration: underline;
         }
       }
@@ -291,7 +291,7 @@
       }
 
       &.active {
-        background: white;
+        background: $color-surface-default;
         color: $neutral-900;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
@@ -314,7 +314,7 @@
     width: 100%;
     padding: 6px $spacing-2;
     border: 1px solid $color-border;
-    background-color: white;
+    background-color: $color-surface-default;
     border-radius: $border-radius-sm;
     cursor: pointer;
     font-size: 12px;
@@ -324,7 +324,7 @@
     text-align: left;
 
     &:hover {
-      border-color: #cbd5e1;
+      border-color: $color-border-hover;
       background-color: $gray-50;
     }
 
@@ -359,7 +359,7 @@
   .clearButton {
     padding: 4px $spacing-2;
     border: 1px solid $color-border;
-    background-color: white;
+    background-color: $color-surface-default;
     border-radius: $border-radius-sm;
     cursor: pointer;
     font-size: 11px;
@@ -376,8 +376,9 @@
 // ===== SELECTED NODE PANEL =====
 .selectedNodePanel {
   padding: $spacing-4;
-  background-color: $purple-50;
-  border: $border-width-thin solid $purple-200;
+  background-color: $color-surface-default;
+  border: $border-width-thin solid $color-border-default;
+  border-left: $border-width-thick solid $color-interactive-primary;
   border-radius: $border-radius-md;
   box-shadow: $shadow-card-sm;
   flex-shrink: 0;
@@ -385,7 +386,7 @@
   .nodeTitle {
     margin-bottom: $spacing-2;
     font-weight: $font-weight-semibold;
-    color: $purple-900;
+    color: $color-text-heading;
   }
 
   .nodeMeta {
@@ -394,11 +395,12 @@
     gap: $spacing-3;
     flex-wrap: wrap;
     font-size: 13px;
-    color: $purple-800;
+    color: $color-text-secondary;
 
     .nodeId {
       padding: 2px $spacing-2;
-      background-color: $purple-100;
+      background-color: $color-interactive-primary-bg-subtle;
+      color: $color-link-hover;
       border-radius: $border-radius-sm;
       font-family: $font-family-mono;
       font-size: 12px;
@@ -407,6 +409,7 @@
     .nodeConnections {
       color: $color-text-tertiary;
       font-size: 12px;
+      font-family: $font-family-mono;
     }
   }
 
@@ -418,10 +421,11 @@
 
     .tag {
       padding: $spacing-1 $spacing-3;
-      background-color: $purple-100;
+      background-color: $color-surface-tertiary;
+      border: $border-width-thin solid $color-border-default;
       border-radius: 9999px;
       @include text-tertiary;
-      color: $purple-800;
+      color: $color-text-secondary;
     }
   }
 
@@ -431,8 +435,8 @@
 
     .viewButton {
       padding: $spacing-2 $spacing-4;
-      background-color: $purple-600;
-      color: white;
+      background-color: $color-interactive-primary;
+      color: $color-interactive-primary-text;
       border-radius: $border-radius-button;
       font-size: 14px;
       font-weight: $font-weight-semibold;
@@ -440,23 +444,23 @@
       transition: all 0.2s ease;
 
       &:hover {
-        background-color: $purple-700;
-        color: white;
+        background-color: $color-interactive-primary-hover;
+        color: $color-interactive-primary-text;
       }
     }
 
     .deselectButton {
       padding: $spacing-2 $spacing-4;
       background-color: transparent;
-      color: $purple-700;
-      border: $border-width-thin solid $purple-300;
+      color: $color-text-secondary;
+      border: $border-width-thin solid $color-border-strong;
       border-radius: $border-radius-button;
       @include text-secondary;
       cursor: pointer;
       transition: all 0.2s ease;
 
       &:hover {
-        background-color: $purple-50;
+        background-color: $color-surface-hover;
       }
     }
   }
