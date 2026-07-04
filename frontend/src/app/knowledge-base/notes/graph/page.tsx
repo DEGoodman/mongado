@@ -7,6 +7,8 @@ import * as d3 from "d3";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
 
+const graphLog = logger.withContext("Graph");
+
 interface GraphNode extends d3.SimulationNodeDatum {
   id: string;
   title: string;
@@ -209,6 +211,7 @@ function NotesGraphContent() {
   useEffect(() => {
     if (!graphData || !svgRef.current) return;
 
+    graphLog.info("simulation effect: (re)building svg scene and handlers");
     const svg = d3.select(svgRef.current);
     const width = 900;
     const height = 622;
@@ -506,12 +509,14 @@ function NotesGraphContent() {
     }
 
     function handleNodeClick(event: MouseEvent) {
+      graphLog.info("node click fired", { defaultPrevented: event.defaultPrevented });
       // Selection happens on mousedown (drag start); this handler only
       // shields the svg background-deselect handler from the bubbled click
       event.stopPropagation();
     }
 
     function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
+      graphLog.info("node dblclick -> navigating", { id: clickedNode.id });
       event.preventDefault();
       router.push(`/knowledge-base/notes/${clickedNode.id}`);
     }
@@ -530,6 +535,7 @@ function NotesGraphContent() {
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
       .on("start", (_event, d) => {
+        graphLog.info("mousedown (drag start) -> selecting node", { id: d.id });
         // Select on mousedown: real trackpad clicks often travel >10px
         // between down and up, which makes d3's drag suppression swallow
         // the click event entirely (#208). mousedown always fires.
@@ -605,7 +611,10 @@ function NotesGraphContent() {
 
     // Click anywhere in the graph that isn't a node (background, edges,
     // labels) to deselect. Node clicks stopPropagation so they never land here.
-    svg.on("click", () => {
+    svg.on("click", (event) => {
+      graphLog.info("svg background click -> deselect", {
+        target: (event.target as Element).tagName,
+      });
       setSelectedNode(null);
       clearNodeParam();
     });
@@ -629,6 +638,7 @@ function NotesGraphContent() {
 
     const edges = graphData.edges;
     const selectedNodeId = selectedNode?.id || null;
+    graphLog.info("selection state applied", { selectedNodeId });
     const selectedTagsArray = Array.from(selectedTags);
     const isFiltering = selectedTags.size > 0;
 

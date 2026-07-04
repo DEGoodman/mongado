@@ -49,7 +49,10 @@ test.describe("Notes graph click-through", () => {
       }
       return best;
     });
-    if (!big) test.skip(true, "No graph nodes available");
+    if (!big) {
+      test.skip(true, "No graph nodes available");
+      return;
+    }
     await page.mouse.move(big.x - 7, big.y - 7, { steps: 3 });
     await page.mouse.down();
     await page.mouse.move(big.x + 6, big.y + 6, { steps: 4 });
