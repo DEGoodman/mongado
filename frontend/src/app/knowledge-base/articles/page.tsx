@@ -1,4 +1,5 @@
 "use client";
+import { prefetchOnce } from "@/lib/prefetch";
 
 import { Suspense } from "react";
 import { useState, useEffect, useCallback } from "react";
@@ -7,6 +8,12 @@ import dynamic from "next/dynamic";
 
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
+
+// Warm the browser HTTP cache with the article the user is about to open
+function prefetchArticle(id: number | string): void {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  prefetchOnce(`article:${id}`, () => fetch(`${apiUrl}/api/articles/${id}`));
+}
 import { useRouter, useSearchParams } from "next/navigation";
 import { logger } from "@/lib/logger";
 import AIButton from "@/components/AIButton";
@@ -332,6 +339,8 @@ function ArticlesContent() {
                       key={resource.id}
                       href={`/knowledge-base/articles/${resource.id}`}
                       className={`${styles.articleCard} ${resource.draft ? styles.draftCard : ""}`}
+                      onMouseEnter={() => prefetchArticle(resource.id)}
+                      onFocus={() => prefetchArticle(resource.id)}
                     >
                       <div className={styles.articleHeader}>
                         <div className={styles.titleRow}>

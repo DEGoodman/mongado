@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sparkle } from "@phosphor-icons/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { prefetchOnce } from "@/lib/prefetch";
 import dynamic from "next/dynamic";
 
 // Heavy editor (CodeMirror) and AI panels load on demand, not in first-load JS
@@ -441,6 +442,9 @@ export default function NoteDetailPage() {
                   </Link>
                   <button
                     onClick={() => setIsEditing(true)}
+                    onMouseEnter={() =>
+                      prefetchOnce("chunk:note-editor", () => import("@/components/NoteEditor"))
+                    }
                     className={`${styles.button} ${styles.editButton}`}
                     aria-label="Edit this note"
                   >
