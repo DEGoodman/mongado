@@ -53,7 +53,7 @@ const processWikilinks = (children: React.ReactNode): React.ReactNode => {
             href={`/knowledge-base/articles/${articleMatch[1]}`}
             className={`${styles.wikilink} ${styles.articleLink}`}
           >
-            📄 Article {articleMatch[1]}
+            Article {articleMatch[1]}
           </Link>
         );
       }

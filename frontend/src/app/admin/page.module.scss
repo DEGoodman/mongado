@@ -3,12 +3,16 @@
  * Minimal layout matching the login page's header/card pattern
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
 }
 
 .header {
@@ -156,7 +160,7 @@
 }
 
 .toggleOn {
-  background-color: $blue-600;
+  background-color: $color-interactive-primary;
 
   .toggleKnob {
     transform: translateX(1.25rem);

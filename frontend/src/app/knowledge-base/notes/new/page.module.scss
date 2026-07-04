@@ -3,12 +3,16 @@
  * Matches production Tailwind design with blue theme
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
   padding-top: $spacing-8;
   padding-bottom: $spacing-8;
 }
@@ -171,16 +175,16 @@
   justify-content: space-between;
   padding: $spacing-3 $spacing-4;
   border-radius: $border-radius-md;
-  border: $border-width-thin solid $green-500;
-  background-color: $green-50;
+  border: $border-width-thin solid $color-success-border;
+  background-color: $color-success-bg;
   margin-bottom: $spacing-4;
-  color: $green-700;
+  color: $color-success-text;
   font-size: $font-size-sm;
 
   .discardButton {
     background: none;
     border: none;
-    color: $green-600;
+    color: $color-success-text;
     cursor: pointer;
     font-size: $font-size-sm;
     text-decoration: underline;
@@ -188,7 +192,7 @@
     transition: color 0.2s ease;
 
     &:hover {
-      color: $green-700;
+      color: $color-text-primary;
     }
   }
 }
@@ -205,6 +209,9 @@
     @include flex-between;
 
     .tipTitle {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-1;
       @include text-secondary;
       font-weight: $font-weight-semibold;
       color: $color-text-heading;
@@ -213,7 +220,7 @@
 
     .dismissButton {
       margin-left: $spacing-4;
-      color: $blue-400;
+      color: $color-text-tertiary;
       cursor: pointer;
       background: none;
       border: none;
@@ -239,6 +246,22 @@
   .tipExamples {
     @include text-tertiary;
     color: $color-text-secondary;
+
+    .tipAvoid,
+    .tipBetter {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-weight: $font-weight-medium;
+    }
+
+    .tipAvoid {
+      color: $color-error-text;
+    }
+
+    .tipBetter {
+      color: $color-success-text;
+    }
   }
 }
 
@@ -370,11 +393,11 @@
   .count {
     &.good {
       font-weight: $font-weight-medium;
-      color: $green-600;
+      color: $color-success-text;
     }
 
     &.warning {
-      color: $yellow-300;
+      color: $color-warning-text;
     }
 
     &.error {

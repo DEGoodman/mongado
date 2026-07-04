@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
+import { ClockCounterClockwise, Lightbulb, Sparkle, X, Check } from "@phosphor-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
@@ -371,7 +372,10 @@ function NewNoteContent() {
         {/* Draft Restored Banner */}
         {draftRestored && (
           <div className={styles.draftBanner}>
-            <span>📝 Draft restored from your previous session</span>
+            <span>
+              <ClockCounterClockwise size={16} aria-hidden="true" /> Draft restored from your
+              previous session
+            </span>
             <button
               onClick={() => {
                 clearDraft();
@@ -392,17 +396,23 @@ function NewNoteContent() {
           <div className={styles.tipBox}>
             <div className={styles.tipHeader}>
               <div>
-                <h4 className={styles.tipTitle}>💭 Zettelkasten Tip: Write in first person</h4>
+                <h4 className={styles.tipTitle}>
+                  <Lightbulb size={16} aria-hidden="true" /> Zettelkasten Tip: Write in first person
+                </h4>
                 <p className={styles.tipContent}>
                   Capture YOUR understanding, not objective facts. This makes notes more memorable
                   and personal.
                 </p>
                 <div className={styles.tipExamples}>
-                  <span className="font-medium">❌ Avoid:</span> &quot;DORA metrics measure
-                  deployment performance&quot;
+                  <span className={styles.tipAvoid}>
+                    <X size={12} aria-hidden="true" /> Avoid:
+                  </span>{" "}
+                  &quot;DORA metrics measure deployment performance&quot;
                   <br />
-                  <span className="font-medium">✓ Better:</span> &quot;I use DORA metrics to
-                  identify bottlenecks in my team&apos;s pipeline&quot;
+                  <span className={styles.tipBetter}>
+                    <Check size={12} aria-hidden="true" /> Better:
+                  </span>{" "}
+                  &quot;I use DORA metrics to identify bottlenecks in my team&apos;s pipeline&quot;
                 </div>
               </div>
               <button
@@ -543,7 +553,7 @@ function NewNoteContent() {
                 }}
               />
               <p className={styles.formHint}>
-                💡 Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
+                Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
                 concepts, consider creating separate notes.
               </p>
             </div>
@@ -569,7 +579,13 @@ function NewNoteContent() {
                   onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
                   className={`${styles.button} ${styles.aiButton}`}
                 >
-                  {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                  {aiSuggestionsOpen ? (
+                    "Hide AI Suggestions"
+                  ) : (
+                    <>
+                      <Sparkle size={16} aria-hidden="true" /> Get AI Suggestions
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -604,7 +620,7 @@ function NewNoteContent() {
               ))}
             </ul>
             <div className={styles.modalInfo}>
-              <p>💡 Zettelkasten tip:</p>
+              <p>Zettelkasten tip:</p>
               <p>
                 Atomic notes (one idea each) are easier to link and reuse. Consider splitting this
                 into separate notes.
@@ -637,7 +653,7 @@ function NewNoteContent() {
       {showZeroLinksWarning && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>💡 No connections found</h3>
+            <h3 className={styles.modalTitle}>No connections found</h3>
             <p className={styles.modalText}>
               This note has no connections to other notes. Zettelkasten works best when ideas link
               together.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CalendarBlank, PencilSimple, NotePencil } from "@phosphor-icons/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
@@ -162,7 +163,7 @@ export default function ArticleDetailPage() {
           {/* Metadata */}
           <div className={styles.metadata}>
             <div className={styles.metaItem}>
-              <span aria-hidden="true">📅</span>
+              <CalendarBlank size={14} aria-hidden="true" />
               <span>
                 Published{" "}
                 <time dateTime={article.published_date || article.created_at}>
@@ -179,7 +180,7 @@ export default function ArticleDetailPage() {
             </div>
             {article.updated_date && article.updated_date !== article.published_date && (
               <div className={styles.metaItem}>
-                <span aria-hidden="true">✏️</span>
+                <PencilSimple size={14} aria-hidden="true" />
                 <span>
                   Last updated{" "}
                   <time dateTime={article.updated_date}>
@@ -212,7 +213,7 @@ export default function ArticleDetailPage() {
               href={`/knowledge-base/notes/new?from_article=${article.id}&title=Notes on: ${encodeURIComponent(article.title)}&content=${encodeURIComponent(`See [[article:${article.id}]] for the full article.\n\n## Key Takeaways\n\n- `)}`}
               className={styles.createNoteButton}
             >
-              📝 Create Note from Article
+              <NotePencil size={16} aria-hidden="true" /> Create Note from Article
             </Link>
           </div>
         </div>
@@ -270,7 +271,7 @@ export default function ArticleDetailPage() {
             {/* Related Notes Section */}
             {(relatedNotes.length > 0 || loadingRelated) && (
               <div className={styles.relatedNotes}>
-                <h3 className={styles.relatedNotesTitle}>📝 Related Notes</h3>
+                <h3 className={styles.relatedNotesTitle}>Related Notes</h3>
                 {loadingRelated ? (
                   <div className={styles.loadingNotes}>Finding related notes...</div>
                 ) : (

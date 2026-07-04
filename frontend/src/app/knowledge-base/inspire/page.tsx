@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { NotePencil, LinkSimple, Sparkle } from "@phosphor-icons/react";
 import Link from "next/link";
 import {
   getSuggestions,
@@ -181,7 +182,9 @@ export default function InspirePage() {
               AI is enhancing suggestions...
             </span>
           ) : hasLlm ? (
-            <span className={styles.aiEnabled}>AI-powered suggestions</span>
+            <span className={styles.aiEnabled}>
+              <Sparkle size={14} aria-hidden="true" /> AI-powered suggestions
+            </span>
           ) : loadingPhase === "complete" ? (
             <span className={styles.aiDisabled}>Basic suggestions (AI unavailable)</span>
           ) : (
@@ -210,7 +213,7 @@ export default function InspirePage() {
               <div key={index} className={`${styles.suggestionCard} ${styles[suggestion.type]}`}>
                 <div className={styles.cardHeader}>
                   <span className={styles.typeBadge}>
-                    {suggestion.type === "gap" ? "📝 Gap" : "🔗 Connection"}
+                    {suggestion.type === "gap" ? "Gap" : "Connection"}
                   </span>
                 </div>
 
@@ -260,14 +263,18 @@ export default function InspirePage() {
           <h4 className={styles.helpTitle}>How it works</h4>
           <div className={styles.helpGrid}>
             <div className={styles.helpItem}>
-              <span className={styles.helpIcon}>📝</span>
+              <span className={styles.helpIcon} aria-hidden="true">
+                <NotePencil size={20} />
+              </span>
               <div>
                 <strong>Gap suggestions</strong>
                 <p>Notes that are short or have few connections. Consider expanding them.</p>
               </div>
             </div>
             <div className={styles.helpItem}>
-              <span className={styles.helpIcon}>🔗</span>
+              <span className={styles.helpIcon} aria-hidden="true">
+                <LinkSimple size={20} />
+              </span>
               <div>
                 <strong>Connection suggestions</strong>
                 <p>Similar notes that aren&apos;t linked. Consider adding wikilinks.</p>

@@ -3,13 +3,17 @@
  * Matches production Tailwind design with blue/purple theme
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   height: calc(100vh - 80px); // Account for top navigation bar
   overflow: hidden;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
   display: flex;
   flex-direction: column;
 }
@@ -74,7 +78,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -325,7 +330,7 @@
 
     &:hover {
       border-color: $color-border-hover;
-      background-color: $gray-50;
+      background-color: $color-surface-hover;
     }
 
     &Active {
@@ -368,7 +373,7 @@
     flex: 1;
 
     &:hover {
-      background-color: $gray-50;
+      background-color: $color-surface-hover;
     }
   }
 }

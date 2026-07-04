@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sparkle } from "@phosphor-icons/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import NoteEditor from "@/components/NoteEditor";
@@ -398,7 +399,7 @@ export default function NoteDetailPage() {
               {/* Metadata */}
               <div className={styles.meta}>
                 <span>
-                  📝 Created{" "}
+                  Created{" "}
                   <time dateTime={String(note.created_at)}>{formatNoteDate(note.created_at)}</time>
                 </span>
                 <span>by {note.author}</span>
@@ -477,27 +478,23 @@ export default function NoteDetailPage() {
                   className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}
                 >
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Title (optional)
-                    </label>
+                    <label className={styles.formLabel}>Title (optional)</label>
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className={styles.formInput}
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Tags (optional)
-                    </label>
+                    <label className={styles.formLabel}>Tags (optional)</label>
                     <input
                       type="text"
                       value={editTags}
                       onChange={(e) => setEditTags(e.target.value)}
                       placeholder="Comma-separated tags"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className={styles.formInput}
                     />
                   </div>
 
@@ -517,9 +514,7 @@ export default function NoteDetailPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Content *
-                    </label>
+                    <label className={styles.formLabel}>Content *</label>
                     <NoteEditor
                       content={editContent}
                       onChange={setEditContent}
@@ -547,7 +542,7 @@ export default function NoteDetailPage() {
                       {settings.aiMode !== "off" && aiAvailable && (
                         <button
                           onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
-                          className="rounded-lg border border-blue-600 bg-blue-50 px-6 py-2 text-blue-700 hover:bg-blue-100"
+                          className={styles.suggestLinksButton}
                           aria-label={
                             aiSuggestionsOpen
                               ? "Hide AI suggestions panel"
@@ -555,7 +550,13 @@ export default function NoteDetailPage() {
                           }
                           aria-expanded={aiSuggestionsOpen}
                         >
-                          {aiSuggestionsOpen ? "Hide AI Suggestions" : "✨ Get AI Suggestions"}
+                          {aiSuggestionsOpen ? (
+                            "Hide AI Suggestions"
+                          ) : (
+                            <>
+                              <Sparkle size={16} aria-hidden="true" /> Get AI Suggestions
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -580,7 +581,7 @@ export default function NoteDetailPage() {
             ) : (
               <div>
                 {/* Content display with markdown and wikilinks */}
-                <div className="rounded-lg border border-gray-200 bg-white p-6">
+                <div className={styles.contentCard}>
                   <MarkdownWithWikilinks content={note.content} />
                 </div>
               </div>
@@ -641,30 +642,30 @@ export default function NoteDetailPage() {
 
       {/* Zero Links Warning Modal */}
       {showZeroLinksWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-3 text-lg font-semibold text-gray-900">💡 No connections found</h3>
-            <p className="mb-4 text-gray-700">
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalTitle}>No connections found</h3>
+            <p className={styles.modalText}>
               This note has no connections to other notes. Zettelkasten works best when ideas link
               together.
             </p>
-            <p className="mb-4 text-sm text-gray-600">Consider:</p>
-            <ul className="mb-6 list-inside list-disc space-y-1 text-sm text-gray-600">
+            <p className={styles.modalSubtext}>Consider:</p>
+            <ul className={styles.modalList}>
               <li>What concepts does this relate to?</li>
               <li>What led to this idea?</li>
               <li>Where might you apply this?</li>
             </ul>
-            <div className="flex gap-3">
+            <div className={styles.modalActions}>
               <button
                 onClick={handleGetAISuggestions}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+                className={`${styles.modalButton} ${styles.primary}`}
               >
                 Get AI Link Suggestions
               </button>
               <button
                 onClick={handleSaveAnyway}
                 disabled={saving}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                className={`${styles.modalButton} ${styles.secondary}`}
               >
                 Save Anyway
               </button>

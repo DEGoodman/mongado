@@ -4,12 +4,16 @@
  * Supports view and edit modes, AI features, links/backlinks
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, $color-page-bg-gradient-start, $color-page-bg-gradient-end);
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
 }
 
 // ===== LOADING & ERROR STATES =====
@@ -39,7 +43,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -103,7 +108,7 @@
     var(--color-header-bg-mid) 50%,
     var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid var(--color-header-border);  // Refined 1px border
+  border-bottom: 1px solid var(--color-header-border); // Refined 1px border
   padding: $spacing-3xl $spacing-2xl $spacing-xl;
   margin-bottom: $spacing-2xl;
 
@@ -184,7 +189,7 @@
 
     .viewGraphButton {
       background-color: transparent;
-      color: $dusty-blue-600;               // Cool info action
+      color: $dusty-blue-600; // Cool info action
       border: 2px solid $dusty-blue-600;
       text-decoration: none;
       display: inline-block;
@@ -197,7 +202,7 @@
     }
 
     .editButton {
-      background-color: $orange-600;        // Warm primary action
+      background-color: $orange-600; // Warm primary action
       color: white;
 
       &:hover:not(:disabled) {
@@ -207,8 +212,8 @@
 
     .deleteButton {
       background-color: transparent;
-      color: $red-600;                      // Red destructive action
-      border: 2px solid $red-600;           // Stronger outlined style
+      color: $red-600; // Red destructive action
+      border: 2px solid $red-600; // Stronger outlined style
 
       &:hover:not(:disabled) {
         background-color: $red-50;
@@ -218,7 +223,7 @@
     }
 
     .aiSuggestionsButton {
-      background-color: $teal-600;          // Cool technical action
+      background-color: $teal-600; // Cool technical action
       color: white;
 
       &:hover:not(:disabled) {
@@ -242,17 +247,17 @@
   .zeroLinksWarning {
     margin-bottom: $spacing-4;
     padding: $spacing-3;
-    background-color: rgba(212, 167, 72, 0.1);
-    border: $border-width-thin solid rgba(212, 167, 72, 0.3);
+    background-color: $color-warning-bg;
+    border: $border-width-thin solid $color-warning-border;
     border-radius: $border-radius-md;
     @include text-secondary;
-    color: #9b6b28;
+    color: $color-warning-text;
   }
 
   .backLink {
     display: inline-flex;
     margin-top: $spacing-4;
-    color: $orange-600;                 // Warm orange link
+    color: $orange-600; // Warm orange link
     text-decoration: none;
     @include text-secondary;
 
@@ -276,7 +281,7 @@
     .sectionTitle {
       @include heading-h4;
       margin-bottom: $spacing-3;
-      color: $terracotta-600;             // Warm terracotta instead of purple
+      color: $terracotta-600; // Warm terracotta instead of purple
     }
 
     .linksList {
@@ -292,7 +297,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: $terracotta-50;  // Warm terracotta hover
+          background-color: $terracotta-50; // Warm terracotta hover
           color: $terracotta-600;
         }
 
@@ -325,7 +330,7 @@
   @include flex-between;
   margin-bottom: $spacing-4;
   padding: $spacing-3;
-  background-color: $orange-50;           // Warm background for primary action area
+  background-color: $orange-50; // Warm background for primary action area
   border-radius: $border-radius-md;
   border: $border-width-thin solid $orange-200;
 
@@ -335,7 +340,7 @@
 
     .saveButton {
       padding: $spacing-2 $spacing-4;
-      background-color: $orange-600;      // Warm primary action
+      background-color: $orange-600; // Warm primary action
       color: white;
       border: none;
       border-radius: $border-radius-button;
@@ -376,6 +381,14 @@
   .helpText {
     @include text-tertiary;
   }
+}
+
+// Content display card (view mode)
+.contentCard {
+  padding: $spacing-6;
+  border: $border-width-thin solid $color-border-default;
+  border-radius: $border-radius-lg;
+  background-color: $white;
 }
 
 // ===== FORM FIELDS (Edit Mode) =====
@@ -439,7 +452,7 @@
 .suggestLinksButton {
   padding: $spacing-6 $spacing-6;
   border-radius: $border-radius-button;
-  border: $border-width-thin solid $blue-600;
+  border: $border-width-thin solid $color-border-strong;
   background-color: $color-surface-tertiary;
   color: $color-text-secondary;
   font-weight: $font-weight-medium;

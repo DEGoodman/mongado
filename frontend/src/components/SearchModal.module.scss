@@ -3,8 +3,8 @@
  * Global search modal accessible from TopNavigation
  */
 
-@use '@/styles/design-tokens' as *;
-@use '@/styles/mixins' as *;
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
 
 .overlay {
   position: fixed;
@@ -141,11 +141,11 @@
     font-size: $font-size-xs;
     letter-spacing: $letter-spacing-wide;
 
-    &[data-type='article'] {
+    &[data-type="article"] {
       color: $orange-700;
     }
 
-    &[data-type='note'] {
+    &[data-type="note"] {
       color: $color-text-secondary;
     }
   }
@@ -177,7 +177,8 @@
 
 // Highlight
 .highlight {
-  background-color: $yellow-200;
+  background-color: $mustard-200;
+  color: $neutral-cool-800;
   font-weight: 500;
   padding: 0 2px;
   border-radius: 2px;
