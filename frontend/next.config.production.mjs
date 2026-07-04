@@ -7,6 +7,11 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
+  // Rewrite @phosphor-icons/react barrel imports to per-icon imports
+  experimental: {
+    optimizePackageImports: ["@phosphor-icons/react"],
+  },
+
   // Bundle analyzer (enable with ANALYZE=true)
   ...(process.env.ANALYZE === "true" && {
     webpack: (config) => {
