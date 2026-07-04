@@ -31,11 +31,16 @@ See **[COLOR_PALETTE.md](COLOR_PALETTE.md)** for the complete color system docum
 - Usage guidelines
 - Accessibility standards
 
+> **Note**: the palette was overhauled in [PR #199](https://github.com/DEGoodman/mongado/pull/199)
+> — grey/orange future-retro with a phosphor dark mode. **[DESIGN.md](DESIGN.md)** is the
+> authoritative guide; details below that conflict with it are stale.
+
 **Quick reference**:
-- Primary: Blue (`$blue-600` = `#2563eb`)
-- Secondary: Purple (`$purple-600` = `#9333ea`)
-- Neutrals: Gray scale (`$neutral-50` to `$neutral-900`)
-- States: Green (success), Red (error), Amber (warning), Yellow (highlights)
+- Primary / interactive: Orange (`$orange-600` = `#D96D32`)
+- Cool accent (informational): Slate blue (`$slate-blue-600` = `#5B6F8F`)
+- Neutrals: warm surfaces / cool text (`$neutral-50` to `$neutral-900`, ramp flips in dark mode)
+- States: Sage (success), Red (error), Mustard (warning/highlights), Dusty blue (info)
+- Semantic tokens are CSS custom properties (theme-aware); raw scales stay Sass hex
 
 ## Typography
 

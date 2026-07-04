@@ -32,11 +32,11 @@
 
       .breadcrumbLink {
         @include text-secondary;
-        color: $blue-600;
+        color: $color-link-default;
         text-decoration: none;
 
         &:hover {
-          color: $blue-700;
+          color: $color-text-secondary;
           text-decoration: underline;
         }
       }
@@ -135,11 +135,11 @@
   }
 
   .saveButton {
-    background-color: $blue-600;
+    background-color: $color-link-default;
     color: white;
 
     &:hover:not(:disabled) {
-      background-color: $blue-700;
+      background-color: $color-text-secondary;
     }
   }
 
@@ -154,12 +154,12 @@
   }
 
   .aiButton {
-    background-color: $blue-50;
-    color: $blue-600;
-    border: $border-width-thin solid $blue-200;
+    background-color: $color-surface-tertiary;
+    color: $color-link-default;
+    border: $border-width-thin solid $color-border-default;
 
     &:hover:not(:disabled) {
-      background-color: $blue-100;
+      background-color: $color-surface-hover;
     }
   }
 }
@@ -197,8 +197,8 @@
 .tipBox {
   padding: $spacing-4;
   border-radius: $border-radius-md;
-  border: $border-width-thin solid $blue-200;
-  background-color: $blue-50;
+  border: $border-width-thin solid $color-border-default;
+  background-color: $color-surface-tertiary;
   margin-bottom: $spacing-4;
 
   .tipHeader {
@@ -207,7 +207,7 @@
     .tipTitle {
       @include text-secondary;
       font-weight: $font-weight-semibold;
-      color: $blue-900;
+      color: $color-text-heading;
       margin-bottom: $spacing-1;
     }
 
@@ -221,7 +221,7 @@
       transition: color 0.2s ease;
 
       &:hover {
-        color: $blue-600;
+        color: $color-link-default;
       }
 
       svg {
@@ -233,12 +233,12 @@
 
   .tipContent {
     @include text-secondary;
-    color: $blue-800;
+    color: $color-text-primary;
   }
 
   .tipExamples {
     @include text-tertiary;
-    color: $blue-700;
+    color: $color-text-secondary;
   }
 }
 
@@ -328,7 +328,7 @@
   .checkbox {
     width: 16px;
     height: 16px;
-    accent-color: $blue-600;
+    accent-color: $color-link-default;
   }
 
   .checkboxText {
@@ -436,7 +436,7 @@
   margin-bottom: $spacing-4;
   padding: $spacing-3;
   border-radius: $border-radius-md;
-  background-color: $blue-50;
+  background-color: $color-surface-tertiary;
   font-size: $font-size-sm;
   color: $color-text-secondary;
 
@@ -464,11 +464,11 @@
     border: none;
 
     &.primary {
-      background-color: $blue-600;
+      background-color: $color-link-default;
       color: $white;
 
       &:hover {
-        background-color: $blue-700;
+        background-color: $color-text-secondary;
       }
     }
 

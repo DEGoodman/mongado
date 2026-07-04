@@ -65,11 +65,11 @@
   }
 
   .backLink {
-    color: $blue-600;
+    color: $color-link-default;
     text-decoration: none;
 
     &:hover {
-      color: $blue-700;
+      color: $color-text-secondary;
       text-decoration: underline;
     }
   }
@@ -137,8 +137,8 @@
     .referenceBadge {
       display: inline-block;
       padding: 2px 8px;
-      background-color: $amber-100;
-      color: $amber-800;
+      background-color: $color-surface-hover;
+      color: $color-text-primary;
       border-radius: $border-radius-sm;
       font-size: 11px;
       font-weight: $font-weight-medium;
@@ -420,7 +420,7 @@
   .checkbox {
     width: 16px;
     height: 16px;
-    accent-color: $blue-600;
+    accent-color: $color-link-default;
   }
 
   .checkboxText {
@@ -440,14 +440,14 @@
   padding: $spacing-6 $spacing-6;
   border-radius: $border-radius-button;
   border: $border-width-thin solid $blue-600;
-  background-color: $blue-50;
-  color: $blue-700;
+  background-color: $color-surface-tertiary;
+  color: $color-text-secondary;
   font-weight: $font-weight-medium;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: $blue-100;
+    background-color: $color-surface-hover;
   }
 }
 
@@ -522,11 +522,11 @@
     border: none;
 
     &.primary {
-      background-color: $blue-600;
+      background-color: $color-link-default;
       color: $white;
 
       &:hover {
-        background-color: $blue-700;
+        background-color: $color-text-secondary;
       }
     }
 

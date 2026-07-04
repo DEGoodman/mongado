@@ -74,11 +74,11 @@
     }
 
     .backLink {
-      color: $blue-600;
+      color: $color-link-default;
       text-decoration: none;
 
       &:hover {
-        color: $blue-700;
+        color: $color-text-secondary;
         text-decoration: underline;
       }
     }
@@ -89,11 +89,11 @@
 .header {
   background: linear-gradient(
     to bottom,
-    $amber-100 0%,
-    $amber-50 50%,
-    rgba($amber-50, 0.5) 100%
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $amber-200;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
 
   .headerContent {
@@ -119,7 +119,7 @@
       .title {
         @include heading-h1;
         margin: 0;
-        color: $amber-900;
+        color: $color-text-heading;
 
         @media (max-width: 640px) {
           font-size: $font-size-2xl;
@@ -128,7 +128,7 @@
 
       .subtitle {
         margin-top: $spacing-2;
-        color: $amber-700;
+        color: $color-text-secondary;
         font-size: $font-size-lg;
 
         @media (max-width: 640px) {
@@ -151,7 +151,7 @@
       .newReferenceButton {
         padding: $spacing-2 $spacing-4;
         border-radius: $border-radius-button;
-        background-color: $amber-600;
+        background-color: $color-link-default;
         color: white;
         font-weight: $font-weight-medium;
         text-decoration: none;
@@ -165,7 +165,7 @@
         }
 
         &:hover {
-          background-color: $amber-700;
+          background-color: $color-text-secondary;
         }
       }
     }
@@ -222,8 +222,8 @@
 
     &:focus {
       outline: none;
-      border-color: $amber-500;
-      box-shadow: 0 0 0 2px rgba($amber-500, 0.2);
+      border-color: $color-input-border-focus;
+      box-shadow: $shadow-focus-primary;
     }
 
     &::placeholder {
@@ -235,8 +235,8 @@
 // Category Filter Section
 .categoryFilterSection {
   padding: $spacing-4;
-  background-color: $amber-50;
-  border: $border-width-thin solid $amber-200;
+  background-color: $color-surface-tertiary;
+  border: $border-width-thin solid $color-border-default;
   border-radius: $border-radius-md;
 
   .categoryFilterHeader {
@@ -245,7 +245,7 @@
     .categoryFilterLabel {
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $amber-900;
+      color: $color-text-heading;
     }
   }
 
@@ -259,28 +259,28 @@
       align-items: center;
       padding: $spacing-2 $spacing-3;
       background-color: $white;
-      border: $border-width-thin solid $amber-200;
+      border: $border-width-thin solid $color-border-default;
       border-radius: $border-radius-full;
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $amber-700;
+      color: $color-text-secondary;
       cursor: pointer;
       transition: all 0.2s ease;
 
       &:hover {
-        background-color: $amber-100;
-        border-color: $amber-300;
-        color: $amber-800;
+        background-color: $color-surface-hover;
+        border-color: $color-border-hover;
+        color: $color-text-primary;
       }
 
       &.categoryBadgeActive {
-        background-color: $amber-500;
-        border-color: $amber-600;
-        color: $white;
+        background-color: $orange-700;
+        border-color: $orange-800;
+        color: #fff;
 
         &:hover {
-          background-color: $amber-600;
-          border-color: $amber-700;
+          background-color: $orange-800;
+          border-color: $orange-900;
         }
       }
     }
@@ -292,18 +292,18 @@
   width: 100%;
   padding: $spacing-3 $spacing-4;
   background-color: $white;
-  border: $border-width-thin solid $amber-300;
+  border: $border-width-thin solid $orange-300;
   border-radius: $border-radius-button;
   @include text-secondary;
-  color: $amber-600;
+  color: $color-link-default;
   font-weight: $font-weight-medium;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: $amber-50;
-    border-color: $amber-400;
-    color: $amber-700;
+    background-color: $color-surface-tertiary;
+    border-color: $orange-400;
+    color: $color-text-secondary;
   }
 }
 
@@ -319,7 +319,7 @@
   .referenceCountSection {
     .activeFilters {
       @include text-secondary;
-      color: $amber-700;
+      color: $color-text-secondary;
       font-weight: $font-weight-medium;
       margin-bottom: $spacing-1;
     }
@@ -337,8 +337,8 @@
   padding: $spacing-12;
   text-align: center;
   @include card;
-  border: $border-width-medium dashed $amber-300;
-  background-color: $amber-50;
+  border: $border-width-medium dashed $color-border-strong;
+  background-color: $color-surface-tertiary;
 
   .emptyIcon {
     font-size: 3rem;
@@ -348,18 +348,18 @@
   .emptyTitle {
     @include heading-h3;
     margin-bottom: $spacing-2;
-    color: $amber-900;
+    color: $color-text-heading;
   }
 
   .emptyMessage {
     @include text-secondary;
-    color: $amber-700;
+    color: $color-text-secondary;
     margin-bottom: $spacing-2;
   }
 
   .emptyHint {
     @include text-tertiary;
-    color: $amber-600;
+    color: $color-link-default;
     margin-bottom: $spacing-6;
   }
 
@@ -368,7 +368,7 @@
     align-items: center;
     padding: $spacing-3 $spacing-6;
     border-radius: $border-radius-button;
-    background-color: $amber-600;
+    background-color: $color-link-default;
     color: white;
     font-weight: $font-weight-medium;
     text-decoration: none;
@@ -376,7 +376,7 @@
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: $amber-700;
+      background-color: $color-text-secondary;
       box-shadow: $shadow-button-hover;
     }
   }
@@ -398,14 +398,14 @@
     border: $border-default;
     border-radius: $border-radius-button;
     background-color: $white;
-    color: $amber-600;
+    color: $color-link-default;
     font-weight: $font-weight-medium;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-      background-color: $amber-50;
-      border-color: $amber-300;
+      background-color: $color-surface-tertiary;
+      border-color: $color-border-hover;
     }
   }
 }
@@ -417,13 +417,15 @@
   .categoryTitle {
     @include heading-h3;
     margin-bottom: $spacing-4;
-    color: $amber-800;
-    border-bottom: 2px solid $amber-200;
+    color: $color-text-primary;
+    border-bottom: 2px solid $color-border-default;
     padding-bottom: $spacing-2;
 
     .categoryCount {
       font-weight: $font-weight-normal;
-      color: $amber-500;
+      font-family: $font-family-mono;
+      font-size: 0.8em;
+      color: $color-link-default;
     }
   }
 }
@@ -442,7 +444,7 @@
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: $amber-300;
+    border-color: $color-border-hover;
     box-shadow: $shadow-card-lg;
     transform: translateY(-1px);
   }
@@ -468,22 +470,25 @@
       .cardId {
         display: inline-block;
         padding: 2px 6px;
-        background-color: rgba($amber-500, 0.1);
+        background-color: $color-interactive-primary-bg-subtle;
         border-radius: $border-radius-sm;
         font-family: $font-family-mono;
         font-size: $font-size-xs;
-        color: $amber-700;
+        color: $color-text-secondary;
       }
 
       .referenceBadge {
         display: inline-block;
         padding: 2px 8px;
-        background-color: $amber-200;
-        border: 1px solid $amber-300;
-        border-radius: $border-radius-full;
+        background-color: transparent;
+        border: 1px dashed $color-border-strong;
+        border-radius: $border-radius-sm;
         font-size: $font-size-xs;
         font-weight: $font-weight-medium;
-        color: $amber-700;
+        font-family: $font-family-mono;
+        letter-spacing: $letter-spacing-wide;
+        text-transform: uppercase;
+        color: $color-text-secondary;
       }
 
       .cardTitle {
@@ -524,7 +529,7 @@
       flex-shrink: 0;
       width: 1.5rem;
       height: 1.5rem;
-      color: $amber-500;
+      color: $color-link-default;
       margin-top: $spacing-1;
       transition: transform 0.2s ease;
     }

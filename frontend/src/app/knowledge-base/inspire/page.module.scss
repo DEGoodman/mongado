@@ -74,11 +74,11 @@
     }
 
     .backLink {
-      color: $blue-600;
+      color: $color-link-default;
       text-decoration: none;
 
       &:hover {
-        color: $blue-700;
+        color: $color-text-secondary;
         text-decoration: underline;
       }
     }
@@ -89,11 +89,11 @@
 .header {
   background: linear-gradient(
     to bottom,
-    $teal-100 0%,
-    $teal-50 50%,
-    rgba($teal-50, 0.5) 100%
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $teal-200;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
 
   .headerContent {
@@ -321,7 +321,7 @@
       background-color: $color-orphan-text;
 
       &:hover {
-        background-color: $purple-700;
+        background-color: $color-text-secondary;
       }
     }
   }
@@ -338,7 +338,7 @@
       background-color: $color-hub-text;
 
       &:hover {
-        background-color: $blue-700;
+        background-color: $color-text-secondary;
       }
     }
   }

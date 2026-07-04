@@ -507,6 +507,7 @@ See existing tests for patterns.
 - `docs/ROADMAP.md` - Future features and TODOs
 
 **Development:**
+- `docs/DESIGN.md` - Design system: grey/orange palette, theme-aware tokens, dark mode, mono conventions
 - `docs/TESTING.md` - Testing tools and commands
 - `docs/PROFILING.md` - Performance profiling tools
 - `docs/DEPENDENCIES.md` - Dependency structure

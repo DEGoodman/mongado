@@ -137,8 +137,8 @@
 // Tag Filter Section
 .tagFilterSection {
   padding: $spacing-4;
-  background-color: $blue-50;
-  border: $border-width-thin solid $blue-200;
+  background-color: $color-surface-tertiary;
+  border: $border-width-thin solid $color-border-default;
   border-radius: $border-radius-md;
 
   .tagFilterHeader {
@@ -147,7 +147,7 @@
     .tagFilterLabel {
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $blue-900;
+      color: $color-text-heading;
     }
   }
 
@@ -161,18 +161,18 @@
       align-items: center;
       padding: $spacing-2 $spacing-3;
       background-color: $white;
-      border: $border-width-thin solid $blue-200;
+      border: $border-width-thin solid $color-border-default;
       border-radius: $border-radius-full;
       @include text-secondary;
       font-weight: $font-weight-medium;
-      color: $blue-700;
+      color: $color-text-secondary;
       cursor: pointer;
       transition: all 0.2s ease;
 
       &:hover {
-        background-color: $blue-100;
-        border-color: $blue-300;
-        color: $blue-800;
+        background-color: $color-surface-hover;
+        border-color: $color-border-hover;
+        color: $color-text-primary;
       }
 
       &.tagBadgeActive {
@@ -254,7 +254,7 @@
   .articleCountSection {
     .activeFilters {
       @include text-secondary;
-      color: $blue-700;
+      color: $color-text-secondary;
       font-weight: $font-weight-medium;
       margin-bottom: $spacing-1;
     }

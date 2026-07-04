@@ -19,7 +19,10 @@ The design system uses a **two-tier color architecture**:
 
 This architecture makes theming easy—change Tier 1 to swap the entire palette while maintaining semantic consistency.
 
-**Current Theme**: Clean blue-purple system with Tailwind defaults
+**Current Theme**: Grey/orange "future-retro" with phosphor dark mode — see
+**[DESIGN.md](DESIGN.md)**. The tables below predate [PR #199](https://github.com/DEGoodman/mongado/pull/199)
+and are partially stale; `frontend/src/styles/design-tokens/_colors.scss` and
+`frontend/src/styles/themes.scss` are the source of truth.
 
 ## Base Palette
 
