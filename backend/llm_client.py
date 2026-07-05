@@ -228,7 +228,12 @@ class ApiLLMClient:
     # --- embeddings ----------------------------------------------------------
 
     def generate_embedding(self, text: str, use_cache: bool = True) -> list[float] | None:
-        """Generate an embedding via Gemini's OpenAI-compatible endpoint."""
+        """Generate an embedding via Gemini's OpenAI-compatible endpoint.
+
+        Fails fast (no retries): interactive callers shouldn't stall on 429s.
+        Batch callers that need eventual completion retry with backoff at
+        their own level (see embedding_sync).
+        """
         import httpx
 
         if self.embed_provider is None:

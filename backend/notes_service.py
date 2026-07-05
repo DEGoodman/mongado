@@ -275,9 +275,7 @@ class NotesService:
         self._require_neo4j()
         return self.neo4j.get_central_notes(min_backlinks=min_backlinks)
 
-    def get_stale_notes(
-        self, days_threshold: int = 60, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    def get_stale_notes(self, days_threshold: int = 60, limit: int = 50) -> list[dict[str, Any]]:
         """Get notes not updated in the specified number of days.
 
         Args:
@@ -379,8 +377,15 @@ class NotesService:
             embedding = self.ollama.generate_embedding(content, use_cache=True)
 
             if embedding:
+                from utils import calculate_content_hash
+
                 self.neo4j.store_embedding(
-                    "Note", note_id, embedding, self.ollama.model, EMBEDDING_VERSION
+                    "Note",
+                    note_id,
+                    embedding,
+                    self.ollama.model,
+                    EMBEDDING_VERSION,
+                    calculate_content_hash(content),
                 )
                 logger.info("Generated and stored embedding for note: %s", note_id)
             else:
@@ -450,9 +455,7 @@ class NotesService:
                     max_candidates=50,
                 )
 
-                response_text = (
-                    self.ollama.generate(prompt, role="structured", num_ctx=8192) or ""
-                )
+                response_text = self.ollama.generate(prompt, role="structured", num_ctx=8192) or ""
                 suggestions_data = ai_core.parse_json_response(response_text, expected_type="array")
 
                 if suggestions_data and isinstance(suggestions_data, list):
@@ -461,12 +464,14 @@ class NotesService:
                     link_suggestions = []
                     for s in suggestions_data[:5]:
                         if isinstance(s, dict) and s.get("note_id") in note_map:
-                            link_suggestions.append({
-                                "note_id": s["note_id"],
-                                "title": note_map[s["note_id"]].get("title", "Untitled"),
-                                "confidence": s.get("confidence", 0.5),
-                                "reason": s.get("reason", ""),
-                            })
+                            link_suggestions.append(
+                                {
+                                    "note_id": s["note_id"],
+                                    "title": note_map[s["note_id"]].get("title", "Untitled"),
+                                    "confidence": s.get("confidence", 0.5),
+                                    "reason": s.get("reason", ""),
+                                }
+                            )
                     if link_suggestions:
                         logger.info(
                             "Generated %d link suggestions for note: %s",

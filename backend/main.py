@@ -207,9 +207,7 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
             # serve stale while revalidating so refreshes never block on the
             # network for content that just changed underneath
             if request.method == "GET":
-                response.headers["Cache-Control"] = (
-                    "public, max-age=60, stale-while-revalidate=300"
-                )
+                response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
             else:
                 response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
 
@@ -462,7 +460,9 @@ async def upload_image(
     try:
         with open(temp_path, "wb") as f:
             f.write(content)
-        logger.info("Image uploaded: %s (size=%d, type=%s)", temp_filename, len(content), detected_type)
+        logger.info(
+            "Image uploaded: %s (size=%d, type=%s)", temp_filename, len(content), detected_type
+        )
     except Exception as e:
         logger.error("Error uploading image: %s", e)
         raise HTTPException(status_code=500, detail="Failed to upload image") from e
@@ -559,12 +559,15 @@ def trigger_embedding_sync(
             f"Sync complete: {stats['articles_processed']} articles, "
             f"{stats['notes_processed']} notes processed. "
             f"{stats['embeddings_generated']} embeddings generated, "
-            f"{stats['embeddings_cached']} cached."
+            f"{stats['embeddings_cached']} cached, "
+            f"{stats['embeddings_failed']} failed."
         )
 
         logger.info("Manual embedding sync complete: %s", message)
 
-        return EmbeddingSyncResponse(success=True, message=message, stats=stats)
+        return EmbeddingSyncResponse(
+            success=stats["embeddings_failed"] == 0, message=message, stats=stats
+        )
 
     except Exception as e:
         logger.error("Manual embedding sync failed: %s", e)
