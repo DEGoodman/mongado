@@ -1,42 +1,21 @@
 /**
  * ThemeToggle - switches between light and dark ("phosphor") themes.
  *
- * Resolution order: explicit choice (localStorage "theme") wins, otherwise
- * the OS preference applies. An inline script in the root layout applies the
- * stored choice before first paint, so there is no flash of the wrong theme.
+ * Used standalone on the homepage (which has no TopNavigation). Theme
+ * resolution/persistence lives in the useTheme hook.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
 import { Moon, Sun } from "@phosphor-icons/react";
+import { useTheme } from "@/hooks/useTheme";
 import styles from "./ThemeToggle.module.scss";
 
-type Theme = "light" | "dark";
-
-function resolveInitialTheme(): Theme {
-  const explicit = document.documentElement.dataset.theme;
-  if (explicit === "light" || explicit === "dark") return explicit;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
 export default function ThemeToggle() {
-  // null until mounted - the server doesn't know the theme
-  const [theme, setTheme] = useState<Theme | null>(null);
-
-  useEffect(() => {
-    setTheme(resolveInitialTheme());
-  }, []);
+  const { theme, setTheme } = useTheme();
 
   const toggle = () => {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("theme", next);
-    } catch {
-      // Private browsing or blocked storage - the choice just won't persist
-    }
-    setTheme(next);
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
