@@ -5,8 +5,7 @@
  * - Logo/branding linking to home
  * - Section links (Articles, Notes) with active state
  * - Global search (Cmd/Ctrl+K) accessible from anywhere
- * - Settings dropdown (global app settings - available to all users)
- * - User menu (account actions - Sign In or user dropdown when logged in)
+ * - Header menu (theme, AI settings, account actions incl. Admin link)
  *
  * Only appears in Knowledge Base section, not on homepage
  */
@@ -30,9 +29,7 @@ function prefetchGraphData(): void {
 }
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Settings from "./Settings";
-import ThemeToggle from "./ThemeToggle";
-import UserMenu from "./UserMenu";
+import HeaderMenu from "./HeaderMenu";
 import SearchModal from "./SearchModal";
 import styles from "./TopNavigation.module.scss";
 
@@ -120,9 +117,7 @@ export default function TopNavigation() {
               <span className={styles.searchLabel}>Search</span>
               <kbd className={styles.searchKbd}>⌘K</kbd>
             </button>
-            <ThemeToggle />
-            <Settings />
-            <UserMenu />
+            <HeaderMenu />
           </div>
         </div>
       </nav>

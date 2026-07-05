@@ -36,12 +36,8 @@ vi.mock("next/link", () => ({
 }));
 
 // Mock child components to simplify testing
-vi.mock("../components/Settings", () => ({
-  default: () => <div data-testid="settings">Settings</div>,
-}));
-
-vi.mock("../components/UserMenu", () => ({
-  default: () => <div data-testid="user-menu">UserMenu</div>,
+vi.mock("../components/HeaderMenu", () => ({
+  default: () => <div data-testid="header-menu">HeaderMenu</div>,
 }));
 
 vi.mock("../components/SearchModal", () => ({
@@ -207,16 +203,10 @@ describe("TopNavigation", () => {
   });
 
   describe("Right Section", () => {
-    it("renders Settings component", () => {
+    it("renders HeaderMenu component", () => {
       render(<TopNavigation />);
 
-      expect(screen.getByTestId("settings")).toBeInTheDocument();
-    });
-
-    it("renders UserMenu component", () => {
-      render(<TopNavigation />);
-
-      expect(screen.getByTestId("user-menu")).toBeInTheDocument();
+      expect(screen.getByTestId("header-menu")).toBeInTheDocument();
     });
   });
 
