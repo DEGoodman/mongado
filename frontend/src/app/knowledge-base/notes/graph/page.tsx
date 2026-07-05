@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense, useCallback } from "react";
+import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import * as d3 from "d3";
@@ -64,6 +64,8 @@ const TAG_COLOR_MAP: Record<string, string> = {
   "ci-cd": "#6B8B6B", // sage-600
   git: "#73A5CD", // dusty-blue-400
 };
+
+const EMPTY_SET: ReadonlySet<string> = new Set<string>();
 
 function NotesGraphContent() {
   const router = useRouter();
@@ -229,7 +231,7 @@ function NotesGraphContent() {
     [getTagColor]
   );
 
-  const getAllTags = (): Array<{ tag: string; count: number; color: string }> => {
+  const allTags = useMemo((): Array<{ tag: string; count: number; color: string }> => {
     if (!graphData) return [];
 
     const tagCounts = new Map<string, number>();
@@ -242,7 +244,22 @@ function NotesGraphContent() {
     return Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count, color: getTagColor(tag) }))
       .sort((a, b) => b.count - a.count);
-  };
+  }, [graphData, getTagColor]);
+
+  // Neighbor lookup built once per graph so hover/selection handlers are
+  // O(degree) instead of rescanning every edge with O(E) filters
+  const adjacency = useMemo(() => {
+    const neighbors = new Map<string, Set<string>>();
+    if (!graphData) return neighbors;
+    graphData.nodes.forEach((node) => neighbors.set(node.id, new Set()));
+    graphData.edges.forEach((edge) => {
+      const sourceId = typeof edge.source === "string" ? edge.source : edge.source.id;
+      const targetId = typeof edge.target === "string" ? edge.target : edge.target.id;
+      neighbors.get(sourceId)?.add(targetId);
+      neighbors.get(targetId)?.add(sourceId);
+    });
+    return neighbors;
+  }, [graphData]);
 
   // D3 Force Simulation
   useEffect(() => {
@@ -327,6 +344,35 @@ function NotesGraphContent() {
       .alphaDecay(0.03)
       .velocityDecay(0.4);
 
+    // Soft boundary constraint as a proper force so it also applies during
+    // the synchronous pre-settle below (event handlers only run on live ticks)
+    simulation.force("boundary", () => {
+      const padding = 45;
+      const softness = 0.08;
+      nodes.forEach((node) => {
+        if ((node.x || 0) < padding) {
+          node.vx = (node.vx || 0) + (padding - (node.x || 0)) * softness;
+        }
+        if ((node.x || 0) > width - padding) {
+          node.vx = (node.vx || 0) + (width - padding - (node.x || 0)) * softness;
+        }
+        if ((node.y || 0) < padding) {
+          node.vy = (node.vy || 0) + (padding - (node.y || 0)) * softness;
+        }
+        if ((node.y || 0) > height - padding) {
+          node.vy = (node.vy || 0) + (height - padding - (node.y || 0)) * softness;
+        }
+      });
+    });
+
+    // Settle most of the layout synchronously (a few ms of CPU) so the page
+    // never shows the chaotic cold-start swirl, but keep some residual
+    // energy — restarted below — so the graph breathes into its final
+    // positions for a couple of seconds instead of loading as a still image
+    const SETTLE_TO_ALPHA = 0.3;
+    simulation.stop();
+    while (simulation.alpha() > SETTLE_TO_ALPHA) simulation.tick();
+
     simulationRef.current = simulation;
 
     // Create container groups for proper z-ordering
@@ -372,37 +418,17 @@ function NotesGraphContent() {
       .style("pointer-events", "none")
       .text((d) => d.title || d.id);
 
-    // Helper function to get connected node IDs
-    function getConnectedNodeIds(node: GraphNode): string[] {
-      return edges
-        .filter((link) => {
-          const sourceId = typeof link.source === "string" ? link.source : link.source.id;
-          const targetId = typeof link.target === "string" ? link.target : link.target.id;
-          return sourceId === node.id || targetId === node.id;
-        })
-        .map((link) => {
-          const sourceId = typeof link.source === "string" ? link.source : link.source.id;
-          const targetId = typeof link.target === "string" ? link.target : link.target.id;
-          return sourceId === node.id ? targetId : sourceId;
-        });
-    }
-
     // Reset to selected state
     function resetToSelectedState() {
       const currentSelectedId = selectedNodeIdRef.current;
       if (!currentSelectedId) return;
 
-      const selectedNodeData = nodes.find((n) => n.id === currentSelectedId);
-      if (!selectedNodeData) return;
-
-      const connectedIds = getConnectedNodeIds(selectedNodeData);
+      const connectedIds = adjacency.get(currentSelectedId) ?? EMPTY_SET;
 
       nodeElements
-        .transition()
-        .duration(150)
         .attr("opacity", (d) => {
           if (d.id === currentSelectedId) return 1.0;
-          if (connectedIds.includes(d.id)) return 1.0;
+          if (connectedIds.has(d.id)) return 1.0;
           return 0.35;
         })
         .attr("r", (d) => {
@@ -414,8 +440,6 @@ function NotesGraphContent() {
         .attr("filter", null);
 
       linkElements
-        .transition()
-        .duration(150)
         .attr("stroke-opacity", (d) => {
           const sourceId = typeof d.source === "string" ? d.source : d.source.id;
           const targetId = typeof d.target === "string" ? d.target : d.target.id;
@@ -436,11 +460,9 @@ function NotesGraphContent() {
         });
 
       labelElements
-        .transition()
-        .duration(150)
         .style("opacity", (d) => {
           if (d.id === currentSelectedId) return 1.0;
-          if (connectedIds.includes(d.id)) return 0.75;
+          if (connectedIds.has(d.id)) return 0.75;
           return 0;
         })
         .style("font-weight", (d) => (d.id === currentSelectedId ? "700" : "500"))
@@ -450,56 +472,57 @@ function NotesGraphContent() {
     // Reset to default state
     function resetToDefault() {
       nodeElements
-        .transition()
-        .duration(150)
         .attr("opacity", 1.0)
         .attr("r", (d) => d.radius || 10)
         .attr("stroke", "#374151")
         .attr("stroke-width", 1)
         .attr("filter", null);
 
-      linkElements
-        .transition()
-        .duration(150)
-        .attr("stroke-opacity", 0.4)
-        .attr("stroke-width", 1)
-        .attr("stroke", "#9ca3af");
+      linkElements.attr("stroke-opacity", 0.4).attr("stroke-width", 1).attr("stroke", "#9ca3af");
 
-      labelElements.transition().duration(150).style("opacity", 0);
+      labelElements.style("opacity", 0);
     }
 
-    // Hover handlers
+    // Hover handlers. Styling is applied directly (no d3 transitions) with
+    // CSS transitions in the stylesheet doing the animation — mousing across
+    // the graph fires enter/leave storms, and spawning JS interpolators for
+    // every node/link/label on each one is what made hover laggy
+    let lastRaisedId: string | null = null;
     function handleNodeHover(_event: MouseEvent, hoveredNode: GraphNode) {
-      const connectedIds = getConnectedNodeIds(hoveredNode);
+      const connectedIds = adjacency.get(hoveredNode.id) ?? EMPTY_SET;
 
       // Bring hovered cluster to front — DEFERRED out of event dispatch.
       // appendChild removes+reinserts the element; if that happens inside
       // the mouseenter that Chrome fires between pointerdown and its
       // compatibility mousedown, Chrome retargets the mousedown to the
-      // parent <g> and every circle-level handler goes deaf (#208)
-      requestAnimationFrame(() => {
-        nodeElements.each(function (d) {
-          if (d.id === hoveredNode.id || connectedIds.includes(d.id)) {
-            (this as SVGElement).parentNode?.appendChild(this as SVGElement);
-          }
-        });
+      // parent <g> and every circle-level handler goes deaf (#208).
+      // Raise only once per hovered node: in real Chrome (not headless),
+      // reinserting the element under the cursor refires boundary events,
+      // and re-raising on each of those keeps the DOM churning (#210)
+      if (lastRaisedId !== hoveredNode.id) {
+        lastRaisedId = hoveredNode.id;
+        requestAnimationFrame(() => {
+          nodeElements.each(function (d) {
+            if (d.id === hoveredNode.id || connectedIds.has(d.id)) {
+              (this as SVGElement).parentNode?.appendChild(this as SVGElement);
+            }
+          });
 
-        linkElements.each(function (d) {
-          const sourceId = typeof d.source === "string" ? d.source : d.source.id;
-          const targetId = typeof d.target === "string" ? d.target : d.target.id;
-          if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
-            (this as SVGElement).parentNode?.appendChild(this as SVGElement);
-          }
+          linkElements.each(function (d) {
+            const sourceId = typeof d.source === "string" ? d.source : d.source.id;
+            const targetId = typeof d.target === "string" ? d.target : d.target.id;
+            if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
+              (this as SVGElement).parentNode?.appendChild(this as SVGElement);
+            }
+          });
         });
-      });
+      }
 
       // Visual highlighting - nodes
       nodeElements
-        .transition()
-        .duration(150)
         .attr("opacity", (d) => {
           if (d.id === hoveredNode.id) return 1.0;
-          if (connectedIds.includes(d.id)) return 1.0;
+          if (connectedIds.has(d.id)) return 1.0;
           return 0.25;
         })
         .attr("r", (d) => {
@@ -512,8 +535,6 @@ function NotesGraphContent() {
 
       // Visual highlighting - links
       linkElements
-        .transition()
-        .duration(150)
         .attr("stroke-opacity", (d) => {
           const sourceId = typeof d.source === "string" ? d.source : d.source.id;
           const targetId = typeof d.target === "string" ? d.target : d.target.id;
@@ -535,11 +556,9 @@ function NotesGraphContent() {
 
       // Show labels for hovered cluster
       labelElements
-        .transition()
-        .duration(150)
         .style("opacity", (d) => {
           if (d.id === hoveredNode.id) return 1.0;
-          if (connectedIds.includes(d.id)) return 0.85;
+          if (connectedIds.has(d.id)) return 0.85;
           return 0;
         })
         .style("font-weight", (d) => (d.id === hoveredNode.id ? "600" : "500"))
@@ -561,41 +580,68 @@ function NotesGraphContent() {
       event.stopPropagation();
     }
 
-    function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
-      ilog("node dblclick -> navigating", { id: clickedNode.id });
-      event.preventDefault();
-      router.push(`/knowledge-base/notes/${clickedNode.id}`);
-    }
+    // Attach event handlers. Selection AND open-note both ride on
+    // pointerdown: unlike the compatibility mousedown/click/dblclick
+    // pipeline, it is dispatched before any of our handlers can perturb the
+    // DOM and cannot be suppressed or retargeted upstream. The native
+    // dblclick event needs mousedown+click to land on the same circle twice,
+    // and Chrome retargets that pipeline after DOM reorders (#208) — which
+    // is why dblclick-to-open never fired in real Chrome (#210). Two
+    // pointerdowns on the same node within the window are immune.
+    const DOUBLE_PRESS_MS = 400;
+    let lastPress: { id: string; time: number } | null = null;
 
-    // Attach event handlers. Selection rides on pointerdown: unlike the
-    // compatibility mousedown/click, it is dispatched before any of our
-    // handlers can perturb the DOM and cannot be suppressed upstream
     nodeElements
       .on("pointerdown.select", (event: PointerEvent, d: GraphNode) => {
         if (event.button !== 0) return;
+        if (
+          lastPress &&
+          lastPress.id === d.id &&
+          event.timeStamp - lastPress.time < DOUBLE_PRESS_MS
+        ) {
+          ilog("double press -> navigating", { id: d.id });
+          lastPress = null;
+          router.push(`/knowledge-base/notes/${d.id}`);
+          return;
+        }
+        lastPress = { id: d.id, time: event.timeStamp };
         ilog("pointerdown -> selecting node", { id: d.id });
         setSelectedNode(d);
         clearNodeParam();
       })
       .on("mouseenter", handleNodeHover)
       .on("mouseleave", handleNodeLeave)
-      .on("click", handleNodeClick)
-      .on("dblclick", handleNodeDoubleClick);
+      .on("click", handleNodeClick);
 
-    // Enable dragging
+    // Enable dragging. A human click wobbles 1-2px, which fires d3's "drag"
+    // — if that reheats the simulation, the node drifts on mouseup and the
+    // second click of a double-click misses it. So nothing reheats or moves
+    // until the pointer travels past the same 10px click distance.
+    let dragOrigin: [number, number] | null = null;
+    let dragEngaged = false;
+
     const drag = d3
       .drag<SVGCircleElement, GraphNode>()
       // Tolerate small pointer movement so clicks/double-clicks aren't
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
-      .on("start", (_event, d) => {
+      .on("start", (event, d) => {
         ilog("drag start", { id: d.id });
-        // Pin the node but don't reheat the simulation yet — reheating on
-        // mousedown makes nodes drift between the two clicks of a dblclick
+        dragOrigin = [event.x, event.y];
+        dragEngaged = false;
+        // Pin the node but don't reheat the simulation yet
         d.fx = d.x;
         d.fy = d.y;
       })
       .on("drag", (event, d) => {
+        if (!dragEngaged) {
+          if (dragOrigin && Math.hypot(event.x - dragOrigin[0], event.y - dragOrigin[1]) < 10) {
+            return;
+          }
+          dragEngaged = true;
+          // A real drag is not the first half of a double press
+          lastPress = null;
+        }
         simulation.alphaTarget(0.3).restart();
         d.fx = event.x;
         d.fy = event.y;
@@ -612,26 +658,8 @@ function NotesGraphContent() {
       ) => void
     );
 
-    // Update positions on tick
-    simulation.on("tick", () => {
-      // Soft boundary constraint - gentle push away from edges
-      const padding = 45;
-      const softness = 0.08;
-      nodes.forEach((node) => {
-        if ((node.x || 0) < padding) {
-          node.vx = (node.vx || 0) + (padding - (node.x || 0)) * softness;
-        }
-        if ((node.x || 0) > width - padding) {
-          node.vx = (node.vx || 0) + (width - padding - (node.x || 0)) * softness;
-        }
-        if ((node.y || 0) < padding) {
-          node.vy = (node.vy || 0) + (padding - (node.y || 0)) * softness;
-        }
-        if ((node.y || 0) > height - padding) {
-          node.vy = (node.vy || 0) + (height - padding - (node.y || 0)) * softness;
-        }
-      });
-
+    // Update element positions from simulation state
+    function ticked() {
       linkElements
         .attr("x1", (d) => (d.source as GraphNode).x || 0)
         .attr("y1", (d) => (d.source as GraphNode).y || 0)
@@ -655,7 +683,13 @@ function NotesGraphContent() {
         })
         .attr("y", (d) => (d.y || 0) + 4)
         .attr("text-anchor", (d) => ((d.x || 0) > labelThreshold ? "end" : "start"));
-    });
+    }
+
+    // Paint the pre-settled layout immediately, then let the residual
+    // energy play out as a brief live settle
+    ticked();
+    simulation.on("tick", ticked);
+    simulation.restart();
 
     // Click anywhere in the graph that isn't a node (background, edges,
     // labels) to deselect. Node clicks stopPropagation so they never land here.
@@ -747,7 +781,7 @@ function NotesGraphContent() {
         .on("click.diag", null);
       svg.selectAll("*").remove();
     };
-  }, [graphData, getNodeColor, router, clearNodeParam, ilog]);
+  }, [graphData, adjacency, getNodeColor, router, clearNodeParam, ilog]);
 
   // Separate effect for visual updates (selection, filters) without recreating simulation
   useEffect(() => {
@@ -760,37 +794,19 @@ function NotesGraphContent() {
 
     if (nodeElements.empty()) return;
 
-    const edges = graphData.edges;
     const selectedNodeId = selectedNode?.id || null;
     ilog("selection state applied", { selectedNodeId });
     const selectedTagsArray = Array.from(selectedTags);
     const isFiltering = selectedTags.size > 0;
 
-    // Helper function
-    function getConnectedNodeIds(nodeId: string): string[] {
-      return edges
-        .filter((link) => {
-          const sourceId = typeof link.source === "string" ? link.source : link.source.id;
-          const targetId = typeof link.target === "string" ? link.target : link.target.id;
-          return sourceId === nodeId || targetId === nodeId;
-        })
-        .map((link) => {
-          const sourceId = typeof link.source === "string" ? link.source : link.source.id;
-          const targetId = typeof link.target === "string" ? link.target : link.target.id;
-          return sourceId === nodeId ? targetId : sourceId;
-        });
-    }
-
     // Apply selection state
     if (selectedNodeId) {
-      const connectedIds = getConnectedNodeIds(selectedNodeId);
+      const connectedIds = adjacency.get(selectedNodeId) ?? EMPTY_SET;
 
       nodeElements
-        .transition()
-        .duration(150)
         .attr("opacity", (d) => {
           if (d.id === selectedNodeId) return 1.0;
-          if (connectedIds.includes(d.id)) return 1.0;
+          if (connectedIds.has(d.id)) return 1.0;
           return 0.35;
         })
         .attr("r", (d) => {
@@ -802,8 +818,6 @@ function NotesGraphContent() {
         .attr("filter", null);
 
       linkElements
-        .transition()
-        .duration(150)
         .attr("stroke-opacity", (d) => {
           const sourceId = typeof d.source === "string" ? d.source : d.source.id;
           const targetId = typeof d.target === "string" ? d.target : d.target.id;
@@ -824,11 +838,9 @@ function NotesGraphContent() {
         });
 
       labelElements
-        .transition()
-        .duration(150)
         .style("opacity", (d) => {
           if (d.id === selectedNodeId) return 1.0;
-          if (connectedIds.includes(d.id)) return 0.75;
+          if (connectedIds.has(d.id)) return 0.75;
           return 0;
         })
         .style("font-weight", (d) => (d.id === selectedNodeId ? "700" : "500"))
@@ -836,8 +848,6 @@ function NotesGraphContent() {
     } else if (isFiltering) {
       // Apply tag filtering
       nodeElements
-        .transition()
-        .duration(200)
         .attr("opacity", (d) => {
           const matchedTags = selectedTagsArray.filter((tag) => d.tags?.includes(tag));
 
@@ -866,58 +876,42 @@ function NotesGraphContent() {
         })
         .attr("filter", null);
 
-      linkElements
-        .transition()
-        .duration(200)
-        .attr("stroke-opacity", (d) => {
-          const source = d.source as GraphNode;
-          const target = d.target as GraphNode;
+      linkElements.attr("stroke-opacity", (d) => {
+        const source = d.source as GraphNode;
+        const target = d.target as GraphNode;
 
-          const sourceMatchedTags = selectedTagsArray.filter((tag) => source.tags?.includes(tag));
-          const targetMatchedTags = selectedTagsArray.filter((tag) => target.tags?.includes(tag));
+        const sourceMatchedTags = selectedTagsArray.filter((tag) => source.tags?.includes(tag));
+        const targetMatchedTags = selectedTagsArray.filter((tag) => target.tags?.includes(tag));
 
-          let sourceVisible: boolean;
-          let targetVisible: boolean;
+        let sourceVisible: boolean;
+        let targetVisible: boolean;
 
-          if (filterLogic === "AND") {
-            sourceVisible = sourceMatchedTags.length === selectedTagsArray.length;
-            targetVisible = targetMatchedTags.length === selectedTagsArray.length;
-          } else {
-            sourceVisible = sourceMatchedTags.length > 0;
-            targetVisible = targetMatchedTags.length > 0;
-          }
+        if (filterLogic === "AND") {
+          sourceVisible = sourceMatchedTags.length === selectedTagsArray.length;
+          targetVisible = targetMatchedTags.length === selectedTagsArray.length;
+        } else {
+          sourceVisible = sourceMatchedTags.length > 0;
+          targetVisible = targetMatchedTags.length > 0;
+        }
 
-          return sourceVisible && targetVisible ? 0.3 : 0.05;
-        });
+        return sourceVisible && targetVisible ? 0.3 : 0.05;
+      });
 
-      labelElements.transition().duration(150).style("opacity", 0);
+      labelElements.style("opacity", 0);
     } else {
       // Reset to default
       nodeElements
-        .transition()
-        .duration(150)
         .attr("opacity", 1.0)
         .attr("r", (d) => d.radius || 10)
         .attr("stroke", "#374151")
         .attr("stroke-width", 1)
         .attr("filter", null);
 
-      linkElements
-        .transition()
-        .duration(150)
-        .attr("stroke-opacity", 0.4)
-        .attr("stroke-width", 1)
-        .attr("stroke", "#9ca3af");
+      linkElements.attr("stroke-opacity", 0.4).attr("stroke-width", 1).attr("stroke", "#9ca3af");
 
-      labelElements.transition().duration(150).style("opacity", 0);
+      labelElements.style("opacity", 0);
     }
-  }, [selectedNode, selectedTags, filterLogic, graphData, ilog]);
-
-  // Handle deselect
-  const handleDeselect = () => {
-    setSelectedNode(null);
-    clearNodeParam();
-  };
+  }, [selectedNode, selectedTags, filterLogic, graphData, adjacency, ilog]);
 
   if (loading) {
     return (
@@ -1007,8 +1001,8 @@ function NotesGraphContent() {
               aria-label={`Interactive graph visualization showing ${graphData.count.nodes} notes and ${graphData.count.edges} connections. Use mouse to hover, click, and drag nodes.`}
             />
             <div className={styles.instructions}>
-              Click a node to select it · Double-click to open the note · Drag to reposition ·
-              Larger nodes = hub notes with more links
+              Click a node to select it · Double-click to open the note · Click the background to
+              deselect · Drag to reposition · Larger nodes = hub notes with more links
             </div>
           </div>
 
@@ -1017,7 +1011,14 @@ function NotesGraphContent() {
             {/* Selected node details */}
             {selectedNode && (
               <div className={styles.selectedNodePanel}>
-                <h3 className={styles.nodeTitle}>{selectedNode.title}</h3>
+                <h3 className={styles.nodeTitle}>
+                  <Link
+                    href={`/knowledge-base/notes/${selectedNode.id}`}
+                    aria-label={`View note: ${selectedNode.title || selectedNode.id}`}
+                  >
+                    {selectedNode.title}
+                  </Link>
+                </h3>
                 <div className={styles.nodeMeta}>
                   <code className={styles.nodeId}>{selectedNode.id}</code>
                   <span>by {selectedNode.author}</span>
@@ -1034,22 +1035,6 @@ function NotesGraphContent() {
                     ))}
                   </div>
                 )}
-                <div className={styles.actions}>
-                  <Link
-                    href={`/knowledge-base/notes/${selectedNode.id}`}
-                    className={styles.viewButton}
-                    aria-label={`View note: ${selectedNode.title || selectedNode.id}`}
-                  >
-                    View note
-                  </Link>
-                  <button
-                    onClick={handleDeselect}
-                    className={styles.deselectButton}
-                    aria-label="Deselect current node"
-                  >
-                    Deselect
-                  </button>
-                </div>
               </div>
             )}
 
@@ -1077,7 +1062,7 @@ function NotesGraphContent() {
                 </div>
               </div>
               <div className={styles.tagList} role="group" aria-label="Filter tags">
-                {getAllTags().map(({ tag, count, color }) => {
+                {allTags.map(({ tag, count, color }) => {
                   const isActive = selectedTags.has(tag);
                   return (
                     <button

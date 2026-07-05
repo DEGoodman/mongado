@@ -236,6 +236,37 @@
     width: 100%;
     flex: 1;
     min-height: 0;
+    // Double-tap on a node must reach our pointerdown handler, not trigger
+    // the browser's double-tap zoom
+    touch-action: manipulation;
+
+    // Highlight animations run on the compositor instead of d3 transitions —
+    // JS only writes the target attrs once per hover/selection change.
+    // Position attrs (cx/cy, x1/y1/x2/y2) are intentionally NOT listed:
+    // the simulation writes them every tick during drag.
+    circle {
+      // Touch-dragging a node repositions it; don't let the browser claim
+      // the gesture for page scrolling
+      touch-action: none;
+      transition:
+        opacity 150ms ease,
+        r 150ms ease,
+        stroke 150ms ease,
+        stroke-width 150ms ease;
+    }
+
+    line {
+      transition:
+        stroke 150ms ease,
+        stroke-opacity 150ms ease,
+        stroke-width 150ms ease;
+    }
+
+    text {
+      transition:
+        opacity 150ms ease,
+        font-size 150ms ease;
+    }
   }
 
   .instructions {
@@ -392,6 +423,16 @@
     margin-bottom: $spacing-2;
     font-weight: $font-weight-semibold;
     color: $color-text-heading;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        color: $color-link-hover;
+        text-decoration: underline;
+      }
+    }
   }
 
   .nodeMeta {
@@ -434,39 +475,4 @@
     }
   }
 
-  .actions {
-    @include flex-start;
-    gap: $spacing-3;
-
-    .viewButton {
-      padding: $spacing-2 $spacing-4;
-      background-color: $color-interactive-primary;
-      color: $color-interactive-primary-text;
-      border-radius: $border-radius-button;
-      font-size: 14px;
-      font-weight: $font-weight-semibold;
-      text-decoration: none;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: $color-interactive-primary-hover;
-        color: $color-interactive-primary-text;
-      }
-    }
-
-    .deselectButton {
-      padding: $spacing-2 $spacing-4;
-      background-color: transparent;
-      color: $color-text-secondary;
-      border: $border-width-thin solid $color-border-strong;
-      border-radius: $border-radius-button;
-      @include text-secondary;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: $color-surface-hover;
-      }
-    }
-  }
 }
