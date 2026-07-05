@@ -649,9 +649,7 @@ class Neo4jAdapter:
 
             return central
 
-    def get_stale_notes(
-        self, days_threshold: int = 60, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    def get_stale_notes(self, days_threshold: int = 60, limit: int = 50) -> list[dict[str, Any]]:
         """Get notes not updated in the specified number of days.
 
         Args:
@@ -787,7 +785,9 @@ class Neo4jAdapter:
             return {}
 
         with self.driver.session(database=self.database) as session:
-            result = session.run("MATCH (f:FeatureFlag) RETURN f.name AS name, f.enabled AS enabled")
+            result = session.run(
+                "MATCH (f:FeatureFlag) RETURN f.name AS name, f.enabled AS enabled"
+            )
             return {record["name"]: bool(record["enabled"]) for record in result}
 
     def set_feature_flag(self, name: str, enabled: bool) -> bool:
@@ -827,8 +827,12 @@ class Neo4jAdapter:
             result = session.run("MATCH (n:Note) RETURN n.id AS id")
             return {record["id"] for record in result}
 
-    def get_all_notes(self) -> list[dict[str, Any]]:
+    def get_all_notes(self, include_embeddings: bool = False) -> list[dict[str, Any]]:
         """Get all notes.
+
+        Args:
+            include_embeddings: Include embedding/embedding_model/embedding_version
+                fields (needed for embedding staleness checks)
 
         Returns:
             List of note dicts
@@ -838,7 +842,10 @@ class Neo4jAdapter:
 
         with self.driver.session(database=self.database) as session:
             result = session.run("MATCH (n:Note) RETURN n ORDER BY n.created_at DESC")
-            return [self._node_to_dict(record["n"]) for record in result]
+            return [
+                self._node_to_dict(record["n"], exclude_embedding=not include_embeddings)
+                for record in result
+            ]
 
     def _create_links(self, session: Session, source_id: str, target_ids: list[str]) -> None:
         """Create LINKS_TO relationships.
@@ -1023,8 +1030,12 @@ class Neo4jAdapter:
                 return None
             return self._node_to_dict(record["a"])
 
-    def get_all_articles(self) -> list[dict[str, Any]]:
+    def get_all_articles(self, include_embeddings: bool = False) -> list[dict[str, Any]]:
         """Get all articles.
+
+        Args:
+            include_embeddings: Include embedding/embedding_model/embedding_version
+                fields (needed for embedding staleness checks)
 
         Returns:
             List of article dicts
@@ -1034,7 +1045,10 @@ class Neo4jAdapter:
 
         with self.driver.session(database=self.database) as session:
             result = session.run("MATCH (a:Article) RETURN a ORDER BY a.created_at DESC")
-            return [self._node_to_dict(record["a"]) for record in result]
+            return [
+                self._node_to_dict(record["a"], exclude_embedding=not include_embeddings)
+                for record in result
+            ]
 
     # ===== EMBEDDING METHODS =====
 
@@ -1045,6 +1059,7 @@ class Neo4jAdapter:
         embedding: list[float],
         model: str,
         version: int,
+        content_hash: str,
     ) -> bool:
         """Store embedding for an article or note.
 
@@ -1054,6 +1069,7 @@ class Neo4jAdapter:
             embedding: Embedding vector (768 dimensions)
             model: Model name (e.g., "nomic-embed-text")
             version: Embedding version for cache invalidation
+            content_hash: SHA256 hash of the embedded content (staleness detection)
 
         Returns:
             True if successful
@@ -1070,12 +1086,14 @@ class Neo4jAdapter:
                 MATCH (n:{validated_type} {{id: $id}})
                 SET n.embedding = $embedding,
                     n.embedding_model = $model,
-                    n.embedding_version = $version
+                    n.embedding_version = $version,
+                    n.content_hash = $content_hash
                 """,
                 id=node_id,
                 embedding=embedding,
                 model=model,
                 version=version,
+                content_hash=content_hash,
             )
             return True
 
@@ -1226,9 +1244,7 @@ class Neo4jAdapter:
             )
             return True
 
-    def get_ai_content(
-        self, node_type: str, node_id: str
-    ) -> dict[str, Any] | None:
+    def get_ai_content(self, node_type: str, node_id: str) -> dict[str, Any] | None:
         """Get pre-computed AI content for an article or note.
 
         Args:

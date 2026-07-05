@@ -238,6 +238,7 @@ class TestListNotes:
             embedding=test_embedding,
             model="test-model",
             version=1,
+            content_hash="test-hash",
         )
 
         # List notes with embedding

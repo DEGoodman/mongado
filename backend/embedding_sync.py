@@ -24,6 +24,45 @@ logger = logging.getLogger(__name__)
 # Embedding version - increment when model or logic changes
 EMBEDDING_VERSION = 1
 
+# Retry-with-backoff settings for rate-limited embedding APIs (e.g. Gemini 429s).
+# The whole sync shares one time budget; per-item retries back off exponentially.
+SYNC_TIME_BUDGET_SECONDS = 600.0
+RETRY_BASE_DELAY_SECONDS = 2.0
+RETRY_MAX_DELAY_SECONDS = 60.0
+
+
+def _generate_with_retry(
+    ollama_client: Any,
+    content: str,
+    deadline: float,
+) -> list[float] | None:
+    """Generate an embedding, retrying with exponential backoff until deadline.
+
+    Embedding APIs enforce per-minute rate limits (429s), so waiting and
+    retrying usually succeeds. Retries stop once the next wait would pass
+    the shared sync deadline; the item is then reported as failed.
+
+    Args:
+        ollama_client: Client with generate_embedding()
+        content: Text to embed
+        deadline: time.monotonic() timestamp after which no more retries
+
+    Returns:
+        Embedding vector, or None if all attempts failed
+    """
+    delay = RETRY_BASE_DELAY_SECONDS
+    attempt = 1
+    while True:
+        embedding: list[float] | None = ollama_client.generate_embedding(content, use_cache=True)
+        if embedding:
+            return embedding
+        if time.monotonic() + delay > deadline:
+            return None
+        logger.warning("  Embedding attempt %d failed, retrying in %.0fs", attempt, delay)
+        time.sleep(delay)
+        delay = min(delay * 2, RETRY_MAX_DELAY_SECONDS)
+        attempt += 1
+
 
 def sync_articles_to_neo4j(
     articles: list[dict[str, Any]],
@@ -138,6 +177,7 @@ def _process_embeddings_for_nodes(
     neo4j_adapter: Any,
     ollama_client: Any,
     stats: dict[str, int],
+    deadline: float,
 ) -> None:
     """Process embeddings for a list of nodes (Articles or Notes).
 
@@ -152,6 +192,7 @@ def _process_embeddings_for_nodes(
         neo4j_adapter: Neo4jAdapter instance
         ollama_client: OllamaClient instance
         stats: Stats dict to update (modified in place)
+        deadline: time.monotonic() timestamp bounding retry waits
     """
     logger.info("Checking %ss for missing embeddings...", node_type.lower())
 
@@ -170,11 +211,16 @@ def _process_embeddings_for_nodes(
                 title,
             )
 
-            embedding = ollama_client.generate_embedding(content, use_cache=True)
+            embedding = _generate_with_retry(ollama_client, content, deadline)
 
             if embedding:
                 neo4j_adapter.store_embedding(
-                    node_type, node_id, embedding, current_model, current_version
+                    node_type,
+                    node_id,
+                    embedding,
+                    current_model,
+                    current_version,
+                    calculate_content_hash(content),
                 )
                 duration = time.time() - start_time
                 logger.info(
@@ -186,6 +232,7 @@ def _process_embeddings_for_nodes(
                 logger.error(
                     "  [%d/%d] ✗ Failed to generate embedding for: %s", idx, len(nodes), title
                 )
+                stats["embeddings_failed"] += 1
         else:
             logger.debug(
                 "  [%d/%d] %s has valid embedding: %s", idx, len(nodes), node_type, node_id
@@ -210,38 +257,31 @@ def sync_embeddings(
             "notes_processed": int,
             "embeddings_generated": int,
             "embeddings_cached": int,
+            "embeddings_failed": int,
         }
     """
-    if not neo4j_adapter.is_available():
-        logger.warning("Neo4j not available - skipping embedding sync")
-        return {
-            "articles_processed": 0,
-            "notes_processed": 0,
-            "embeddings_generated": 0,
-            "embeddings_cached": 0,
-        }
-
-    if not ollama_client.embeddings_available():
-        logger.warning("Ollama not available - skipping embedding sync")
-        return {
-            "articles_processed": 0,
-            "notes_processed": 0,
-            "embeddings_generated": 0,
-            "embeddings_cached": 0,
-        }
-
-    current_model = ollama_client.model
-    current_version = EMBEDDING_VERSION
-
     stats = {
         "articles_processed": 0,
         "notes_processed": 0,
         "embeddings_generated": 0,
         "embeddings_cached": 0,
+        "embeddings_failed": 0,
     }
 
-    # Process Articles
-    articles = neo4j_adapter.get_all_articles()
+    if not neo4j_adapter.is_available():
+        logger.warning("Neo4j not available - skipping embedding sync")
+        return stats
+
+    if not ollama_client.embeddings_available():
+        logger.warning("Ollama not available - skipping embedding sync")
+        return stats
+
+    current_model = ollama_client.model
+    current_version = EMBEDDING_VERSION
+    deadline = time.monotonic() + SYNC_TIME_BUDGET_SECONDS
+
+    # Process Articles (with embedding metadata so staleness checks can skip fresh ones)
+    articles = neo4j_adapter.get_all_articles(include_embeddings=True)
     _process_embeddings_for_nodes(
         articles,
         "Article",
@@ -251,18 +291,28 @@ def sync_embeddings(
         neo4j_adapter,
         ollama_client,
         stats,
+        deadline,
     )
 
-    # Process Notes
-    notes = neo4j_adapter.get_all_notes()
+    # Process Notes (with embedding metadata so staleness checks can skip fresh ones)
+    notes = neo4j_adapter.get_all_notes(include_embeddings=True)
     _process_embeddings_for_nodes(
-        notes, "Note", "notes", current_model, current_version, neo4j_adapter, ollama_client, stats
+        notes,
+        "Note",
+        "notes",
+        current_model,
+        current_version,
+        neo4j_adapter,
+        ollama_client,
+        stats,
+        deadline,
     )
 
     logger.info(
-        "Embedding sync complete: %d generated, %d cached",
+        "Embedding sync complete: %d generated, %d cached, %d failed",
         stats["embeddings_generated"],
         stats["embeddings_cached"],
+        stats["embeddings_failed"],
     )
 
     return stats
