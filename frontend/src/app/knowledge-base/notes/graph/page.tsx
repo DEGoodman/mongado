@@ -678,8 +678,43 @@ function NotesGraphContent() {
         hitTest: document.elementFromPoint(event.clientX, event.clientY)?.tagName,
         svgScenesInDocument: document.querySelectorAll("svg[role='img']").length,
         circlesInDocument: document.querySelectorAll("svg[role='img'] circle").length,
+        // If defaultPrevented is true here, something (likely an extension
+        // content script) canceled pointerdown — the browser then suppresses
+        // the compatibility mousedown/click that d3's handlers rely on
+        defaultPrevented: event.defaultPrevented,
+        button: event.button,
+        buttons: event.buttons,
+        ctrlKey: event.ctrlKey,
+        pointerType: event.pointerType,
+        isTrusted: event.isTrusted,
       });
     });
+
+    // Trace the mouse-event chain: if the window capture probe fires but
+    // the svg one doesn't, something stopped propagation in between
+    svg.on("mousedown.diag", (event: MouseEvent) => {
+      ilog("mousedown reached svg", {
+        target: (event.target as Element).tagName,
+        button: event.button,
+        defaultPrevented: event.defaultPrevented,
+      });
+    });
+    svg.on("click.diag", (event: MouseEvent) => {
+      ilog("click reached svg", {
+        target: (event.target as Element).tagName,
+        defaultPrevented: event.defaultPrevented,
+      });
+    });
+    const windowMousedownProbe = (event: MouseEvent) => {
+      if ((event.target as Element | null)?.closest?.("svg[role='img']")) {
+        ilog("mousedown at window capture", {
+          target: (event.target as Element).tagName,
+          button: event.button,
+          defaultPrevented: event.defaultPrevented,
+        });
+      }
+    };
+    window.addEventListener("mousedown", windowMousedownProbe, true);
 
     ilog("scene built", {
       circlesInThisScene: nodeElements.size(),
@@ -692,7 +727,12 @@ function NotesGraphContent() {
     return () => {
       ilog("simulation effect cleanup: tearing down scene");
       simulation.stop();
-      svg.on("click", null).on("pointerdown.diag", null);
+      window.removeEventListener("mousedown", windowMousedownProbe, true);
+      svg
+        .on("click", null)
+        .on("pointerdown.diag", null)
+        .on("mousedown.diag", null)
+        .on("click.diag", null);
       svg.selectAll("*").remove();
     };
   }, [graphData, getNodeColor, router, clearNodeParam, ilog]);
