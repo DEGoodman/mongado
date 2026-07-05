@@ -253,7 +253,7 @@ function NotesContent() {
             <div className={styles.titleSection}>
               <h1 className={styles.title}>Notes</h1>
               <p className={styles.subtitle}>
-                Atomic insights and knowledge building ({notes.length} notes) &middot;{" "}
+                Atomic insights and knowledge building ({totalNotes} notes) &middot;{" "}
                 <Link href="/knowledge-base/toolbox" className={styles.toolboxLink}>
                   Looking for frameworks and checklists? Check the Toolbox →
                 </Link>

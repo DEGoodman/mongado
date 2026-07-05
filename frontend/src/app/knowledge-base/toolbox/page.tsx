@@ -24,13 +24,24 @@ export default function ToolboxPage() {
     async function fetchReferences() {
       try {
         setLoading(true);
-        // Fetch with previews only for performance
-        const response = await listNotes({
-          is_reference: true,
-          include_full_content: false,
-        });
-        setReferences(response.notes);
-        logger.info("Toolbox references loaded", { count: response.count });
+        // Fetch ALL references (the API paginates; without a limit it returns
+        // only the first 20 and the rest never render). Previews only for performance.
+        const all: Note[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const response = await listNotes({
+            is_reference: true,
+            include_full_content: false,
+            page,
+            limit: 100,
+          });
+          all.push(...response.notes);
+          totalPages = response.total_pages;
+          page += 1;
+        } while (page <= totalPages);
+        setReferences(all);
+        logger.info("Toolbox references loaded", { count: all.length });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load references";
         setError(message);
