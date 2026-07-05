@@ -433,8 +433,9 @@ async def get_graph_data(notes_service: NotesDep) -> dict[str, Any]:
     - nodes: List of all notes
     - edges: List of all links between notes
     """
-    # Get all notes (I/O)
-    notes = notes_service.list_notes()
+    # Get all notes (I/O) — graph only needs id/title/author/tags/links,
+    # so skip the full markdown content
+    notes = notes_service.list_notes(include_full_content=False)
 
     # Build graph using pure function
     return notes_core.build_graph_data(notes)
