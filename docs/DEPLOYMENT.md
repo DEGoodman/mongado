@@ -119,8 +119,11 @@ Add these secrets:
 | `OP_MONGADO_SERVICE_ACCOUNT_TOKEN` | No | - | 1Password service account token |
 | `NEO4J_URI` | No | `bolt://localhost:7687` | Neo4j connection string |
 | `NEO4J_USER` | No | `neo4j` | Neo4j username |
-| `OLLAMA_HOST` | No | `http://localhost:11434` | Ollama API endpoint |
-| `OLLAMA_ENABLED` | No | `true` | Enable/disable AI features |
+| `OLLAMA_HOST` | No | `http://localhost:11434` | Ollama API endpoint (dev only; prod sets `OLLAMA_ENABLED=false`) |
+| `OLLAMA_ENABLED` | No | `true` | Enable/disable local Ollama inference |
+| `GROQ_API_KEY` | No | - | Hosted generation, primary (set via GitHub secret) |
+| `GEMINI_API_KEY` | No | - | Hosted generation fallback + embeddings (set via GitHub secret) |
+| `EMBEDDING_PROVIDER` | No | `ollama` | `api` routes embeddings to Gemini (prod) |
 | `DEBUG` | No | `false` | Enable debug mode (set to `false` in production) |
 
 **Important Notes**:

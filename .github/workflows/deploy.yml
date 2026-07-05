@@ -121,7 +121,8 @@ jobs:
             echo "CORS_ORIGINS=$CORS_ORIGINS" >> backend/.env
             echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN" >> backend/.env
             echo "ADMIN_TOKEN=$ADMIN_PASSKEY" >> backend/.env
-            # Hosted LLM API keys (empty until the GitHub secrets are set - see issue #190)
+            # Hosted LLM API keys (#190): Groq = generation primary,
+            # Gemini = generation fallback + embeddings
             echo "GROQ_API_KEY=$GROQ_API_KEY" >> backend/.env
             echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> backend/.env
 
@@ -138,9 +139,11 @@ jobs:
             export NEO4J_AUTH="neo4j/$NEO4J_PASSWORD"
 
             # Build and restart containers (without --no-cache to reduce resource usage)
+            # --remove-orphans cleans up services deleted from the compose file
+            # (e.g. the prod Ollama container removed in #190)
             echo "🐳 Building and restarting Docker containers..."
             docker compose -f docker-compose.prod.yml build
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Wait for services to be healthy
             echo "⏳ Waiting for services to be healthy..."
@@ -150,10 +153,6 @@ jobs:
             # This ensures new/updated articles are picked up immediately
             echo "🔄 Restarting backend to invalidate article cache..."
             docker compose -f docker-compose.prod.yml restart backend
-
-            # Pull Ollama model if not already present (use 1B model for 4GB RAM server)
-            echo "🤖 Setting up Ollama model..."
-            docker exec mongado-ollama-prod ollama pull llama3.2:1b || echo "⚠️  Failed to pull Ollama model, will retry on next deployment"
 
             # Wait for backend to fully restart before health check
             echo "⏳ Waiting for backend to fully restart..."

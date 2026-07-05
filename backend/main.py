@@ -537,7 +537,9 @@ def trigger_embedding_sync(
 
     if not ollama.embeddings_available():
         return EmbeddingSyncResponse(
-            success=False, message="Ollama not available - cannot generate embeddings", stats=None
+            success=False,
+            message="Embedding backend not available - cannot generate embeddings",
+            stats=None,
         )
 
     logger.info("Admin triggered manual embedding sync")

@@ -2,15 +2,19 @@
 
 Provides a single client surface for all AI generation and embedding calls.
 Which backend handles *generation* is decided per-call by the "llm_use_api"
-runtime feature flag (admin UI). Embeddings and semantic search always use
-Ollama so stored embeddings in Neo4j stay consistent with query embeddings.
+runtime feature flag (admin UI). Which backend handles *embeddings* is a
+startup-level setting (EMBEDDING_PROVIDER), because query embeddings must
+match the model tag stored with precomputed embeddings in Neo4j and
+embedding_sync only reconciles model changes at startup.
 
 Architecture:
 - ApiLLMClient: OpenAI-compatible chat completions with a provider fallback
   chain (Groq primary, Gemini fallback). Configured via GROQ_API_KEY /
-  GEMINI_API_KEY; a provider without a key is simply skipped.
+  GEMINI_API_KEY; a provider without a key is simply skipped. Embeddings go
+  through Gemini's /embeddings endpoint (Groq hosts no embedding models).
 - RoutingLLMClient: delegates each call to Ollama or the API chain based on
-  the feature flag. This is what routers receive via dependencies.get_llm().
+  the feature flag (generation) or EMBEDDING_PROVIDER (embeddings). This is
+  what routers receive via dependencies.get_llm().
 """
 
 import json
@@ -22,6 +26,7 @@ from typing import Any
 from config import get_settings
 from core import ai as ai_core
 from ollama_client import OllamaClient, get_ollama_client
+from utils import calculate_content_hash
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +74,11 @@ class ApiLLMClient:
         self.providers = _build_providers() if providers is None else providers
         self.timeout = settings.llm_api_timeout
         self.default_max_tokens = settings.llm_api_max_tokens
+        # Embeddings are served by Gemini only (Groq hosts no embedding models)
+        self.embed_provider = next((p for p in self.providers if p.name == "gemini"), None)
+        self.embed_model = settings.gemini_embed_model
+        # Embedding cache: {content_hash: embedding_vector}, mirrors OllamaClient
+        self.embedding_cache: dict[str, list[float]] = {}
         if self.providers:
             logger.info(
                 "API LLM client configured with providers: %s",
@@ -78,6 +88,10 @@ class ApiLLMClient:
     def is_available(self) -> bool:
         """Check if at least one API provider is configured."""
         return bool(self.providers)
+
+    def embeddings_available(self) -> bool:
+        """Check if embedding generation is possible (requires Gemini)."""
+        return self.embed_provider is not None
 
     def _request_body(
         self, provider: ApiProvider, prompt: str, max_tokens: int | None, stream: bool
@@ -206,18 +220,93 @@ class ApiLLMClient:
 
     def warmup(self, context: str = "chat") -> tuple[bool, str]:
         """No-op: hosted APIs need no warmup."""
+        if context == "embedding":
+            return self.embeddings_available(), self.embed_model
         model = self.providers[0].model if self.providers else ""
         return self.is_available(), model
 
+    # --- embeddings ----------------------------------------------------------
+
+    def generate_embedding(self, text: str, use_cache: bool = True) -> list[float] | None:
+        """Generate an embedding via Gemini's OpenAI-compatible endpoint."""
+        import httpx
+
+        if self.embed_provider is None:
+            logger.debug("No embedding-capable API provider configured")
+            return None
+
+        if use_cache:
+            content_hash = calculate_content_hash(text)
+            if content_hash in self.embedding_cache:
+                logger.debug("Using cached embedding for content")
+                return self.embedding_cache[content_hash]
+
+        try:
+            response = httpx.post(
+                f"{self.embed_provider.base_url}/embeddings",
+                headers={"Authorization": f"Bearer {self.embed_provider.api_key}"},
+                json={"model": self.embed_model, "input": text},
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            embedding: list[float] = response.json()["data"][0]["embedding"]
+            if use_cache:
+                self.embedding_cache[calculate_content_hash(text)] = embedding
+            return embedding
+        except Exception as e:
+            logger.error("Failed to generate embedding via %s: %s", self.embed_provider.name, e)
+            return None
+
+    def semantic_search(
+        self, query: str, documents: list[dict[str, Any]], top_k: int = 5
+    ) -> list[dict[str, Any]]:
+        """Semantic search, embedding documents on the fly (cached per content)."""
+        query_embedding = self.generate_embedding(query, use_cache=False)
+        if not query_embedding:
+            return []
+
+        documents_with_embeddings = []
+        for doc in documents:
+            doc_embedding = self.generate_embedding(doc.get("content", ""), use_cache=True)
+            if doc_embedding:
+                documents_with_embeddings.append({**doc, "embedding": doc_embedding})
+
+        ranked = ai_core.rank_documents_by_similarity(
+            query_embedding, documents_with_embeddings, top_k
+        )
+        # Strip the transient embeddings added above (parity with OllamaClient)
+        return [{k: v for k, v in doc.items() if k != "embedding"} for doc in ranked]
+
+    def semantic_search_with_precomputed_embeddings(
+        self, query: str, documents_with_embeddings: list[dict[str, Any]], top_k: int = 5
+    ) -> list[dict[str, Any]]:
+        """Semantic search against precomputed embeddings (only embeds the query)."""
+        query_embedding = self.generate_embedding(query, use_cache=False)
+        if not query_embedding:
+            logger.warning("Failed to generate query embedding")
+            return []
+        return ai_core.rank_documents_by_similarity(
+            query_embedding, documents_with_embeddings, top_k
+        )
+
+    def clear_cache(self) -> int:
+        """Clear the embedding cache, returning the number of entries removed."""
+        count = len(self.embedding_cache)
+        self.embedding_cache.clear()
+        return count
+
 
 class RoutingLLMClient:
-    """Routes LLM calls to Ollama or hosted APIs based on the runtime flag.
+    """Routes LLM calls to Ollama or hosted APIs based on configuration.
 
     - Generation (generate, ask_question, summarize, streaming): API chain
       when the "llm_use_api" flag is on and providers are configured,
       otherwise Ollama.
-    - Embeddings and semantic search: always Ollama, so query embeddings
-      match the precomputed embeddings stored in Neo4j.
+    - Embeddings and semantic search: the EMBEDDING_PROVIDER setting ("api"
+      routes to Gemini, anything else stays on Ollama). Startup-level, not a
+      runtime flag: query embeddings must match the model tag stored with
+      precomputed embeddings in Neo4j, and embedding_sync only reconciles
+      model changes at startup.
     """
 
     def __init__(self, ollama: OllamaClient, api: ApiLLMClient) -> None:
@@ -236,6 +325,11 @@ class RoutingLLMClient:
 
     def _generation_backend(self) -> Any:
         return self.api if self._use_api() else self.ollama
+
+    def _embedding_backend(self) -> Any:
+        if get_settings().embedding_provider == "api" and self.api.embeddings_available():
+            return self.api
+        return self.ollama
 
     @property
     def active_provider(self) -> str:
@@ -274,12 +368,13 @@ class RoutingLLMClient:
         return available
 
     def embeddings_available(self) -> bool:
-        """Whether embedding generation is possible (always requires Ollama).
+        """Whether embedding generation is possible on the embedding backend.
 
-        Distinct from is_available(): in API mode generation can be healthy
-        while Ollama (and therefore semantic search) is down.
+        Distinct from is_available(): generation can be healthy while the
+        embedding backend (and therefore semantic search) is down.
         """
-        return self.ollama.is_available()
+        available: bool = self._embedding_backend().embeddings_available()
+        return available
 
     def has_gpu(self) -> bool:
         """Hosted APIs are treated as accelerated; Ollama reports its own state."""
@@ -290,15 +385,24 @@ class RoutingLLMClient:
     def warmup(self, context: str = "chat") -> tuple[bool, str]:
         """Warm up the backend that will serve the given context."""
         if context == "embedding":
-            return self.ollama.warmup(context=context)
-        result: tuple[bool, str] = self._generation_backend().warmup(context=context)
+            backend = self._embedding_backend()
+        else:
+            backend = self._generation_backend()
+        result: tuple[bool, str] = backend.warmup(context=context)
         return result
 
-    # --- embeddings / search (always Ollama) --------------------------------
+    # --- embeddings / search (routed by EMBEDDING_PROVIDER) -----------------
 
     @property
     def model(self) -> str:
-        """Embedding model tag used when storing embeddings (Ollama's)."""
+        """Embedding model tag used when storing embeddings.
+
+        Changing this tag makes embedding_sync regenerate the corpus at the
+        next startup (model-change detection).
+        """
+        backend = self._embedding_backend()
+        if backend is self.api:
+            return self.api.embed_model
         return self.ollama.model
 
     @property
@@ -314,22 +418,31 @@ class RoutingLLMClient:
         return self.ollama.structured_model
 
     def generate_embedding(self, text: str, use_cache: bool = True) -> list[float] | None:
-        return self.ollama.generate_embedding(text, use_cache=use_cache)
+        result: list[float] | None = self._embedding_backend().generate_embedding(
+            text, use_cache=use_cache
+        )
+        return result
 
     def semantic_search(
         self, query: str, documents: list[dict[str, Any]], top_k: int = 5
     ) -> list[dict[str, Any]]:
-        return self.ollama.semantic_search(query, documents, top_k)
+        results: list[dict[str, Any]] = self._embedding_backend().semantic_search(
+            query, documents, top_k
+        )
+        return results
 
     def semantic_search_with_precomputed_embeddings(
         self, query: str, documents_with_embeddings: list[dict[str, Any]], top_k: int = 5
     ) -> list[dict[str, Any]]:
-        return self.ollama.semantic_search_with_precomputed_embeddings(
-            query, documents_with_embeddings, top_k
+        results: list[dict[str, Any]] = (
+            self._embedding_backend().semantic_search_with_precomputed_embeddings(
+                query, documents_with_embeddings, top_k
+            )
         )
+        return results
 
     def clear_cache(self) -> int:
-        return self.ollama.clear_cache()
+        return self.ollama.clear_cache() + self.api.clear_cache()
 
 
 _llm_client: RoutingLLMClient | None = None

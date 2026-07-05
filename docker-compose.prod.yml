@@ -12,7 +12,9 @@ services:
       - BACKUP_DIR=/var/mongado-backups
       - BACKUP_RETENTION_COUNT=14
       - BACKUP_RETENTION_DAYS=30
-      # Memory tuning for 4GB server - reserve RAM for Ollama (issue #60)
+      # Conservative memory limits (issue #60). Ollama is gone from prod
+      # (#190), but these stay low deliberately to keep a 4GB -> 2GB droplet
+      # downsize possible. Plenty for <1000 notes + articles.
       - NEO4J_dbms_memory_heap_initial__size=256m
       - NEO4J_dbms_memory_heap_max__size=512m
       - NEO4J_dbms_memory_pagecache_size=256m
@@ -31,28 +33,6 @@ services:
       retries: 5
       start_period: 40s
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: mongado-ollama-prod
-    ports:
-      - "11434:11434"
-    environment:
-      # Aggressive model unloading to prevent OOM on 4GB server (issue #59)
-      - OLLAMA_MAX_LOADED_MODELS=1  # Only keep 1 model in memory at a time
-      - OLLAMA_NUM_PARALLEL=1        # Limit concurrent requests to 1
-      - OLLAMA_KEEP_ALIVE=0          # Unload model immediately after use (no idle time)
-    volumes:
-      - ollama-data:/root/.ollama
-    networks:
-      - mongado-network
-    restart: always
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
   backend:
     build:
       context: ./backend
@@ -66,8 +46,10 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set in production}
-      - OLLAMA_HOST=http://ollama:11434
-      - OLLAMA_ENABLED=true
+      # AI runs on hosted APIs in prod (#190): generation via Groq -> Gemini
+      # (behind the llm_use_api admin flag), embeddings via Gemini
+      - OLLAMA_ENABLED=false
+      - EMBEDDING_PROVIDER=api
       - LLM_FEATURES_ENABLED=false
       - COMPOSE_FILE=docker-compose.prod.yml  # Enable prod backup path detection
     env_file:
@@ -80,8 +62,6 @@ services:
     depends_on:
       neo4j:
         condition: service_healthy
-      ollama:
-        condition: service_healthy  # Backend disables embeddings if Ollama isn't up yet (#194)
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -144,4 +124,3 @@ networks:
 volumes:
   neo4j-data:
   neo4j-logs:
-  ollama-data:

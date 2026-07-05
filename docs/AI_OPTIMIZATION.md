@@ -73,6 +73,8 @@ Semantic search embeddings can stay local or move to an API:
 
 Recommendation: **move embeddings to the same API provider** and drop Ollama from prod entirely. The droplet downsizing pays for the entire AI budget. Keep Ollama in dev compose for offline work.
 
+**Implemented (Phase 3):** embeddings route to Gemini `gemini-embedding-001` (Groq hosts no embedding models) via the `EMBEDDING_PROVIDER` env var — `ollama` (dev default) or `api` (prod). This is startup-level config rather than a runtime flag: query embeddings must match the model tag stored in Neo4j, and `embedding_sync` only reconciles model changes on a sync run. The model-tag change makes the next sync (`POST /api/admin/sync-embeddings`, or startup if `SYNC_EMBEDDINGS_ON_STARTUP=true`) re-embed the whole corpus.
+
 ## Decision (2026-07-03)
 
 **Groq free tier (primary) + Gemini free tier (fallback)**, hard-gated to free tiers (no payment method attached). May switch to Anthropic Haiku 4.5 later — the abstraction makes that a config change. Provider selection is a runtime feature flag (`llm_use_api` in the admin panel), so everything deploys dark with Ollama as the default until API keys are added.
@@ -112,10 +114,15 @@ Local dev override: put the keys in `backend/.env` and toggle the flag in the lo
 
 ### Phase 3: Infra cleanup and savings
 
-1. Remove Ollama service from `docker-compose.prod.yml`; keep it in dev compose.
-2. Restore Neo4j memory settings (currently squeezed to leave room for Ollama, issues #59/#60).
-3. Evaluate droplet downsize 4GB → 2GB (−$12/mo) once memory headroom is confirmed.
-4. Close/supersede #150 (dedicated Ollama server) — no longer needed.
+1. ✅ Remove Ollama service from `docker-compose.prod.yml`; keep it in dev compose. Prod backend runs with `OLLAMA_ENABLED=false` and `EMBEDDING_PROVIDER=api`. The deploy uses `--remove-orphans` to delete the old container; reclaim its model storage on the droplet with `docker volume rm mongado_ollama-data` (~2GB).
+2. ✅ Neo4j memory settings reviewed (#59/#60): kept at conservative values deliberately — the dataset is small and low limits keep the 2GB downsize possible. Bump heap/pagecache instead if staying on 4GB long-term.
+3. Evaluate droplet downsize 4GB → 2GB (−$12/mo): after this deploys, confirm headroom with `docker stats` (expect ~1.5–2GB used), then resize via the DigitalOcean console.
+4. ✅ Close/supersede #150 (dedicated Ollama server) — no longer needed.
+
+**Prod rollout notes:**
+- After the first deploy, trigger a one-time re-embed with the new model: `curl -X POST https://<host>/api/admin/sync-embeddings -H "Authorization: Bearer $ADMIN_TOKEN"`. The model-tag change (`nomic-embed-text` → `gemini-embedding-001`) makes it regenerate everything (~150 docs, a couple of minutes on Gemini free tier). Until then, semantic search is harmless but useless: the 3072-dim Gemini query vectors score 0.0 against the stored 768-dim nomic vectors (dimension-mismatch guard in `cosine_similarity`).
+- Semantic search now requires the Gemini key: if Gemini is unreachable, search falls back to text matching (same graceful degradation as before).
+- The `llm_use_api` admin flag still controls generation only. With Ollama gone from prod, toggling it off means "AI generation unavailable", not a revert to local inference.
 
 ### Explicit non-goals
 
