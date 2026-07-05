@@ -32,6 +32,35 @@ test.describe("Notes graph click-through", () => {
     await expect(page).toHaveURL(/\/knowledge-base\/notes\/[a-z0-9-]+$/);
   });
 
+  test("click with pointer travel (trackpad-style) still selects", async ({ page }) => {
+    // Regression for #208: >10px of travel between mousedown and mouseup
+    // used to be swallowed by d3's drag click-suppression
+    await firstNode(page);
+    const big = await page.evaluate(() => {
+      const cs = Array.from(document.querySelectorAll("svg[role='img'] circle"));
+      let best = null;
+      let bestR = 0;
+      for (const c of cs) {
+        const r = c.getBoundingClientRect();
+        if (r.width > bestR) {
+          bestR = r.width;
+          best = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        }
+      }
+      return best;
+    });
+    if (!big) {
+      test.skip(true, "No graph nodes available");
+      return;
+    }
+    await page.mouse.move(big.x - 7, big.y - 7, { steps: 3 });
+    await page.mouse.down();
+    await page.mouse.move(big.x + 6, big.y + 6, { steps: 4 });
+    await page.mouse.up();
+
+    await expect(page.getByRole("link", { name: /view note/i })).toBeVisible();
+  });
+
   test("double-click navigates to the note", async ({ page }) => {
     const node = await firstNode(page);
     await node.dblclick();

@@ -7,6 +7,13 @@ import * as d3 from "d3";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
 
+const graphLog = logger.withContext("Graph");
+
+// Distinguishes parallel or zombie component instances in the logs — the
+// signature failure mode for this page is a stale scene from a dead instance
+// (Fast Refresh / polluted .next) swallowing events meant for the live one
+let instanceCounter = 0;
+
 interface GraphNode extends d3.SimulationNodeDatum {
   id: string;
   title: string;
@@ -73,10 +80,28 @@ function NotesGraphContent() {
   const simulationRef = useRef<d3.Simulation<GraphNode, GraphEdge> | null>(null);
   const selectedNodeIdRef = useRef<string | null>(null);
 
+  const instanceRef = useRef(0);
+  if (instanceRef.current === 0) instanceRef.current = ++instanceCounter;
+  const iid = instanceRef.current;
+  // Dev-only diagnostics (logger.debug is a no-op in production): every
+  // line carries the component-instance id to expose zombie instances
+  const ilog = useCallback(
+    (msg: string, data?: unknown) =>
+      data === undefined
+        ? graphLog.debug(`i${iid} ${msg}`)
+        : graphLog.debug(`i${iid} ${msg}`, data),
+    [iid]
+  );
+
   // Keep ref in sync with state
   useEffect(() => {
     selectedNodeIdRef.current = selectedNode?.id || null;
   }, [selectedNode]);
+
+  useEffect(() => {
+    ilog("component mounted");
+    return () => ilog("component unmounted");
+  }, [ilog]);
 
   // Drop a stale ?node= param so it can't re-select the old node
   const clearNodeParam = useCallback(() => {
@@ -86,9 +111,13 @@ function NotesGraphContent() {
   }, [router]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
     async function fetchGraphData() {
       try {
         setLoading(true);
+        ilog("fetching graph data");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
         const token = localStorage.getItem("admin_token");
@@ -102,6 +131,7 @@ function NotesGraphContent() {
         const response = await fetch(`${apiUrl}/api/notes/graph/data`, {
           headers,
           credentials: "include",
+          signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -137,22 +167,31 @@ function NotesGraphContent() {
           };
         });
 
+        if (cancelled) {
+          ilog("fetch resolved after cleanup — ignored");
+          return;
+        }
         setGraphData(data);
-        logger.info("Graph data loaded", {
-          nodes: data.count.nodes,
-          edges: data.count.edges,
-        });
+        ilog("graph data loaded", { nodes: data.count.nodes, edges: data.count.edges });
       } catch (err) {
+        if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
+          ilog("fetch aborted by cleanup");
+          return;
+        }
         const message = err instanceof Error ? err.message : "Failed to load graph";
         setError(message);
         logger.error("Failed to load graph data", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchGraphData();
-  }, []);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [ilog]);
 
   // Handle URL parameter for pre-selected node
   useEffect(() => {
@@ -209,6 +248,10 @@ function NotesGraphContent() {
   useEffect(() => {
     if (!graphData || !svgRef.current) return;
 
+    ilog("simulation effect: (re)building svg scene and handlers", {
+      nodes: graphData.nodes.length,
+      edges: graphData.edges.length,
+    });
     const svg = d3.select(svgRef.current);
     const width = 900;
     const height = 622;
@@ -429,19 +472,25 @@ function NotesGraphContent() {
     function handleNodeHover(_event: MouseEvent, hoveredNode: GraphNode) {
       const connectedIds = getConnectedNodeIds(hoveredNode);
 
-      // Bring hovered cluster to front
-      nodeElements.each(function (d) {
-        if (d.id === hoveredNode.id || connectedIds.includes(d.id)) {
-          (this as SVGElement).parentNode?.appendChild(this as SVGElement);
-        }
-      });
+      // Bring hovered cluster to front — DEFERRED out of event dispatch.
+      // appendChild removes+reinserts the element; if that happens inside
+      // the mouseenter that Chrome fires between pointerdown and its
+      // compatibility mousedown, Chrome retargets the mousedown to the
+      // parent <g> and every circle-level handler goes deaf (#208)
+      requestAnimationFrame(() => {
+        nodeElements.each(function (d) {
+          if (d.id === hoveredNode.id || connectedIds.includes(d.id)) {
+            (this as SVGElement).parentNode?.appendChild(this as SVGElement);
+          }
+        });
 
-      linkElements.each(function (d) {
-        const sourceId = typeof d.source === "string" ? d.source : d.source.id;
-        const targetId = typeof d.target === "string" ? d.target : d.target.id;
-        if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
-          (this as SVGElement).parentNode?.appendChild(this as SVGElement);
-        }
+        linkElements.each(function (d) {
+          const sourceId = typeof d.source === "string" ? d.source : d.source.id;
+          const targetId = typeof d.target === "string" ? d.target : d.target.id;
+          if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
+            (this as SVGElement).parentNode?.appendChild(this as SVGElement);
+          }
+        });
       });
 
       // Visual highlighting - nodes
@@ -505,23 +554,29 @@ function NotesGraphContent() {
       }
     }
 
-    function handleNodeClick(event: MouseEvent, clickedNode: GraphNode) {
-      // d3.drag preventDefaults the click that follows a real drag gesture
-      if (event.defaultPrevented) return;
-      // Keep the svg background handler from treating this as a deselect
+    function handleNodeClick(event: MouseEvent) {
+      ilog("node click fired", { defaultPrevented: event.defaultPrevented });
+      // Selection happens on mousedown (drag start); this handler only
+      // shields the svg background-deselect handler from the bubbled click
       event.stopPropagation();
-      setSelectedNode(clickedNode);
-      // A stale ?node= param would otherwise re-select the old node
-      clearNodeParam();
     }
 
     function handleNodeDoubleClick(event: MouseEvent, clickedNode: GraphNode) {
+      ilog("node dblclick -> navigating", { id: clickedNode.id });
       event.preventDefault();
       router.push(`/knowledge-base/notes/${clickedNode.id}`);
     }
 
-    // Attach event handlers
+    // Attach event handlers. Selection rides on pointerdown: unlike the
+    // compatibility mousedown/click, it is dispatched before any of our
+    // handlers can perturb the DOM and cannot be suppressed upstream
     nodeElements
+      .on("pointerdown.select", (event: PointerEvent, d: GraphNode) => {
+        if (event.button !== 0) return;
+        ilog("pointerdown -> selecting node", { id: d.id });
+        setSelectedNode(d);
+        clearNodeParam();
+      })
       .on("mouseenter", handleNodeHover)
       .on("mouseleave", handleNodeLeave)
       .on("click", handleNodeClick)
@@ -534,6 +589,7 @@ function NotesGraphContent() {
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
       .on("start", (_event, d) => {
+        ilog("drag start", { id: d.id });
         // Pin the node but don't reheat the simulation yet — reheating on
         // mousedown makes nodes drift between the two clicks of a dblclick
         d.fx = d.x;
@@ -603,16 +659,95 @@ function NotesGraphContent() {
 
     // Click anywhere in the graph that isn't a node (background, edges,
     // labels) to deselect. Node clicks stopPropagation so they never land here.
-    svg.on("click", () => {
+    svg.on("click", (event) => {
+      ilog("svg background click -> deselect", { target: (event.target as Element).tagName });
       setSelectedNode(null);
       clearNodeParam();
     });
 
-    // Cleanup
-    return () => {
-      simulation.stop();
+    // Diagnostic probe: logs what hit-testing sees for EVERY press inside
+    // the svg, plus where the nearest data node believes it is. If target
+    // is "svg" while nearestDistance <= nearestRadius, hit-testing is
+    // broken (pointer-events); if nearestDistance is large, the visible
+    // scene does not match this instance's data (zombie scene).
+    svg.on("pointerdown.diag", (event: PointerEvent) => {
+      const [mx, my] = d3.pointer(event, svg.node());
+      let nearest: GraphNode | null = null;
+      let best = Infinity;
+      for (const n of nodes) {
+        const dist = Math.hypot((n.x ?? 0) - mx, (n.y ?? 0) - my);
+        if (dist < best) {
+          best = dist;
+          nearest = n;
+        }
+      }
+      ilog("pointerdown probe", {
+        target: (event.target as Element).tagName,
+        graphXY: [Math.round(mx), Math.round(my)],
+        nearestNode: nearest?.id,
+        nearestDistance: Math.round(best),
+        nearestRadius: nearest?.radius,
+        hitTest: document.elementFromPoint(event.clientX, event.clientY)?.tagName,
+        svgScenesInDocument: document.querySelectorAll("svg[role='img']").length,
+        circlesInDocument: document.querySelectorAll("svg[role='img'] circle").length,
+        // If defaultPrevented is true here, something (likely an extension
+        // content script) canceled pointerdown — the browser then suppresses
+        // the compatibility mousedown/click that d3's handlers rely on
+        defaultPrevented: event.defaultPrevented,
+        button: event.button,
+        buttons: event.buttons,
+        ctrlKey: event.ctrlKey,
+        pointerType: event.pointerType,
+        isTrusted: event.isTrusted,
+      });
+    });
+
+    // Trace the mouse-event chain: if the window capture probe fires but
+    // the svg one doesn't, something stopped propagation in between
+    svg.on("mousedown.diag", (event: MouseEvent) => {
+      ilog("mousedown reached svg", {
+        target: (event.target as Element).tagName,
+        button: event.button,
+        defaultPrevented: event.defaultPrevented,
+      });
+    });
+    svg.on("click.diag", (event: MouseEvent) => {
+      ilog("click reached svg", {
+        target: (event.target as Element).tagName,
+        defaultPrevented: event.defaultPrevented,
+      });
+    });
+    const windowMousedownProbe = (event: MouseEvent) => {
+      if ((event.target as Element | null)?.closest?.("svg[role='img']")) {
+        ilog("mousedown at window capture", {
+          target: (event.target as Element).tagName,
+          button: event.button,
+          defaultPrevented: event.defaultPrevented,
+        });
+      }
     };
-  }, [graphData, getNodeColor, router, clearNodeParam]);
+    window.addEventListener("mousedown", windowMousedownProbe, true);
+
+    ilog("scene built", {
+      circlesInThisScene: nodeElements.size(),
+      circlesInDocument: document.querySelectorAll("svg[role='img'] circle").length,
+      svgScenesInDocument: document.querySelectorAll("svg[role='img']").length,
+    });
+
+    // Cleanup: stop the sim AND remove this instance's scene + handlers so
+    // an unmounting instance can never leave a visible-but-dead graph behind
+    return () => {
+      ilog("simulation effect cleanup: tearing down scene");
+      simulation.stop();
+      window.removeEventListener("mousedown", windowMousedownProbe, true);
+      svg
+        .on("click", null)
+        .on("pointerdown.diag", null)
+        .on("mousedown.diag", null)
+        .on("click.diag", null);
+      svg.selectAll("*").remove();
+    };
+  }, [graphData, getNodeColor, router, clearNodeParam, ilog]);
 
   // Separate effect for visual updates (selection, filters) without recreating simulation
   useEffect(() => {
@@ -627,6 +762,7 @@ function NotesGraphContent() {
 
     const edges = graphData.edges;
     const selectedNodeId = selectedNode?.id || null;
+    ilog("selection state applied", { selectedNodeId });
     const selectedTagsArray = Array.from(selectedTags);
     const isFiltering = selectedTags.size > 0;
 
@@ -775,7 +911,7 @@ function NotesGraphContent() {
 
       labelElements.transition().duration(150).style("opacity", 0);
     }
-  }, [selectedNode, selectedTags, filterLogic, graphData]);
+  }, [selectedNode, selectedTags, filterLogic, graphData, ilog]);
 
   // Handle deselect
   const handleDeselect = () => {
