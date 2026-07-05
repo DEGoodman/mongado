@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     # LLM API provider seed default for the "llm_use_api" feature flag.
     # When enabled (via admin UI), AI generation (Q&A, summaries, suggestions)
     # is routed to hosted APIs (Groq primary, Gemini fallback) instead of
-    # local Ollama. Embeddings always stay on Ollama regardless of this flag.
+    # local Ollama. Embeddings are routed separately via embedding_provider.
     llm_use_api: bool = False
 
     # Hosted API providers (OpenAI-compatible chat completions)
@@ -68,8 +68,15 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     gemini_model: str = "gemini-flash-latest"  # Free tier: 1,500 req/day
+    gemini_embed_model: str = "gemini-embedding-001"  # Embeddings via OpenAI-compat endpoint
     llm_api_timeout: float = 30.0  # Per-provider request timeout (seconds)
     llm_api_max_tokens: int = 1024  # Default response cap for API generation
+
+    # Which backend generates embeddings: "ollama" (default, dev) or "api"
+    # (Gemini, prod). Startup-level config rather than a runtime flag: query
+    # embeddings must match the model tag stored with precomputed embeddings
+    # in Neo4j, and embedding_sync only reconciles model changes at startup.
+    embedding_provider: str = "ollama"
 
     # Ollama settings
     ollama_host: str = "http://localhost:11434"  # Default Ollama endpoint
