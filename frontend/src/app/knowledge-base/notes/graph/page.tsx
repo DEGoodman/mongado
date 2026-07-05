@@ -83,9 +83,13 @@ function NotesGraphContent() {
   const instanceRef = useRef(0);
   if (instanceRef.current === 0) instanceRef.current = ++instanceCounter;
   const iid = instanceRef.current;
+  // Dev-only diagnostics (logger.debug is a no-op in production): every
+  // line carries the component-instance id to expose zombie instances
   const ilog = useCallback(
     (msg: string, data?: unknown) =>
-      data === undefined ? graphLog.info(`i${iid} ${msg}`) : graphLog.info(`i${iid} ${msg}`, data),
+      data === undefined
+        ? graphLog.debug(`i${iid} ${msg}`)
+        : graphLog.debug(`i${iid} ${msg}`, data),
     [iid]
   );
 
