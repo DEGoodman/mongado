@@ -468,19 +468,25 @@ function NotesGraphContent() {
     function handleNodeHover(_event: MouseEvent, hoveredNode: GraphNode) {
       const connectedIds = getConnectedNodeIds(hoveredNode);
 
-      // Bring hovered cluster to front
-      nodeElements.each(function (d) {
-        if (d.id === hoveredNode.id || connectedIds.includes(d.id)) {
-          (this as SVGElement).parentNode?.appendChild(this as SVGElement);
-        }
-      });
+      // Bring hovered cluster to front — DEFERRED out of event dispatch.
+      // appendChild removes+reinserts the element; if that happens inside
+      // the mouseenter that Chrome fires between pointerdown and its
+      // compatibility mousedown, Chrome retargets the mousedown to the
+      // parent <g> and every circle-level handler goes deaf (#208)
+      requestAnimationFrame(() => {
+        nodeElements.each(function (d) {
+          if (d.id === hoveredNode.id || connectedIds.includes(d.id)) {
+            (this as SVGElement).parentNode?.appendChild(this as SVGElement);
+          }
+        });
 
-      linkElements.each(function (d) {
-        const sourceId = typeof d.source === "string" ? d.source : d.source.id;
-        const targetId = typeof d.target === "string" ? d.target : d.target.id;
-        if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
-          (this as SVGElement).parentNode?.appendChild(this as SVGElement);
-        }
+        linkElements.each(function (d) {
+          const sourceId = typeof d.source === "string" ? d.source : d.source.id;
+          const targetId = typeof d.target === "string" ? d.target : d.target.id;
+          if (sourceId === hoveredNode.id || targetId === hoveredNode.id) {
+            (this as SVGElement).parentNode?.appendChild(this as SVGElement);
+          }
+        });
       });
 
       // Visual highlighting - nodes
@@ -557,8 +563,16 @@ function NotesGraphContent() {
       router.push(`/knowledge-base/notes/${clickedNode.id}`);
     }
 
-    // Attach event handlers
+    // Attach event handlers. Selection rides on pointerdown: unlike the
+    // compatibility mousedown/click, it is dispatched before any of our
+    // handlers can perturb the DOM and cannot be suppressed upstream
     nodeElements
+      .on("pointerdown.select", (event: PointerEvent, d: GraphNode) => {
+        if (event.button !== 0) return;
+        ilog("pointerdown -> selecting node", { id: d.id });
+        setSelectedNode(d);
+        clearNodeParam();
+      })
       .on("mouseenter", handleNodeHover)
       .on("mouseleave", handleNodeLeave)
       .on("click", handleNodeClick)
@@ -571,13 +585,7 @@ function NotesGraphContent() {
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
       .on("start", (_event, d) => {
-        ilog("mousedown (drag start) -> selecting node", { id: d.id });
-        // Select on mousedown: real trackpad clicks often travel >10px
-        // between down and up, which makes d3's drag suppression swallow
-        // the click event entirely (#208). mousedown always fires.
-        setSelectedNode(d);
-        // A stale ?node= param would otherwise re-select the old node
-        clearNodeParam();
+        ilog("drag start", { id: d.id });
         // Pin the node but don't reheat the simulation yet — reheating on
         // mousedown makes nodes drift between the two clicks of a dblclick
         d.fx = d.x;
