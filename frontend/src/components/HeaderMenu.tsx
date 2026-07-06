@@ -132,11 +132,7 @@ export default function HeaderMenu() {
               {isUserAuthenticated ? (
                 <>
                   <div className={styles.userName}>Admin User</div>
-                  <Link
-                    href="/admin"
-                    className={styles.menuLink}
-                    onClick={() => setIsOpen(false)}
-                  >
+                  <Link href="/admin" className={styles.menuLink} onClick={() => setIsOpen(false)}>
                     Admin Settings
                   </Link>
                   <button onClick={handleLogout} className={styles.signOutButton}>

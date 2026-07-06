@@ -87,10 +87,7 @@ describe("HeaderMenu", () => {
     render(<HeaderMenu />);
     openMenu();
     expect(screen.getByText("Admin User")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Admin Settings" })).toHaveAttribute(
-      "href",
-      "/admin"
-    );
+    expect(screen.getByRole("link", { name: "Admin Settings" })).toHaveAttribute("href", "/admin");
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeInTheDocument();
     expect(screen.queryByText("Sign In")).not.toBeInTheDocument();
   });
