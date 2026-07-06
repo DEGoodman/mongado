@@ -1,32 +1,44 @@
 /**
- * Settings component - Global app settings (available to all users)
+ * HeaderMenu - single consolidated header dropdown.
  *
- * Contains:
- * - AI Suggestions mode (Off, On-demand, Automatic)
- * - Display preferences
- * - Other app-wide settings
+ * Sections:
+ * - Account: Sign In (logged out) OR name + Admin Settings + Sign Out (logged in)
+ * - Appearance: Light/Dark theme segmented control
+ * - AI Suggestions: Off / On-demand / Automatic (feature-flag gated)
  *
- * Separate from UserMenu (which handles account-specific actions)
+ * Replaces the former ThemeToggle + Settings + UserMenu header cluster.
  */
 
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { User, GearSix } from "@phosphor-icons/react";
+import { useTheme, type Theme } from "@/hooks/useTheme";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
-import { GearSix } from "@phosphor-icons/react";
-import styles from "./Settings.module.scss";
+import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
+import styles from "./HeaderMenu.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export default function Settings() {
+export default function HeaderMenu() {
   const { llmFeaturesEnabled, loaded: flagsLoaded } = useFeatureFlags();
   const { preferences, updatePreferences } = useUserPreferences();
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Check authentication status on mount and when dropdown opens
+  useEffect(() => {
+    setIsUserAuthenticated(isAuthenticated());
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -72,57 +84,88 @@ export default function Settings() {
     }
   };
 
+  const handleLogout = () => {
+    clearAdminToken();
+    logger.info("User logged out");
+    setIsOpen(false);
+    router.push("/login");
+  };
+
+  const themeSegment = (value: Theme, label: string) => (
+    <button
+      onClick={() => setTheme(value)}
+      className={`${styles.segmentButton} ${theme === value ? styles.active : styles.inactive}`}
+    >
+      {label}
+    </button>
+  );
+
+  const aiSegment = (value: AiMode, label: string) => (
+    <button
+      onClick={() => handleModeChange(value)}
+      className={`${styles.segmentButton} ${preferences.aiMode === value ? styles.active : styles.inactive}`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className={styles.container} ref={dropdownRef}>
-      {/* Settings button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={styles.settingsButton}
-        aria-label="Settings"
+        className={styles.menuButton}
+        aria-label="Menu"
         aria-expanded={isOpen}
-        title="Settings"
       >
-        <span className={styles.icon} aria-hidden="true">
-          <GearSix size={18} />
-        </span>
+        {isUserAuthenticated ? (
+          <User size={18} aria-hidden="true" />
+        ) : (
+          <GearSix size={18} aria-hidden="true" />
+        )}
       </button>
 
-      {/* Dropdown menu */}
       {isOpen && (
         <div className={styles.dropdown}>
           <div className={styles.dropdownContent}>
-            {/* AI Assistance Section */}
+            {/* Account */}
             <div className={styles.section}>
+              {isUserAuthenticated ? (
+                <>
+                  <div className={styles.userName}>Admin User</div>
+                  <Link href="/admin" className={styles.menuLink} onClick={() => setIsOpen(false)}>
+                    Admin Settings
+                  </Link>
+                  <button onClick={handleLogout} className={styles.signOutButton}>
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link href="/login" className={styles.menuLink} onClick={() => setIsOpen(false)}>
+                  Sign In
+                </Link>
+              )}
+            </div>
+
+            {/* Appearance */}
+            <div className={styles.section}>
+              <h3 className={styles.sectionLabel}>Theme</h3>
+              <div className={styles.segmentedControl}>
+                {themeSegment("light", "Light")}
+                {themeSegment("dark", "Dark")}
+              </div>
+            </div>
+
+            {/* AI Suggestions */}
+            <div className={styles.section}>
+              <h3 className={styles.sectionLabel}>AI Suggestions</h3>
               {!flagsLoaded ? null : llmFeaturesEnabled ? (
                 <>
                   {isWarmingUp && <div className={styles.warmupIndicator}>Warming up...</div>}
-
-                  {/* Segmented Control */}
                   <div className={styles.segmentedControl}>
-                    <button
-                      onClick={() => handleModeChange("off")}
-                      className={`${styles.segmentButton} ${preferences.aiMode === "off" ? styles.active : styles.inactive}`}
-                      title="No AI suggestions"
-                    >
-                      Off
-                    </button>
-                    <button
-                      onClick={() => handleModeChange("on-demand")}
-                      className={`${styles.segmentButton} ${preferences.aiMode === "on-demand" ? styles.active : styles.inactive}`}
-                      title="Click to get AI suggestions"
-                    >
-                      On-demand
-                    </button>
-                    <button
-                      onClick={() => handleModeChange("real-time")}
-                      className={`${styles.segmentButton} ${preferences.aiMode === "real-time" ? styles.active : styles.inactive}`}
-                      title="Automatic AI suggestions"
-                    >
-                      Automatic
-                    </button>
+                    {aiSegment("off", "Off")}
+                    {aiSegment("on-demand", "On-demand")}
+                    {aiSegment("real-time", "Automatic")}
                   </div>
-
-                  {/* Mode descriptions */}
                   <div className={styles.modeDescription}>
                     {preferences.aiMode === "off" && (
                       <p>
@@ -149,12 +192,6 @@ export default function Settings() {
                 </div>
               )}
             </div>
-
-            {/* Future sections can be added here:
-            - Display preferences (font size, compact/comfortable view)
-            - Search preferences (default mode)
-            - About/Help
-            */}
           </div>
         </div>
       )}

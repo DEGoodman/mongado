@@ -18,11 +18,11 @@
 .header {
   background: linear-gradient(
     to bottom,
-    $slate-blue-200 0%,
-    $slate-blue-100 50%,
-    rgba($slate-blue-50, 0.7) 100%
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
   );
-  border-bottom: 1px solid $slate-blue-300;
+  border-bottom: 1px solid var(--color-header-border);
   box-shadow: $shadow-card-sm;
   padding-top: $spacing-3;
   padding-bottom: $spacing-3;
