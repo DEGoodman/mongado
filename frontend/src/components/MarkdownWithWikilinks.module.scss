@@ -41,11 +41,11 @@
 
 // Article link styling (distinct from note links: slate, body face)
 .articleLink {
-  background-color: $slate-blue-50;
-  color: $slate-blue-700;
+  background-color: $color-info-cool-bg;
+  color: $color-info-cool-text;
   font-family: inherit; // Use regular font, not monospace
 
   &:hover {
-    background-color: $slate-blue-100;
+    background-color: $color-info-cool-border;
   }
 }
