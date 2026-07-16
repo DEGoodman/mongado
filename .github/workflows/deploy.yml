@@ -138,6 +138,14 @@ jobs:
             export NEO4J_PASSWORD="$NEO4J_PASSWORD"
             export NEO4J_AUTH="neo4j/$NEO4J_PASSWORD"
 
+            # Ensure the backup directory exists and is writable by the backend
+            # container, which runs as uid 1000 (appuser). Root ownership breaks
+            # POST /api/admin/backup with EACCES (#218). Root-run writers
+            # (backup-cron, neo4j-admin dumps) are unaffected.
+            echo "🗄️  Ensuring backup directory ownership..."
+            mkdir -p /var/mongado-backups
+            chown 1000:1000 /var/mongado-backups
+
             # Build and restart containers (without --no-cache to reduce resource usage)
             # --remove-orphans cleans up services deleted from the compose file
             # (e.g. the prod Ollama container removed in #190)

@@ -101,7 +101,8 @@ export default function AdminPage() {
       loadHealth();
     } catch (err) {
       adminLogger.error("Backup failed:", err);
-      setHealthError("Backup failed. Check the backend logs.");
+      const detail = err instanceof Error ? err.message : "Check the backend logs.";
+      setHealthError(`Backup failed: ${detail}`);
     } finally {
       setBackingUp(false);
     }
