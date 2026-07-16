@@ -374,3 +374,64 @@ class TestDatabaseHealth:
         if data["neo4j_available"] and data["notes_count"] == 0:
             assert data["needs_restore"] is True
             assert data["status"] in ["degraded", "unhealthy"]
+
+    def test_database_health_no_cron_heartbeat(self, client: TestClient) -> None:
+        """Without a heartbeat file, cron health is unknown (None), not unhealthy."""
+        with TemporaryDirectory() as temp_dir:
+            (Path(temp_dir) / "backups").mkdir()
+            with patch("routers.admin.Path.cwd", return_value=Path(temp_dir)):
+                response = client.get("/api/admin/health/database")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["backup_cron_last_run"] is None
+        assert data["backup_cron_healthy"] is None
+
+    def test_database_health_fresh_cron_heartbeat(self, client: TestClient) -> None:
+        """A heartbeat within 48h reports the cron as healthy."""
+        from datetime import UTC, datetime
+
+        with TemporaryDirectory() as temp_dir:
+            backup_dir = Path(temp_dir) / "backups"
+            backup_dir.mkdir()
+            timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            (backup_dir / ".last_cron_run").write_text(timestamp + "\n")
+
+            with patch("routers.admin.Path.cwd", return_value=Path(temp_dir)):
+                response = client.get("/api/admin/health/database")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["backup_cron_last_run"] == timestamp
+        assert data["backup_cron_healthy"] is True
+
+    def test_database_health_stale_cron_heartbeat(self, client: TestClient) -> None:
+        """A heartbeat older than 48h reports the cron as unhealthy and degrades status."""
+        from datetime import UTC, datetime, timedelta
+
+        with TemporaryDirectory() as temp_dir:
+            backup_dir = Path(temp_dir) / "backups"
+            backup_dir.mkdir()
+            stale = datetime.now(UTC) - timedelta(days=5)
+            (backup_dir / ".last_cron_run").write_text(stale.strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+            with patch("routers.admin.Path.cwd", return_value=Path(temp_dir)):
+                response = client.get("/api/admin/health/database")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["backup_cron_healthy"] is False
+        assert data["status"] in ["degraded", "unhealthy"]
+
+    def test_database_health_corrupt_cron_heartbeat(self, client: TestClient) -> None:
+        """An unparseable heartbeat is treated as unhealthy rather than crashing."""
+        with TemporaryDirectory() as temp_dir:
+            backup_dir = Path(temp_dir) / "backups"
+            backup_dir.mkdir()
+            (backup_dir / ".last_cron_run").write_text("not-a-timestamp")
+
+            with patch("routers.admin.Path.cwd", return_value=Path(temp_dir)):
+                response = client.get("/api/admin/health/database")
+
+        assert response.status_code == 200
+        assert response.json()["backup_cron_healthy"] is False

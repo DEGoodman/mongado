@@ -68,6 +68,73 @@
 .card {
   @include card-elevated;
   padding: $spacing-6;
+
+  & + & {
+    margin-top: $spacing-6;
+  }
+}
+
+.cardTitle {
+  @include heading-h3;
+  margin: 0 0 $spacing-4 0;
+}
+
+.success {
+  margin: 0 0 $spacing-4 0;
+  padding: $spacing-3 $spacing-4;
+  background-color: rgba(209, 250, 229, 0.8);
+  border: $border-width-thin solid rgba(5, 150, 105, 0.3);
+  border-radius: $border-radius-md;
+  color: $color-text-primary;
+}
+
+.healthGrid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: $spacing-2 $spacing-6;
+  margin: 0 0 $spacing-5 0;
+
+  dt {
+    @include text-secondary;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+
+  dd {
+    margin: 0;
+    font-family: $font-family-mono;
+    font-size: $font-size-sm;
+    color: $color-text-primary;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 $spacing-2;
+  border-radius: $border-radius-md;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  text-transform: uppercase;
+}
+
+.healthy {
+  background-color: rgba(5, 150, 105, 0.15);
+  color: $color-text-primary;
+}
+
+.degraded {
+  background-color: rgba(217, 119, 6, 0.2);
+  color: $color-text-primary;
+}
+
+.unhealthy {
+  background-color: rgba(220, 38, 38, 0.2);
+  color: $color-text-primary;
+}
+
+.backupButton {
+  @include button-secondary;
+  @include button-sm;
 }
 
 .status {

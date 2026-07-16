@@ -2,7 +2,7 @@
  * Admin API - feature flag management (requires admin token)
  */
 
-import { apiGet, apiPut } from "./client";
+import { apiGet, apiPost, apiPut } from "./client";
 
 export interface FeatureFlag {
   name: string;
@@ -29,4 +29,31 @@ export async function updateFeatureFlag(
   enabled: boolean
 ): Promise<FeatureFlagUpdateResponse> {
   return apiPut<FeatureFlagUpdateResponse>(`/api/admin/feature-flags/${name}`, { enabled });
+}
+
+export interface DatabaseHealth {
+  status: "healthy" | "degraded" | "unhealthy";
+  notes_count: number;
+  backups_available: number;
+  needs_restore: boolean;
+  last_backup: string | null;
+  neo4j_available: boolean;
+  backup_cron_last_run: string | null;
+  backup_cron_healthy: boolean | null;
+}
+
+export interface BackupCreateResponse {
+  status: string;
+  backup_file: string;
+  timestamp: string;
+  downtime_seconds: number;
+  note_count: number;
+}
+
+export async function getDatabaseHealth(): Promise<DatabaseHealth> {
+  return apiGet<DatabaseHealth>("/api/admin/health/database");
+}
+
+export async function createBackup(): Promise<BackupCreateResponse> {
+  return apiPost<BackupCreateResponse>("/api/admin/backup", {});
 }

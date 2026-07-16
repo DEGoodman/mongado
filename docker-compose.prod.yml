@@ -56,7 +56,7 @@ services:
       - ./backend/.env
     volumes:
       - ./backend/static:/app/static:ro  # Mount static files for hot-reload without restart
-      - /var/mongado-backups:/var/mongado-backups:ro  # Backup directory for health checks
+      - /var/mongado-backups:/var/mongado-backups  # Backup storage (rw: POST /api/admin/backup writes JSON exports here, #218)
     networks:
       - mongado-network
     depends_on:

@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -432,6 +432,19 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
                 except Exception as e:
                     logger.warning("Failed to parse backup timestamp: %s", e)
 
+        # Backup-cron heartbeat (written by backup_neo4j_prod.sh on every run, #218)
+        backup_cron_last_run: str | None = None
+        backup_cron_healthy: bool | None = None
+        heartbeat_file = backup_dir / ".last_cron_run"
+        if heartbeat_file.exists():
+            try:
+                backup_cron_last_run = heartbeat_file.read_text().strip()
+                last_run = datetime.fromisoformat(backup_cron_last_run.replace("Z", "+00:00"))
+                backup_cron_healthy = datetime.now(UTC) - last_run < timedelta(hours=48)
+            except (ValueError, OSError) as e:
+                logger.warning("Failed to read backup cron heartbeat: %s", e)
+                backup_cron_healthy = False
+
         # Determine if restore is needed
         # Criteria: Neo4j unavailable OR note count is 0 but backups exist
         needs_restore = (not neo4j_available and backups_available > 0) or (
@@ -441,7 +454,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
         # Determine overall status
         if not neo4j_available:
             status = "unhealthy"
-        elif needs_restore:
+        elif needs_restore or backup_cron_healthy is False:
             status = "degraded"
         else:
             status = "healthy"
@@ -453,6 +466,8 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
             needs_restore=needs_restore,
             last_backup=last_backup,
             neo4j_available=neo4j_available,
+            backup_cron_last_run=backup_cron_last_run,
+            backup_cron_healthy=backup_cron_healthy,
         )
 
     return router
