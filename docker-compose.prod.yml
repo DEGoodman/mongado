@@ -2,9 +2,13 @@ services:
   neo4j:
     image: neo4j:latest
     container_name: mongado-neo4j-prod
+    # Loopback-only: nothing external needs Neo4j (backend uses the Docker
+    # network, backups use docker exec). Docker-published ports bypass ufw,
+    # so 0.0.0.0 here meant the DB was internet-reachable (#226).
+    # Droplet-local admin still works, e.g. via SSH tunnel.
     ports:
-      - "7474:7474"  # HTTP (browser interface)
-      - "7687:7687"  # Bolt protocol
+      - "127.0.0.1:7474:7474"  # HTTP (browser interface)
+      - "127.0.0.1:7687:7687"  # Bolt protocol
     environment:
       - NEO4J_AUTH=${NEO4J_AUTH:?NEO4J_AUTH must be set in production}
       - NEO4J_PLUGINS=["apoc"]
@@ -38,8 +42,10 @@ services:
       context: ./backend
       target: production
     container_name: mongado-backend-prod
+    # Loopback-only: host nginx proxies api.mongado.com -> localhost:8000.
+    # 0.0.0.0 let clients bypass Cloudflare + nginx entirely (#226).
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - DEBUG=false
       - OP_MONGADO_SERVICE_ACCOUNT_TOKEN=${OP_MONGADO_SERVICE_ACCOUNT_TOKEN}
@@ -77,8 +83,9 @@ services:
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: mongado-frontend-prod
+    # Loopback-only: host nginx proxies mongado.com -> localhost:3000 (#226).
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}

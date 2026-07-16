@@ -80,5 +80,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
-# Run with production settings (uvloop, httptools from uvicorn[standard])
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop", "--http", "httptools"]
+# Run with production settings (uvloop, httptools from uvicorn[standard]).
+# --proxy-headers: trust X-Forwarded-For from host nginx so request.client is
+# the real visitor, not the Docker bridge IP — without it slowapi rate-limits
+# all traffic in one global bucket (#226). Trusting '*' is safe because the
+# host port is bound to 127.0.0.1; only nginx can reach the container.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop", "--http", "httptools", "--proxy-headers", "--forwarded-allow-ips", "*"]
