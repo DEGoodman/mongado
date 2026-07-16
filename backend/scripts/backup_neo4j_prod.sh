@@ -50,6 +50,10 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
+# Heartbeat: record that the cron job ran, even if we later skip or fail.
+# The backend health endpoint reads this to detect a dead cron (#218).
+date -u +%Y-%m-%dT%H:%M:%SZ > "${BACKUP_DIR}/.last_cron_run"
+
 # Create backup directory (will move dump here after creation)
 mkdir -p "${BACKUP_SUBDIR}"
 
@@ -68,8 +72,18 @@ log_info "Notes in database: ${NOTE_COUNT}"
 # Hash-based change detection
 HASH_FILE="${BACKUP_DIR}/.last_backup_hash"
 if [ -n "${NEO4J_PASSWORD:-}" ]; then
-    CONTENT_HASH=$(docker exec "${NEO4J_CONTAINER}" cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
-        "MATCH (n:Note) RETURN count(n) as c, collect(n.title) as titles" 2>/dev/null | tail -1 | sha256sum | cut -d' ' -f1 || echo "unknown")
+    # count catches creates/deletes; max(updated_at) catches edits (content-only
+    # edits were previously invisible to change detection, #218)
+    QUERY_RESULT=$(docker exec "${NEO4J_CONTAINER}" cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
+        "MATCH (n:Note) RETURN count(n) as c, max(n.updated_at) as u" 2>/dev/null | tail -1 || true)
+    if [ -n "$QUERY_RESULT" ]; then
+        CONTENT_HASH=$(echo "$QUERY_RESULT" | sha256sum | cut -d' ' -f1)
+    else
+        # An empty result must never be hashed: it produces a constant hash that,
+        # once saved, makes every future run skip as "no changes" (#218)
+        log_warn "Change-detection query failed - proceeding with backup"
+        CONTENT_HASH="unknown"
+    fi
 
     if [ -f "$HASH_FILE" ]; then
         LAST_HASH=$(cat "$HASH_FILE")

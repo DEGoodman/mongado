@@ -120,3 +120,10 @@ class DatabaseHealthResponse(BaseModel):
     needs_restore: bool = Field(..., description="Whether database appears to need restore")
     last_backup: str | None = Field(None, description="Timestamp of last backup (ISO 8601)")
     neo4j_available: bool = Field(..., description="Whether Neo4j connection is available")
+    backup_cron_last_run: str | None = Field(
+        None, description="Timestamp of the last backup-cron run (ISO 8601, from heartbeat file)"
+    )
+    backup_cron_healthy: bool | None = Field(
+        None,
+        description="False if the backup cron has not run within 48h; None if no heartbeat exists",
+    )
