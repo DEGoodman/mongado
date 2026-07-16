@@ -89,7 +89,9 @@ services:
       - mongado-network
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      # 127.0.0.1, not localhost: busybox wget resolves localhost to ::1 and
+      # Next.js binds IPv4 only, so the probe is always refused (#221)
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
