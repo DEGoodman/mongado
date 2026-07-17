@@ -4,7 +4,7 @@
  * Uses DOMPurify for safe HTML rendering of user-generated or markdown-converted content.
  */
 
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 
 /**
  * Configuration for DOMPurify optimized for markdown content.
@@ -123,11 +123,5 @@ const MARKDOWN_CONFIG = {
  * ```
  */
 export function sanitizeHtml(html: string): string {
-  if (typeof window === "undefined") {
-    // Server-side: return as-is (will be sanitized on client hydration)
-    // For full SSR safety, consider using isomorphic-dompurify
-    return html;
-  }
-
   return DOMPurify.sanitize(html, MARKDOWN_CONFIG);
 }

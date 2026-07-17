@@ -97,6 +97,8 @@ services:
       - /app/.next
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Server components fetch the backend over the Docker network (#207)
+      - API_URL_INTERNAL=http://backend:8000
       # NODE_ENV is automatically set by Next.js commands:
       # - 'npm run dev' sets NODE_ENV=development
       # - 'npm run build' sets NODE_ENV=production

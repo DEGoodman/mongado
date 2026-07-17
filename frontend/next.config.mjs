@@ -31,6 +31,11 @@ const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
 
+  // isomorphic-dompurify uses jsdom on the server, which reads its
+  // default-stylesheet.css from disk at runtime - bundling it breaks that
+  // path resolution (ENOENT), so require it from node_modules instead
+  serverExternalPackages: ["isomorphic-dompurify"],
+
   // Rewrite @phosphor-icons/react barrel imports to per-icon imports.
   // Without this, webpack compiles all ~9,000 icons into every route that
   // renders the nav (10k+ modules, 10s+ dev compiles).
