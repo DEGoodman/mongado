@@ -2,6 +2,8 @@
 
 import asyncio
 import logging
+import re
+import time
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -20,7 +22,7 @@ from adapters.article_loader import load_static_articles
 from adapters.neo4j import get_neo4j_adapter
 from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
-from dependencies import get_neo4j, get_ollama, set_static_articles, set_user_resources
+from dependencies import get_neo4j, get_notes, get_ollama, set_static_articles, set_user_resources
 from feature_flags import get_feature_flags, require_llm_features
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
@@ -30,6 +32,7 @@ from models import (
     ImageUploadResponse,
     ReadyResponse,
     StatusResponse,
+    UploadCleanupResponse,
 )
 from notes_service import get_notes_service
 from rate_limiter import RATE_LIMITS, limiter
@@ -302,6 +305,9 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # File upload security limits
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+# Whole-request ceiling: file limit plus slack for multipart framing (#224)
+MAX_UPLOAD_BODY_SIZE = MAX_FILE_SIZE + 16 * 1024
+UPLOAD_READ_CHUNK = 1024 * 1024  # 1 MB
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 # Magic bytes for common image formats
 IMAGE_MAGIC_BYTES = {
@@ -396,17 +402,47 @@ def _validate_image_magic_bytes(content: bytes) -> str | None:
     return None
 
 
-@app.post("/api/upload-image", response_model=ImageUploadResponse)
+def enforce_upload_body_size(request: Request) -> None:
+    """Reject oversized uploads before the multipart body is parsed (#224).
+
+    Runs as a dependency, i.e. before FastAPI consumes the request body,
+    so an honest client declaring a huge Content-Length is refused without
+    the server spooling gigabytes. Clients that lie about (or omit) the
+    header are caught by the chunked read inside the endpoint.
+    """
+    content_length = request.headers.get("content-length")
+    if content_length is None:
+        return
+    try:
+        declared = int(content_length)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid Content-Length header") from None
+    if declared > MAX_UPLOAD_BODY_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Request too large. Maximum file size is {MAX_FILE_SIZE // (1024 * 1024)} MB",
+        )
+
+
+@app.post(
+    "/api/upload-image",
+    response_model=ImageUploadResponse,
+    dependencies=[Depends(enforce_upload_body_size)],
+)
 @limiter.limit(RATE_LIMITS["upload"])
 async def upload_image(
-    request: Request, file: Annotated[UploadFile, File()]
+    request: Request,
+    file: Annotated[UploadFile, File()],
+    _admin: Annotated[bool, Depends(verify_admin)],
 ) -> ImageUploadResponse:
     """Upload an image file, optimize to WebP, and return its URL.
 
-    Rate limited to prevent abuse.
+    Admin-only (#224) and rate limited.
 
     Security validations:
-    - File size limit (10 MB max)
+    - Admin authentication (Bearer token)
+    - Request size rejected pre-parse via Content-Length (#224)
+    - File size limit (10 MB max) enforced during chunked read
     - Content-Type header validation
     - Magic bytes validation (actual file content)
     - Sanitized filename (UUID-based)
@@ -418,19 +454,25 @@ async def upload_image(
             detail=f"Invalid file type '{file.content_type}'. Allowed: {', '.join(ALLOWED_IMAGE_TYPES)}",
         )
 
-    # 2. Read content with size limit
+    # 2. Read in chunks with a hard size cutoff - never the whole body at
+    # once, so a lying/chunked client can't spike memory (#224)
+    chunks: list[bytes] = []
+    size = 0
     try:
-        content = await file.read()
+        while chunk := await file.read(UPLOAD_READ_CHUNK):
+            size += len(chunk)
+            if size > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)} MB",
+                )
+            chunks.append(chunk)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error reading uploaded file: %s", e)
         raise HTTPException(status_code=400, detail="Failed to read uploaded file") from e
-
-    # 3. Validate file size
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024 * 1024)} MB",
-        )
+    content = b"".join(chunks)
 
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Empty file uploaded")
@@ -499,6 +541,81 @@ async def upload_image(
         logger.warning("Using original file: %s", temp_filename)
         image_url = f"/uploads/{temp_filename}"
         return ImageUploadResponse(url=image_url, filename=temp_filename)
+
+
+# Matches "/uploads/<uuid>.webp" style references in note/article content
+_UPLOAD_REFERENCE_RE = re.compile(r"/uploads/([A-Za-z0-9._-]+)")
+
+
+def _find_referenced_uploads(texts: list[str]) -> set[str]:
+    """Collect upload filenames referenced anywhere in the given texts."""
+    referenced: set[str] = set()
+    for text in texts:
+        referenced.update(_UPLOAD_REFERENCE_RE.findall(text))
+    return referenced
+
+
+@app.post("/api/admin/cleanup-uploads", response_model=UploadCleanupResponse)
+def cleanup_uploads(
+    _admin: Annotated[bool, Depends(verify_admin)],
+    neo4j: Annotated[Any, Depends(get_neo4j)],
+    notes: Annotated[Any, Depends(get_notes)],
+    min_age_days: int = 7,
+) -> UploadCleanupResponse:
+    """Delete stale upload files that nothing references (admin only, #224).
+
+    A file is deleted only when it is older than min_age_days AND no note or
+    article content mentions its /uploads/ URL. Refuses to run when Neo4j is
+    unavailable - note references could not be checked, and deleting
+    blind risks breaking images embedded in notes.
+    """
+    if not neo4j.is_available():
+        return UploadCleanupResponse(
+            success=False,
+            message="Neo4j unavailable - refusing to delete uploads without checking note references",
+            removed_count=0,
+            freed_bytes=0,
+            kept_referenced=0,
+            kept_recent=0,
+        )
+
+    texts: list[str] = []
+    for article in static_articles:
+        texts.append(str(article.get("content", "")))
+        texts.append(str(article.get("html_content", "")))
+    for note in notes.list_notes(include_full_content=True):
+        texts.append(str(note.get("content", "")))
+    referenced = _find_referenced_uploads(texts)
+
+    cutoff = time.time() - min_age_days * 86400
+    removed = freed = kept_referenced = kept_recent = 0
+
+    for path in UPLOAD_DIR.iterdir():
+        if not path.is_file():
+            continue
+        if path.name in referenced:
+            kept_referenced += 1
+            continue
+        if path.stat().st_mtime >= cutoff:
+            kept_recent += 1
+            continue
+        freed += path.stat().st_size
+        path.unlink()
+        removed += 1
+
+    message = (
+        f"Removed {removed} stale upload(s), freed {freed} bytes. "
+        f"Kept {kept_referenced} referenced, {kept_recent} recent."
+    )
+    logger.info("Upload cleanup: %s", message)
+    return UploadCleanupResponse(
+        success=True,
+        message=message,
+        removed_count=removed,
+        freed_bytes=freed,
+        kept_referenced=kept_referenced,
+        kept_recent=kept_recent,
+    )
 
 
 # Article CRUD and AI features moved to routers/articles.py

@@ -31,6 +31,17 @@ class BackupCreateResponse(BaseModel):
     note_count: int | None = Field(None, description="Number of notes backed up")
 
 
+class UploadCleanupResponse(BaseModel):
+    """Response for cleaning up stale unreferenced uploads."""
+
+    success: bool = Field(..., description="Whether cleanup ran (False if refused)")
+    message: str = Field(..., description="Human-readable outcome")
+    removed_count: int = Field(0, description="Files deleted")
+    freed_bytes: int = Field(0, description="Bytes reclaimed")
+    kept_referenced: int = Field(0, description="Files kept because notes/articles reference them")
+    kept_recent: int = Field(0, description="Files kept because they are newer than min_age_days")
+
+
 class RestoreRequest(BaseModel):
     """Request to restore from a backup."""
 

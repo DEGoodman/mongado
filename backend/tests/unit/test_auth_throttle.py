@@ -1,7 +1,6 @@
 """Tests for failed-admin-auth lockout (#225)."""
 
 import os
-from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient

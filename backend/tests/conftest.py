@@ -339,7 +339,12 @@ class MockNotesService:
             "ai_summary": f"Mock summary for {note_id}",
             "ai_summary_at": 1704067200.0,  # 2024-01-01
             "ai_link_suggestions": [
-                {"note_id": "test-note-1", "title": "Test Note 1", "confidence": 0.85, "reason": "Mock reason"}
+                {
+                    "note_id": "test-note-1",
+                    "title": "Test Note 1",
+                    "confidence": 0.85,
+                    "reason": "Mock reason",
+                }
             ],
             "ai_link_suggestions_at": 1704067200.0,
         }
