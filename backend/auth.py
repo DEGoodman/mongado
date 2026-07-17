@@ -71,9 +71,7 @@ class FailedAuthTracker:
             # Opportunistic prune so the dict cannot grow unboundedly
             if len(self._failures) > 1000:
                 self._failures = {
-                    k: v
-                    for k, v in self._failures.items()
-                    if now - v[1] < self.lockout_seconds
+                    k: v for k, v in self._failures.items() if now - v[1] < self.lockout_seconds
                 }
             return count
 
