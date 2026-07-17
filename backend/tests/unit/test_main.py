@@ -2,7 +2,49 @@
 
 from io import BytesIO
 
+import pytest
 from fastapi.testclient import TestClient
+
+from config import get_settings
+
+# Upload endpoint is admin-only (#224)
+TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
+
+
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    settings = get_settings()
+    token = settings.admin_token or TEST_ADMIN_TOKEN
+    return {"Authorization": f"Bearer {token}"}
+
+
+# Minimal JPEG with valid magic bytes (SOI + APP0 + JFIF + EOI)
+JPEG_DATA = bytes(
+    [
+        0xFF,
+        0xD8,
+        0xFF,
+        0xE0,
+        0x00,
+        0x10,
+        0x4A,
+        0x46,
+        0x49,
+        0x46,
+        0x00,
+        0x01,
+        0x01,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0xFF,
+        0xD9,
+    ]
+)
 
 
 def test_read_root(client: TestClient) -> None:
@@ -51,25 +93,11 @@ def test_get_nonexistent_article(client: TestClient) -> None:
     assert response.json()["detail"] == "Article not found"
 
 
-def test_upload_image(client: TestClient) -> None:
+def test_upload_image(client: TestClient, admin_headers: dict[str, str]) -> None:
     """Test image upload endpoint with valid JPEG data."""
-    # Create a minimal JPEG with valid magic bytes
-    # JPEG magic bytes: \xff\xd8\xff (Start Of Image + APP0 marker)
-    # Include enough data to pass magic byte validation
-    jpeg_data = bytes([
-        0xFF, 0xD8, 0xFF, 0xE0,  # SOI + APP0 marker
-        0x00, 0x10,  # Length
-        0x4A, 0x46, 0x49, 0x46, 0x00,  # JFIF identifier
-        0x01, 0x01,  # Version
-        0x00,  # Aspect ratio units
-        0x00, 0x01,  # X density
-        0x00, 0x01,  # Y density
-        0x00, 0x00,  # Thumbnail dimensions
-        0xFF, 0xD9,  # End of image
-    ])
-    files = {"file": ("test.jpg", BytesIO(jpeg_data), "image/jpeg")}
+    files = {"file": ("test.jpg", BytesIO(JPEG_DATA), "image/jpeg")}
 
-    response = client.post("/api/upload-image", files=files)
+    response = client.post("/api/upload-image", files=files, headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert "url" in data
@@ -79,32 +107,66 @@ def test_upload_image(client: TestClient) -> None:
     assert data["filename"].endswith(".webp") or data["filename"].endswith(".tmp")
 
 
-def test_upload_invalid_file_type(client: TestClient) -> None:
+def test_upload_requires_auth(client: TestClient) -> None:
+    """Unauthenticated uploads are rejected (#224)."""
+    files = {"file": ("test.jpg", BytesIO(JPEG_DATA), "image/jpeg")}
+
+    response = client.post("/api/upload-image", files=files)
+    assert response.status_code == 401
+
+
+def test_upload_rejects_invalid_token(client: TestClient) -> None:
+    """Uploads with a bad token are rejected (#224)."""
+    files = {"file": ("test.jpg", BytesIO(JPEG_DATA), "image/jpeg")}
+
+    response = client.post(
+        "/api/upload-image",
+        files=files,
+        headers={"Authorization": "Bearer wrong-token"},
+    )
+    assert response.status_code == 403
+
+
+def test_upload_oversized_content_length_rejected_early(
+    client: TestClient, admin_headers: dict[str, str]
+) -> None:
+    """A Content-Length over the limit is refused before body parsing (#224)."""
+    files = {"file": ("test.jpg", BytesIO(JPEG_DATA), "image/jpeg")}
+
+    response = client.post(
+        "/api/upload-image",
+        files=files,
+        headers={**admin_headers, "Content-Length": str(50 * 1024 * 1024)},
+    )
+    assert response.status_code == 413
+
+
+def test_upload_invalid_file_type(client: TestClient, admin_headers: dict[str, str]) -> None:
     """Test uploading non-image file is rejected."""
     file_data = b"not an image"
     files = {"file": ("test.txt", BytesIO(file_data), "text/plain")}
 
-    response = client.post("/api/upload-image", files=files)
+    response = client.post("/api/upload-image", files=files, headers=admin_headers)
     assert response.status_code == 400
     assert "Invalid file type" in response.json()["detail"]
 
 
-def test_upload_fake_content_type(client: TestClient) -> None:
+def test_upload_fake_content_type(client: TestClient, admin_headers: dict[str, str]) -> None:
     """Test that files with fake Content-Type but invalid magic bytes are rejected."""
     # Try to upload a text file with fake image/jpeg Content-Type header
     fake_image = b"This is not actually a JPEG image"
     files = {"file": ("test.jpg", BytesIO(fake_image), "image/jpeg")}
 
-    response = client.post("/api/upload-image", files=files)
+    response = client.post("/api/upload-image", files=files, headers=admin_headers)
     assert response.status_code == 400
     assert "File content does not match" in response.json()["detail"]
 
 
-def test_upload_empty_file(client: TestClient) -> None:
+def test_upload_empty_file(client: TestClient, admin_headers: dict[str, str]) -> None:
     """Test that empty files are rejected."""
     files = {"file": ("test.jpg", BytesIO(b""), "image/jpeg")}
 
-    response = client.post("/api/upload-image", files=files)
+    response = client.post("/api/upload-image", files=files, headers=admin_headers)
     assert response.status_code == 400
     assert "Empty file" in response.json()["detail"]
 

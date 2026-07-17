@@ -339,7 +339,12 @@ class MockNotesService:
             "ai_summary": f"Mock summary for {note_id}",
             "ai_summary_at": 1704067200.0,  # 2024-01-01
             "ai_link_suggestions": [
-                {"note_id": "test-note-1", "title": "Test Note 1", "confidence": 0.85, "reason": "Mock reason"}
+                {
+                    "note_id": "test-note-1",
+                    "title": "Test Note 1",
+                    "confidence": 0.85,
+                    "reason": "Mock reason",
+                }
             ],
             "ai_link_suggestions_at": 1704067200.0,
         }
@@ -389,6 +394,20 @@ def clear_resources() -> Generator[None]:
     main.user_resources_db.clear()
     yield
     main.user_resources_db.clear()
+
+
+@pytest.fixture(autouse=True)
+def reset_auth_tracker() -> Generator[None]:
+    """Reset the failed-auth lockout tracker between tests (#225).
+
+    Without this, invalid-token tests across the suite would accumulate
+    failures for the shared TestClient IP and trip the lockout.
+    """
+    from auth import auth_tracker
+
+    auth_tracker.reset()
+    yield
+    auth_tracker.reset()
 
 
 @pytest.fixture

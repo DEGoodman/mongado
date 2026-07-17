@@ -11,6 +11,7 @@ from models.admin import (
     FeatureFlagUpdateResponse,
     RestoreRequest,
     RestoreResponse,
+    UploadCleanupResponse,
 )
 from models.ai import (
     BatchConceptExtractionResponse,
@@ -60,6 +61,7 @@ __all__ = [
     "FeatureFlagUpdateResponse",
     "RestoreRequest",
     "RestoreResponse",
+    "UploadCleanupResponse",
     # AI models
     "BatchConceptExtractionResponse",
     "BatchConceptSuggestion",
