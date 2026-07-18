@@ -13,7 +13,6 @@ const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
   loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
 });
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
 const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
   ssr: false,
 });
@@ -35,6 +34,7 @@ import {
   formatNoteDate,
 } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
@@ -594,9 +594,16 @@ export default function NoteDetailPage() {
               </div>
             ) : (
               <div>
-                {/* Content display with markdown and wikilinks */}
+                {/* Server-rendered markdown (shared pipeline with articles, #233) */}
                 <div className={styles.contentCard}>
-                  <MarkdownWithWikilinks content={note.content} />
+                  {note.html_content ? (
+                    <div
+                      className={styles.renderedContent}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.html_content) }}
+                    />
+                  ) : (
+                    <div className={styles.plainContent}>{note.content}</div>
+                  )}
                 </div>
               </div>
             )}

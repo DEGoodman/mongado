@@ -336,6 +336,24 @@ class TestGetNote:
         assert data["id"] == note_id
         assert data["content"] == "Test note"
 
+    def test_get_note_includes_rendered_html(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
+        """Note responses carry server-rendered HTML so the frontend needs no markdown pipeline."""
+        create_response = client.post(
+            "/api/notes",
+            json={"content": "## Heading\n\nSee [[some-note]].", "title": "Render me"},
+            headers=admin_headers,
+        )
+        assert "html_content" in create_response.json()
+        note_id = create_response.json()["id"]
+
+        response = client.get(f"/api/notes/{note_id}")
+        assert response.status_code == 200
+        html = response.json()["html_content"]
+        assert '<h2 id="heading">Heading</h2>' in html
+        assert '<a href="/knowledge-base/notes/some-note" class="wikilink">' in html
+
     def test_get_nonexistent_note(self, client: TestClient) -> None:
         """Test getting note that doesn't exist."""
         response = client.get("/api/notes/nonexistent-id")

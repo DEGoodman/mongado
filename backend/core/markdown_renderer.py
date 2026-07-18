@@ -11,6 +11,7 @@ import re
 from typing import Any
 
 from markdown_it import MarkdownIt
+from mdit_py_plugins.anchors import anchors_plugin
 from mdit_py_plugins.footnote import footnote_plugin
 from mdit_py_plugins.front_matter import front_matter_plugin
 from pygments import highlight
@@ -76,6 +77,17 @@ def _convert_wikilinks(html: str) -> str:
     return re.sub(note_pattern, replace_note_link, html)
 
 
+def _slugify_heading(title: str) -> str:
+    """Slugify a heading for anchor ids.
+
+    Must stay in sync with the slug algorithm in
+    frontend/src/components/ArticleTableOfContents.tsx, which computes the
+    same ids from raw markdown to build its jump links.
+    """
+    slug = re.sub(r"[^a-z0-9\s-]", "", title.lower())
+    return re.sub(r"\s+", "-", slug)
+
+
 def render_markdown_to_html(markdown_content: str) -> str:
     """Render markdown to HTML with syntax highlighting and wikilinks.
 
@@ -90,6 +102,7 @@ def render_markdown_to_html(markdown_content: str) -> str:
         MarkdownIt("gfm-like", {"html": True, "linkify": True, "typographer": True})
         .use(front_matter_plugin)
         .use(footnote_plugin)
+        .use(anchors_plugin, min_level=1, max_level=4, slug_func=_slugify_heading)
         .enable("table")
     )
 

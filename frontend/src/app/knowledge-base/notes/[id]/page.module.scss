@@ -6,6 +6,7 @@
 
 @use "@/styles/design-tokens" as *;
 @use "@/styles/mixins" as *;
+@use "@/styles/rendered-markdown" as *;
 
 .container {
   min-height: 100vh;
@@ -389,6 +390,18 @@
   border: $border-width-thin solid $color-border-default;
   border-radius: $border-radius-lg;
   background-color: $white;
+}
+
+// Server-rendered note HTML (shared pipeline with articles, #233)
+.renderedContent {
+  @include rendered-markdown;
+}
+
+// Fallback when html_content is unavailable: preserve line breaks in raw markdown
+.plainContent {
+  white-space: pre-wrap;
+  color: $color-text-secondary;
+  line-height: $line-height-relaxed;
 }
 
 // ===== FORM FIELDS (Edit Mode) =====
