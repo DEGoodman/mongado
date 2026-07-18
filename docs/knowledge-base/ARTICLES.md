@@ -10,6 +10,7 @@ Articles are static markdown files stored in source control, designed for:
 - **Fast rendering**: Intelligent caching with hot-reload in dev
 - **Optimized assets**: WebP images with long-term browser caching
 - **Zero database**: All content loaded from filesystem at startup
+- **Server-rendered pages**: Article pages are Next.js server components (#207) - the article HTML is in the initial response and cached with a short revalidate window, so readers and search engines never wait on a client-side fetch
 
 ## Directory Structure
 

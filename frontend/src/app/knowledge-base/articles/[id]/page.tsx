@@ -1,24 +1,24 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { CalendarBlank, PencilSimple, NotePencil } from "@phosphor-icons/react";
-import { useParams, useRouter } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import { notFound } from "next/navigation";
+import { CalendarBlank, PencilSimple, NotePencil } from "@phosphor-icons/react/dist/ssr";
 
-const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-// Fallback renderer only; articles normally arrive as pre-rendered HTML,
-// so keep the react-markdown stack out of the first load
-const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
+import AIAssistant from "@/components/AIAssistant";
 import ArticleTableOfContents from "@/components/ArticleTableOfContents";
-import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
-import { TagPillList } from "@/components/TagPill";
-import { logger } from "@/lib/logger";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { getServerApiUrl } from "@/lib/server-api";
+import ArticleTags from "./ArticleTags";
+import RelatedNotes from "./RelatedNotes";
 import styles from "./page.module.scss";
+
+// Articles are static markdown cached in backend memory - render on the
+// server so content is in the initial HTML (#207). No generateStaticParams:
+// the backend isn't reachable during `docker build`, so pages render on
+// first request and are then cached (ISR) for the revalidate window.
+export const revalidate = 300;
 
 interface Article {
   id: number;
@@ -26,6 +26,7 @@ interface Article {
   content: string;
   html_content?: string; // Pre-rendered HTML from backend
   content_type?: string;
+  summary?: string;
   url?: string;
   tags: string[];
   draft?: boolean;
@@ -34,118 +35,52 @@ interface Article {
   created_at: string; // Legacy fallback
 }
 
-interface RelatedNote {
-  id: string;
-  title: string;
-  content?: string;
-  score?: number;
+async function fetchArticle(id: string): Promise<Article | null> {
+  if (!/^\d+$/.test(id)) return null;
+
+  const response = await fetch(`${getServerApiUrl()}/api/articles/${id}`, {
+    next: { revalidate: 300 },
+  });
+  if (!response.ok) return null;
+
+  const data = await response.json();
+  return data.resource as Article;
 }
 
-export default function ArticleDetailPage() {
-  const { llmFeaturesEnabled } = useFeatureFlags();
-  const params = useParams();
-  const router = useRouter();
-  const articleId = parseInt(params.id as string);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const article = await fetchArticle(id);
+  if (!article) return { title: "Article not found" };
 
-  const [article, setArticle] = useState<Article | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
-  const [loadingRelated, setLoadingRelated] = useState(false);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  useEffect(() => {
-    async function fetchArticle() {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API_URL}/api/articles/${articleId}`);
-
-        if (!response.ok) {
-          throw new Error("Article not found");
-        }
-
-        const data = await response.json();
-        setArticle(data.resource);
-        logger.info("Article loaded", { id: articleId });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load article";
-        setError(message);
-        logger.error("Failed to load article", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchArticle();
-  }, [articleId, API_URL]);
-
-  // Fetch related notes after article is loaded
-  useEffect(() => {
-    async function fetchRelatedNotes() {
-      if (!article) return;
-
-      try {
-        setLoadingRelated(true);
-        const response = await fetch(`${API_URL}/api/articles/${articleId}/related-notes?limit=5`);
-
-        if (response.ok) {
-          const data = await response.json();
-          setRelatedNotes(data.notes || []);
-          logger.info("Related notes loaded", { count: data.count });
-        }
-      } catch (err) {
-        logger.warn("Failed to load related notes", err);
-        // Silently fail - related notes are optional
-      } finally {
-        setLoadingRelated(false);
-      }
-    }
-
-    fetchRelatedNotes();
-  }, [article, articleId, API_URL]);
-
-  const handleTagClick = (tag: string) => {
-    router.push(`/knowledge-base/articles?tag=${encodeURIComponent(tag)}`);
+  return {
+    title: article.title,
+    description: article.summary,
+    openGraph: {
+      title: article.title,
+      description: article.summary,
+      type: "article",
+    },
   };
+}
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonTitle}></div>
-            <div className={styles.skeletonContent}></div>
-          </div>
-        </div>
-      </div>
-    );
+export default async function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const article = await fetchArticle(id);
+
+  if (!article) {
+    notFound();
   }
 
-  if (error || !article) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorCard}>
-            <h2 className={styles.errorTitle}>Error</h2>
-            <p className={styles.errorMessage}>{error || "Article not found"}</p>
-            <Link href="/knowledge-base/articles" className={styles.backLink}>
-              ← Back to articles
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const publishedDate = article.published_date || article.created_at;
 
   return (
     <div className={styles.container}>
-      {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
-
-      {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {/* AI panel + button island (only shown when LLM features enabled) */}
+      <AIAssistant />
 
       {/* Header */}
       <header className={styles.header}>
@@ -170,15 +105,12 @@ export default function ArticleDetailPage() {
               <CalendarBlank size={14} aria-hidden="true" />
               <span>
                 Published{" "}
-                <time dateTime={article.published_date || article.created_at}>
-                  {new Date(article.published_date || article.created_at).toLocaleDateString(
-                    "en-US",
-                    {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    }
-                  )}
+                <time dateTime={publishedDate}>
+                  {new Date(publishedDate).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </time>
               </span>
             </div>
@@ -202,12 +134,7 @@ export default function ArticleDetailPage() {
           {/* Tags */}
           {article.tags.length > 0 && (
             <div className={styles.tags}>
-              <TagPillList
-                tags={article.tags}
-                showHash
-                onClick={handleTagClick}
-                variant="article"
-              />
+              <ArticleTags tags={article.tags} />
             </div>
           )}
 
@@ -273,32 +200,7 @@ export default function ArticleDetailPage() {
             )}
 
             {/* Related Notes Section */}
-            {(relatedNotes.length > 0 || loadingRelated) && (
-              <div className={styles.relatedNotes}>
-                <h3 className={styles.relatedNotesTitle}>Related Notes</h3>
-                {loadingRelated ? (
-                  <div className={styles.loadingNotes}>Finding related notes...</div>
-                ) : (
-                  <ul className={styles.relatedNotesList}>
-                    {relatedNotes.map((note) => (
-                      <li key={note.id} className={styles.relatedNoteItem}>
-                        <Link
-                          href={`/knowledge-base/notes/${note.id}`}
-                          className={styles.relatedNoteLink}
-                        >
-                          <span className={styles.noteTitle}>{note.title || note.id}</span>
-                          {note.score && (
-                            <span className={styles.noteScore}>
-                              {Math.round(note.score * 100)}% match
-                            </span>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+            <RelatedNotes articleId={article.id} />
           </div>
         </div>
       </main>

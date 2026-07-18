@@ -89,6 +89,8 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Server components fetch the backend over the Docker network (#207)
+      - API_URL_INTERNAL=http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
