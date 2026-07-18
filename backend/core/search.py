@@ -4,6 +4,100 @@ This module contains stateless, side-effect-free functions for search
 functionality like snippet extraction and text matching.
 """
 
+import re
+
+from rapidfuzz import fuzz
+
+
+def fuzzy_match_text(query: str, text: str, threshold: int = 80) -> float:
+    """Score how well a query matches a text with typo-tolerant matching.
+
+    - Queries < 3 chars: exact substring match only (for terms like "SRE")
+    - Longer queries are tokenized: every query token must match some token
+      in the text, either as an exact substring or fuzzily at the threshold.
+      This lets multi-word queries like "golden sognals" match "golden
+      signals" — the whole-query-vs-single-word comparison used previously
+      could never match a query containing a space.
+
+    Args:
+        query: Search query (lowercase)
+        text: Text to search in (lowercase)
+        threshold: Minimum per-token similarity score (0-100)
+
+    Returns:
+        Relevance score: 0.0 = no match, 2.0 = exact phrase match,
+        (0.8, 1.0] = all tokens matched (mean of per-token scores).
+    """
+    # Short queries: require exact match (prevents false positives)
+    if len(query) < 3:
+        return 2.0 if query in text else 0.0
+
+    # Exact phrase match (highest score)
+    if query in text:
+        return 2.0
+
+    tokens = query.split()
+    if not tokens:
+        return 0.0
+
+    words = text.split()
+    total = 0.0
+    for token in tokens:
+        score = _fuzzy_match_token(token, text, words, threshold)
+        if score == 0.0:
+            # Every query token must match somewhere in the text
+            return 0.0
+        total += score
+    return total / len(tokens)
+
+
+def _fuzzy_match_token(token: str, text: str, words: list[str], threshold: int) -> float:
+    """Score a single query token against a text and its word list."""
+    # Short tokens: exact substring only
+    if len(token) < 3 or token in text:
+        return 1.0 if token in text else 0.0
+
+    best = 0.0
+    for word in words:
+        # Only fuzzy match words of similar length to avoid false positives
+        if abs(len(word) - len(token)) <= 2:
+            similarity = fuzz.ratio(token, word)
+            if similarity >= threshold:
+                # Map 80-100 similarity to 0.8-1.0 score
+                best = max(best, similarity / 100.0)
+    return best
+
+
+def _best_token_match(
+    content_lower: str, query_lower: str, threshold: int = 80
+) -> tuple[int, int] | None:
+    """Find the (position, length) of the best-matching query token in content.
+
+    Used to anchor snippets for fuzzy hits, where the full query never
+    appears verbatim. Exact token occurrences beat fuzzy ones.
+    """
+    best_pos, best_len, best_score = -1, 0, 0.0
+    for token in query_lower.split():
+        if len(token) < 3:
+            continue
+
+        pos = content_lower.find(token)
+        if pos != -1:
+            if best_score < 2.0:
+                best_pos, best_len, best_score = pos, len(token), 2.0
+            continue
+
+        for match in re.finditer(r"\S+", content_lower):
+            word = match.group()
+            if abs(len(word) - len(token)) <= 2:
+                similarity = fuzz.ratio(token, word) / 100.0
+                if similarity * 100 >= threshold and similarity > best_score:
+                    best_pos, best_len, best_score = match.start(), len(word), similarity
+
+    if best_pos == -1:
+        return None
+    return best_pos, best_len
+
 
 def extract_snippet(
     content: str,
@@ -41,6 +135,14 @@ def extract_snippet(
 
     # Find first match position
     match_pos = content_lower.find(query_lower)
+    match_len = len(query_lower)
+
+    if match_pos == -1:
+        # Full query not found verbatim (multi-word or fuzzy hit) - anchor
+        # on the best-matching query token instead
+        token_match = _best_token_match(content_lower, query_lower)
+        if token_match is not None:
+            match_pos, match_len = token_match
 
     if match_pos == -1:
         # No match found - return beginning of content
@@ -55,7 +157,7 @@ def extract_snippet(
 
     # Calculate window around match
     start = max(0, match_pos - context_chars)
-    end = min(len(content), match_pos + len(query) + context_chars)
+    end = min(len(content), match_pos + match_len + context_chars)
 
     # Adjust to not exceed max length
     if end - start > max_snippet_length:

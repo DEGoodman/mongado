@@ -144,3 +144,66 @@ class TestFindBestMatchPosition:
         content = "The SYSTEMS work"
         pos = search.find_best_match_position(content, "systems")
         assert pos == 4  # Position of "SYSTEMS"
+
+
+class TestFuzzyMatchText:
+    """Tests for fuzzy_match_text function."""
+
+    def test_exact_phrase_match(self):
+        """Exact phrase gets the highest score."""
+        assert search.fuzzy_match_text("golden signals", "the four golden signals are") == 2.0
+
+    def test_single_word_typo(self):
+        """Single-word typo matches fuzzily (pre-existing behavior)."""
+        score = search.fuzzy_match_text("sofware", "software delivery performance")
+        assert 0.8 <= score <= 1.0
+
+    def test_multi_word_query_with_typo(self):
+        """Multi-word query with a typo in one word still matches (#232)."""
+        score = search.fuzzy_match_text("golden sognals", "the four golden signals of monitoring")
+        assert score > 0.8
+
+    def test_multi_word_all_tokens_must_match(self):
+        """Query token with no match anywhere fails the whole query."""
+        assert search.fuzzy_match_text("golden zebras", "the four golden signals") == 0.0
+
+    def test_multi_word_tokens_out_of_order(self):
+        """All tokens exact but not as a phrase scores below exact phrase."""
+        score = search.fuzzy_match_text("signals golden", "the four golden signals")
+        assert score == 1.0
+
+    def test_short_query_exact_only(self):
+        """Queries under 3 chars require exact substring."""
+        assert search.fuzzy_match_text("ai", "ai tooling") == 2.0
+        assert search.fuzzy_match_text("ai", "ml tooling") == 0.0
+
+    def test_short_token_in_multi_word_query(self):
+        """Short tokens within a longer query require exact presence."""
+        assert search.fuzzy_match_text("go routines", "go routines and channels") == 2.0
+        assert search.fuzzy_match_text("qq routines", "goroutines and channels") == 0.0
+
+    def test_no_match(self):
+        """Completely unrelated query scores zero."""
+        assert search.fuzzy_match_text("kubernetes", "gardening tips for spring") == 0.0
+
+
+class TestExtractSnippetFuzzyFallback:
+    """Tests for extract_snippet anchoring on token matches (#232)."""
+
+    def test_multi_word_query_anchors_on_token(self):
+        """Snippet centers on a matching token when the full phrase is absent."""
+        content = "X" * 300 + " the golden signals of monitoring " + "Y" * 300
+        result = search.extract_snippet(content, "golden sognals", context_chars=40)
+        assert "golden" in result
+
+    def test_typo_query_anchors_on_fuzzy_word(self):
+        """Snippet centers on the fuzzy-matched word for typo queries."""
+        content = "Z" * 300 + " observability signals matter most " + "W" * 300
+        result = search.extract_snippet(content, "sognals", context_chars=40)
+        assert "signals" in result
+
+    def test_no_token_match_still_returns_beginning(self):
+        """Nothing matching anywhere still falls back to content start."""
+        content = "The quick brown fox jumps over the lazy dog"
+        result = search.extract_snippet(content, "elephant parade")
+        assert result.startswith("The quick")
