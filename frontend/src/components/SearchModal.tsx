@@ -396,13 +396,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             items.length > 0 && <div className={styles.resultsList}>{items.map(renderRow)}</div>
           )}
 
-          {!showEmptyState &&
-            !isSearching &&
-            items.length === 0 &&
-            hasSearched &&
-            !searchError && (
-              <div className={styles.noResults}>No results found for &quot;{searchQuery}&quot;</div>
-            )}
+          {!showEmptyState && !isSearching && items.length === 0 && hasSearched && !searchError && (
+            <div className={styles.noResults}>No results found for &quot;{searchQuery}&quot;</div>
+          )}
         </div>
 
         {/* Keyboard hint footer */}
