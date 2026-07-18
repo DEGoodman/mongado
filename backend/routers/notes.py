@@ -82,7 +82,7 @@ async def create_note(
     content = note.content
     title = note.title or ""
 
-    background_tasks.add_task(notes_service.generate_embedding_for_note, note_id, content)
+    background_tasks.add_task(notes_service.generate_embedding_for_note, note_id, content, title)
     background_tasks.add_task(notes_service.generate_ai_content_for_note, note_id, content, title)
     logger.debug("Scheduled background tasks for note: %s", note_id)
 
@@ -355,7 +355,7 @@ async def update_note(
     content = note_update.content
     title = note_update.title or ""
 
-    background_tasks.add_task(notes_service.generate_embedding_for_note, note_id, content)
+    background_tasks.add_task(notes_service.generate_embedding_for_note, note_id, content, title)
     background_tasks.add_task(notes_service.generate_ai_content_for_note, note_id, content, title)
     logger.debug("Scheduled background tasks for note update: %s", note_id)
 

@@ -17,12 +17,15 @@ import logging
 import time
 from typing import Any
 
+from core.ai import mean_vector
+from core.chunking import chunk_document
 from utils import calculate_content_hash
 
 logger = logging.getLogger(__name__)
 
 # Embedding version - increment when model or logic changes
-EMBEDDING_VERSION = 1
+# v2: chunked embeddings with title prefix (#192)
+EMBEDDING_VERSION = 2
 
 # Retry-with-backoff settings for rate-limited embedding APIs (e.g. Gemini 429s).
 # The whole sync shares one time budget; per-item retries back off exponentially.
@@ -203,28 +206,50 @@ def _process_embeddings_for_nodes(
 
         if needs_embedding_regeneration(node, current_model, current_version, content):
             start_time = time.time()
+
+            # Chunk the document (title prefixed to each chunk, #192)
+            chunks = chunk_document(node.get("title") or "", content)
             logger.info(
-                "  [%d/%d] Generating embedding for %s: %s",
+                "  [%d/%d] Generating %d chunk embedding(s) for %s: %s",
                 idx,
                 len(nodes),
+                len(chunks),
                 node_type.lower(),
                 title,
             )
 
-            embedding = _generate_with_retry(ollama_client, content, deadline)
+            chunk_embeddings: list[list[float]] = []
+            for chunk in chunks:
+                embedding = _generate_with_retry(ollama_client, chunk, deadline)
+                if embedding is None:
+                    break
+                chunk_embeddings.append(embedding)
 
-            if embedding:
+            if chunks and len(chunk_embeddings) == len(chunks):
+                # Chunks first, node embedding last: the node's metadata is
+                # what needs_embedding_regeneration checks, so a partial write
+                # is retried on the next sync.
+                neo4j_adapter.replace_chunk_embeddings(
+                    node_type, node_id, chunk_embeddings, current_model, current_version
+                )
+                # Whole-document embedding (used by related-notes/suggest-links)
+                # is the mean of chunk embeddings - no extra API calls
                 neo4j_adapter.store_embedding(
                     node_type,
                     node_id,
-                    embedding,
+                    mean_vector(chunk_embeddings),
                     current_model,
                     current_version,
                     calculate_content_hash(content),
                 )
                 duration = time.time() - start_time
                 logger.info(
-                    "  [%d/%d] ✓ Embedding generated in %.1fs: %s", idx, len(nodes), duration, title
+                    "  [%d/%d] ✓ %d embedding(s) generated in %.1fs: %s",
+                    idx,
+                    len(nodes),
+                    len(chunk_embeddings),
+                    duration,
+                    title,
                 )
                 stats["embeddings_generated"] += 1
                 stats[f"{stat_key}_processed"] += 1

@@ -11,6 +11,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from rapidfuzz import fuzz
 
+from core.ai import rank_parents_by_chunk_similarity
 from core.search import extract_snippet
 from dependencies import get_neo4j, get_notes, get_ollama, get_static_articles, get_user_resources
 from feature_flags import FeatureFlagService, get_feature_flags
@@ -247,6 +248,46 @@ def search_resources(
     # Try to use fast semantic search with precomputed embeddings from Neo4j
     if neo4j.is_available():
         logger.info("Using fast semantic search with precomputed embeddings from Neo4j")
+
+        # Preferred: chunk-level scoring (#192). A document ranks on its
+        # best-matching section instead of one diluted whole-document vector.
+        chunk_data = neo4j.get_all_chunk_embeddings()
+        if chunk_data:
+            logger.info("Scoring %d chunk embeddings", len(chunk_data))
+            query_embedding = ollama.generate_embedding(search_request.query, use_cache=False)
+            if not query_embedding:
+                logger.warning("Failed to generate query embedding")
+                return SearchResponse(results=[], count=0)
+
+            ranked = rank_parents_by_chunk_similarity(
+                query_embedding, chunk_data, search_request.top_k
+            )
+
+            results = []
+            for item in ranked:
+                full_doc = next(
+                    (
+                        doc
+                        for doc in all_resources
+                        if (item["type"] == "Article" and str(doc.get("id")) == item["id"])
+                        or (item["type"] == "Note" and doc.get("note_id") == item["id"])
+                    ),
+                    None,
+                )
+                if full_doc:
+                    results.append(
+                        _normalize_search_result(
+                            full_doc, search_request.query, score=item["score"]
+                        )
+                    )
+
+            duration = time.time() - start_time
+            logger.info(
+                "Chunked semantic search complete: %d results in %.2fs", len(results), duration
+            )
+            return SearchResponse(results=results, count=len(results))
+
+        logger.info("No chunk embeddings found, using whole-document embeddings")
 
         # Fetch precomputed embeddings for articles and notes
         embeddings_data = neo4j.get_all_embeddings()
