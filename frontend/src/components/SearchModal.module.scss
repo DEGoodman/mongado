@@ -124,7 +124,7 @@
   @include transition-default;
 
   &:hover {
-    background-color: $orange-50;
+    background-color: $color-surface-hover;
   }
 }
 
@@ -182,4 +182,59 @@
   font-weight: 500;
   padding: 0 2px;
   border-radius: 2px;
+}
+
+// ===== COMMAND PALETTE (#155) =====
+// resultItem is now also used for action rows rendered as <button>
+.resultItem {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  // Keyboard-active row mirrors the hover state (theme-aware; orange-50
+  // washed out the text in dark mode)
+  &.active {
+    background-color: $color-surface-hover;
+  }
+}
+
+.sectionLabel {
+  padding: $spacing-2 $spacing-3 $spacing-1;
+  font-size: $font-size-xs;
+  font-family: $font-family-mono;
+  font-weight: $font-weight-medium;
+  letter-spacing: $letter-spacing-wide;
+  text-transform: uppercase;
+  color: $color-text-tertiary;
+  user-select: none;
+}
+
+.actionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  color: $color-text-secondary;
+}
+
+.footerHint {
+  display: flex;
+  gap: $spacing-4;
+  padding: $spacing-2 $spacing-4;
+  border-top: $border-width-thin solid $color-border-default;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  user-select: none;
+
+  kbd {
+    padding: 0 $spacing-1;
+    margin-right: $spacing-1;
+    border: $border-width-thin solid $color-border-default;
+    border-radius: $border-radius-sm;
+    font-family: $font-family-mono;
+    font-size: 0.85em;
+  }
 }

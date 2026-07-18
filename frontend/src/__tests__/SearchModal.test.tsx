@@ -14,6 +14,11 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import SearchModal from "../components/SearchModal";
 
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 // Mock next/link
 vi.mock("next/link", () => ({
   default: ({
@@ -67,7 +72,7 @@ describe("SearchModal", () => {
 
     it("renders modal when isOpen is true", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
-      expect(screen.getByPlaceholderText("Search articles and notes...")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Search, or jump to an action...")).toBeInTheDocument();
     });
 
     it("shows search icon", () => {
@@ -77,7 +82,8 @@ describe("SearchModal", () => {
 
     it("shows escape hint", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
-      expect(screen.getByText("esc")).toBeInTheDocument();
+      // Appears in the close button and the keyboard-hint footer
+      expect(screen.getAllByText("esc").length).toBeGreaterThan(0);
     });
   });
 
@@ -86,7 +92,7 @@ describe("SearchModal", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText("Search articles and notes...")).toHaveFocus();
+        expect(screen.getByPlaceholderText("Search, or jump to an action...")).toHaveFocus();
       });
     });
 
@@ -94,7 +100,7 @@ describe("SearchModal", () => {
       const user = userEvent.setup();
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "test query");
 
       expect(input).toHaveValue("test query");
@@ -104,7 +110,7 @@ describe("SearchModal", () => {
       const user = userEvent.setup();
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "engineering");
 
       // Wait for debounce (300ms) + API call
@@ -124,11 +130,12 @@ describe("SearchModal", () => {
   });
 
   describe("Results Display", () => {
-    it("shows hint text when no search performed", () => {
+    it("shows palette actions when no search performed", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
-      expect(
-        screen.getByText("Start typing to search across all articles and notes")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Actions")).toBeInTheDocument();
+      expect(screen.getByText("New note")).toBeInTheDocument();
+      expect(screen.getByText("Open graph")).toBeInTheDocument();
+      expect(screen.getByText("Random note")).toBeInTheDocument();
     });
 
     it("shows no results message when search returns empty", async () => {
@@ -140,7 +147,7 @@ describe("SearchModal", () => {
 
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "xyznonexistent");
 
       await waitFor(() => {
@@ -177,7 +184,7 @@ describe("SearchModal", () => {
 
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "query");
 
       await waitFor(() => {
@@ -224,7 +231,7 @@ describe("SearchModal", () => {
 
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "query");
 
       await waitFor(() => {
@@ -252,7 +259,7 @@ describe("SearchModal", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
       // Find the overlay (first child with onClick)
-      const overlay = screen.getByPlaceholderText("Search articles and notes...").parentElement
+      const overlay = screen.getByPlaceholderText("Search, or jump to an action...").parentElement
         ?.parentElement?.parentElement;
 
       if (overlay) {
@@ -264,7 +271,7 @@ describe("SearchModal", () => {
     it("does not close on clicking modal content", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       fireEvent.click(input);
 
       expect(mockOnClose).not.toHaveBeenCalled();
@@ -273,7 +280,7 @@ describe("SearchModal", () => {
     it("closes on clicking esc button", () => {
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const escButton = screen.getByText("esc").parentElement;
+      const escButton = screen.getAllByText("esc")[0].parentElement;
       if (escButton) {
         fireEvent.click(escButton);
         expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -301,7 +308,7 @@ describe("SearchModal", () => {
 
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "query");
 
       await waitFor(() => {
@@ -322,7 +329,7 @@ describe("SearchModal", () => {
       const { rerender } = render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
       // Type something
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "test query");
       expect(input).toHaveValue("test query");
 
@@ -333,7 +340,7 @@ describe("SearchModal", () => {
       rerender(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
       // Input should be cleared
-      const newInput = screen.getByPlaceholderText("Search articles and notes...");
+      const newInput = screen.getByPlaceholderText("Search, or jump to an action...");
       expect(newInput).toHaveValue("");
     });
   });
@@ -348,7 +355,7 @@ describe("SearchModal", () => {
 
       render(<SearchModal isOpen={true} onClose={mockOnClose} />);
 
-      const input = screen.getByPlaceholderText("Search articles and notes...");
+      const input = screen.getByPlaceholderText("Search, or jump to an action...");
       await user.type(input, "test");
 
       await waitFor(() => {

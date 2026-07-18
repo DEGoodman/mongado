@@ -35,6 +35,7 @@ import {
 } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import { mascotFor } from "@/lib/delight";
+import { recordRecent } from "@/lib/recents";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
@@ -90,6 +91,7 @@ export default function NoteDetailPage() {
         setBacklinks(backlinksData.backlinks);
         setOutboundLinks(outboundData.links);
         setAllNotes(allNotesData.notes);
+        recordRecent({ type: "note", id: noteData.id, title: noteData.title || noteData.id });
 
         // Initialize edit state
         setEditContent(noteData.content);
