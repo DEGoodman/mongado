@@ -16,6 +16,7 @@ rapidfuzz==3.10.1  # Fuzzy string matching for search
 # Markdown rendering (server-side)
 markdown-it-py==4.0.0  # Markdown parser
 mdit-py-plugins==0.5.0  # Plugins for footnotes, front matter, etc.
+linkify-it-py==2.1.0  # Required by the gfm-like preset (linkify); render fails without it
 Pygments==2.19.2  # Syntax highlighting for code blocks
 
 # Production optimizations
