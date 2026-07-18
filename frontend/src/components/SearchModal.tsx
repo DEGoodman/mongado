@@ -73,15 +73,20 @@ interface SearchModalProps {
   onClose: () => void;
 }
 
-// Helper function to highlight search terms in text
+// Helper function to highlight search terms in text. Highlights each query
+// token independently so multi-word and fuzzy matches still get marks
+// (e.g. "golden sognals" marks "golden" in a "golden signals" snippet).
 function highlightText(text: string, query: string): React.ReactNode {
-  if (!query.trim()) return text;
+  const tokens = query.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return text;
 
-  const regex = new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const escaped = tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const regex = new RegExp(`(${escaped.join("|")})`, "gi");
+  // With a single capture group, split() puts matches at odd indices
   const parts = text.split(regex);
 
   return parts.map((part, index) =>
-    regex.test(part) ? (
+    index % 2 === 1 ? (
       <mark key={index} className={styles.highlight}>
         {part}
       </mark>

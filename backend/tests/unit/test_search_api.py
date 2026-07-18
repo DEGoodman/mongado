@@ -117,6 +117,32 @@ class TestSearchEndpoint:
         # Fuzzy matching should still find results
         # (depends on actual content, so just verify no error)
 
+    def test_search_multi_word_fuzzy_matching(self, client: TestClient) -> None:
+        """Multi-word queries with typos should still find results (#232)."""
+        # "Software Delivery Performance Framework" exists in static articles;
+        # previously any query containing a space got zero fuzzy matching
+        response = client.post(
+            "/api/search",
+            json={"query": "sofware delivery", "top_k": 5},  # Missing 't'
+        )
+        assert response.status_code == 200
+        results = response.json()["results"]
+        assert any("Software Delivery" in r["title"] for r in results)
+
+    def test_search_multi_word_snippet_anchors_on_match(self, client: TestClient) -> None:
+        """Fuzzy multi-word hits should get a contextual snippet, not the content head."""
+        response = client.post(
+            "/api/search",
+            json={"query": "delivery performence", "top_k": 5},  # typo in 2nd word
+        )
+        assert response.status_code == 200
+        results = response.json()["results"]
+        if results:
+            # Best hit's snippet should anchor on a (possibly fuzzy) token match,
+            # e.g. "deliver"/"delivery" or "performance", not the content head
+            snippet = results[0]["snippet"].lower()
+            assert "deliver" in snippet or "performanc" in snippet
+
     def test_search_title_weighted_higher(self, client: TestClient) -> None:
         """Title matches should score higher than content matches."""
         response = client.post("/api/search", json={"query": "engineering", "top_k": 10})
