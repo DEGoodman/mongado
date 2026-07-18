@@ -340,11 +340,9 @@ To minimize recovery needs:
 
 ## Related Documentation
 
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Initial deployment guide
-- **[DNS_SETUP.md](DNS_SETUP.md)** - DNS configuration
-- **[PRODUCTION_ENV.md](PRODUCTION_ENV.md)** - Environment variables
-- **[ROADMAP.md](ROADMAP.md)** - Future enhancements
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Initial deployment guide (includes DNS and environment setup)
+- **[knowledge-base/BACKUP_RESTORE.md](knowledge-base/BACKUP_RESTORE.md)** - Notes backup/restore procedures
 
 ---
 
-Last updated: 2025-10-12
+Last updated: 2026-07-18

@@ -455,9 +455,7 @@ In `backend/main.py`:
 - `DELETE /api/notes/{note_id}` - Delete note
 - `GET /api/notes/{note_id}/links` - Get outbound links
 - `GET /api/notes/{note_id}/backlinks` - Get inbound links
-- `GET /api/notes/graph` - Get full graph
-- `GET /api/notes/{note_id}/graph` - Get local subgraph
-- `GET /api/notes/generate-id` - Generate adjective-noun ID
+- `GET /api/notes/graph/data` - Get full graph
 
 *AI Features:*
 - `POST /api/search` - Semantic search (articles + notes)
@@ -503,8 +501,7 @@ See existing tests for patterns.
 - `README.md` - Quick start guide
 - `docs/README.md` - Documentation index
 - `docs/SETUP.md` - Installation and 1Password setup
-- `docs/PROJECT_STATUS.md` - Project health and verification
-- `docs/ROADMAP.md` - Future features and TODOs
+- [GitHub Issues](https://github.com/DEGoodman/mongado/issues) - Project status, future features, and TODOs
 
 **Development:**
 - `docs/DESIGN.md` - Design system: grey/orange palette, theme-aware tokens, dark mode, mono conventions
@@ -542,7 +539,7 @@ make ci-full         # CI + E2E tests (comprehensive)
 
 ## Future Work
 
-See `docs/ROADMAP.md` for complete list. High-priority items:
+See [GitHub Issues](https://github.com/DEGoodman/mongado/issues) for the complete list. High-priority items:
 
 - **Authentication system** - Dev/prod passkeys for admin access
 - **Database migration** - Evaluate PostgreSQL vs continued Neo4j usage
