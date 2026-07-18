@@ -42,10 +42,9 @@ You've already authenticated GitHub with DigitalOcean, which is great! Now you n
 1. **Create a Droplet** (if you haven't already):
    - Go to DigitalOcean dashboard → Create → Droplets
    - Choose: Ubuntu 22.04 LTS
-   - Plan: Basic ($12/month recommended for start)
-     - 2 GB RAM / 1 CPU
-     - 50 GB SSD
-     - 2 TB transfer
+   - Plan: Basic $24/month (what prod runs today)
+     - 4 GB RAM / 2 CPUs
+     - 80 GB SSD
    - Add SSH key (generate if needed)
    - Choose datacenter region (closest to your users)
    - Hostname: `mongado-prod`
@@ -647,8 +646,8 @@ chmod +x /opt/mongado/scripts/backup-neo4j.sh
 ## Cost Estimate
 
 ### DigitalOcean Droplet
-- **Basic Plan**: $12/month (2GB RAM, 1 CPU, 50GB SSD)
-- **Recommended Plan**: $24/month (4GB RAM, 2 CPUs, 80GB SSD)
+- **Current plan**: $24/month (4GB RAM, 2 CPUs, 80GB SSD)
+- Smaller $12/month plan (2GB RAM) was too tight once Neo4j + backend + frontend share the box
 
 ### Domain (Hover.com)
 - Already owned: mongado.com
@@ -657,8 +656,7 @@ chmod +x /opt/mongado/scripts/backup-neo4j.sh
 - **Free** (auto-renews every 90 days)
 
 ### Total Monthly Cost
-- **Minimum**: $12/month (droplet only)
-- **Recommended**: $24/month (for better performance)
+- **$24/month** (droplet only; domain already owned, SSL free)
 
 ## Security Best Practices
 
@@ -700,13 +698,12 @@ After deployment is working:
 4. ✅ Add CDN (Cloudflare) for static assets
 5. ✅ Configure error alerting
 
-See `docs/ROADMAP.md` for full list of planned improvements.
+Planned improvements are tracked in [GitHub Issues](https://github.com/DEGoodman/mongado/issues).
 
 ## Related Documentation
 
 - **[SETUP.md](SETUP.md)** - Local development setup
 - **[TESTING.md](TESTING.md)** - Testing guide
-- **[ROADMAP.md](ROADMAP.md)** - Future enhancements
 - **[knowledge-base/README.md](knowledge-base/README.md)** - Knowledge Base architecture
 
 ---

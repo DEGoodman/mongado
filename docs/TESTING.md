@@ -15,9 +15,8 @@ This separation provides fast feedback loops and better maintainability.
 
 ```
 backend/tests/
-├── unit/           # Pure function tests, no I/O
-├── integration/    # API endpoint tests with TestClient
-└── e2e/            # Full system tests (planned)
+└── unit/           # Pure function tests (test_core_*.py) and
+                    # API endpoint tests with TestClient (test_*_api.py)
 ```
 
 ### Tools
@@ -33,19 +32,21 @@ backend/tests/
 
 ### Running Tests
 
+All commands run from the project root and execute inside Docker:
+
 ```bash
-cd backend
+make test-backend             # Run all backend tests
+make test-backend-unit        # Unit tests only
+make test-backend-cov         # Tests with coverage
+make test-backend-watch       # Watch mode
 
-make test             # Run all tests
-make test-unit        # Unit tests only
-make test-integration # Integration tests only
-make test-cov         # Tests with coverage
-
-make check            # lint + typecheck + security
-make ci               # Full CI pipeline
+make lint-backend             # Lint with ruff
+make typecheck-backend        # Type check with mypy
+make security                 # Security checks with bandit
+make ci                       # Full CI pipeline (backend + frontend)
 
 # Single test
-./venv/bin/pytest tests/unit/test_main.py::test_function_name -v
+docker compose exec backend pytest tests/unit/test_main.py::test_function_name -v
 ```
 
 ### Type Hints Required
@@ -75,19 +76,18 @@ frontend/
 
 ### Running Tests
 
+All commands run from the project root and execute inside Docker:
+
 ```bash
-cd frontend
+make test-frontend            # Unit tests (Vitest)
+make test-frontend-ui         # Tests with UI
+make test-e2e                 # Playwright E2E tests
 
-npm test              # Unit tests
-npm run test:ui       # Tests with UI
-npm run test:coverage # Tests with coverage
-npm run test:e2e      # E2E tests
-npm run test:e2e:ui   # With Playwright UI
-
-npm run test:all      # typecheck + lint + test
+make lint-frontend            # ESLint
+make typecheck-frontend       # TypeScript type check
 
 # Single test
-npm test src/__tests__/Component.test.tsx
+docker compose exec frontend npx vitest run src/__tests__/Component.test.tsx
 ```
 
 ## Test Coverage Goals
@@ -115,14 +115,9 @@ GitHub Actions runs on every push/PR:
 
 ## Before Committing
 
-**Backend:**
 ```bash
-make ci  # Runs everything
-```
-
-**Frontend:**
-```bash
-npm run test:all  # Runs everything
+make ci        # Lint, typecheck, security, and tests for backend + frontend
+make ci-full   # ci + E2E tests
 ```
 
 ## Resources

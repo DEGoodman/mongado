@@ -166,8 +166,15 @@ done
 
 ## Rate Limits
 
-- **Note Creation**: 10 notes per minute per IP address
-- Other endpoints: No rate limits currently
+Per IP address (see `backend/rate_limiter.py` for the authoritative list):
+
+- **Search**: 60/minute
+- **AI Q&A** (`/api/ask`): 20/minute
+- **AI suggestions**: 30/minute
+- **Note creation**: 10/minute
+- **Note updates**: 30/minute
+- **Uploads**: 10/minute
+- **Admin endpoints**: 30/minute
 
 ## Response Codes
 

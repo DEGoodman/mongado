@@ -22,10 +22,12 @@ Documentation for the Mongado project - personal website and Knowledge Base.
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Backend architecture (Functional Core / Imperative Shell)
 - **[API.md](API.md)** - Interactive API documentation (Swagger/OpenAPI)
+- **[AI_OPTIMIZATION.md](AI_OPTIMIZATION.md)** - LLM/embedding setup and tuning
 - **[SETUP.md](SETUP.md)** - 1Password service account setup
 - **[TESTING.md](TESTING.md)** - Testing tools and commands
 - **[PROFILING.md](PROFILING.md)** - Performance profiling tools
 - **[DEPENDENCIES.md](DEPENDENCIES.md)** - Dependency structure and management
+- **[DOCKER_DATA_SAFETY.md](DOCKER_DATA_SAFETY.md)** - Which Docker commands preserve or destroy volumes
 
 ### Knowledge Base
 
@@ -38,11 +40,9 @@ The Knowledge Base is a separate subproject with its own documentation:
 
 ### UI/Design System
 
-- **[UI_MIGRATION_GUIDE.md](UI_MIGRATION_GUIDE.md)** - SCSS module system (replaced Tailwind)
-- **[DESIGN.md](DESIGN.md)** - Design system guide: palette, theming, typography, checklist
-- **[DESIGN_TOKENS.md](DESIGN_TOKENS.md)** - Color, spacing, typography tokens
-- **[COLOR_PALETTE.md](COLOR_PALETTE.md)** - Color scheme documentation
-- **[COMPONENT_REFERENCE.md](COMPONENT_REFERENCE.md)** - Component styling patterns
+- **[DESIGN.md](DESIGN.md)** - Design system guide: palette, theming, typography, checklist.
+  Token values live in `frontend/src/styles/design-tokens/` (the source of truth) —
+  there is deliberately no separate token/palette reference doc.
 
 ## Quick Reference
 
@@ -84,16 +84,14 @@ docs/
 ├── README.md                    # This file - documentation index
 ├── ARCHITECTURE.md              # Backend architecture (Functional Core / Imperative Shell)
 ├── API.md                       # API documentation (Swagger/OpenAPI)
+├── AI_OPTIMIZATION.md           # LLM/embedding setup and tuning
 ├── SETUP.md                     # Installation and 1Password configuration
 ├── TESTING.md                   # Testing guide and commands
 ├── PROFILING.md                 # Performance profiling tools
 ├── DEPENDENCIES.md              # Dependency management
 ├── DEPLOYMENT.md                # Production deployment guide
 ├── DISASTER_RECOVERY.md         # Backup and recovery procedures
-├── UI_MIGRATION_GUIDE.md        # SCSS module system guide
-├── DESIGN_TOKENS.md             # Design token documentation
-├── COLOR_PALETTE.md             # Color scheme documentation
-├── COMPONENT_REFERENCE.md       # Component styling patterns
+├── DESIGN.md                    # Design system guide
 ├── DOCKER_DATA_SAFETY.md        # Docker volume safety info
 └── knowledge-base/              # Knowledge Base documentation
     ├── README.md                # KB architecture overview

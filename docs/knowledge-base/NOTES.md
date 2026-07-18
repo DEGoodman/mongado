@@ -295,34 +295,38 @@ POST /api/ask
 GET /api/articles/{article_id}/summary
 ```
 
+### Since Implemented
+
+Previously planned, now available:
+
+```bash
+# Full graph (all nodes and edges)
+GET /api/notes/graph/data
+
+# AI-suggested related notes
+POST /api/notes/{note_id}/suggest-links
+
+# AI-generated note summary
+GET /api/notes/{note_id}/summary
+```
+
 ### 🚧 Planned Features
 
-The following endpoints are documented for future implementation:
+Still unimplemented (tracked in [GitHub Issues](https://github.com/DEGoodman/mongado/issues)):
 
 ```bash
 # Get a random adjective-noun ID (currently auto-generated on note creation)
 GET /api/notes/generate-id
 
-# Get full graph (all nodes and edges)
-GET /api/notes/graph
-
 # Get local subgraph around a note (depth=2)
 GET /api/notes/{note_id}/graph
 
-# AI-suggested related notes
-POST /api/notes/{note_id}/suggest-links
-
-# AI-generated note summary (currently only available for articles)
-GET /api/notes/{note_id}/summary
-
-# Authenticate with passkey (currently uses Authorization header)
+# Authenticate with passkey (currently uses Authorization header, see #229)
 POST /api/admin/auth
 
 # Get system statistics
 GET /api/admin/stats
 ```
-
-**Note**: These features are planned but not yet implemented. See `docs/ROADMAP.md` for implementation timeline.
 
 ## Creating Notes
 
@@ -655,7 +659,7 @@ test('filters graph by author')
 - **[ARTICLES.md](ARTICLES.md)** - Article authoring guide
 - **[../SETUP.md](../SETUP.md)** - Environment setup and 1Password
 - **[../TESTING.md](../TESTING.md)** - Testing tools and commands
-- **[../ROADMAP.md](../ROADMAP.md)** - Future enhancements
+- **[GitHub Issues](https://github.com/DEGoodman/mongado/issues)** - Future enhancements
 
 ---
 

@@ -6,45 +6,28 @@ Performance profiling tools and commands for backend and frontend.
 
 ### Tools
 
-| Tool | Overhead | Use Case | Command |
-|------|----------|----------|---------|
-| **[py-spy](https://github.com/benfred/py-spy)** | Very Low | Production profiling, hot spots | `make profile` |
-| **[VizTracer](https://viztracer.readthedocs.io/)** | High | Understanding code flow, timing | `make profile-viz` |
-| **line_profiler** | Medium | Line-by-line timing | `kernprof -l -v` |
-| **[memray](https://bloomberg.github.io/memray/)** | Medium | Memory profiling, leaks | `make memory` |
-| **memory_profiler** | High | Memory usage per line | `python -m memory_profiler` |
+| Tool | Overhead | Use Case |
+|------|----------|----------|
+| **[py-spy](https://github.com/benfred/py-spy)** | Very Low | Production profiling, hot spots |
+| **[VizTracer](https://viztracer.readthedocs.io/)** | High | Understanding code flow, timing |
+| **[memray](https://bloomberg.github.io/memray/)** | Medium | Memory profiling, leaks |
 
 ### Quick Commands
 
-```bash
-cd backend
-
-# CPU Profiling
-make profile          # py-spy (recommended)
-make profile-viz      # VizTracer with interactive viewer
-
-# Memory Profiling
-make memory           # memray
-
-# Benchmarking
-make benchmark        # API benchmarks
-```
-
-### Manual Usage
+All profiling runs inside the backend container:
 
 ```bash
-# py-spy: Low overhead, production-safe
-py-spy top --pid $(pgrep -f "python main.py")
-py-spy record -o profile.svg -- python main.py
+# py-spy: Low overhead, attach to the running server
+docker compose exec backend py-spy top --pid 1
+docker compose exec backend py-spy record -o profile.svg --pid 1 --duration 30
 
-# VizTracer: Detailed flow analysis
-viztracer main.py
-vizviewer profiling_result.json
+# VizTracer: Detailed flow analysis (run against a script/test)
+docker compose exec backend viztracer -m pytest tests/unit/test_core_search.py
+docker compose exec backend vizviewer result.json
 
 # memray: Memory profiling
-memray run main.py
-memray flamegraph memray-*.bin
-memray table memray-*.bin
+docker compose exec backend memray run -m pytest tests/unit
+docker compose exec backend memray flamegraph memray-*.bin
 ```
 
 ## Frontend Profiling (Next.js/React)
@@ -60,12 +43,10 @@ memray table memray-*.bin
 ### Quick Commands
 
 ```bash
-cd frontend
+# Bundle analysis (from project root)
+make build-frontend-analyze
 
-# Bundle analysis
-npm run build:analyze
-
-# Lighthouse audit
+# Lighthouse audit (from host, against the running dev server)
 lighthouse http://localhost:3000 --view
 ```
 
