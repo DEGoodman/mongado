@@ -14,6 +14,7 @@ from slowapi.util import get_remote_address
 
 from auth import AdminUser
 from core import notes as notes_core
+from core.markdown_renderer import render_markdown_to_html
 from dependencies import get_notes, get_ollama
 from models import (
     BacklinksResponse,
@@ -33,6 +34,20 @@ limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "
 # Type aliases for cleaner signatures
 OllamaDep = Annotated[Any, Depends(get_ollama)]
 NotesDep = Annotated[Any, Depends(get_notes)]
+
+
+def _with_html_content(note: dict[str, Any]) -> dict[str, Any]:
+    """Attach server-rendered HTML so the frontend needs no markdown pipeline (#233).
+
+    Notes are short, so rendering per-request is cheap. On render failure the
+    note is returned without html_content and the frontend falls back to
+    plain-text display.
+    """
+    try:
+        note["html_content"] = render_markdown_to_html(note.get("content", ""))
+    except Exception:
+        logger.warning("Failed to render HTML for note %s", note.get("id"), exc_info=True)
+    return note
 
 
 @router.post(
@@ -86,7 +101,7 @@ async def create_note(
     background_tasks.add_task(notes_service.generate_ai_content_for_note, note_id, content, title)
     logger.debug("Scheduled background tasks for note: %s", note_id)
 
-    return created_note
+    return _with_html_content(created_note)
 
 
 @router.get("", response_model=NotesListResponse)
@@ -322,7 +337,7 @@ async def get_note(note_id: str, notes_service: NotesDep) -> dict[str, Any]:
     if not note:
         raise HTTPException(status_code=404, detail=f"Note '{note_id}' not found")
 
-    return note
+    return _with_html_content(note)
 
 
 @router.put("/{note_id}", response_model=dict[str, Any])
@@ -359,7 +374,7 @@ async def update_note(
     background_tasks.add_task(notes_service.generate_ai_content_for_note, note_id, content, title)
     logger.debug("Scheduled background tasks for note update: %s", note_id)
 
-    return updated
+    return _with_html_content(updated)
 
 
 @router.delete("/{note_id}")

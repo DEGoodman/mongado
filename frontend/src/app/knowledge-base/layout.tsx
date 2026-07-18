@@ -4,12 +4,13 @@
  */
 
 import TopNavigation from "@/components/TopNavigation";
+import DelightEffects from "@/components/Delight";
 
 export default function KnowledgeBaseLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <TopNavigation />
-      {children}
+      <DelightEffects>{children}</DelightEffects>
     </>
   );
 }

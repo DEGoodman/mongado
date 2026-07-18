@@ -117,3 +117,103 @@
     text-decoration: underline;
   }
 }
+
+// ===== ZEN / FOCUS MODE (#158) =====
+// Toggle button lives in the editor's top-right corner
+.zenToggle {
+  position: absolute;
+  top: $spacing-2;
+  right: $spacing-2;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-1;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: $color-text-tertiary;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: $color-text-primary;
+    background-color: $color-surface-secondary;
+  }
+
+  // Touch devices need a bigger tap target (~44px)
+  @media (pointer: coarse) {
+    padding: $spacing-3;
+  }
+}
+
+.editorWrapper {
+  position: relative;
+}
+
+// Fullscreen distraction-free writing: just the text, a toggle, and a word count
+.zen {
+  position: fixed;
+  inset: 0;
+  z-index: 45; // Above top nav (40), below search modal (50) so ⌘K still works
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-8 $spacing-4 $spacing-6;
+  background-color: $color-page-bg;
+  animation: zen-enter 0.2s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+
+  .editorWrapper {
+    width: min(72ch, 100%);
+    flex: 1;
+    min-height: 0;
+    border: none;
+    background-color: transparent;
+
+    &:focus-within {
+      border: none;
+    }
+
+    // CodeMirror's height prop doesn't reliably switch after mount; fill via CSS.
+    // The wrapper div is .cm-theme in light mode but .cm-theme-dark in dark mode.
+    :global([class*="cm-theme"]),
+    :global(.cm-editor) {
+      height: 100%;
+    }
+  }
+
+  .zenToggle {
+    position: fixed;
+    top: $spacing-4;
+    right: $spacing-4;
+  }
+
+  .helpText {
+    display: none;
+  }
+}
+
+@keyframes zen-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Subtle word count anchored to the bottom of the zen screen
+.zenFooter {
+  position: fixed;
+  bottom: $spacing-3;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: $font-size-xs;
+  font-family: $font-family-mono;
+  color: $color-text-tertiary;
+  user-select: none;
+}

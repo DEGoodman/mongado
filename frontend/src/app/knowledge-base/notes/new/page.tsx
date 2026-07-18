@@ -574,6 +574,7 @@ function NewNoteContent() {
                 onClick={() => handleSave()}
                 disabled={saving || !content.trim()}
                 className={`${styles.button} ${styles.saveButton}`}
+                data-delight-sparkle
               >
                 {saving ? "Saving..." : "Save Note"}
               </button>

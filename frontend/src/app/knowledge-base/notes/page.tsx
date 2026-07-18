@@ -29,6 +29,7 @@ import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { mascotFor } from "@/lib/delight";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
@@ -454,6 +455,11 @@ function NotesContent() {
                         <div className={styles.noteInfo}>
                           {/* Note ID and type badge */}
                           <div className={styles.noteIdRow}>
+                            {mascotFor(note.id) && (
+                              <span className="delight-mascot" aria-hidden="true">
+                                {mascotFor(note.id)}
+                              </span>
+                            )}
                             <code className={styles.noteId}>{note.id}</code>
                             {note.is_reference && (
                               <span className={styles.referenceBadge}>REF</span>

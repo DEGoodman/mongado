@@ -63,7 +63,7 @@ export default function RootLayout({
         {/* Apply the stored theme choice before first paint (no flash). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light"){document.documentElement.dataset.theme=t;}}catch(e){}`,
+            __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light"){document.documentElement.dataset.theme=t;}var d=localStorage.getItem("delight");if(d==="on"){document.documentElement.dataset.delight="on";}}catch(e){}`,
           }}
         />
       </head>

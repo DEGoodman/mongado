@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
+import { ArrowsInSimple, ArrowsOutSimple } from "@phosphor-icons/react";
 import { useResolvedTheme } from "@/hooks/useResolvedTheme";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorView } from "@codemirror/view";
@@ -30,6 +31,10 @@ export default function NoteEditor({
   const [autocompletePosition, setAutocompletePosition] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
+  const [zen, setZen] = useState(false);
+
+  // Word count for the subtle counter in zen mode
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   // Filter notes for autocomplete
   const filteredNotes = autocompleteQuery
@@ -137,13 +142,51 @@ export default function NoteEditor({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showAutocomplete, filteredNotes, selectedIndex, insertWikilink]);
 
+  // Zen mode: Cmd/Ctrl+Shift+F toggles, Esc exits (autocomplete's Esc wins first)
+  useEffect(() => {
+    const handleZenKeys = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setZen((prev) => !prev);
+      } else if (e.key === "Escape" && zen && !showAutocomplete) {
+        setZen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleZenKeys);
+    return () => window.removeEventListener("keydown", handleZenKeys);
+  }, [zen, showAutocomplete]);
+
+  // Lock page scroll while zen mode is open
+  useEffect(() => {
+    if (!zen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    editorView?.focus();
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [zen, editorView]);
+
   return (
-    <div className={styles.container}>
-      <div className={styles.editorWrapper} style={{ minHeight: "400px", resize: "both" }}>
+    <div className={`${styles.container} ${zen ? styles.zen : ""}`}>
+      <div
+        className={styles.editorWrapper}
+        style={zen ? undefined : { minHeight: "400px", resize: "both" }}
+      >
+        <button
+          type="button"
+          className={styles.zenToggle}
+          onClick={() => setZen((prev) => !prev)}
+          title={zen ? "Exit focus mode (Esc)" : "Focus mode (⌘⇧F)"}
+          aria-label={zen ? "Exit focus mode" : "Enter focus mode"}
+        >
+          {zen ? <ArrowsInSimple size={16} /> : <ArrowsOutSimple size={16} />}
+        </button>
         <CodeMirror
           theme={theme}
           value={content}
-          height="400px"
+          height={zen ? "100%" : "400px"}
           extensions={[
             markdown(),
             EditorView.lineWrapping,
@@ -207,6 +250,13 @@ export default function NoteEditor({
           </div>
         )}
       </div>
+
+      {/* Subtle word count, zen mode only */}
+      {zen && (
+        <div className={styles.zenFooter} aria-hidden="true">
+          {wordCount} {wordCount === 1 ? "word" : "words"}
+        </div>
+      )}
 
       {/* Help text */}
       <div className={styles.helpText}>

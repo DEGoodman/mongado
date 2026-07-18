@@ -1,20 +1,23 @@
 /**
- * SearchModal component - Global search accessible from anywhere in Knowledge Base
+ * SearchModal component - ⌘K command palette for the Knowledge Base (#155)
  *
  * Features:
- * - Modal overlay with search input
- * - Live search with debouncing
- * - Results link to articles/notes
+ * - Live search with debouncing across articles and notes
+ * - Full keyboard navigation: arrows + Enter to open, Esc to close
+ * - Action verbs (new note, graph, random note) and recently viewed
+ *   items when the query is empty
  * - Keyboard shortcut (Cmd/Ctrl+K) to open
- * - Escape to close
  */
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { mascotFor } from "@/lib/delight";
+import { getRecents, recordRecent, type RecentItem } from "@/lib/recents";
+import { MagnifyingGlass, NotePencil, Graph, Shuffle } from "@phosphor-icons/react";
 import styles from "./SearchModal.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -27,6 +30,43 @@ interface SearchResult {
   snippet: string;
   score: number;
 }
+
+interface Action {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+  /** "random" resolves its target at activation time */
+  special?: "random";
+}
+
+/** One navigable row in the palette, whatever section it came from. */
+type PaletteItem =
+  | { kind: "action"; action: Action }
+  | { kind: "recent"; recent: RecentItem }
+  | { kind: "result"; result: SearchResult };
+
+const ACTIONS: Action[] = [
+  {
+    key: "new-note",
+    label: "New note",
+    icon: <NotePencil size={16} aria-hidden="true" />,
+    href: "/knowledge-base/notes/new",
+  },
+  {
+    key: "graph",
+    label: "Open graph",
+    icon: <Graph size={16} aria-hidden="true" />,
+    href: "/knowledge-base/notes/graph",
+  },
+  {
+    key: "random",
+    label: "Random note",
+    icon: <Shuffle size={16} aria-hidden="true" />,
+    href: "/knowledge-base/inspire",
+    special: "random",
+  },
+];
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -51,13 +91,21 @@ function highlightText(text: string, query: string): React.ReactNode {
   );
 }
 
+function hrefFor(type: "article" | "note", id: string | number): string {
+  return type === "article" ? `/knowledge-base/articles/${id}` : `/knowledge-base/notes/${id}`;
+}
+
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [recents, setRecents] = useState<RecentItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -117,9 +165,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, isOpen, performSearch]);
 
-  // Focus input when modal opens
+  // Focus input and load recents when modal opens
   useEffect(() => {
     if (isOpen) {
+      setRecents(getRecents());
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [isOpen]);
@@ -131,25 +180,172 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       setSearchResults([]);
       setSearchError(null);
       setHasSearched(false);
+      setActiveIndex(0);
     }
   }, [isOpen]);
 
-  // Handle escape key
+  // The flat, keyboard-navigable item list. Empty query shows actions +
+  // recents; a query shows matching actions above search results.
+  const items = useMemo<PaletteItem[]>(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      return [
+        ...ACTIONS.map((action): PaletteItem => ({ kind: "action", action })),
+        ...recents.map((recent): PaletteItem => ({ kind: "recent", recent })),
+      ];
+    }
+    const matchingActions = ACTIONS.filter((a) => a.label.toLowerCase().includes(q));
+    return [
+      ...matchingActions.map((action): PaletteItem => ({ kind: "action", action })),
+      ...searchResults.map((result): PaletteItem => ({ kind: "result", result })),
+    ];
+  }, [searchQuery, recents, searchResults]);
+
+  // Clamp/reset the active row whenever the list changes
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [searchQuery, searchResults, recents]);
+
+  const activateItem = useCallback(
+    async (item: PaletteItem) => {
+      onClose();
+      if (item.kind === "action") {
+        if (item.action.special === "random") {
+          try {
+            const res = await fetch(`${API_URL}/api/notes/random`);
+            if (res.ok) {
+              const note = await res.json();
+              if (note?.id) {
+                recordRecent({ type: "note", id: note.id, title: note.title || note.id });
+                router.push(hrefFor("note", note.id));
+                return;
+              }
+            }
+          } catch {
+            // Fall through to the inspire page
+          }
+        }
+        router.push(item.action.href);
+      } else if (item.kind === "recent") {
+        router.push(hrefFor(item.recent.type, item.recent.id));
+        recordRecent(item.recent); // Bump to front
+      } else {
+        recordRecent({
+          type: item.result.type,
+          id: String(item.result.id),
+          title: item.result.title,
+        });
+        router.push(hrefFor(item.result.type, item.result.id));
+      }
+    },
+    [onClose, router]
+  );
+
+  // Keyboard: Esc closes, arrows move, Enter opens
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (!isOpen) return;
+
+      if (e.key === "Escape") {
         onClose();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((prev) => (items.length ? (prev + 1) % items.length : 0));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((prev) => (items.length ? (prev - 1 + items.length) % items.length : 0));
+      } else if (e.key === "Enter" && items[activeIndex]) {
+        e.preventDefault();
+        activateItem(items[activeIndex]);
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, items, activeIndex, activateItem]);
+
+  // Keep the active row visible while arrowing through a long list
+  useEffect(() => {
+    listRef.current
+      ?.querySelector(`[data-index="${activeIndex}"]`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex]);
 
   if (!isOpen) return null;
 
-  const handleResultClick = () => {
-    onClose();
+  const showEmptyState = !searchQuery.trim();
+  const flatIndexOf = (item: PaletteItem): number => items.indexOf(item);
+
+  const renderRow = (item: PaletteItem): React.ReactNode => {
+    const index = flatIndexOf(item);
+    const isActive = index === activeIndex;
+    const rowProps = {
+      "data-index": index,
+      id: `palette-item-${index}`,
+      role: "option",
+      "aria-selected": isActive,
+      className: `${styles.resultItem} ${isActive ? styles.active : ""}`,
+      onMouseEnter: () => setActiveIndex(index),
+    };
+
+    if (item.kind === "action") {
+      return (
+        <button
+          key={`action-${item.action.key}`}
+          type="button"
+          {...rowProps}
+          onClick={() => activateItem(item)}
+        >
+          <div className={styles.resultMeta}>
+            <span className={styles.actionIcon}>{item.action.icon}</span>
+          </div>
+          <div className={styles.resultContent}>
+            <div className={styles.resultTitle}>{item.action.label}</div>
+          </div>
+        </button>
+      );
+    }
+
+    const { type, id, title } =
+      item.kind === "recent"
+        ? item.recent
+        : { type: item.result.type, id: item.result.id, title: item.result.title };
+
+    return (
+      <Link
+        key={`${item.kind}-${type}-${id}`}
+        href={hrefFor(type, id)}
+        {...rowProps}
+        onClick={() => {
+          recordRecent({ type, id: String(id), title });
+          onClose();
+        }}
+      >
+        <div className={styles.resultMeta}>
+          <span className={styles.resultType} data-type={type}>
+            {type === "article" ? "ART" : "NOTE"}
+          </span>
+          {item.kind === "result" && (
+            <span className={styles.resultScore}>{item.result.score.toFixed(1)}</span>
+          )}
+        </div>
+        <div className={styles.resultContent}>
+          <div className={styles.resultTitle}>
+            {type === "note" && mascotFor(String(id)) && (
+              <span className="delight-mascot" aria-hidden="true">
+                {mascotFor(String(id))}
+              </span>
+            )}
+            {item.kind === "result" ? highlightText(title, searchQuery) : title}
+          </div>
+          {item.kind === "result" && (
+            <div className={styles.resultSnippet}>
+              {highlightText(item.result.snippet, searchQuery)}
+            </div>
+          )}
+        </div>
+      </Link>
+    );
   };
 
   return (
@@ -165,9 +361,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search articles and notes..."
+            placeholder="Search, or jump to an action..."
             className={styles.searchInput}
             autoComplete="off"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="palette-listbox"
+            aria-activedescendant={items[activeIndex] ? `palette-item-${activeIndex}` : undefined}
           />
           <button onClick={onClose} className={styles.closeButton}>
             <kbd>esc</kbd>
@@ -175,53 +375,44 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         </div>
 
         {/* Results */}
-        <div className={styles.results}>
+        <div className={styles.results} ref={listRef} id="palette-listbox" role="listbox">
           {isSearching && <div className={styles.loading}>Searching...</div>}
 
           {searchError && <div className={styles.error}>{searchError}</div>}
 
-          {!isSearching && searchResults.length > 0 && (
+          {showEmptyState ? (
             <div className={styles.resultsList}>
-              {searchResults.map((result) => {
-                const href =
-                  result.type === "article"
-                    ? `/knowledge-base/articles/${result.id}`
-                    : `/knowledge-base/notes/${result.id}`;
-
-                return (
-                  <Link
-                    key={`${result.type}-${result.id}`}
-                    href={href}
-                    className={styles.resultItem}
-                    onClick={handleResultClick}
-                  >
-                    <div className={styles.resultMeta}>
-                      <span className={styles.resultType} data-type={result.type}>
-                        {result.type === "article" ? "ART" : "NOTE"}
-                      </span>
-                      <span className={styles.resultScore}>{result.score.toFixed(1)}</span>
-                    </div>
-                    <div className={styles.resultContent}>
-                      <div className={styles.resultTitle}>
-                        {highlightText(result.title, searchQuery)}
-                      </div>
-                      <div className={styles.resultSnippet}>
-                        {highlightText(result.snippet, searchQuery)}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              <div className={styles.sectionLabel}>Actions</div>
+              {items.filter((i) => i.kind === "action").map(renderRow)}
+              {recents.length > 0 && (
+                <>
+                  <div className={styles.sectionLabel}>Recent</div>
+                  {items.filter((i) => i.kind === "recent").map(renderRow)}
+                </>
+              )}
             </div>
+          ) : (
+            !isSearching &&
+            items.length > 0 && <div className={styles.resultsList}>{items.map(renderRow)}</div>
           )}
 
-          {!isSearching && searchResults.length === 0 && hasSearched && !searchError && (
+          {!showEmptyState && !isSearching && items.length === 0 && hasSearched && !searchError && (
             <div className={styles.noResults}>No results found for &quot;{searchQuery}&quot;</div>
           )}
+        </div>
 
-          {!hasSearched && !isSearching && (
-            <div className={styles.hint}>Start typing to search across all articles and notes</div>
-          )}
+        {/* Keyboard hint footer */}
+        <div className={styles.footerHint} aria-hidden="true">
+          <span>
+            <kbd>↑</kbd>
+            <kbd>↓</kbd> navigate
+          </span>
+          <span>
+            <kbd>↵</kbd> open
+          </span>
+          <span>
+            <kbd>esc</kbd> close
+          </span>
         </div>
       </div>
     </div>

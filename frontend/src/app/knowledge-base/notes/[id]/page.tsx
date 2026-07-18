@@ -13,7 +13,6 @@ const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
   loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
 });
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-const MarkdownWithWikilinks = dynamic(() => import("@/components/MarkdownWithWikilinks"));
 const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
   ssr: false,
 });
@@ -35,6 +34,9 @@ import {
   formatNoteDate,
 } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
+import { mascotFor } from "@/lib/delight";
+import { recordRecent } from "@/lib/recents";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
@@ -89,6 +91,7 @@ export default function NoteDetailPage() {
         setBacklinks(backlinksData.backlinks);
         setOutboundLinks(outboundData.links);
         setAllNotes(allNotesData.notes);
+        recordRecent({ type: "note", id: noteData.id, title: noteData.title || noteData.id });
 
         // Initialize edit state
         setEditContent(noteData.content);
@@ -401,6 +404,11 @@ export default function NoteDetailPage() {
               {/* Title and metadata */}
               <div className={styles.titleRow}>
                 <div className={styles.noteIdRow}>
+                  {mascotFor(note.id) && (
+                    <span className="delight-mascot" aria-hidden="true">
+                      {mascotFor(note.id)}
+                    </span>
+                  )}
                   <code className={styles.noteId}>{note.id}</code>
                   {note.is_reference && <span className={styles.referenceBadge}>Reference</span>}
                 </div>
@@ -543,6 +551,7 @@ export default function NoteDetailPage() {
                         onClick={() => handleSave()}
                         disabled={saving || !editContent.trim()}
                         className={styles.saveButton}
+                        data-delight-sparkle
                       >
                         {saving ? "Saving..." : "Save Changes"}
                       </button>
@@ -594,9 +603,16 @@ export default function NoteDetailPage() {
               </div>
             ) : (
               <div>
-                {/* Content display with markdown and wikilinks */}
+                {/* Server-rendered markdown (shared pipeline with articles, #233) */}
                 <div className={styles.contentCard}>
-                  <MarkdownWithWikilinks content={note.content} />
+                  {note.html_content ? (
+                    <div
+                      className={styles.renderedContent}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.html_content) }}
+                    />
+                  ) : (
+                    <div className={styles.plainContent}>{note.content}</div>
+                  )}
                 </div>
               </div>
             )}

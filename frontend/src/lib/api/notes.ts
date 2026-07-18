@@ -11,6 +11,7 @@ export interface Note {
   id: string;
   title: string | null;
   content: string;
+  html_content?: string; // Pre-rendered HTML from backend (#233)
   content_preview?: string; // 200 char preview when include_full_content=false
   author: string;
   is_ephemeral: boolean;

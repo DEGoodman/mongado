@@ -7,7 +7,6 @@ import AIAssistant from "@/components/AIAssistant";
 import ArticleTableOfContents from "@/components/ArticleTableOfContents";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
-import MarkdownWithWikilinks from "@/components/MarkdownWithWikilinks";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { getServerApiUrl } from "@/lib/server-api";
 import ArticleTags from "./ArticleTags";
@@ -163,9 +162,6 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                   className={`${styles.renderedContent} prose prose-sm`}
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.html_content) }}
                 />
-              ) : article.content_type === "markdown" || article.content_type === undefined ? (
-                // Fallback to client-side rendering
-                <MarkdownWithWikilinks content={article.content} />
               ) : (
                 <div className="prose prose-sm max-w-none">
                   <p className="text-gray-700">{article.content}</p>
