@@ -124,6 +124,7 @@ Add these secrets:
 | `GROQ_API_KEY` | No | - | Hosted generation, primary (set via GitHub secret) |
 | `GEMINI_API_KEY` | No | - | Hosted generation fallback + embeddings (set via GitHub secret) |
 | `EMBEDDING_PROVIDER` | No | `ollama` | `api` routes embeddings to Gemini (prod) |
+| `API_URL_INTERNAL` | No | falls back to `NEXT_PUBLIC_API_URL` | Backend URL for the frontend's server-side fetches (#207). Set to `http://backend:8000` in both compose files - server components run inside the frontend container, where the public URL isn't the right host |
 | `DEBUG` | No | `false` | Enable debug mode (set to `false` in production) |
 
 **Important Notes**:

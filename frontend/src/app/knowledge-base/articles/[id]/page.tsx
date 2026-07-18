@@ -67,11 +67,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ArticleDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const article = await fetchArticle(id);
 
