@@ -1051,6 +1051,38 @@ class Neo4jAdapter:
                 for record in result
             ]
 
+    def delete_articles_not_in(self, keep_ids: list[str]) -> list[str]:
+        """Delete Article nodes (and their chunks) whose id is not in keep_ids.
+
+        Static articles are the source of truth; nodes for renamed or removed
+        articles otherwise accumulate, get embeddings generated for them, and
+        surface in semantic search for content that no longer exists (#215).
+
+        Args:
+            keep_ids: IDs of the current static article set
+
+        Returns:
+            IDs of the deleted stale Article nodes
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (a:Article)
+                WHERE NOT a.id IN $keep_ids
+                OPTIONAL MATCH (a)-[:HAS_CHUNK]->(c:Chunk)
+                WITH a, a.id AS article_id, c
+                DETACH DELETE c, a
+                RETURN collect(DISTINCT article_id) AS deleted
+                """,
+                keep_ids=keep_ids,
+            )
+
+            record = result.single()
+            return list(record["deleted"]) if record else []
+
     # ===== EMBEDDING METHODS =====
 
     def store_embedding(

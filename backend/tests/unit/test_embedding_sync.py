@@ -16,6 +16,7 @@ from embedding_sync import (
     _generate_with_retry,
     _process_embeddings_for_nodes,
     needs_embedding_regeneration,
+    sync_articles_to_neo4j,
     sync_embeddings,
 )
 from utils import calculate_content_hash
@@ -287,3 +288,58 @@ class TestChunkedEmbeddings:
         neo4j.replace_chunk_embeddings.assert_not_called()
         neo4j.store_embedding.assert_not_called()
         assert stats["embeddings_failed"] == 1
+
+
+class TestSyncArticlesToNeo4j:
+    """Tests for sync_articles_to_neo4j, especially stale-node cleanup (#215)."""
+
+    def _articles(self) -> list[dict[str, Any]]:
+        return [
+            {"id": 1, "title": "One", "content": "first article"},
+            {"id": 2, "title": "Two", "content": "second article"},
+        ]
+
+    def test_deletes_stale_articles_after_upsert(self) -> None:
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+        neo4j.get_article.return_value = None
+        neo4j.delete_articles_not_in.return_value = ["7", "9"]
+
+        created, updated, deleted = sync_articles_to_neo4j(self._articles(), neo4j)
+
+        neo4j.delete_articles_not_in.assert_called_once_with(["1", "2"])
+        assert (created, updated, deleted) == (2, 0, 2)
+
+    def test_no_deletion_when_article_list_empty(self) -> None:
+        """An empty static set means a load failure, not an emptied corpus."""
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+
+        created, updated, deleted = sync_articles_to_neo4j([], neo4j)
+
+        neo4j.delete_articles_not_in.assert_not_called()
+        assert (created, updated, deleted) == (0, 0, 0)
+
+    def test_unavailable_neo4j_skips_everything(self) -> None:
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = False
+
+        assert sync_articles_to_neo4j(self._articles(), neo4j) == (0, 0, 0)
+        neo4j.delete_articles_not_in.assert_not_called()
+
+    def test_unchanged_articles_not_reupserted(self) -> None:
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+        neo4j.delete_articles_not_in.return_value = []
+        articles = self._articles()
+        neo4j.get_article.side_effect = lambda article_id: {
+            "id": article_id,
+            "content_hash": calculate_content_hash(
+                next(a["content"] for a in articles if str(a["id"]) == article_id)
+            ),
+        }
+
+        created, updated, deleted = sync_articles_to_neo4j(articles, neo4j)
+
+        neo4j.upsert_article.assert_not_called()
+        assert (created, updated, deleted) == (0, 0, 0)

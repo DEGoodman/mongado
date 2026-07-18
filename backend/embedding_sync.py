@@ -70,21 +70,22 @@ def _generate_with_retry(
 def sync_articles_to_neo4j(
     articles: list[dict[str, Any]],
     neo4j_adapter: Any,
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     """Sync static articles to Neo4j.
 
-    Creates or updates Article nodes based on content_hash.
+    Creates or updates Article nodes based on content_hash, then deletes
+    stale nodes for articles that no longer exist in the static set (#215).
 
     Args:
         articles: List of article dicts from article_loader
         neo4j_adapter: Neo4jAdapter instance
 
     Returns:
-        Tuple of (created_count, updated_count)
+        Tuple of (created_count, updated_count, deleted_count)
     """
     if not neo4j_adapter.is_available():
         logger.warning("Neo4j not available - skipping article sync")
-        return (0, 0)
+        return (0, 0, 0)
 
     created = 0
     updated = 0
@@ -120,8 +121,26 @@ def sync_articles_to_neo4j(
             created += 1
             logger.debug("Created article: %s", article_id)
 
-    logger.info("Article sync complete: %d created, %d updated", created, updated)
-    return (created, updated)
+    # Static articles are the source of truth: drop nodes for renamed or
+    # removed articles. Skip when the loader returned nothing - an empty
+    # list more likely means a load failure than an emptied corpus.
+    deleted_ids: list[str] = []
+    if articles:
+        deleted_ids = neo4j_adapter.delete_articles_not_in(
+            [str(article["id"]) for article in articles]
+        )
+        if deleted_ids:
+            logger.info(
+                "Deleted %d stale article node(s): %s", len(deleted_ids), ", ".join(deleted_ids)
+            )
+
+    logger.info(
+        "Article sync complete: %d created, %d updated, %d deleted",
+        created,
+        updated,
+        len(deleted_ids),
+    )
+    return (created, updated, len(deleted_ids))
 
 
 def needs_embedding_regeneration(
@@ -363,8 +382,8 @@ def sync_embeddings_on_startup(
     logger.info("=" * 60)
 
     # Step 1: Sync articles to Neo4j
-    created, updated = sync_articles_to_neo4j(articles, neo4j_adapter)
-    logger.info("Articles synced: %d created, %d updated", created, updated)
+    created, updated, deleted = sync_articles_to_neo4j(articles, neo4j_adapter)
+    logger.info("Articles synced: %d created, %d updated, %d deleted", created, updated, deleted)
 
     # Step 2: Generate missing embeddings
     stats = sync_embeddings(neo4j_adapter, ollama_client)
