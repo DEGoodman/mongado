@@ -666,8 +666,10 @@ def trigger_embedding_sync(
         from embedding_sync import sync_articles_to_neo4j, sync_embeddings
 
         # Sync articles to Neo4j first
-        created, updated = sync_articles_to_neo4j(static_articles, neo4j)
-        logger.info("Articles synced: %d created, %d updated", created, updated)
+        created, updated, deleted = sync_articles_to_neo4j(static_articles, neo4j)
+        logger.info(
+            "Articles synced: %d created, %d updated, %d deleted", created, updated, deleted
+        )
 
         # Generate embeddings for anything that needs it
         stats = sync_embeddings(neo4j, ollama)
