@@ -102,7 +102,7 @@ docker compose up --build  # Rebuild after dependency changes
 docker compose logs -f backend  # View logs
 ```
 
-> **⚠️ First Startup Note:** The backend generates and stores embeddings for all articles and notes on startup. This takes ~2-5 minutes the first time or after deleting containers/volumes. Subsequent startups are fast (~5-10 seconds) because embeddings are cached in Neo4j. You'll see progress logs like `[3/12] Generating embedding for article...` during this process.
+> **⚠️ Embeddings Note:** Semantic search needs embeddings stored in Neo4j. Sync is triggered manually via `POST /api/admin/sync-embeddings` (admin token required), or on startup if `SYNC_EMBEDDINGS_ON_STARTUP=true`. The first sync takes a few minutes (each document is embedded in section-level chunks); later syncs skip unchanged content via content hashing.
 
 > **📦 Required Ollama Models:** The AI features require these models:
 > - `nomic-embed-text` (embeddings, auto-downloaded)
@@ -116,7 +116,7 @@ docker compose logs -f backend  # View logs
 - pytest, mypy, ruff
 
 **Frontend:**
-- Next.js 14, React 18, TypeScript
+- Next.js 15 (App Router, server components), React 19, TypeScript
 - SCSS Modules (design tokens + mixins), Vitest, Playwright
 
 **DevOps:**
@@ -160,7 +160,7 @@ All existing infrastructure (components, styling, config) is reusable. The `Proj
 ## Current Features
 
 ### Knowledge Base (Implemented)
-- AI-powered semantic search (Ollama embeddings)
+- AI-powered semantic search (chunked embeddings; documents rank by their best-matching section. Ollama in dev, Gemini API in prod)
 - Q&A with context from knowledge base
 - Neo4j graph database for notes
 - Zettelkasten-style bidirectional wikilinks

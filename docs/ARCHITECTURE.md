@@ -36,7 +36,11 @@ backend/
 │   │   ├── build_qa_prompt()
 │   │   ├── parse_json_response()
 │   │   ├── build_tag_suggestion_prompt()
-│   │   └── filter_link_candidates()
+│   │   ├── filter_link_candidates()
+│   │   ├── mean_vector()
+│   │   └── rank_parents_by_chunk_similarity()
+│   ├── chunking.py           # Document chunking for embeddings (#192)
+│   │   └── chunk_document()
 │   └── notes.py              # Notes/graph algorithms
 │       ├── extract_wikilinks()
 │       ├── validate_note_id()

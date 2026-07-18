@@ -32,8 +32,8 @@ Both articles and notes are treated as "resources" in the API, allowing:
 - **Articles**: Static markdown files, cached at startup, auto-reload on changes
 - **Notes**: Database-backed (Neo4j), for admin-created content
 
-### 3. AI Integration (Ollama)
-- Semantic search across articles and notes
+### 3. AI Integration
+- Semantic search across articles and notes (chunked embeddings: documents are embedded per section and rank by their best-matching chunk, #192)
 - AI-suggested related content and wikilinks
 - Auto-generated summaries for navigation
 - Q&A with context from knowledge base
@@ -111,12 +111,12 @@ GET    /api/articles/{id}/summary         # AI-generated article summary
 - **Framework**: FastAPI (Python 3.13)
 - **Database**: Neo4j (graph database for notes and relationships)
 - **Storage**: Filesystem (articles) + Database (notes)
-- **AI**: Ollama (local LLM for embeddings and chat)
+- **AI**: Ollama in dev (local embeddings + chat); prod uses hosted APIs (Groq/Gemini) with Ollama removed
 - **Caching**: In-memory with file modification time tracking
 
 ### Frontend Stack
-- **Framework**: Next.js 14 with App Router
-- **UI**: React 18 + TypeScript + SCSS Modules
+- **Framework**: Next.js 15 with App Router (article pages are server-rendered)
+- **UI**: React 19 + TypeScript + SCSS Modules
 - **Graph**: react-force-graph (2D/3D force-directed graphs)
 - **Editor**: TipTap (markdown with wikilink autocomplete)
 

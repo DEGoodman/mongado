@@ -16,8 +16,8 @@ AI features (Q&A, semantic search, tag/link suggestions) are slow and constraine
 
 | Concern | Implementation | Location |
 |---|---|---|
-| Embeddings | Ollama `nomic-embed-text`, precomputed and stored in Neo4j | `ollama_client.py`, `embedding_sync.py` |
-| Semantic search | Query embedding + cosine similarity vs. precomputed vectors | `routers/search.py`, `core/ai.py` |
+| Embeddings | Ollama `nomic-embed-text` (dev) / Gemini (prod), precomputed per section-level chunk and stored in Neo4j (#192) | `ollama_client.py`, `embedding_sync.py`, `core/chunking.py` |
+| Semantic search | Query embedding + cosine similarity vs. precomputed chunk vectors; each document ranks by its best-matching chunk | `routers/search.py`, `core/ai.py` |
 | Q&A | RAG: top-5 docs as context → `llama3.2:1b` | `routers/ai.py` `/api/ask` |
 | Tag/link suggestions | `qwen2.5:1.5b` JSON output, cached in Neo4j, SSE streaming | `routers/ai.py`, `notes_service.py` |
 | Gating | Runtime feature flag (`llm_features`), rate limiting | `feature_flags.py`, `rate_limiter.py` |
