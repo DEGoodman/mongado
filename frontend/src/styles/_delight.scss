@@ -1,0 +1,88 @@
+/**
+ * Delight Mode (#240) - playful layer, fully scoped under
+ * :root[data-delight="on"] so work mode carries zero overhead.
+ * Motion respects prefers-reduced-motion even when delight is on.
+ */
+
+@use "design-tokens" as *;
+
+// ===== SPARKLES =====
+// Nodes are created by lib/delight.ts sparkleBurst() and remove
+// themselves on animationend. Not nested under [data-delight] because
+// the JS already gates creation - but harmless if orphaned.
+.delight-sparkle {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  color: $orange-500;
+  font-size: 14px;
+  line-height: 1;
+  animation: delight-sparkle-fly 0.65s ease-out forwards;
+}
+
+@keyframes delight-sparkle-fly {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1) rotate(120deg);
+  }
+}
+
+// ===== NOTE ID MASCOTS =====
+// Components render .delight-mascot unconditionally; CSS decides.
+.delight-mascot {
+  display: none;
+  user-select: none;
+}
+
+:root[data-delight="on"] {
+  .delight-mascot {
+    display: inline-block;
+    margin-right: $spacing-1;
+  }
+
+  // ===== PAGE-ENTER TRANSITION =====
+  // The KB layout re-mounts .delight-page per navigation (keyed by
+  // pathname), so this replays on every route change.
+  .delight-page {
+    animation: delight-page-enter 0.28s ease-out;
+  }
+
+  // ===== WIKILINK HOVER: underline draws itself =====
+  .wikilink {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 1.5px;
+    transition: background-size 0.25s ease-out;
+
+    &:hover {
+      text-decoration: none;
+      background-size: 100% 1.5px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .delight-page {
+      animation: none;
+    }
+
+    .wikilink {
+      transition: none;
+    }
+  }
+}
+
+@keyframes delight-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

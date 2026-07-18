@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
+import { mascotFor } from "@/lib/delight";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import styles from "./SearchModal.module.scss";
 
@@ -203,6 +204,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     </div>
                     <div className={styles.resultContent}>
                       <div className={styles.resultTitle}>
+                        {result.type === "note" && mascotFor(String(result.id)) && (
+                          <span className="delight-mascot" aria-hidden="true">
+                            {mascotFor(String(result.id))}
+                          </span>
+                        )}
                         {highlightText(result.title, searchQuery)}
                       </div>
                       <div className={styles.resultSnippet}>

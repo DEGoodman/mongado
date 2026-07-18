@@ -16,6 +16,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, GearSix } from "@phosphor-icons/react";
 import { useTheme, type Theme } from "@/hooks/useTheme";
+import { useDelight } from "@/hooks/useDelight";
+import { sparkleBurst } from "@/lib/delight";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import type { AiMode } from "@/lib/settings";
@@ -29,6 +31,7 @@ export default function HeaderMenu() {
   const { llmFeaturesEnabled, loaded: flagsLoaded } = useFeatureFlags();
   const { preferences, updatePreferences } = useUserPreferences();
   const { theme, setTheme } = useTheme();
+  const { delight, setDelight } = useDelight();
   const [isOpen, setIsOpen] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
@@ -152,6 +155,29 @@ export default function HeaderMenu() {
               <div className={styles.segmentedControl}>
                 {themeSegment("light", "Light")}
                 {themeSegment("dark", "Dark")}
+              </div>
+            </div>
+
+            {/* Delight Mode (#240) */}
+            <div className={styles.section}>
+              <h3 className={styles.sectionLabel}>Delight</h3>
+              <div className={styles.segmentedControl}>
+                <button
+                  onClick={() => setDelight(false)}
+                  className={`${styles.segmentButton} ${delight === false ? styles.active : styles.inactive}`}
+                >
+                  Off
+                </button>
+                <button
+                  onClick={(e) => {
+                    setDelight(true);
+                    // Celebrate the flip itself; sparkleBurst checks reduced-motion
+                    sparkleBurst(e.clientX, e.clientY, 12);
+                  }}
+                  className={`${styles.segmentButton} ${delight === true ? styles.active : styles.inactive}`}
+                >
+                  On ✦
+                </button>
               </div>
             </div>
 

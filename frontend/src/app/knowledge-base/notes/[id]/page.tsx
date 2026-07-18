@@ -34,6 +34,7 @@ import {
   formatNoteDate,
 } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
+import { mascotFor } from "@/lib/delight";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
@@ -401,6 +402,11 @@ export default function NoteDetailPage() {
               {/* Title and metadata */}
               <div className={styles.titleRow}>
                 <div className={styles.noteIdRow}>
+                  {mascotFor(note.id) && (
+                    <span className="delight-mascot" aria-hidden="true">
+                      {mascotFor(note.id)}
+                    </span>
+                  )}
                   <code className={styles.noteId}>{note.id}</code>
                   {note.is_reference && <span className={styles.referenceBadge}>Reference</span>}
                 </div>
@@ -543,6 +549,7 @@ export default function NoteDetailPage() {
                         onClick={() => handleSave()}
                         disabled={saving || !editContent.trim()}
                         className={styles.saveButton}
+                        data-delight-sparkle
                       >
                         {saving ? "Saving..." : "Save Changes"}
                       </button>
