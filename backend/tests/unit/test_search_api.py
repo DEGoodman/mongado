@@ -7,6 +7,7 @@ Tests the /api/search endpoint including:
 - Error handling
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -202,3 +203,78 @@ class TestSearchSnippets:
             # Snippet should not be longer than ~250 chars (with some buffer for ellipsis)
             if len(content) > 300:
                 assert len(snippet) < 300, f"Snippet too long: {len(snippet)} chars"
+
+
+class TestChunkedSemanticSearch:
+    """Semantic search via chunk embeddings (#192)."""
+
+    def _client_with_chunk_neo4j(self, client: TestClient, chunks: list[dict]) -> None:
+        """Override the Neo4j dependency with a mock that serves chunk embeddings."""
+        from unittest.mock import MagicMock
+
+        import main
+        from dependencies import get_neo4j
+
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+        neo4j.get_all_chunk_embeddings.return_value = chunks
+        main.app.dependency_overrides[get_neo4j] = lambda: neo4j
+
+    def test_best_chunk_ranks_document_first(self, client: TestClient) -> None:
+        """A document whose chunk matches the query embedding exactly ranks first."""
+        # Pick two real articles from the corpus
+        articles = client.get("/api/articles").json()["resources"]
+        assert len(articles) >= 2
+        target_id = str(articles[0]["id"])
+        other_id = str(articles[1]["id"])
+
+        # The mock Ollama client's query embedding is deterministic per text,
+        # so use it as the target chunk's embedding (cosine similarity 1.0)
+        from tests.conftest import MockOllamaClient
+
+        query = "rocks and barnacles"
+        query_embedding = MockOllamaClient().generate_embedding(query)
+        assert query_embedding is not None
+        orthogonal = list(reversed(query_embedding))
+
+        self._client_with_chunk_neo4j(
+            client,
+            [
+                {"parent_type": "Article", "parent_id": other_id, "seq": 0, "embedding": orthogonal},
+                {"parent_type": "Article", "parent_id": target_id, "seq": 0, "embedding": orthogonal},
+                {"parent_type": "Article", "parent_id": target_id, "seq": 1, "embedding": query_embedding},
+            ],
+        )
+
+        response = client.post("/api/search", json={"query": query, "semantic": True, "top_k": 5})
+        assert response.status_code == 200
+        results = response.json()["results"]
+
+        assert len(results) >= 1
+        assert results[0]["id"] == target_id
+        assert results[0]["type"] == "article"
+        assert results[0]["score"] == pytest.approx(1.0)
+
+    def test_falls_back_to_document_embeddings_without_chunks(self, client: TestClient) -> None:
+        """With no chunk data, search uses the whole-document embedding path."""
+        from unittest.mock import MagicMock
+
+        import main
+        from dependencies import get_neo4j
+
+        articles = client.get("/api/articles").json()["resources"]
+        target_id = str(articles[0]["id"])
+
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+        neo4j.get_all_chunk_embeddings.return_value = []
+        neo4j.get_all_embeddings.return_value = [
+            {"id": target_id, "type": "Article", "embedding": [0.1] * 768, "model": "m", "version": 2}
+        ]
+        main.app.dependency_overrides[get_neo4j] = lambda: neo4j
+
+        response = client.post("/api/search", json={"query": "anything", "semantic": True, "top_k": 5})
+        assert response.status_code == 200
+        results = response.json()["results"]
+        assert len(results) == 1
+        assert results[0]["id"] == target_id

@@ -71,6 +71,68 @@ def rank_documents_by_similarity(
     return [doc for _, doc in scored_docs[:top_k]]
 
 
+def mean_vector(vectors: list[list[float]]) -> list[float]:
+    """Element-wise mean of equal-length vectors.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Used to derive a whole-document embedding from its chunk embeddings
+    without extra embedding-API calls. Magnitude is irrelevant for cosine
+    similarity, so the mean is not re-normalized.
+
+    Args:
+        vectors: Non-empty list of equal-length vectors
+
+    Returns:
+        Mean vector ([] for empty input)
+    """
+    if not vectors:
+        return []
+    dim = len(vectors[0])
+    if any(len(v) != dim for v in vectors):
+        logger.warning("mean_vector: mismatched vector lengths, returning []")
+        return []
+    return [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
+
+
+def rank_parents_by_chunk_similarity(
+    query_embedding: list[float],
+    chunks: list[dict[str, Any]],
+    top_k: int = 5,
+) -> list[dict[str, Any]]:
+    """Rank parent documents by their best-matching chunk (#192).
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Max-aggregation is the point: a document with one strongly matching
+    section ranks on that section alone, instead of having the signal
+    diluted across the whole document.
+
+    Args:
+        query_embedding: Query embedding vector
+        chunks: Chunk dicts with 'parent_id', 'parent_type', 'embedding'
+        top_k: Maximum number of parents to return
+
+    Returns:
+        Top K parents as {'id', 'type', 'score'} sorted by score descending
+    """
+    best: dict[tuple[str, str], float] = {}
+    for chunk in chunks:
+        embedding = chunk.get("embedding")
+        if not embedding:
+            continue
+        key = (chunk["parent_type"], chunk["parent_id"])
+        similarity = cosine_similarity(query_embedding, embedding)
+        if similarity > best.get(key, -1.0):
+            best[key] = similarity
+
+    ranked = sorted(best.items(), key=lambda item: item[1], reverse=True)
+    return [
+        {"id": parent_id, "type": parent_type, "score": score}
+        for (parent_type, parent_id), score in ranked[:top_k]
+    ]
+
+
 def build_context_from_documents(documents: list[dict[str, Any]], max_docs: int = 5) -> str:
     """Build context string from documents for AI prompts.
 

@@ -9,6 +9,8 @@ import time
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from embedding_sync import (
     EMBEDDING_VERSION,
     _generate_with_retry,
@@ -187,3 +189,101 @@ class TestSyncEmbeddings:
         client.generate_embedding.assert_not_called()
         assert stats["embeddings_cached"] == 1
         assert stats["embeddings_failed"] == 0
+
+
+class TestChunkedEmbeddings:
+    """Chunked embedding generation (#192)."""
+
+    def _stats(self) -> dict[str, int]:
+        return {
+            "articles_processed": 0,
+            "notes_processed": 0,
+            "embeddings_generated": 0,
+            "embeddings_cached": 0,
+            "embeddings_failed": 0,
+        }
+
+    def _long_node(self) -> dict[str, Any]:
+        """A stale node whose content splits into two chunks."""
+        content = "## Alpha\n\n" + ("a" * 1600) + "\n\n## Beta\n\n" + ("b" * 1600)
+        return {"id": "1", "title": "Long Article", "content": content}
+
+    def test_multi_chunk_node_stores_chunks_and_mean_embedding(self) -> None:
+        neo4j = MagicMock()
+        client = MagicMock()
+        client.generate_embedding.side_effect = [[0.1, 0.3], [0.3, 0.5]]
+        stats = self._stats()
+        node = self._long_node()
+
+        _process_embeddings_for_nodes(
+            [node],
+            "Article",
+            "articles",
+            MODEL,
+            EMBEDDING_VERSION,
+            neo4j,
+            client,
+            stats,
+            deadline=time.monotonic() + 600,
+        )
+
+        # Two chunks embedded, both stored
+        assert client.generate_embedding.call_count == 2
+        neo4j.replace_chunk_embeddings.assert_called_once_with(
+            "Article", "1", [[0.1, 0.3], [0.3, 0.5]], MODEL, EMBEDDING_VERSION
+        )
+        # Whole-document embedding is the mean of the chunk embeddings
+        args = neo4j.store_embedding.call_args[0]
+        assert args[0] == "Article"
+        assert args[1] == "1"
+        assert args[2] == pytest.approx([0.2, 0.4])
+        assert args[3] == MODEL
+        assert args[4] == EMBEDDING_VERSION
+        assert args[5] == calculate_content_hash(node["content"])
+        assert stats["embeddings_generated"] == 1
+
+    def test_chunk_text_includes_title(self) -> None:
+        neo4j = MagicMock()
+        client = MagicMock()
+        client.generate_embedding.return_value = [0.1]
+        stats = self._stats()
+        node = {"id": "n1", "title": "Rocks and Barnacles", "content": "Short content."}
+
+        _process_embeddings_for_nodes(
+            [node],
+            "Note",
+            "notes",
+            MODEL,
+            EMBEDDING_VERSION,
+            neo4j,
+            client,
+            stats,
+            deadline=time.monotonic() + 600,
+        )
+
+        embedded_text = client.generate_embedding.call_args[0][0]
+        assert embedded_text.startswith("Rocks and Barnacles\n\n")
+        assert "Short content." in embedded_text
+
+    def test_partial_chunk_failure_stores_nothing(self) -> None:
+        """If any chunk fails, neither chunks nor the node embedding are written."""
+        neo4j = MagicMock()
+        client = MagicMock()
+        client.generate_embedding.side_effect = [[0.1, 0.3], None]
+        stats = self._stats()
+
+        _process_embeddings_for_nodes(
+            [self._long_node()],
+            "Article",
+            "articles",
+            MODEL,
+            EMBEDDING_VERSION,
+            neo4j,
+            client,
+            stats,
+            deadline=time.monotonic() - 1,  # no retries
+        )
+
+        neo4j.replace_chunk_embeddings.assert_not_called()
+        neo4j.store_embedding.assert_not_called()
+        assert stats["embeddings_failed"] == 1

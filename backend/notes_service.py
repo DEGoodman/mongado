@@ -351,15 +351,17 @@ class NotesService:
         self._require_neo4j()
         return self.neo4j.get_all_note_ids()
 
-    def generate_embedding_for_note(self, note_id: str, content: str) -> None:
-        """Generate and store embedding for a note in Neo4j.
+    def generate_embedding_for_note(self, note_id: str, content: str, title: str = "") -> None:
+        """Generate and store chunked embeddings for a note in Neo4j (#192).
 
         This can be called as a background task to avoid blocking API responses.
-        Embeddings are stored in Neo4j for fast semantic search.
+        Chunk embeddings serve semantic search; their mean is stored as the
+        note's whole-document embedding for related-notes/link suggestions.
 
         Args:
             note_id: Note ID
-            content: Note content to generate embedding from
+            content: Note content to generate embeddings from
+            title: Note title (prefixed to each chunk)
         """
         import os
 
@@ -373,21 +375,39 @@ class NotesService:
             return
 
         try:
-            logger.debug("Generating embedding for note: %s", note_id)
-            embedding = self.ollama.generate_embedding(content, use_cache=True)
+            from core.ai import mean_vector
+            from core.chunking import chunk_document
+            from utils import calculate_content_hash
 
-            if embedding:
-                from utils import calculate_content_hash
+            chunks = chunk_document(title, content)
+            logger.debug("Generating %d chunk embedding(s) for note: %s", len(chunks), note_id)
 
+            chunk_embeddings: list[list[float]] = []
+            for chunk in chunks:
+                embedding = self.ollama.generate_embedding(chunk, use_cache=True)
+                if embedding is None:
+                    break
+                chunk_embeddings.append(embedding)
+
+            if chunks and len(chunk_embeddings) == len(chunks):
+                # Chunks first, node embedding last: node metadata drives
+                # staleness checks, so a partial write is retried by sync
+                self.neo4j.replace_chunk_embeddings(
+                    "Note", note_id, chunk_embeddings, self.ollama.model, EMBEDDING_VERSION
+                )
                 self.neo4j.store_embedding(
                     "Note",
                     note_id,
-                    embedding,
+                    mean_vector(chunk_embeddings),
                     self.ollama.model,
                     EMBEDDING_VERSION,
                     calculate_content_hash(content),
                 )
-                logger.info("Generated and stored embedding for note: %s", note_id)
+                logger.info(
+                    "Generated and stored %d embedding(s) for note: %s",
+                    len(chunk_embeddings),
+                    note_id,
+                )
             else:
                 logger.warning("Failed to generate embedding for note: %s", note_id)
         except Exception as e:

@@ -422,8 +422,9 @@ class Neo4jAdapter:
                 """
                 MATCH (n:Note)
                 WHERE n.id = $id
-                DETACH DELETE n
-                RETURN count(n) AS deleted
+                OPTIONAL MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
+                DETACH DELETE c, n
+                RETURN count(DISTINCT n) AS deleted
                 """,
                 id=note_id,
             )
@@ -1179,6 +1180,91 @@ class Neo4jAdapter:
                     "embedding": record["embedding"],
                     "model": record["model"],
                     "version": record["version"],
+                }
+                for record in result
+            ]
+
+    def replace_chunk_embeddings(
+        self,
+        node_type: str,  # "Article" or "Note"
+        node_id: str,
+        chunk_embeddings: list[list[float]],
+        model: str,
+        version: int,
+    ) -> bool:
+        """Replace all chunk embeddings for an article or note (#192).
+
+        Chunks are stored as (parent)-[:HAS_CHUNK]->(:Chunk {seq, embedding})
+        nodes. Existing chunks are deleted first so the set always mirrors the
+        current chunking of the content.
+
+        Args:
+            node_type: "Article" or "Note"
+            node_id: ID of the parent article or note
+            chunk_embeddings: One embedding per chunk, in document order
+            model: Embedding model name
+            version: Embedding version
+
+        Returns:
+            True if successful
+        """
+        if not self._available or not self.driver:
+            return False
+
+        validated_type = self._validate_node_type(node_type)
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                f"""
+                MATCH (n:{validated_type} {{id: $id}})
+                OPTIONAL MATCH (n)-[:HAS_CHUNK]->(old:Chunk)
+                DETACH DELETE old
+                WITH DISTINCT n
+                UNWIND range(0, size($embeddings) - 1) AS seq
+                CREATE (n)-[:HAS_CHUNK]->(:Chunk {{
+                    seq: seq,
+                    embedding: $embeddings[seq],
+                    embedding_model: $model,
+                    embedding_version: $version
+                }})
+                """,
+                id=node_id,
+                embeddings=chunk_embeddings,
+                model=model,
+                version=version,
+            )
+            return True
+
+    def get_all_chunk_embeddings(self) -> list[dict[str, Any]]:
+        """Get all chunk embeddings with their parent identity (#192).
+
+        Loads every chunk vector into memory for Python-side scoring. Fine at
+        the current corpus size; at thousands of documents move scoring into a
+        Neo4j vector index instead.
+
+        Returns:
+            List of dicts with parent_id, parent_type, seq, embedding
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (n)-[:HAS_CHUNK]->(c:Chunk)
+                WHERE n:Article OR n:Note
+                RETURN n.id as parent_id,
+                       labels(n)[0] as parent_type,
+                       c.seq as seq,
+                       c.embedding as embedding
+                """
+            )
+            return [
+                {
+                    "parent_id": record["parent_id"],
+                    "parent_type": record["parent_type"],
+                    "seq": record["seq"],
+                    "embedding": record["embedding"],
                 }
                 for record in result
             ]

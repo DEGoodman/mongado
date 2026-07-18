@@ -258,3 +258,72 @@ class TestPromptBuilders:
         assert "Current Note" in prompt
         assert "Candidate 1" in prompt
         assert "note-1" in prompt
+
+
+class TestMeanVector:
+    """Tests for mean_vector (chunk -> whole-document embedding, #192)."""
+
+    def test_single_vector_is_identity(self):
+        assert ai.mean_vector([[1.0, 2.0, 3.0]]) == [1.0, 2.0, 3.0]
+
+    def test_mean_of_two_vectors(self):
+        result = ai.mean_vector([[1.0, 0.0], [0.0, 1.0]])
+        assert result == pytest.approx([0.5, 0.5])
+
+    def test_empty_input(self):
+        assert ai.mean_vector([]) == []
+
+    def test_mismatched_lengths_return_empty(self):
+        assert ai.mean_vector([[1.0, 2.0], [1.0]]) == []
+
+
+class TestRankParentsByChunkSimilarity:
+    """Tests for chunk-level ranking with max aggregation (#192)."""
+
+    def test_parent_ranks_on_best_chunk(self):
+        """One strongly matching section outranks uniformly mediocre documents."""
+        query = [1.0, 0.0, 0.0]
+        chunks = [
+            # doc-a: one great chunk among poor ones
+            {"parent_type": "Article", "parent_id": "a", "embedding": [0.0, 1.0, 0.0]},
+            {"parent_type": "Article", "parent_id": "a", "embedding": [1.0, 0.0, 0.0]},
+            # doc-b: all chunks mediocre
+            {"parent_type": "Article", "parent_id": "b", "embedding": [0.7, 0.7, 0.0]},
+            {"parent_type": "Article", "parent_id": "b", "embedding": [0.6, 0.8, 0.0]},
+        ]
+
+        results = ai.rank_parents_by_chunk_similarity(query, chunks, top_k=5)
+
+        assert [r["id"] for r in results] == ["a", "b"]
+        assert results[0]["score"] == pytest.approx(1.0)
+
+    def test_respects_top_k(self):
+        query = [1.0, 0.0]
+        chunks = [
+            {"parent_type": "Note", "parent_id": str(i), "embedding": [1.0, i / 10]}
+            for i in range(5)
+        ]
+        results = ai.rank_parents_by_chunk_similarity(query, chunks, top_k=2)
+        assert len(results) == 2
+
+    def test_skips_chunks_without_embedding(self):
+        query = [1.0, 0.0]
+        chunks = [
+            {"parent_type": "Note", "parent_id": "x", "embedding": None},
+            {"parent_type": "Note", "parent_id": "y", "embedding": [1.0, 0.0]},
+        ]
+        results = ai.rank_parents_by_chunk_similarity(query, chunks, top_k=5)
+        assert [r["id"] for r in results] == ["y"]
+
+    def test_mixed_types_keep_identity(self):
+        query = [1.0, 0.0]
+        chunks = [
+            {"parent_type": "Article", "parent_id": "1", "embedding": [1.0, 0.0]},
+            {"parent_type": "Note", "parent_id": "wise-mountain", "embedding": [0.9, 0.1]},
+        ]
+        results = ai.rank_parents_by_chunk_similarity(query, chunks, top_k=5)
+        assert results[0] == {"id": "1", "type": "Article", "score": pytest.approx(1.0)}
+        assert results[1]["type"] == "Note"
+
+    def test_empty_chunks(self):
+        assert ai.rank_parents_by_chunk_similarity([1.0], [], top_k=5) == []
