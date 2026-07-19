@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/inspire";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
+import { LoadingState, ErrorState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
 type LoadingPhase = "initial" | "fast-data" | "ai-enhancing" | "complete";
@@ -117,16 +118,7 @@ export default function InspirePage() {
   if (loadingPhase === "initial") {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonHeader}></div>
-            <div className={styles.skeletonGrid}>
-              <div className={styles.skeletonCard}></div>
-              <div className={styles.skeletonCard}></div>
-              <div className={styles.skeletonCard}></div>
-            </div>
-          </div>
-        </div>
+        <LoadingState variant="cards" label="Loading inspiration" />
       </div>
     );
   }
@@ -134,15 +126,7 @@ export default function InspirePage() {
   if (error) {
     return (
       <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorCard}>
-            <h2 className={styles.errorTitle}>Error</h2>
-            <p className={styles.errorMessage}>{error}</p>
-            <Link href="/knowledge-base" className={styles.backLink}>
-              Back to Knowledge Base
-            </Link>
-          </div>
-        </div>
+        <ErrorState message={error} backHref="/knowledge-base" backLabel="Back to Knowledge Base" />
       </div>
     );
   }

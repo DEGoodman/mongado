@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 import type { PanelTab } from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
+import { LoadingState } from "@/components/PageState";
 import NoteEditorForm, {
   EMPTY_NOTE_VALUES,
   NoteEditorValues,
@@ -289,7 +290,7 @@ function NewNoteContent() {
 
 export default function NewNotePage() {
   return (
-    <Suspense fallback={<div className={styles.loadingContainer}>Loading...</div>}>
+    <Suspense fallback={<LoadingState variant="content" width="narrow" label="Loading editor" />}>
       <NewNoteContent />
     </Suspense>
   );

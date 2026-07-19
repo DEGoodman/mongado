@@ -22,13 +22,6 @@
   max-width: 56rem;
 }
 
-.loadingContainer {
-  @include container;
-  max-width: 56rem;
-  padding-top: $spacing-8;
-  color: $color-text-secondary;
-}
-
 // ===== HEADER =====
 .header {
   margin-bottom: $spacing-6;

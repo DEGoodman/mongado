@@ -16,70 +16,7 @@
 }
 
 // ===== LOADING STATE =====
-.loadingContainer {
-  @include container;
-  max-width: 56rem;
-  padding-top: $spacing-8;
-  padding-bottom: $spacing-8;
-
-  .loadingSkeleton {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-
-    .skeletonTitle {
-      height: 2rem;
-      width: 25%;
-      margin-bottom: $spacing-8;
-      background-color: rgba(156, 163, 175, 0.2);
-      border-radius: $border-radius-md;
-    }
-
-    .skeletonList {
-      @include stack($spacing-4);
-
-      .skeletonItem {
-        height: 5rem;
-        background-color: rgba(156, 163, 175, 0.2);
-        border-radius: $border-radius-md;
-      }
-    }
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 // ===== ERROR STATE =====
-.errorContainer {
-  @include container;
-  max-width: 56rem;
-  padding-top: $spacing-8;
-  padding-bottom: $spacing-8;
-
-  .errorCard {
-    padding: $spacing-4;
-    background-color: rgba(254, 226, 226, 0.8);
-    border: $border-width-thin solid rgba(220, 38, 38, 0.3);
-    border-radius: $border-radius-md;
-
-    .errorTitle {
-      margin-bottom: $spacing-2;
-      font-weight: $font-weight-semibold;
-      color: $color-error-text;
-    }
-
-    .errorMessage {
-      color: $color-error-border;
-    }
-  }
-}
-
 // ===== MAIN CONTENT =====
 .main {
   @include container;
@@ -558,51 +495,6 @@
 .notesList {
   margin-top: $spacing-8;
   @include stack($spacing-4);
-}
-
-.emptyState {
-  padding: $spacing-12 0;
-  text-align: center;
-  @include card;
-  border: $border-width-medium dashed $color-border;
-
-  .emptyIcon {
-    width: 3rem;
-    height: 3rem;
-    margin: 0 auto;
-    color: $color-text-tertiary;
-  }
-
-  .emptyTitle {
-    margin-top: $spacing-2;
-    @include text-secondary;
-    font-weight: $font-weight-medium;
-  }
-
-  .emptyMessage {
-    margin-top: $spacing-1;
-    @include text-secondary;
-  }
-
-  .createButton {
-    display: inline-flex;
-    align-items: center;
-    margin-top: $spacing-6;
-    padding: $spacing-2 $spacing-4;
-    border-radius: $border-radius-button;
-    background-color: $color-link-default;
-    color: white;
-    @include text-secondary;
-    font-weight: $font-weight-medium;
-    text-decoration: none;
-    box-shadow: $shadow-button;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: $color-text-secondary;
-      box-shadow: $shadow-button-hover;
-    }
-  }
 }
 
 .noteCard {

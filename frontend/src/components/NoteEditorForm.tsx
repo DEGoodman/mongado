@@ -10,6 +10,7 @@ const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
   loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
 });
 import TemplateSelector from "@/components/TemplateSelector";
+import { ErrorState } from "@/components/PageState";
 import type { PanelTab } from "@/components/AIPanel";
 import { listNotes, Note } from "@/lib/api/notes";
 import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
@@ -232,11 +233,7 @@ export default function NoteEditorForm({
       )}
 
       {/* Error message */}
-      {displayError && (
-        <div className={styles.errorBox}>
-          <p className={styles.errorMessage}>{displayError}</p>
-        </div>
-      )}
+      {displayError && <ErrorState inline message={displayError} />}
 
       {/* Form */}
       <div className={styles.editorColumn}>

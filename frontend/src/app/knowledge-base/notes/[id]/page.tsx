@@ -13,6 +13,7 @@ import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
+import { LoadingState, ErrorState } from "@/components/PageState";
 import NoteEditorForm, { NoteEditorValues, ParsedNoteValues } from "@/components/NoteEditorForm";
 import {
   getNote,
@@ -314,12 +315,7 @@ function NoteDetailContent() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonHeader}></div>
-            <div className={styles.skeletonContent}></div>
-          </div>
-        </div>
+        <LoadingState variant="content" width="wide" label="Loading note" />
       </div>
     );
   }
@@ -327,15 +323,12 @@ function NoteDetailContent() {
   if (error && !note) {
     return (
       <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorCard}>
-            <h2 className={styles.errorTitle}>Error</h2>
-            <p className={styles.errorMessage}>{error}</p>
-            <Link href="/knowledge-base/notes" className={styles.backLink}>
-              ← Back to notes
-            </Link>
-          </div>
-        </div>
+        <ErrorState
+          message={error}
+          width="wide"
+          backHref="/knowledge-base/notes"
+          backLabel="← Back to notes"
+        />
       </div>
     );
   }
@@ -457,11 +450,7 @@ function NoteDetailContent() {
             </div>
 
             {/* Error message (view mode; edit mode errors render inside the form) */}
-            {error && !isEditing && (
-              <div className={styles.errorBox}>
-                <p className={styles.errorMessage}>{error}</p>
-              </div>
-            )}
+            {error && !isEditing && <ErrorState inline message={error} />}
 
             {/* Content */}
             {isEditing && editorSeed ? (
@@ -550,7 +539,7 @@ function NoteDetailContent() {
 
 export default function NoteDetailPage() {
   return (
-    <Suspense fallback={<div className={styles.loadingContainer}>Loading...</div>}>
+    <Suspense fallback={<LoadingState variant="content" width="wide" label="Loading note" />}>
       <NoteDetailContent />
     </Suspense>
   );

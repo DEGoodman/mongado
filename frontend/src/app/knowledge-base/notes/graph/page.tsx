@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import * as d3 from "d3";
 import { logger } from "@/lib/logger";
+import { LoadingState, ErrorState, EmptyState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
 const graphLog = logger.withContext("Graph");
@@ -916,12 +917,7 @@ function NotesGraphContent() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonTitle}></div>
-            <div className={styles.skeletonGraph}></div>
-          </div>
-        </div>
+        <LoadingState variant="graph" label="Loading graph" />
       </div>
     );
   }
@@ -929,15 +925,7 @@ function NotesGraphContent() {
   if (error) {
     return (
       <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorCard}>
-            <h2 className={styles.errorTitle}>Error</h2>
-            <p className={styles.errorMessage}>{error}</p>
-            <Link href="/knowledge-base/notes" className={styles.backLink}>
-              ← Back to notes
-            </Link>
-          </div>
-        </div>
+        <ErrorState message={error} backHref="/knowledge-base/notes" backLabel="← Back to notes" />
       </div>
     );
   }
@@ -945,19 +933,13 @@ function NotesGraphContent() {
   if (!graphData || graphData.nodes.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.emptyContainer}>
-          <div className={styles.emptyCard}>
-            <Link href="/knowledge-base/notes" className={styles.backLink}>
-              ← Back to notes
-            </Link>
-            <p className={styles.emptyMessage}>
-              No notes to visualize yet. Create some notes to see the graph!
-            </p>
-            <Link href="/knowledge-base/notes/new" className={styles.createButton}>
-              Create your first note
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          message="No notes to visualize yet. Create some notes to see the graph!"
+          actionLabel="Create your first note"
+          actionHref="/knowledge-base/notes/new"
+          backHref="/knowledge-base/notes"
+          backLabel="← Back to notes"
+        />
       </div>
     );
   }

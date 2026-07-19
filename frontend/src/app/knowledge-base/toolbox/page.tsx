@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
+import { LoadingState, ErrorState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
 type CategoryFilter = "all" | string;
@@ -124,16 +125,7 @@ export default function ToolboxPage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonHeader}></div>
-            <div className={styles.skeletonGrid}>
-              <div className={styles.skeletonCard}></div>
-              <div className={styles.skeletonCard}></div>
-              <div className={styles.skeletonCard}></div>
-            </div>
-          </div>
-        </div>
+        <LoadingState variant="cards" label="Loading toolbox" />
       </div>
     );
   }
@@ -141,15 +133,7 @@ export default function ToolboxPage() {
   if (error) {
     return (
       <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorCard}>
-            <h2 className={styles.errorTitle}>Error</h2>
-            <p className={styles.errorMessage}>{error}</p>
-            <Link href="/knowledge-base" className={styles.backLink}>
-              Back to Knowledge Base
-            </Link>
-          </div>
-        </div>
+        <ErrorState message={error} backHref="/knowledge-base" backLabel="Back to Knowledge Base" />
       </div>
     );
   }
