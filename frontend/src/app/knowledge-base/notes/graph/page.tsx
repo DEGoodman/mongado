@@ -3,7 +3,17 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import * as d3 from "d3";
+import {
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  type Simulation,
+  type SimulationNodeDatum,
+} from "d3-force";
+import { drag as d3Drag } from "d3-drag";
+import { pointer, select, type BaseType, type Selection } from "d3-selection";
 import { logger } from "@/lib/logger";
 import { LoadingState, ErrorState, EmptyState } from "@/components/PageState";
 import styles from "./page.module.scss";
@@ -15,7 +25,7 @@ const graphLog = logger.withContext("Graph");
 // (Fast Refresh / polluted .next) swallowing events meant for the live one
 let instanceCounter = 0;
 
-interface GraphNode extends d3.SimulationNodeDatum {
+interface GraphNode extends SimulationNodeDatum {
   id: string;
   title: string;
   author: string;
@@ -80,7 +90,7 @@ function NotesGraphContent() {
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [filterLogic, setFilterLogic] = useState<"OR" | "AND">("OR");
   const svgRef = useRef<SVGSVGElement>(null);
-  const simulationRef = useRef<d3.Simulation<GraphNode, GraphEdge> | null>(null);
+  const simulationRef = useRef<Simulation<GraphNode, GraphEdge> | null>(null);
   const selectedNodeIdRef = useRef<string | null>(null);
 
   const instanceRef = useRef(0);
@@ -270,7 +280,7 @@ function NotesGraphContent() {
       nodes: graphData.nodes.length,
       edges: graphData.edges.length,
     });
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
     const width = 900;
     const height = 622;
 
@@ -314,17 +324,12 @@ function NotesGraphContent() {
     const edges = graphData.edges;
 
     // Create simulation
-    const simulation = d3
-      .forceSimulation<GraphNode>(nodes)
-      .force(
-        "charge",
-        d3.forceManyBody<GraphNode>().strength(-300).distanceMin(20).distanceMax(400)
-      )
-      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05))
+    const simulation = forceSimulation<GraphNode>(nodes)
+      .force("charge", forceManyBody<GraphNode>().strength(-300).distanceMin(20).distanceMax(400))
+      .force("center", forceCenter(width / 2, height / 2).strength(0.05))
       .force(
         "link",
-        d3
-          .forceLink<GraphNode, GraphEdge>(edges)
+        forceLink<GraphNode, GraphEdge>(edges)
           .id((d) => d.id)
           .distance((link) => {
             const source = link.source as GraphNode;
@@ -336,8 +341,7 @@ function NotesGraphContent() {
       )
       .force(
         "collision",
-        d3
-          .forceCollide<GraphNode>()
+        forceCollide<GraphNode>()
           .radius((d) => (d.radius || 10) + 5)
           .strength(0.5)
           .iterations(1)
@@ -621,8 +625,7 @@ function NotesGraphContent() {
     let dragOrigin: [number, number] | null = null;
     let dragEngaged = false;
 
-    const drag = d3
-      .drag<SVGCircleElement, GraphNode>()
+    const drag = d3Drag<SVGCircleElement, GraphNode>()
       // Tolerate small pointer movement so clicks/double-clicks aren't
       // swallowed as micro-drags (default clickDistance is 0)
       .clickDistance(10)
@@ -655,7 +658,7 @@ function NotesGraphContent() {
 
     nodeElements.call(
       drag as unknown as (
-        selection: d3.Selection<d3.BaseType | SVGCircleElement, GraphNode, SVGGElement, unknown>
+        selection: Selection<BaseType | SVGCircleElement, GraphNode, SVGGElement, unknown>
       ) => void
     );
 
@@ -706,7 +709,7 @@ function NotesGraphContent() {
     // broken (pointer-events); if nearestDistance is large, the visible
     // scene does not match this instance's data (zombie scene).
     svg.on("pointerdown.diag", (event: PointerEvent) => {
-      const [mx, my] = d3.pointer(event, svg.node());
+      const [mx, my] = pointer(event, svg.node());
       let nearest: GraphNode | null = null;
       let best = Infinity;
       for (const n of nodes) {
@@ -788,7 +791,7 @@ function NotesGraphContent() {
   useEffect(() => {
     if (!graphData || !svgRef.current) return;
 
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
     const nodeElements = svg.selectAll<SVGCircleElement, GraphNode>("circle");
     const linkElements = svg.selectAll<SVGLineElement, GraphEdge>("line");
     const labelElements = svg.selectAll<SVGTextElement, GraphNode>("text");
