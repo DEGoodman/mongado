@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 
-const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 import { useState, useEffect, useRef } from "react";
-import AIButton from "@/components/AIButton";
+import AIAssistant from "@/components/AIAssistant";
 import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -43,7 +41,6 @@ function highlightText(text: string, query: string): React.ReactNode {
 
 export default function KnowledgeBasePage() {
   const { llmFeaturesEnabled } = useFeatureFlags();
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -132,11 +129,7 @@ export default function KnowledgeBasePage() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
-
-      {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      <AIAssistant />
 
       {/* Header */}
       <header className={styles.header}>

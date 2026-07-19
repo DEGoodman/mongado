@@ -5,9 +5,6 @@ import { useEffect, useState } from "react";
 import { prefetchOnce } from "@/lib/prefetch";
 import { getNote, getBacklinks, getOutboundLinks } from "@/lib/api/notes";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-
-const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 
 // Warm the browser HTTP cache with everything the note page fetches on load,
 // and pull in the (code-split) editor chunk the note page may need.
@@ -23,19 +20,17 @@ function prefetchEditorChunk(): void {
 import { useRouter, useSearchParams } from "next/navigation";
 import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
-import AIButton from "@/components/AIButton";
+import AIAssistant from "@/components/AIAssistant";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { mascotFor } from "@/lib/delight";
 import styles from "./page.module.scss";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
 
 function NotesContent() {
-  const { llmFeaturesEnabled } = useFeatureFlags();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tagsParam = searchParams.get("tags");
@@ -45,7 +40,6 @@ function NotesContent() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [randomNoteLoading, setRandomNoteLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -238,11 +232,7 @@ function NotesContent() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
-
-      {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      <AIAssistant />
 
       {/* Header */}
       <div className={styles.header}>

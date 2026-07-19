@@ -1,14 +1,41 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { MagnifyingGlass, ChatCircle, Warning } from "@phosphor-icons/react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  MagnifyingGlass,
+  ChatCircle,
+  Sparkle,
+  Warning,
+  Tag,
+  LinkSimple,
+} from "@phosphor-icons/react";
 import { logger } from "@/lib/logger";
+import type { AiMode } from "@/lib/settings";
+import Toast from "@/components/Toast";
+import {
+  streamAISuggestions,
+  isStreamingSupported,
+  type TagSuggestion,
+  type LinkSuggestion,
+  type StreamPhase,
+} from "@/lib/aiSuggestionsStream";
 import styles from "./AIPanel.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
+const SUGGEST_DEBOUNCE_MS = 5000; // real-time mode: refetch after typing pauses
 
-type AIMode = "chat" | "search";
+export type PanelTab = "search" | "ask" | "suggest";
+
+/** Note context that enables the Suggest tab (requires a saved note) */
+export interface SuggestContext {
+  noteId: string;
+  aiMode: AiMode;
+  /** Current editor content, if editing — used for outdated detection and real-time refresh */
+  content?: string;
+  onAddTag?: (tag: string) => void;
+  onInsertLink: (noteId: string) => void;
+}
 
 interface Message {
   id: string;
@@ -26,10 +53,14 @@ interface Message {
 interface AIPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Tab to show; applied whenever this prop changes (pages set it when opening) */
+  defaultTab?: PanelTab;
+  /** Enables the Suggest tab for a saved note */
+  suggest?: SuggestContext;
 }
 
-export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
-  const [mode, setMode] = useState<AIMode>("search"); // Default to Search (faster)
+export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPanelProps) {
+  const [tab, setTab] = useState<PanelTab>(defaultTab ?? "search");
   const [hasGPU, setHasGPU] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -38,6 +69,20 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   const [forceCpuMode, setForceCpuMode] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const warmupStartedRef = useRef(false);
+
+  // Apply defaultTab whenever the page changes it (e.g. "AI Suggestions" button)
+  useEffect(() => {
+    if (defaultTab) {
+      setTab(defaultTab);
+    }
+  }, [defaultTab]);
+
+  // Fall back off the Suggest tab if context disappears (e.g. leaving edit mode)
+  useEffect(() => {
+    if (!suggest && tab === "suggest") {
+      setTab("search");
+    }
+  }, [suggest, tab]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,8 +135,8 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
     setLoading(true);
 
     try {
-      if (mode === "chat") {
-        // Chat mode - Q&A with hybrid KB + general knowledge
+      if (tab === "ask") {
+        // Ask mode - Q&A with hybrid KB + general knowledge
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout (CPU can be slow)
 
@@ -155,13 +200,21 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
           id: (Date.now() + 1).toString(),
           role: "assistant",
           content: resultText,
-          sources: results.map((r: any) => ({
-            id: r.id,
-            type: r.type,
-            title: r.title,
-            content: r.content,
-            score: r.score,
-          })),
+          sources: results.map(
+            (r: {
+              id: number | string;
+              type?: "article" | "note";
+              title: string;
+              content: string;
+              score?: number;
+            }) => ({
+              id: r.id,
+              type: r.type,
+              title: r.title,
+              content: r.content,
+              score: r.score,
+            })
+          ),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
@@ -200,10 +253,12 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
     setMessages([]);
   };
 
-  const handleModeChange = (newMode: AIMode) => {
-    setMode(newMode);
-    // Clear messages when switching modes for clarity
-    setMessages([]);
+  const handleTabChange = (newTab: PanelTab) => {
+    setTab(newTab);
+    // Clear messages when switching between search and ask for clarity
+    if (newTab !== "suggest") {
+      setMessages([]);
+    }
   };
 
   // Check GPU status and warm up Ollama when AI Panel opens
@@ -265,6 +320,8 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
   }, [isOpen, forceCpuMode]);
 
   if (!isOpen) return null;
+
+  const suggestActive = tab === "suggest" && suggest !== undefined;
 
   return (
     <div className={styles.panel}>
@@ -338,157 +395,554 @@ export default function AIPanel({ isOpen, onClose }: AIPanelProps) {
             </button>
           </div>
         </div>
-        {/* Mode Switcher - Search first (faster) */}
+        {/* Tab Switcher - Search first (faster) */}
         <div className={styles.modeSwitcher}>
           <button
-            onClick={() => handleModeChange("search")}
-            className={`${styles.modeButton} ${mode === "search" ? styles.active : styles.inactive}`}
+            onClick={() => handleTabChange("search")}
+            className={`${styles.modeButton} ${tab === "search" ? styles.active : styles.inactive}`}
           >
             <MagnifyingGlass size={14} aria-hidden="true" /> Search
           </button>
           <button
-            onClick={() => handleModeChange("chat")}
-            className={`${styles.modeButton} ${mode === "chat" ? styles.active : styles.inactive}`}
+            onClick={() => handleTabChange("ask")}
+            className={`${styles.modeButton} ${tab === "ask" ? styles.active : styles.inactive}`}
           >
-            <ChatCircle size={14} aria-hidden="true" /> Chat
+            <ChatCircle size={14} aria-hidden="true" /> Ask
           </button>
+          {suggest && (
+            <button
+              onClick={() => handleTabChange("suggest")}
+              className={`${styles.modeButton} ${tab === "suggest" ? styles.active : styles.inactive}`}
+            >
+              <Sparkle size={14} aria-hidden="true" /> Suggest
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Messages */}
-      <div className={styles.messagesContainer} style={{ WebkitOverflowScrolling: "touch" }}>
-        {messages.length === 0 && (
-          <div className={styles.emptyState}>
-            {mode === "chat" ? (
-              <>
-                <p className={styles.emptyTitle}>Conversational Q&A</p>
-                <p className={styles.emptyDescription}>
-                  Ask questions like &quot;What is systems thinking?&quot; I&apos;ll search your
-                  knowledge base and provide answers with context. For finding related content, use
-                  the Search tab.
-                </p>
-                {hasGPU === false && (
-                  <div className={styles.performanceNotice}>
-                    <p className={styles.noticeTitle}>
-                      <Warning size={14} aria-hidden="true" /> Performance Notice
-                    </p>
-                    <p className={styles.noticeDescription}>
-                      This feature is under active development and currently running on CPU-only
-                      infrastructure. Response times may be 60-120 seconds. For faster results, use
-                      the Search tab.
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <p className={styles.emptyTitle}>AI Semantic Search</p>
-                <p className={styles.emptyDescription}>
-                  Find conceptually related content using AI embeddings. Discovers connections even
-                  without exact keyword matches. Fast with pre-computed embeddings. For keyword
-                  search, use the main search box.
-                </p>
-              </>
-            )}
-          </div>
-        )}
+      {/* Suggest view - kept mounted while panel is open so results survive tab switches */}
+      {suggest && (
+        <div hidden={!suggestActive} className={styles.suggestContainer}>
+          <SuggestView context={suggest} active={suggestActive} />
+        </div>
+      )}
 
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`${styles.messageWrapper} ${message.role === "user" ? styles.user : styles.assistant}`}
-          >
-            <div
-              className={`${styles.message} ${message.role === "user" ? styles.userMessage : styles.assistantMessage}`}
-            >
-              <p className={styles.messageContent}>{message.content}</p>
-
-              {/* Sources */}
-              {message.sources && message.sources.length > 0 && (
-                <div className={styles.sources}>
-                  {message.sources.map((source, idx) => {
-                    const resourcePath =
-                      source.type === "article"
-                        ? `/knowledge-base/articles/${source.id}`
-                        : source.type === "note"
-                          ? `/knowledge-base/notes/${source.id}`
-                          : null;
-
-                    return (
-                      <div key={`${source.id}-${idx}`} className={styles.sourceCard}>
-                        <div className={styles.sourceHeader}>
-                          <div className={styles.sourceInfo}>
-                            <span className={styles.sourceTitle}>
-                              <span className={styles.sourceType} data-type={source.type}>
-                                {source.type === "article"
-                                  ? "ART"
-                                  : source.type === "note"
-                                    ? "NOTE"
-                                    : "REF"}
-                              </span>{" "}
-                              {source.title || `Document ${source.id}`}
-                            </span>
-                            {source.score && (
-                              <span className={styles.sourceScore}>{source.score.toFixed(3)}</span>
-                            )}
-                          </div>
-                          {resourcePath && (
-                            <a
-                              href={resourcePath}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.sourceLink}
-                            >
-                              View →
-                            </a>
-                          )}
-                        </div>
-                        <div className={styles.sourceContent}>{source.content}</div>
-                      </div>
-                    );
-                  })}
-                </div>
+      {/* Search / Ask view */}
+      <div hidden={suggestActive} className={styles.chatContainer}>
+        <div className={styles.messagesContainer} style={{ WebkitOverflowScrolling: "touch" }}>
+          {messages.length === 0 && (
+            <div className={styles.emptyState}>
+              {tab === "ask" ? (
+                <>
+                  <p className={styles.emptyTitle}>Conversational Q&A</p>
+                  <p className={styles.emptyDescription}>
+                    Ask questions like &quot;What is systems thinking?&quot; I&apos;ll search your
+                    knowledge base and provide answers with context. For finding related content,
+                    use the Search tab.
+                  </p>
+                  {hasGPU === false && (
+                    <div className={styles.performanceNotice}>
+                      <p className={styles.noticeTitle}>
+                        <Warning size={14} aria-hidden="true" /> Performance Notice
+                      </p>
+                      <p className={styles.noticeDescription}>
+                        This feature is under active development and currently running on CPU-only
+                        infrastructure. Response times may be 60-120 seconds. For faster results,
+                        use the Search tab.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className={styles.emptyTitle}>AI Semantic Search</p>
+                  <p className={styles.emptyDescription}>
+                    Find conceptually related content using AI embeddings. Discovers connections
+                    even without exact keyword matches. Fast with pre-computed embeddings. For
+                    keyword search, use the main search box.
+                  </p>
+                </>
               )}
             </div>
-          </div>
-        ))}
+          )}
 
-        {loading && (
-          <div className={styles.loadingWrapper}>
-            <div className={styles.loadingBubble}>
-              <div className={styles.loadingDots}>
-                <div className={styles.loadingDot}></div>
-                <div className={styles.loadingDot}></div>
-                <div className={styles.loadingDot}></div>
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`${styles.messageWrapper} ${message.role === "user" ? styles.user : styles.assistant}`}
+            >
+              <div
+                className={`${styles.message} ${message.role === "user" ? styles.userMessage : styles.assistantMessage}`}
+              >
+                <p className={styles.messageContent}>{message.content}</p>
+
+                {/* Sources */}
+                {message.sources && message.sources.length > 0 && (
+                  <div className={styles.sources}>
+                    {message.sources.map((source, idx) => {
+                      const resourcePath =
+                        source.type === "article"
+                          ? `/knowledge-base/articles/${source.id}`
+                          : source.type === "note"
+                            ? `/knowledge-base/notes/${source.id}`
+                            : null;
+
+                      return (
+                        <div key={`${source.id}-${idx}`} className={styles.sourceCard}>
+                          <div className={styles.sourceHeader}>
+                            <div className={styles.sourceInfo}>
+                              <span className={styles.sourceTitle}>
+                                <span className={styles.sourceType} data-type={source.type}>
+                                  {source.type === "article"
+                                    ? "ART"
+                                    : source.type === "note"
+                                      ? "NOTE"
+                                      : "REF"}
+                                </span>{" "}
+                                {source.title || `Document ${source.id}`}
+                              </span>
+                              {source.score && (
+                                <span className={styles.sourceScore}>
+                                  {source.score.toFixed(3)}
+                                </span>
+                              )}
+                            </div>
+                            {resourcePath && (
+                              <a
+                                href={resourcePath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.sourceLink}
+                              >
+                                View →
+                              </a>
+                            )}
+                          </div>
+                          <div className={styles.sourceContent}>{source.content}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
+          ))}
+
+          {loading && (
+            <div className={styles.loadingWrapper}>
+              <div className={styles.loadingBubble}>
+                <div className={styles.loadingDots}>
+                  <div className={styles.loadingDot}></div>
+                  <div className={styles.loadingDot}></div>
+                  <div className={styles.loadingDot}></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} className={styles.messagesEnd} />
+        </div>
+
+        {/* Input */}
+        <div className={styles.inputArea}>
+          {messages.length > 0 && (
+            <button onClick={handleClear} className={styles.clearButton}>
+              Clear {tab === "ask" ? "conversation" : "results"}
+            </button>
+          )}
+          <form onSubmit={handleSubmit} className={styles.inputForm}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={tab === "ask" ? "Ask a question..." : "Search query..."}
+              className={styles.input}
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className={styles.submitButton}
+            >
+              {loading ? "..." : tab === "ask" ? "Send" : "Search"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== Suggest tab =====
+
+interface CachedSuggestions {
+  tags: TagSuggestion[];
+  links: LinkSuggestion[];
+  contentHash: string;
+}
+
+// Simple hash function for content
+function hashContent(content: string): string {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
+
+function SuggestView({ context, active }: { context: SuggestContext; active: boolean }) {
+  const { noteId, aiMode, content, onAddTag, onInsertLink } = context;
+
+  const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
+  const [linkSuggestions, setLinkSuggestions] = useState<LinkSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>("");
+  const [streamPhase, setStreamPhase] = useState<StreamPhase>("idle");
+  const [tokenCount, setTokenCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [cachedData, setCachedData] = useState<CachedSuggestions | null>(null);
+  const [isOutdated, setIsOutdated] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const streamCleanupRef = useRef<(() => void) | null>(null);
+  const tagsRef = useRef<TagSuggestion[]>([]);
+  const linksRef = useRef<LinkSuggestion[]>([]);
+
+  // Check if current content matches cached content
+  useEffect(() => {
+    if (cachedData && content) {
+      const currentHash = hashContent(content);
+      setIsOutdated(currentHash !== cachedData.contentHash);
+    }
+  }, [content, cachedData]);
+
+  // Streaming fetch using SSE
+  const fetchSuggestionsStreaming = useCallback(() => {
+    // Clean up any existing stream
+    if (streamCleanupRef.current) {
+      streamCleanupRef.current();
+      streamCleanupRef.current = null;
+    }
+
+    setLoading(true);
+    setError(null);
+    setTagSuggestions([]);
+    setLinkSuggestions([]);
+    tagsRef.current = [];
+    linksRef.current = [];
+    setStreamPhase("idle");
+    setTokenCount(0);
+    setLoadingStatus("Connecting to AI service...");
+
+    const cleanup = streamAISuggestions(noteId, {
+      onProgress: (phase) => {
+        setStreamPhase(phase);
+        setTokenCount(0); // Reset token count when phase changes
+        if (phase === "tags") {
+          setLoadingStatus("Generating tag suggestions...");
+        } else if (phase === "links") {
+          setLoadingStatus("Finding related notes...");
+        }
+      },
+      onGenerating: (_phase, tokens) => {
+        setTokenCount(tokens);
+      },
+      onTag: (tag) => {
+        tagsRef.current = [...tagsRef.current, tag];
+        setTagSuggestions(tagsRef.current);
+      },
+      onLink: (link) => {
+        linksRef.current = [...linksRef.current, link];
+        setLinkSuggestions(linksRef.current);
+      },
+      onComplete: () => {
+        setLoading(false);
+        setLoadingStatus("");
+        setStreamPhase("complete");
+
+        // Cache the results (against current content when editing, else note id marker)
+        setCachedData({
+          tags: tagsRef.current,
+          links: linksRef.current,
+          contentHash: content ? hashContent(content) : "saved",
+        });
+        setIsOutdated(false);
+
+        logger.info("AI suggestions streaming complete");
+
+        // Show toast notification for automatic mode
+        if (aiMode === "real-time") {
+          setShowToast(true);
+        }
+      },
+      onError: (message) => {
+        setError(message);
+        setLoading(false);
+        setLoadingStatus("");
+        setStreamPhase("error");
+        logger.error("AI suggestions streaming failed", { message });
+      },
+    });
+
+    streamCleanupRef.current = cleanup;
+  }, [noteId, content, aiMode]);
+
+  // Non-streaming fallback fetch
+  const fetchSuggestionsFallback = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setLoadingStatus("Generating AI suggestions... typically takes 10-15 seconds");
+
+    try {
+      // Fetch tags first
+      setLoadingStatus("Finding relevant tags...");
+      const tagsResponse = await fetch(`${API_URL}/api/notes/${noteId}/suggest-tags`, {
+        method: "POST",
+      });
+
+      if (!tagsResponse.ok) {
+        throw new Error("Failed to fetch tag suggestions");
+      }
+
+      const tagsData = await tagsResponse.json();
+      setTagSuggestions(tagsData.suggestions || []);
+      setLoadingStatus("Analyzing related notes...");
+
+      // Then fetch links
+      const linksResponse = await fetch(`${API_URL}/api/notes/${noteId}/suggest-links`, {
+        method: "POST",
+      });
+
+      if (!linksResponse.ok) {
+        throw new Error("Failed to fetch link suggestions");
+      }
+
+      const linksData = await linksResponse.json();
+      setLinkSuggestions(linksData.suggestions || []);
+
+      setCachedData({
+        tags: tagsData.suggestions || [],
+        links: linksData.suggestions || [],
+        contentHash: content ? hashContent(content) : "saved",
+      });
+      setIsOutdated(false);
+
+      logger.info("AI suggestions fetched", {
+        tags: tagsData.count,
+        links: linksData.count,
+      });
+
+      // Show toast notification for automatic mode
+      if (aiMode === "real-time") {
+        setShowToast(true);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load suggestions";
+      setError(message);
+      logger.error("Failed to fetch AI suggestions", err);
+    } finally {
+      setLoading(false);
+      setLoadingStatus("");
+    }
+  }, [noteId, content, aiMode]);
+
+  // Main fetch function - uses streaming if available
+  const fetchSuggestions = useCallback(() => {
+    if (isStreamingSupported()) {
+      fetchSuggestionsStreaming();
+    } else {
+      fetchSuggestionsFallback();
+    }
+  }, [fetchSuggestionsStreaming, fetchSuggestionsFallback]);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamCleanupRef.current) {
+        streamCleanupRef.current();
+      }
+    };
+  }, []);
+
+  // Auto-fetch when the tab becomes active and nothing is cached yet.
+  // Outdated results are refreshed explicitly (Refresh button) or by the
+  // real-time debounce below - never on every keystroke.
+  useEffect(() => {
+    if (active && !loading && !error && !cachedData) {
+      fetchSuggestions();
+    }
+  }, [active, loading, error, cachedData, fetchSuggestions]);
+
+  // Real-time mode: auto-refresh suggestions when content changes (debounced)
+  useEffect(() => {
+    if (aiMode !== "real-time" || !content || !active) {
+      return;
+    }
+
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timer to fetch suggestions after debounce period
+    debounceTimer.current = setTimeout(() => {
+      // Only fetch if content is non-empty
+      if (content.trim().length > 10) {
+        fetchSuggestions();
+      }
+    }, SUGGEST_DEBOUNCE_MS);
+
+    // Cleanup timer on unmount or when dependencies change
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [aiMode, content, fetchSuggestions, active]);
+
+  const hasAnySuggestions = tagSuggestions.length + linkSuggestions.length > 0;
+
+  return (
+    <div className={styles.suggestView}>
+      {/* Status row */}
+      <div className={styles.suggestStatusRow}>
+        {aiMode === "real-time" && (
+          <div className={styles.modeIndicator}>
+            {loading && <div className={styles.autoIndicatorDot}></div>}
+            <span className={styles.autoIndicatorLabel}>Automatic mode</span>
           </div>
         )}
-
-        <div ref={messagesEndRef} className={styles.messagesEnd} />
-      </div>
-
-      {/* Input */}
-      <div className={styles.inputArea}>
-        {messages.length > 0 && (
-          <button onClick={handleClear} className={styles.clearButton}>
-            Clear {mode === "chat" ? "conversation" : "results"}
+        {isOutdated && !loading && (
+          <button
+            onClick={fetchSuggestions}
+            className={styles.refreshButton}
+            title="Content has changed - refresh suggestions"
+          >
+            🔄 Refresh
           </button>
         )}
-        <form onSubmit={handleSubmit} className={styles.inputForm}>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={mode === "chat" ? "Ask a question..." : "Search query..."}
-            className={styles.input}
-            disabled={loading}
-          />
-          <button type="submit" disabled={loading || !input.trim()} className={styles.submitButton}>
-            {loading ? "..." : mode === "chat" ? "Send" : "Search"}
-          </button>
-        </form>
       </div>
+
+      {/* Streaming Progress Indicator */}
+      {loading && (
+        <div className={styles.streamingProgress}>
+          <div className={styles.suggestLoadingContent}>
+            <div className={styles.spinner}></div>
+            <div className={styles.progressText}>
+              <span className={styles.progressStatus}>
+                {loadingStatus}
+                {tokenCount > 0 && ` (${tokenCount} tokens)`}
+              </span>
+              <span className={styles.progressCounts}>
+                {tagSuggestions.length > 0 && `${tagSuggestions.length} tags`}
+                {tagSuggestions.length > 0 && streamPhase === "links" && ", "}
+                {streamPhase === "links" && `${linkSuggestions.length} links`}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className={styles.errorBanner}>
+          {error}
+          <button onClick={fetchSuggestions} className={styles.retryButton}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Empty State - a completed fetch yielded nothing */}
+      {!loading && !hasAnySuggestions && !error && cachedData !== null && (
+        <div className={styles.emptyState}>
+          <p className={styles.emptyTitle}>No suggestions found.</p>
+          <p className={styles.emptyDescription}>This note might be exploring a new topic!</p>
+        </div>
+      )}
+
+      {/* Outdated Warning */}
+      {isOutdated && !loading && hasAnySuggestions && (
+        <div className={styles.outdatedBanner}>
+          <Warning size={14} aria-hidden="true" /> Suggestions may be outdated - content has changed
+          since generation.
+        </div>
+      )}
+
+      {/* Tag Suggestions - show progressively during streaming */}
+      {tagSuggestions.length > 0 && (
+        <div className={styles.suggestionsSection}>
+          <h4 className={styles.sectionTitle}>
+            <Tag size={14} aria-hidden="true" /> Suggested Tags
+          </h4>
+          <div className={styles.suggestionsList}>
+            {tagSuggestions.map((suggestion, index) => (
+              <div key={index} className={`${styles.suggestionCard} ${styles.fadeIn}`}>
+                <div className={styles.suggestionHeader}>
+                  <span className={styles.suggestionTitle}>{suggestion.tag}</span>
+                  {onAddTag && (
+                    <button
+                      onClick={() => {
+                        onAddTag(suggestion.tag);
+                        // Remove from current suggestions (optimistic UI)
+                        tagsRef.current = tagsRef.current.filter((_, i) => i !== index);
+                        setTagSuggestions(tagsRef.current);
+                      }}
+                      className={styles.suggestionAction}
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+                <p className={styles.suggestionReason}>{suggestion.reason}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Link Suggestions - show progressively during streaming */}
+      {linkSuggestions.length > 0 && (
+        <div className={styles.suggestionsSection}>
+          <h4 className={styles.sectionTitle}>
+            <LinkSimple size={14} aria-hidden="true" /> Suggested Links
+          </h4>
+          <div className={styles.suggestionsList}>
+            {linkSuggestions.map((suggestion, index) => (
+              <div key={index} className={`${styles.suggestionCard} ${styles.fadeIn}`}>
+                <div className={styles.suggestionHeader}>
+                  <div className={styles.suggestionMeta}>
+                    <div className={styles.suggestionSubtitle}>{suggestion.title}</div>
+                    <code className={styles.suggestionNoteId}>{suggestion.note_id}</code>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onInsertLink(suggestion.note_id);
+                      // Remove from current suggestions (optimistic UI)
+                      linksRef.current = linksRef.current.filter((_, i) => i !== index);
+                      setLinkSuggestions(linksRef.current);
+                    }}
+                    className={styles.suggestionAction}
+                  >
+                    Insert
+                  </button>
+                </div>
+                <p className={styles.suggestionReason}>{suggestion.reason}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Toast for automatic mode */}
+      <Toast
+        message="AI suggestions ready"
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+        duration={4000}
+      />
     </div>
   );
 }

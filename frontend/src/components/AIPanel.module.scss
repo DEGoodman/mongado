@@ -424,3 +424,266 @@
     opacity: 0.5;
   }
 }
+
+// ===== TAB CONTAINERS =====
+// Author display values override the hidden attribute, so guard explicitly
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.suggestContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// ===== SUGGEST VIEW =====
+.suggestView {
+  padding: $spacing-4;
+}
+
+.suggestStatusRow {
+  @include flex-between;
+  margin-bottom: $spacing-3;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.modeIndicator {
+  @include flex-start;
+  gap: $spacing-2;
+}
+
+.autoIndicatorDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: $border-radius-full;
+  background-color: $color-success-border;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.autoIndicatorLabel {
+  @include text-tertiary;
+  color: $color-success-text;
+}
+
+.refreshButton {
+  padding: $spacing-2 $spacing-3;
+  border: $border-width-thin solid $neutral-300;
+  border-radius: $border-radius-md;
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  color: $neutral-700;
+  background-color: $white;
+  @include transition-colors;
+
+  &:hover {
+    background-color: $neutral-50;
+  }
+}
+
+.streamingProgress {
+  margin-bottom: $spacing-4;
+  padding: $spacing-3 $spacing-4;
+  border-radius: $border-radius-md;
+  background-color: $color-info-bg;
+  border: $border-width-thin solid $color-info-border;
+}
+
+.suggestLoadingContent {
+  @include flex-start;
+  gap: $spacing-3;
+}
+
+.progressText {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-1;
+}
+
+.progressStatus {
+  @include text-secondary;
+  color: $color-info-text;
+}
+
+.progressCounts {
+  @include text-tertiary;
+  color: $color-info-text;
+  font-weight: $font-weight-medium;
+}
+
+.spinner {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid $color-interactive-primary;
+  border-top-color: transparent;
+  border-radius: $border-radius-full;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorBanner {
+  margin-bottom: $spacing-4;
+  padding: $spacing-4;
+  border: $border-width-thin solid $color-error-border;
+  border-radius: $border-radius-md;
+  @include text-secondary;
+  background-color: $color-error-bg;
+  color: $color-error-text;
+}
+
+.retryButton {
+  display: block;
+  margin-top: $spacing-2;
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  color: $color-error-text;
+  text-decoration: underline;
+  @include transition-colors;
+
+  &:hover {
+    color: $neutral-900;
+  }
+}
+
+.outdatedBanner {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-1;
+  margin-bottom: $spacing-4;
+  padding: $spacing-3;
+  border: $border-width-thin solid $color-warning-border;
+  border-radius: $border-radius-md;
+  @include text-secondary;
+  background-color: $color-warning-bg;
+  color: $color-warning-text;
+}
+
+.suggestionsSection {
+  margin-bottom: $spacing-6;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.sectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-1;
+  margin-bottom: $spacing-3;
+  @include text-secondary;
+  font-weight: $font-weight-semibold;
+  color: $neutral-700;
+}
+
+.suggestionsList {
+  @include stack($spacing-3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.suggestionCard {
+  padding: $spacing-4;
+  border: $border-width-thin solid $neutral-200;
+  border-radius: $border-radius-md;
+  background-color: $neutral-50;
+  @include transition-default;
+
+  &:hover {
+    border-color: $color-interactive-primary;
+    background-color: $color-interactive-ghost-hover;
+  }
+}
+
+.suggestionHeader {
+  @include flex-between;
+  gap: $spacing-3;
+  margin-bottom: $spacing-2;
+  align-items: flex-start;
+}
+
+.suggestionTitle {
+  font-weight: $font-weight-medium;
+  color: $neutral-900;
+}
+
+.suggestionMeta {
+  min-width: 0;
+  flex: 1;
+}
+
+.suggestionSubtitle {
+  margin-bottom: $spacing-1;
+  font-weight: $font-weight-medium;
+  color: $neutral-900;
+}
+
+.suggestionNoteId {
+  @include text-tertiary;
+  color: $neutral-500;
+  font-family: monospace;
+}
+
+.suggestionAction {
+  flex-shrink: 0;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-sm;
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  @include transition-default;
+
+  &:hover {
+    background-color: $color-interactive-primary-hover;
+  }
+}
+
+.suggestionReason {
+  @include text-tertiary;
+  line-height: 1.6;
+  color: $neutral-600;
+}

@@ -4,15 +4,13 @@ import { useEffect, useState } from "react";
 import { Lightbulb, Sparkle, X, Check } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 
-// Heavy editor (CodeMirror) and AI panel load on demand, not in first-load JS
+// Heavy editor (CodeMirror) loads on demand, not in first-load JS
 const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
   ssr: false,
   loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
 });
-const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
-  ssr: false,
-});
 import TemplateSelector from "@/components/TemplateSelector";
+import type { PanelTab } from "@/components/AIPanel";
 import { listNotes, Note } from "@/lib/api/notes";
 import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
 import { logger } from "@/lib/logger";
@@ -45,8 +43,6 @@ export const EMPTY_NOTE_VALUES: NoteEditorValues = {
 
 interface NoteEditorFormProps {
   mode: "create" | "edit";
-  /** Existing note id (edit mode); create mode uses a placeholder id for AI suggestions */
-  noteId?: string;
   initialValues: NoteEditorValues;
   saving: boolean;
   /** Error from the parent (API failures etc.); merged with form-level validation errors */
@@ -54,8 +50,8 @@ interface NoteEditorFormProps {
   /** Called once validation and the zero-links gate have passed */
   onSave: (values: ParsedNoteValues) => Promise<void> | void;
   onCancel: () => void;
-  /** Opens the floating AI panel (owned by the page) from the zero-links modal */
-  onOpenAIPanel: () => void;
+  /** Opens the page-owned AI panel, optionally on a specific tab */
+  onOpenAIPanel: (tab?: PanelTab) => void;
   /** Fires on every field change; used by the create page for draft autosave */
   onValuesChange?: (values: NoteEditorValues) => void;
 }
@@ -66,7 +62,6 @@ function hasWikilinks(text: string): boolean {
 
 export default function NoteEditorForm({
   mode,
-  noteId,
   initialValues,
   saving,
   error,
@@ -80,7 +75,6 @@ export default function NoteEditorForm({
 
   const [values, setValues] = useState<NoteEditorValues>(initialValues);
   const [formError, setFormError] = useState<string | null>(null);
-  const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
   const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [templates, setTemplates] = useState<TemplateMetadata[]>([]);
@@ -193,26 +187,8 @@ export default function NoteEditorForm({
 
   const handleGetAISuggestions = () => {
     setShowZeroLinksWarning(false);
-    onOpenAIPanel();
-  };
-
-  const handleAddTag = (tag: string) => {
-    // Add tag if not already present
-    const currentTags = values.tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t);
-
-    if (!currentTags.includes(tag)) {
-      update({ tags: [...currentTags, tag].join(", ") });
-      logger.info("Tag added from AI suggestion", { tag });
-    }
-  };
-
-  const handleInsertLink = (linkNoteId: string) => {
-    // Insert wikilink at the end of content
-    update({ content: values.content.trim() + `\n\n[[${linkNoteId}]]` });
-    logger.info("Link inserted from AI suggestion", { noteId: linkNoteId });
+    // Suggestions require a saved note; fall back to search for unsaved notes
+    onOpenAIPanel(mode === "edit" ? "suggest" : undefined);
   };
 
   const displayError = error ?? formError;
@@ -263,177 +239,146 @@ export default function NoteEditorForm({
       )}
 
       {/* Form */}
-      <div
-        className={
-          aiSuggestionsOpen ? styles.editorGrid + " " + styles.withSidebar : styles.editorGrid
-        }
-      >
-        {/* Editor Column */}
-        <div className={styles.editorColumn}>
-          {/* Template Selector - compact button (create mode) */}
-          {mode === "create" && (
-            <div className={styles.templateRow}>
-              <TemplateSelector
-                templates={templates}
-                onSelectTemplate={handleApplyTemplate}
-                disabled={loadingTemplate}
-                loading={loadingTemplate}
-              />
-            </div>
-          )}
-
-          {/* Title (optional) */}
-          <div>
-            <label htmlFor="note-title" className={styles.formLabel}>
-              Title (optional)
-            </label>
-            <input
-              id="note-title"
-              type="text"
-              value={values.title}
-              onChange={(e) => update({ title: e.target.value })}
-              placeholder="What's the ONE idea this note captures?"
-              className={styles.formInput}
-            />
-            <p className={styles.formHint}>
-              ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
-              &quot;Team Culture Concepts&quot;
-            </p>
-          </div>
-
-          {/* Tags (optional) */}
-          <div>
-            <label htmlFor="note-tags" className={styles.formLabel}>
-              Tags (optional)
-            </label>
-            <input
-              id="note-tags"
-              type="text"
-              value={values.tags}
-              onChange={(e) => update({ tags: e.target.value })}
-              placeholder="Comma-separated tags (e.g., idea, research, todo)"
-              className={styles.formInput}
+      <div className={styles.editorColumn}>
+        {/* Template Selector - compact button (create mode) */}
+        {mode === "create" && (
+          <div className={styles.templateRow}>
+            <TemplateSelector
+              templates={templates}
+              onSelectTemplate={handleApplyTemplate}
+              disabled={loadingTemplate}
+              loading={loadingTemplate}
             />
           </div>
+        )}
 
-          {/* Reference Toggle */}
-          <div className={styles.referenceToggle}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={values.isReference}
-                onChange={(e) => update({ isReference: e.target.checked })}
-                className={styles.checkbox}
-              />
-              <span className={styles.checkboxText}>Quick Reference</span>
-            </label>
-            <p className={styles.formHint}>
-              Check for checklists, frameworks, acronyms — not personal insights
-            </p>
-          </div>
-
-          {/* Content */}
-          <div>
-            <div className={styles.charCountWrapper}>
-              <label className={styles.formLabel}>Content *</label>
-              <div className={styles.charCount}>
-                <span
-                  className={
-                    contentLength >= 300 && contentLength <= 500
-                      ? styles.count + " " + styles.good
-                      : styles.count
-                  }
-                >
-                  {contentLength} chars
-                </span>
-                {contentLength > 0 && contentLength < 300 && (
-                  <span className={styles.hint}>• Brief - good for atomic notes</span>
-                )}
-                {contentLength >= 300 && contentLength <= 500 && (
-                  <span className={styles.hint + " " + styles.good}>
-                    • ✓ Good length for atomic note
-                  </span>
-                )}
-                {contentLength > 500 && contentLength <= 1000 && (
-                  <span className={styles.hint + " " + styles.warning}>
-                    • Getting long - single idea?
-                  </span>
-                )}
-                {contentLength > 1000 && (
-                  <span className={styles.hint + " " + styles.error}>
-                    • Consider splitting into multiple notes
-                  </span>
-                )}
-              </div>
-            </div>
-            <NoteEditor
-              content={values.content}
-              onChange={(content) => update({ content })}
-              allNotes={allNotes}
-              placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
-              onNoteClick={(id) => {
-                // Open note in new tab
-                window.open(`/knowledge-base/notes/${id}`, "_blank");
-              }}
-            />
-            <p className={styles.formHint}>
-              Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
-              concepts, consider creating separate notes.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className={styles.actions}>
-            <button
-              onClick={() => handleSave()}
-              disabled={saving || !values.content.trim()}
-              className={`${styles.button} ${styles.saveButton}`}
-              data-delight-sparkle
-            >
-              {saving ? "Saving..." : mode === "create" ? "Save Note" : "Save Changes"}
-            </button>
-            <button
-              onClick={onCancel}
-              disabled={saving}
-              className={`${styles.button} ${styles.cancelButton}`}
-            >
-              Cancel
-            </button>
-            {settings.aiMode !== "off" && aiAvailable && (
-              <button
-                onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
-                className={`${styles.button} ${styles.aiButton}`}
-                aria-label={
-                  aiSuggestionsOpen
-                    ? "Hide AI suggestions panel"
-                    : "Show AI suggestions for tags and links"
-                }
-                aria-expanded={aiSuggestionsOpen}
-              >
-                {aiSuggestionsOpen ? (
-                  "Hide AI Suggestions"
-                ) : (
-                  <>
-                    <Sparkle size={16} aria-hidden="true" /> Get AI Suggestions
-                  </>
-                )}
-              </button>
-            )}
-          </div>
+        {/* Title (optional) */}
+        <div>
+          <label htmlFor="note-title" className={styles.formLabel}>
+            Title (optional)
+          </label>
+          <input
+            id="note-title"
+            type="text"
+            value={values.title}
+            onChange={(e) => update({ title: e.target.value })}
+            placeholder="What's the ONE idea this note captures?"
+            className={styles.formInput}
+          />
+          <p className={styles.formHint}>
+            ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
+            &quot;Team Culture Concepts&quot;
+          </p>
         </div>
 
-        {/* AI Suggestions Panel */}
-        {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
-          <AISuggestionsPanel
-            noteId={noteId ?? "new-note-temp-id"}
-            mode={settings.aiMode}
-            content={values.content}
-            isOpen={aiSuggestionsOpen}
-            onClose={() => setAiSuggestionsOpen(false)}
-            onAddTag={handleAddTag}
-            onInsertLink={handleInsertLink}
+        {/* Tags (optional) */}
+        <div>
+          <label htmlFor="note-tags" className={styles.formLabel}>
+            Tags (optional)
+          </label>
+          <input
+            id="note-tags"
+            type="text"
+            value={values.tags}
+            onChange={(e) => update({ tags: e.target.value })}
+            placeholder="Comma-separated tags (e.g., idea, research, todo)"
+            className={styles.formInput}
           />
-        )}
+        </div>
+
+        {/* Reference Toggle */}
+        <div className={styles.referenceToggle}>
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={values.isReference}
+              onChange={(e) => update({ isReference: e.target.checked })}
+              className={styles.checkbox}
+            />
+            <span className={styles.checkboxText}>Quick Reference</span>
+          </label>
+          <p className={styles.formHint}>
+            Check for checklists, frameworks, acronyms — not personal insights
+          </p>
+        </div>
+
+        {/* Content */}
+        <div>
+          <div className={styles.charCountWrapper}>
+            <label className={styles.formLabel}>Content *</label>
+            <div className={styles.charCount}>
+              <span
+                className={
+                  contentLength >= 300 && contentLength <= 500
+                    ? styles.count + " " + styles.good
+                    : styles.count
+                }
+              >
+                {contentLength} chars
+              </span>
+              {contentLength > 0 && contentLength < 300 && (
+                <span className={styles.hint}>• Brief - good for atomic notes</span>
+              )}
+              {contentLength >= 300 && contentLength <= 500 && (
+                <span className={styles.hint + " " + styles.good}>
+                  • ✓ Good length for atomic note
+                </span>
+              )}
+              {contentLength > 500 && contentLength <= 1000 && (
+                <span className={styles.hint + " " + styles.warning}>
+                  • Getting long - single idea?
+                </span>
+              )}
+              {contentLength > 1000 && (
+                <span className={styles.hint + " " + styles.error}>
+                  • Consider splitting into multiple notes
+                </span>
+              )}
+            </div>
+          </div>
+          <NoteEditor
+            content={values.content}
+            onChange={(content) => update({ content })}
+            allNotes={allNotes}
+            placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
+            onNoteClick={(id) => {
+              // Open note in new tab
+              window.open(`/knowledge-base/notes/${id}`, "_blank");
+            }}
+          />
+          <p className={styles.formHint}>
+            Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
+            concepts, consider creating separate notes.
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className={styles.actions}>
+          <button
+            onClick={() => handleSave()}
+            disabled={saving || !values.content.trim()}
+            className={`${styles.button} ${styles.saveButton}`}
+            data-delight-sparkle
+          >
+            {saving ? "Saving..." : mode === "create" ? "Save Note" : "Save Changes"}
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={saving}
+            className={`${styles.button} ${styles.cancelButton}`}
+          >
+            Cancel
+          </button>
+          {mode === "edit" && settings.aiMode !== "off" && aiAvailable && (
+            <button
+              onClick={() => onOpenAIPanel("suggest")}
+              className={`${styles.button} ${styles.aiButton}`}
+              aria-label="Show AI suggestions for tags and links"
+            >
+              <Sparkle size={16} aria-hidden="true" /> Get AI Suggestions
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Zero Links Warning Modal */}
