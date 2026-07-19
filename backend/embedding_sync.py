@@ -310,11 +310,19 @@ def sync_embeddings(
         "embeddings_generated": 0,
         "embeddings_cached": 0,
         "embeddings_failed": 0,
+        "orphaned_chunks_deleted": 0,
     }
 
     if not neo4j_adapter.is_available():
         logger.warning("Neo4j not available - skipping embedding sync")
         return stats
+
+    # Sweep chunks with no HAS_CHUNK parent (#244) before generating
+    # anything - runs even when the embedding backend is down
+    orphans = neo4j_adapter.delete_orphaned_chunks()
+    stats["orphaned_chunks_deleted"] = orphans
+    if orphans:
+        logger.info("Deleted %d orphaned chunk node(s)", orphans)
 
     if not ollama_client.embeddings_available():
         logger.warning("Ollama not available - skipping embedding sync")
