@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
 import AIButton from "@/components/AIButton";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useHydrated } from "@/hooks/useHydrated";
 
 /**
  * Self-contained AI panel + trigger button island.
@@ -13,9 +14,13 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
  */
 export default function AIAssistant() {
   const { llmFeaturesEnabled } = useFeatureFlags();
+  const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
-  if (!llmFeaturesEnabled) return null;
+  // The hydrated gate keeps the ssr:false panel out of the hydration render:
+  // the flags fetch can resolve while Suspense-staged hydration is still in
+  // progress, and a late-hydrating boundary would then mismatch the server HTML
+  if (!hydrated || !llmFeaturesEnabled) return null;
 
   return (
     <>

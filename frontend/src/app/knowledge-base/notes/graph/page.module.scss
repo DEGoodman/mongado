@@ -53,46 +53,6 @@
 }
 
 // ===== LOADING & ERROR STATES =====
-.loadingContainer,
-.errorContainer,
-.emptyContainer {
-  @extend .main;
-}
-
-.loadingSkeleton {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-
-  .skeletonTitle {
-    height: 2rem;
-    width: 33%;
-    margin-bottom: $spacing-4;
-    background-color: rgba(156, 163, 175, 0.2);
-    border-radius: $border-radius-md;
-  }
-
-  .skeletonGraph {
-    height: 24rem;
-    background-color: rgba(156, 163, 175, 0.2);
-    border-radius: $border-radius-md;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.errorCard,
-.emptyCard {
-  @include card-elevated;
-  padding: $spacing-4;
-}
-
 .errorCard {
   background-color: rgba(254, 226, 226, 0.8);
   border: $border-width-thin solid rgba(220, 38, 38, 0.3);
@@ -108,59 +68,6 @@
     margin-bottom: $spacing-4;
   }
 
-  .backLink {
-    display: inline-block;
-    margin-top: $spacing-4;
-    color: $color-link-default;
-    text-decoration: none;
-    @include text-secondary;
-
-    &:hover {
-      color: $color-link-hover;
-      text-decoration: underline;
-    }
-  }
-}
-
-.emptyCard {
-  background-color: $color-bg-secondary;
-  border: $border-width-thin solid $color-border;
-  padding: $spacing-8;
-  text-align: center;
-
-  .backLink {
-    display: inline-block;
-    margin-bottom: $spacing-6;
-    color: $color-link-default;
-    @include text-secondary;
-    text-decoration: none;
-
-    &:hover {
-      color: $color-link-hover;
-      text-decoration: underline;
-    }
-  }
-
-  .emptyMessage {
-    color: $color-text-secondary;
-    margin-bottom: $spacing-4;
-  }
-
-  .createButton {
-    display: inline-block;
-    margin-top: $spacing-4;
-    padding: $spacing-2 $spacing-4;
-    background-color: $color-interactive-primary;
-    color: $color-interactive-primary-text;
-    border-radius: $border-radius-button;
-    font-weight: $font-weight-medium;
-    text-decoration: none;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: $color-link-hover;
-    }
-  }
 }
 
 // ===== HEADER =====

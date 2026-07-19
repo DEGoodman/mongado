@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 import AIAssistant from "@/components/AIAssistant";
+import { EmptyState } from "@/components/PageState";
 import { useRouter, useSearchParams } from "next/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
@@ -268,20 +269,12 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
             {/* Articles List */}
             <div className={styles.articlesList}>
               {filteredResources.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <p className={styles.emptyMessage}>
-                    {searchQuery ? "No articles match your search" : "No articles yet"}
-                  </p>
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className={styles.clearSearchButton}
-                      aria-label="Clear search query"
-                    >
-                      Clear search
-                    </button>
-                  )}
-                </div>
+                <EmptyState
+                  inline
+                  message={searchQuery ? "No articles match your search" : "No articles yet"}
+                  actionLabel={searchQuery ? "Clear search" : undefined}
+                  onAction={() => setSearchQuery("")}
+                />
               ) : (
                 filteredResources.map((resource) => {
                   return (

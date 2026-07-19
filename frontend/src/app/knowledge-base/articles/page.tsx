@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { getServerApiUrl } from "@/lib/server-api";
 import ArticlesClient, { type ArticleMetadata } from "./ArticlesClient";
+import { LoadingState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
 export const metadata: Metadata = {
@@ -40,9 +41,7 @@ export default async function ArticlesPage() {
             </div>
           </header>
           <main className={styles.main}>
-            <div className={styles.loadingState}>
-              <p>Loading articles...</p>
-            </div>
+            <LoadingState inline variant="cards" label="Loading articles" />
           </main>
         </div>
       }

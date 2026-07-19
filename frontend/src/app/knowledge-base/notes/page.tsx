@@ -21,6 +21,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { listNotes, getRandomNote, Note, formatNoteDate } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import AIAssistant from "@/components/AIAssistant";
+import { LoadingState, ErrorState, EmptyState } from "@/components/PageState";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
@@ -205,29 +206,11 @@ function NotesContent() {
   };
 
   if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loadingSkeleton}>
-          <div className={styles.skeletonTitle}></div>
-          <div className={styles.skeletonList}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={styles.skeletonItem}></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState variant="list" width="narrow" label="Loading notes" />;
   }
 
   if (error) {
-    return (
-      <div className={styles.errorContainer}>
-        <div className={styles.errorCard}>
-          <h2 className={styles.errorTitle}>Error</h2>
-          <p className={styles.errorMessage}>{error}</p>
-        </div>
-      </div>
-    );
+    return <ErrorState message={error} width="narrow" />;
   }
 
   return (
@@ -410,26 +393,23 @@ function NotesContent() {
 
             {/* Notes list */}
             {filteredNotes.length === 0 ? (
-              <div className={styles.emptyState}>
-                <svg
-                  className={styles.emptyIcon}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <h3 className={styles.emptyTitle}>No notes yet</h3>
-                <p className={styles.emptyMessage}>Get started by creating your first note</p>
-                <Link href="/knowledge-base/notes/new" className={styles.createButton}>
-                  Create Note
-                </Link>
-              </div>
+              <EmptyState
+                inline
+                icon={
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                }
+                title="No notes yet"
+                message="Get started by creating your first note"
+                actionLabel="Create Note"
+                actionHref="/knowledge-base/notes/new"
+              />
             ) : (
               <>
                 <div className={styles.notesList}>
@@ -565,20 +545,7 @@ function NotesContent() {
 
 export default function NotesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonTitle}></div>
-            <div className={styles.skeletonList}>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className={styles.skeletonItem}></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState variant="list" width="narrow" label="Loading notes" />}>
       <NotesContent />
     </Suspense>
   );

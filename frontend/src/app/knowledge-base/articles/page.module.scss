@@ -276,34 +276,6 @@
   @include stack($spacing-4);
 }
 
-.loadingState {
-  padding: $spacing-12 0;
-  text-align: center;
-  @include text-secondary;
-}
-
-.emptyState {
-  @include card-elevated;
-  padding: $spacing-12 0;
-  text-align: center;
-
-  .emptyMessage {
-    margin-bottom: $spacing-2;
-    @include text-secondary;
-  }
-
-  .clearSearchButton {
-    @include text-secondary;
-    color: $color-link-default;
-    cursor: pointer;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
 .articleCard {
   @include card-elevated;
   display: block;

@@ -1,0 +1,161 @@
+/**
+ * Shared route-level UI states (#238)
+ * Loading skeletons, error cards, and empty states used across all routes.
+ * Reduced-motion and focus-visible are handled globally in globals.scss.
+ */
+
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
+
+.stateContainer {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+
+  &.narrow {
+    max-width: 56rem;
+  }
+
+  &.wide {
+    max-width: 72rem;
+  }
+}
+
+// ===== LOADING SKELETONS =====
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeletonBar {
+  background-color: rgba(156, 163, 175, 0.2);
+  border-radius: $border-radius-md;
+}
+
+.skeletonTitle {
+  height: 2rem;
+  width: 25%;
+  margin-bottom: $spacing-8;
+}
+
+.skeletonStack {
+  @include stack($spacing-4);
+}
+
+.skeletonItem {
+  height: 5rem;
+}
+
+.skeletonGrid {
+  display: grid;
+  gap: $spacing-4;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.skeletonCard {
+  height: 10rem;
+}
+
+.skeletonContent {
+  height: 20rem;
+}
+
+.skeletonCanvas {
+  height: 60vh;
+}
+
+// ===== ERROR =====
+.errorCard {
+  padding: $spacing-4;
+  background-color: $color-error-bg;
+  border: $border-width-thin solid $color-error-border;
+  border-radius: $border-radius-md;
+
+  .errorTitle {
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-semibold;
+    color: $color-error-text;
+  }
+
+  .errorMessage {
+    color: $color-error-text;
+  }
+
+  .backLink {
+    display: inline-block;
+    margin-top: $spacing-4;
+  }
+}
+
+// ===== EMPTY =====
+.emptyCard {
+  padding: $spacing-8 $spacing-4;
+  text-align: center;
+
+  .emptyIcon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: $spacing-4;
+    color: $color-text-tertiary;
+
+    svg {
+      width: 3rem;
+      height: 3rem;
+    }
+  }
+
+  .emptyTitle {
+    margin-bottom: $spacing-2;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  .emptyMessage {
+    margin-bottom: $spacing-4;
+    color: $color-text-secondary;
+  }
+
+  .actionButton {
+    display: inline-block;
+    padding: $spacing-2 $spacing-6;
+    border: none;
+    border-radius: $border-radius-button;
+    background-color: $color-link-default;
+    color: $white;
+    font-weight: $font-weight-medium;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: $color-text-secondary;
+    }
+  }
+
+  .backLink {
+    display: block;
+    margin-top: $spacing-4;
+  }
+}
+
+// Shared back link
+.backLink {
+  color: $color-link-default;
+  text-decoration: none;
+  @include text-secondary;
+
+  &:hover {
+    color: $color-text-secondary;
+    text-decoration: underline;
+  }
+}

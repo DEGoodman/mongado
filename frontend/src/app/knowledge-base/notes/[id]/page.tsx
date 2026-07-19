@@ -13,6 +13,7 @@ import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
+import { LoadingState, ErrorState } from "@/components/PageState";
 import NoteEditorForm, { NoteEditorValues, ParsedNoteValues } from "@/components/NoteEditorForm";
 import {
   getNote,
@@ -31,6 +32,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useHydrated } from "@/hooks/useHydrated";
 import styles from "./page.module.scss";
 
 function noteToEditorValues(note: Note): NoteEditorValues {
@@ -44,6 +46,8 @@ function noteToEditorValues(note: Note): NoteEditorValues {
 
 function NoteDetailContent() {
   const { llmFeaturesEnabled } = useFeatureFlags();
+  // Gate ssr:false panels out of the hydration render (see useHydrated)
+  const llmUiReady = useHydrated() && llmFeaturesEnabled;
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -314,12 +318,7 @@ function NoteDetailContent() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSkeleton}>
-            <div className={styles.skeletonHeader}></div>
-            <div className={styles.skeletonContent}></div>
-          </div>
-        </div>
+        <LoadingState variant="content" width="wide" label="Loading note" />
       </div>
     );
   }
@@ -327,15 +326,12 @@ function NoteDetailContent() {
   if (error && !note) {
     return (
       <div className={styles.container}>
-        <div className={styles.errorContainer}>
-          <div className={styles.errorCard}>
-            <h2 className={styles.errorTitle}>Error</h2>
-            <p className={styles.errorMessage}>{error}</p>
-            <Link href="/knowledge-base/notes" className={styles.backLink}>
-              ← Back to notes
-            </Link>
-          </div>
-        </div>
+        <ErrorState
+          message={error}
+          width="wide"
+          backHref="/knowledge-base/notes"
+          backLabel="← Back to notes"
+        />
       </div>
     );
   }
@@ -345,7 +341,7 @@ function NoteDetailContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel with note-aware Suggest tab (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
+      {llmUiReady && (
         <AIPanel
           isOpen={panel.open}
           onClose={() => setPanel({ open: false })}
@@ -361,7 +357,7 @@ function NoteDetailContent() {
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
+      {llmUiReady && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
 
       <div className={styles.main}>
         <div className={styles.contentGrid}>
@@ -457,11 +453,7 @@ function NoteDetailContent() {
             </div>
 
             {/* Error message (view mode; edit mode errors render inside the form) */}
-            {error && !isEditing && (
-              <div className={styles.errorBox}>
-                <p className={styles.errorMessage}>{error}</p>
-              </div>
-            )}
+            {error && !isEditing && <ErrorState inline message={error} />}
 
             {/* Content */}
             {isEditing && editorSeed ? (
@@ -550,7 +542,7 @@ function NoteDetailContent() {
 
 export default function NoteDetailPage() {
   return (
-    <Suspense fallback={<div className={styles.loadingContainer}>Loading...</div>}>
+    <Suspense fallback={<LoadingState variant="content" width="wide" label="Loading note" />}>
       <NoteDetailContent />
     </Suspense>
   );
