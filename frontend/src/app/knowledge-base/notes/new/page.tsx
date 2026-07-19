@@ -6,21 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
-// AI panels load on demand, not in first-load JS
+// AI panel loads on demand, not in first-load JS
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-const PostSaveAISuggestions = dynamic(() => import("@/components/PostSaveAISuggestions"), {
-  ssr: false,
-});
+import type { PanelTab } from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import NoteEditorForm, {
   EMPTY_NOTE_VALUES,
   NoteEditorValues,
   ParsedNoteValues,
 } from "@/components/NoteEditorForm";
-import { createNote, getNote, updateNote } from "@/lib/api/notes";
+import { createNote } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
-import { isAuthenticated } from "@/lib/api/client";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
 import styles from "./page.module.scss";
@@ -67,9 +64,8 @@ function NewNoteContent() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [panel, setPanel] = useState<{ open: boolean; tab?: PanelTab }>({ open: false });
   const [draftRestored, setDraftRestored] = useState(false);
-  const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
   const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
   const [showAtomicityWarning, setShowAtomicityWarning] = useState(false);
   const [atomicityIssues, setAtomicityIssues] = useState<string[]>([]);
@@ -156,12 +152,8 @@ function NewNoteContent() {
       if (issues.length > 0) {
         setAtomicityIssues(issues);
         setShowAtomicityWarning(true);
-      } else if (settings.aiMode === "real-time") {
-        // Show AI suggestions modal only if AI mode is real-time/automatic
-        setShowPostSaveSuggestions(true);
       } else {
-        // Redirect to the note directly when AI is off or on-demand
-        router.push(`/knowledge-base/notes/${note.id}`);
+        goToNote(note.id);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create note";
@@ -172,49 +164,16 @@ function NewNoteContent() {
     }
   };
 
-  const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
-    if (!savedNoteId) return;
-
-    // Check authentication before saving
-    if (!isAuthenticated()) {
-      setError("You must be logged in to save notes. Changes you make will not be persisted.");
-      logger.warn("Unauthenticated user attempted to insert link");
-      return;
-    }
-
-    try {
-      // Fetch the current note
-      const currentNote = await getNote(savedNoteId);
-
-      // Add the wikilink to the end of the content
-      const updatedContent = currentNote.content.trim() + `\n\n[[${linkNoteId}]]`;
-
-      // Update the note
-      await updateNote(savedNoteId, {
-        content: updatedContent,
-        title: currentNote.title || undefined,
-        tags: currentNote.tags,
-      });
-
-      logger.info("Inserted link from post-save suggestion", { linkNoteId });
-    } catch (err) {
-      logger.error("Failed to insert link from suggestion", err);
-    }
-  };
-
-  const handleCloseSuggestions = () => {
-    setShowPostSaveSuggestions(false);
-    if (savedNoteId) {
-      router.push(`/knowledge-base/notes/${savedNoteId}`);
-    }
+  // Navigate to the saved note; in real-time AI mode, open its suggestions panel on arrival
+  const goToNote = (noteId: string) => {
+    const suffix = settings.aiMode === "real-time" ? "?suggest=1" : "";
+    router.push(`/knowledge-base/notes/${noteId}${suffix}`);
   };
 
   const handleAtomicityKeepAsIs = () => {
     setShowAtomicityWarning(false);
-    if (settings.aiMode === "real-time") {
-      setShowPostSaveSuggestions(true);
-    } else if (savedNoteId) {
-      router.push(`/knowledge-base/notes/${savedNoteId}`);
+    if (savedNoteId) {
+      goToNote(savedNoteId);
     }
   };
 
@@ -228,10 +187,16 @@ function NewNoteContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
+      {llmFeaturesEnabled && (
+        <AIPanel
+          isOpen={panel.open}
+          onClose={() => setPanel({ open: false })}
+          defaultTab={panel.tab}
+        />
+      )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {llmFeaturesEnabled && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
 
       <div className={styles.main}>
         {/* Header */}
@@ -271,7 +236,7 @@ function NewNoteContent() {
           error={error}
           onSave={handleSave}
           onCancel={handleCancel}
-          onOpenAIPanel={() => setAiPanelOpen(true)}
+          onOpenAIPanel={(tab) => setPanel({ open: true, tab })}
           onValuesChange={setCurrentValues}
         />
       </div>
@@ -317,16 +282,6 @@ function NewNoteContent() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
-      {llmFeaturesEnabled && savedNoteId && (
-        <PostSaveAISuggestions
-          noteId={savedNoteId}
-          isOpen={showPostSaveSuggestions}
-          onClose={handleCloseSuggestions}
-          onInsertLink={handleInsertLinkFromSuggestion}
-        />
       )}
     </div>
   );

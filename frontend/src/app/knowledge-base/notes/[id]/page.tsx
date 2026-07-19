@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { prefetchOnce } from "@/lib/prefetch";
 import dynamic from "next/dynamic";
 
-// AI panels load on demand, not in first-load JS
+// AI panel loads on demand, not in first-load JS
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-const PostSaveAISuggestions = dynamic(() => import("@/components/PostSaveAISuggestions"), {
-  ssr: false,
-});
+import type { PanelTab } from "@/components/AIPanel";
 import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
-import NoteEditorForm, { ParsedNoteValues } from "@/components/NoteEditorForm";
+import NoteEditorForm, { NoteEditorValues, ParsedNoteValues } from "@/components/NoteEditorForm";
 import {
   getNote,
   updateNote,
@@ -35,10 +33,20 @@ import { config } from "@/lib/config";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import styles from "./page.module.scss";
 
-export default function NoteDetailPage() {
+function noteToEditorValues(note: Note): NoteEditorValues {
+  return {
+    title: note.title || "",
+    tags: note.tags.join(", "),
+    content: note.content,
+    isReference: note.is_reference || false,
+  };
+}
+
+function NoteDetailContent() {
   const { llmFeaturesEnabled } = useFeatureFlags();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const noteId = params.id as string;
   const { settings } = useSettings();
 
@@ -54,9 +62,15 @@ export default function NoteDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
+  const [panel, setPanel] = useState<{ open: boolean; tab?: PanelTab }>({ open: false });
   const [aiPrewarming, setAiPrewarming] = useState(false);
+
+  // Editor seed: initial values + key so suggestion actions can patch the draft via remount
+  const [editorSeed, setEditorSeed] = useState<{ values: NoteEditorValues; key: number } | null>(
+    null
+  );
+  // Mirror of the form's current values while editing
+  const [currentValues, setCurrentValues] = useState<NoteEditorValues | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -91,6 +105,13 @@ export default function NoteDetailPage() {
 
     fetchData();
   }, [noteId]);
+
+  // Open the panel on Suggest when arriving from a fresh save (?suggest=1)
+  useEffect(() => {
+    if (searchParams.get("suggest") === "1") {
+      setPanel({ open: true, tab: "suggest" });
+    }
+  }, [searchParams]);
 
   // Pre-warm Ollama (lightweight) when entering edit mode
   useEffect(() => {
@@ -134,6 +155,21 @@ export default function NoteDetailPage() {
     setOutboundLinks(outboundData.links);
   };
 
+  const startEditing = () => {
+    if (!note) return;
+    const values = noteToEditorValues(note);
+    setEditorSeed({ values, key: Date.now() });
+    setCurrentValues(values);
+    setIsEditing(true);
+  };
+
+  const stopEditing = () => {
+    setIsEditing(false);
+    setEditorSeed(null);
+    setCurrentValues(null);
+    setError(null);
+  };
+
   const handleSave = async (values: ParsedNoteValues) => {
     try {
       setSaving(true);
@@ -147,14 +183,14 @@ export default function NoteDetailPage() {
       });
 
       setNote(updatedNote);
-      setIsEditing(false);
+      stopEditing();
       logger.info("Note updated successfully", { id: noteId });
 
       await refreshLinks();
 
-      // Show AI suggestions modal after save (only if AI mode is real-time/automatic)
+      // Offer suggestions for the fresh content (only if AI mode is real-time/automatic)
       if (settings.aiMode === "real-time") {
-        setShowPostSaveSuggestions(true);
+        setPanel({ open: true, tab: "suggest" });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update note";
@@ -165,10 +201,25 @@ export default function NoteDetailPage() {
     }
   };
 
-  const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
-    if (!note) return;
+  // Patch the draft while editing: remount the form with updated seed values
+  const applyDraftPatch = (next: NoteEditorValues) => {
+    setEditorSeed((seed) => ({ values: next, key: (seed?.key ?? 0) + 1 }));
+    setCurrentValues(next);
+  };
 
-    // Check authentication before saving
+  const handleInsertLinkFromPanel = async (linkNoteId: string) => {
+    if (isEditing && currentValues) {
+      // Editing: append to the unsaved draft
+      applyDraftPatch({
+        ...currentValues,
+        content: currentValues.content.trim() + `\n\n[[${linkNoteId}]]`,
+      });
+      logger.info("Link inserted into draft from AI suggestion", { linkNoteId });
+      return;
+    }
+
+    // View mode: update the saved note directly
+    if (!note) return;
     if (!isAuthenticated()) {
       setError("You must be logged in to save notes. Changes you make will not be persisted.");
       logger.warn("Unauthenticated user attempted to insert link");
@@ -176,42 +227,60 @@ export default function NoteDetailPage() {
     }
 
     try {
-      // Add the wikilink to the end of the content
-      const updatedContent = note.content.trim() + `\n\n[[${linkNoteId}]]`;
-
-      // Update the note
+      // Fetch fresh state first: rapid successive panel actions would otherwise
+      // clobber each other via the stale `note` closure
+      const fresh = await getNote(noteId);
       const updatedNote = await updateNote(noteId, {
-        content: updatedContent,
-        title: note.title || undefined,
-        tags: note.tags,
+        content: fresh.content.trim() + `\n\n[[${linkNoteId}]]`,
+        title: fresh.title || undefined,
+        tags: fresh.tags,
       });
 
       setNote(updatedNote);
       await refreshLinks();
-
-      logger.info("Inserted link from post-save suggestion", { linkNoteId });
+      logger.info("Inserted link from AI suggestion", { linkNoteId });
     } catch (err) {
       logger.error("Failed to insert link from suggestion", err);
     }
   };
 
-  const handlePrewarmAndOpenSuggestions = async () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    setAiPrewarming(true);
+  const handleAddTagFromPanel = async (tag: string) => {
+    if (isEditing && currentValues) {
+      // Editing: add to the unsaved draft
+      const tags = currentValues.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t);
+      if (!tags.includes(tag)) {
+        applyDraftPatch({ ...currentValues, tags: [...tags, tag].join(", ") });
+        logger.info("Tag added to draft from AI suggestion", { tag });
+      }
+      return;
+    }
+
+    // View mode: update the saved note directly
+    if (!note || note.tags.includes(tag)) return;
+    if (!isAuthenticated()) {
+      setError("You must be logged in to save notes. Changes you make will not be persisted.");
+      logger.warn("Unauthenticated user attempted to add tag");
+      return;
+    }
 
     try {
-      // Pre-warm Ollama model
-      await fetch(`${API_URL}/api/ollama/warmup`, {
-        method: "POST",
+      // Fetch fresh state first: rapid successive panel actions would otherwise
+      // clobber each other via the stale `note` closure
+      const fresh = await getNote(noteId);
+      if (fresh.tags.includes(tag)) return;
+      const updatedNote = await updateNote(noteId, {
+        content: fresh.content,
+        title: fresh.title || undefined,
+        tags: [...fresh.tags, tag],
       });
-      logger.info("Ollama model pre-warmed for suggestions");
+
+      setNote(updatedNote);
+      logger.info("Tag added from AI suggestion", { tag });
     } catch (err) {
-      logger.error("Failed to pre-warm Ollama", err);
-      // Continue anyway - warmup will happen on first suggestion request
-    } finally {
-      setAiPrewarming(false);
-      // Open suggestions panel
-      setShowPostSaveSuggestions(true);
+      logger.error("Failed to add tag from suggestion", err);
     }
   };
 
@@ -275,11 +344,24 @@ export default function NoteDetailPage() {
 
   return (
     <div className={styles.container}>
-      {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && <AIPanel isOpen={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />}
+      {/* AI Panel with note-aware Suggest tab (only when LLM features enabled) */}
+      {llmFeaturesEnabled && (
+        <AIPanel
+          isOpen={panel.open}
+          onClose={() => setPanel({ open: false })}
+          defaultTab={panel.tab}
+          suggest={{
+            noteId,
+            aiMode: settings.aiMode,
+            content: isEditing ? currentValues?.content : undefined,
+            onAddTag: handleAddTagFromPanel,
+            onInsertLink: handleInsertLinkFromPanel,
+          }}
+        />
+      )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !aiPanelOpen && <AIButton onClick={() => setAiPanelOpen(true)} />}
+      {llmFeaturesEnabled && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
 
       <div className={styles.main}>
         <div className={styles.contentGrid}>
@@ -345,7 +427,7 @@ export default function NoteDetailPage() {
                     View in Graph
                   </Link>
                   <button
-                    onClick={() => setIsEditing(true)}
+                    onClick={startEditing}
                     onMouseEnter={() =>
                       prefetchOnce("chunk:note-editor", () => import("@/components/NoteEditor"))
                     }
@@ -363,16 +445,11 @@ export default function NoteDetailPage() {
                   </button>
                   {aiAvailable && (
                     <button
-                      onClick={handlePrewarmAndOpenSuggestions}
-                      className={`${styles.button} ${styles.aiSuggestionsButton} ${aiPrewarming ? styles.prewarming : ""}`}
-                      disabled={aiPrewarming}
-                      aria-label={
-                        aiPrewarming
-                          ? "Preparing AI suggestions"
-                          : "Get AI suggestions for related notes and tags"
-                      }
+                      onClick={() => setPanel({ open: true, tab: "suggest" })}
+                      className={`${styles.button} ${styles.aiSuggestionsButton}`}
+                      aria-label="Get AI suggestions for related notes and tags"
                     >
-                      {aiPrewarming ? "Preparing AI..." : "AI Suggestions"}
+                      AI Suggestions
                     </button>
                   )}
                 </div>
@@ -387,24 +464,17 @@ export default function NoteDetailPage() {
             )}
 
             {/* Content */}
-            {isEditing ? (
+            {isEditing && editorSeed ? (
               <NoteEditorForm
+                key={editorSeed.key}
                 mode="edit"
-                noteId={noteId}
-                initialValues={{
-                  title: note.title || "",
-                  tags: note.tags.join(", "),
-                  content: note.content,
-                  isReference: note.is_reference || false,
-                }}
+                initialValues={editorSeed.values}
                 saving={saving}
                 error={error}
                 onSave={handleSave}
-                onCancel={() => {
-                  setIsEditing(false);
-                  setError(null);
-                }}
-                onOpenAIPanel={() => setAiPanelOpen(true)}
+                onCancel={stopEditing}
+                onOpenAIPanel={(tab) => setPanel({ open: true, tab })}
+                onValuesChange={setCurrentValues}
               />
             ) : (
               <div>
@@ -474,16 +544,14 @@ export default function NoteDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
-        <PostSaveAISuggestions
-          noteId={noteId}
-          isOpen={showPostSaveSuggestions}
-          onClose={() => setShowPostSaveSuggestions(false)}
-          onInsertLink={handleInsertLinkFromSuggestion}
-        />
-      )}
     </div>
+  );
+}
+
+export default function NoteDetailPage() {
+  return (
+    <Suspense fallback={<div className={styles.loadingContainer}>Loading...</div>}>
+      <NoteDetailContent />
+    </Suspense>
   );
 }
