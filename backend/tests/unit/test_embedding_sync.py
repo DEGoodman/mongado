@@ -343,3 +343,46 @@ class TestSyncArticlesToNeo4j:
 
         neo4j.upsert_article.assert_not_called()
         assert (created, updated, deleted) == (0, 0, 0)
+
+
+class TestOrphanedChunkCleanup:
+    """Tests for the orphaned-chunk sweep in sync_embeddings (#244)."""
+
+    def test_orphans_deleted_and_counted(self) -> None:
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+        neo4j.delete_orphaned_chunks.return_value = 100
+        neo4j.get_all_articles.return_value = []
+        neo4j.get_all_notes.return_value = []
+        client = MagicMock()
+        client.embeddings_available.return_value = True
+        client.model = MODEL
+
+        stats = sync_embeddings(neo4j, client)
+
+        neo4j.delete_orphaned_chunks.assert_called_once()
+        assert stats["orphaned_chunks_deleted"] == 100
+
+    def test_sweep_runs_even_without_embedding_backend(self) -> None:
+        """Cleanup is pure Neo4j work - no reason to skip it when Ollama is down."""
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = True
+        neo4j.delete_orphaned_chunks.return_value = 7
+        client = MagicMock()
+        client.embeddings_available.return_value = False
+
+        stats = sync_embeddings(neo4j, client)
+
+        neo4j.delete_orphaned_chunks.assert_called_once()
+        assert stats["orphaned_chunks_deleted"] == 7
+        assert stats["embeddings_generated"] == 0
+
+    def test_sweep_skipped_when_neo4j_unavailable(self) -> None:
+        neo4j = MagicMock()
+        neo4j.is_available.return_value = False
+        client = MagicMock()
+
+        stats = sync_embeddings(neo4j, client)
+
+        neo4j.delete_orphaned_chunks.assert_not_called()
+        assert stats["orphaned_chunks_deleted"] == 0

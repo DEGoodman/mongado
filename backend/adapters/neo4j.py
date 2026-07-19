@@ -1083,6 +1083,32 @@ class Neo4jAdapter:
             record = result.single()
             return list(record["deleted"]) if record else []
 
+    def delete_orphaned_chunks(self) -> int:
+        """Delete Chunk nodes with no HAS_CHUNK parent (#244).
+
+        Orphans are unreachable by search (which traverses HAS_CHUNK) but
+        accumulate as dead weight, e.g. leftovers from earlier embedding
+        experiments before chunk cleanup existed.
+
+        Returns:
+            Number of chunks deleted
+        """
+        if not self._available or not self.driver:
+            return 0
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (c:Chunk)
+                WHERE NOT (()-[:HAS_CHUNK]->(c))
+                DETACH DELETE c
+                RETURN count(c) AS deleted
+                """
+            )
+
+            record = result.single()
+            return int(record["deleted"]) if record else 0
+
     # ===== EMBEDDING METHODS =====
 
     def store_embedding(
