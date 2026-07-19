@@ -32,6 +32,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useHydrated } from "@/hooks/useHydrated";
 import styles from "./page.module.scss";
 
 function noteToEditorValues(note: Note): NoteEditorValues {
@@ -45,6 +46,8 @@ function noteToEditorValues(note: Note): NoteEditorValues {
 
 function NoteDetailContent() {
   const { llmFeaturesEnabled } = useFeatureFlags();
+  // Gate ssr:false panels out of the hydration render (see useHydrated)
+  const llmUiReady = useHydrated() && llmFeaturesEnabled;
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -338,7 +341,7 @@ function NoteDetailContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel with note-aware Suggest tab (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
+      {llmUiReady && (
         <AIPanel
           isOpen={panel.open}
           onClose={() => setPanel({ open: false })}
@@ -354,7 +357,7 @@ function NoteDetailContent() {
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
+      {llmUiReady && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
 
       <div className={styles.main}>
         <div className={styles.contentGrid}>

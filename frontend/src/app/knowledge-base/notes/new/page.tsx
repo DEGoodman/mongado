@@ -20,6 +20,7 @@ import { createNote } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useHydrated } from "@/hooks/useHydrated";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
 import styles from "./page.module.scss";
 
@@ -49,6 +50,8 @@ function checkAtomicity(content: string, title: string): string[] {
 
 function NewNoteContent() {
   const { llmFeaturesEnabled } = useFeatureFlags();
+  // Gate ssr:false panels out of the hydration render (see useHydrated)
+  const llmUiReady = useHydrated() && llmFeaturesEnabled;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { settings } = useSettings();
@@ -188,7 +191,7 @@ function NewNoteContent() {
   return (
     <div className={styles.container}>
       {/* AI Panel (only when LLM features enabled) */}
-      {llmFeaturesEnabled && (
+      {llmUiReady && (
         <AIPanel
           isOpen={panel.open}
           onClose={() => setPanel({ open: false })}
@@ -197,7 +200,7 @@ function NewNoteContent() {
       )}
 
       {/* AI Button (only when LLM features enabled) */}
-      {llmFeaturesEnabled && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
+      {llmUiReady && !panel.open && <AIButton onClick={() => setPanel({ open: true })} />}
 
       <div className={styles.main}>
         {/* Header */}
