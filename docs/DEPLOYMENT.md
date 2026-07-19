@@ -42,9 +42,11 @@ You've already authenticated GitHub with DigitalOcean, which is great! Now you n
 1. **Create a Droplet** (if you haven't already):
    - Go to DigitalOcean dashboard → Create → Droplets
    - Choose: Ubuntu 22.04 LTS
-   - Plan: Basic $24/month (what prod runs today)
-     - 4 GB RAM / 2 CPUs
-     - 80 GB SSD
+   - Plan: Basic 2 GB RAM (what prod runs today)
+     - Downsized from the 4 GB plan on 2026-07-05 (CPU/RAM-only resize,
+       80 GB SSD retained) after moving LLM inference off-box to hosted APIs
+     - Runs close to the memory limit (swap in active use) — resize back
+       to 4 GB if deploys or Neo4j start OOMing
    - Add SSH key (generate if needed)
    - Choose datacenter region (closest to your users)
    - Hostname: `mongado-prod`
@@ -646,8 +648,11 @@ chmod +x /opt/mongado/scripts/backup-neo4j.sh
 ## Cost Estimate
 
 ### DigitalOcean Droplet
-- **Current plan**: $24/month (4GB RAM, 2 CPUs, 80GB SSD)
-- Smaller $12/month plan (2GB RAM) was too tight once Neo4j + backend + frontend share the box
+- **Current plan**: 2GB RAM (~$12/month tier), 80GB SSD retained from the
+  original 4GB plan via CPU/RAM-only resize
+- Fits because Ollama was removed from the box (inference via Groq/Gemini);
+  memory is tight — budget for a resize back to 4GB ($24/month) if the
+  workload grows
 
 ### Domain (Hover.com)
 - Already owned: mongado.com
@@ -656,7 +661,7 @@ chmod +x /opt/mongado/scripts/backup-neo4j.sh
 - **Free** (auto-renews every 90 days)
 
 ### Total Monthly Cost
-- **$24/month** (droplet only; domain already owned, SSL free)
+- **~$12/month** (droplet only; domain already owned, SSL free)
 
 ## Security Best Practices
 
