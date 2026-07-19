@@ -1,34 +1,53 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { ClockCounterClockwise, Lightbulb, Sparkle, X, Check } from "@phosphor-icons/react";
+import { ClockCounterClockwise } from "@phosphor-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
-// Heavy editor (CodeMirror) and AI panels load on demand, not in first-load JS
-const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
-  ssr: false,
-  loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
-});
+// AI panels load on demand, not in first-load JS
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
-  ssr: false,
-});
 const PostSaveAISuggestions = dynamic(() => import("@/components/PostSaveAISuggestions"), {
   ssr: false,
 });
-import TemplateSelector from "@/components/TemplateSelector";
-import { createNote, listNotes, updateNote, getNote, Note } from "@/lib/api/notes";
-import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
-import { logger } from "@/lib/logger";
 import AIButton from "@/components/AIButton";
+import NoteEditorForm, {
+  EMPTY_NOTE_VALUES,
+  NoteEditorValues,
+  ParsedNoteValues,
+} from "@/components/NoteEditorForm";
+import { createNote, getNote, updateNote } from "@/lib/api/notes";
+import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
-import { config } from "@/lib/config";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
 import styles from "./page.module.scss";
+
+// Check if note appears non-atomic (covers multiple topics)
+function checkAtomicity(content: string, title: string): string[] {
+  const issues: string[] = [];
+
+  // Count top-level bullet points (lines starting with - or *)
+  const bulletPoints = content.split("\n").filter((line) => /^[-*]\s/.test(line.trim()));
+  if (bulletPoints.length > 5) {
+    issues.push(`${bulletPoints.length} bullet points - might cover multiple concepts`);
+  }
+
+  // Count H2/H3 headings (## or ###)
+  const headings = content.split("\n").filter((line) => /^#{2,3}\s/.test(line.trim()));
+  if (headings.length > 3) {
+    issues.push(`${headings.length} section headings - consider splitting by topic`);
+  }
+
+  // Check for "and" in title suggesting multiple topics
+  if (title && (title.includes(" and ") || title.includes(" & "))) {
+    issues.push('Title contains "and" - might be combining multiple ideas');
+  }
+
+  return issues;
+}
 
 function NewNoteContent() {
   const { llmFeaturesEnabled } = useFeatureFlags();
@@ -36,42 +55,24 @@ function NewNoteContent() {
   const searchParams = useSearchParams();
   const { settings } = useSettings();
 
-  // Check if AI features should be available
-  // AI is available if: user is authenticated OR unauthenticated AI is allowed
-  // Initialize to false to avoid hydration mismatch (updated client-side only)
-  const [aiAvailable, setAiAvailable] = useState(false);
-
-  const [content, setContent] = useState("");
-  const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
-  const [isReference, setIsReference] = useState(() => {
+  // Initial form values; changing formKey remounts the form with new values
+  const [initialValues, setInitialValues] = useState<NoteEditorValues>(() => ({
+    ...EMPTY_NOTE_VALUES,
     // Pre-check "Quick Reference" if URL has ?ref=true
-    return searchParams.get("ref") === "true";
-  });
+    isReference: searchParams.get("ref") === "true",
+  }));
+  const [formKey, setFormKey] = useState(0);
+  // Mirror of the form's current values, for draft autosave and the cancel prompt
+  const [currentValues, setCurrentValues] = useState<NoteEditorValues | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{
-    content: string;
-    title?: string;
-    tags: string[];
-  } | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
   const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
   const [showAtomicityWarning, setShowAtomicityWarning] = useState(false);
   const [atomicityIssues, setAtomicityIssues] = useState<string[]>([]);
-  const [showFirstPersonReminder, setShowFirstPersonReminder] = useState(true);
-  const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
-  const [draftRestored, setDraftRestored] = useState(false);
-  const [templates, setTemplates] = useState<TemplateMetadata[]>([]);
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
-
-  // Check authentication status after hydration (client-side only)
-  useEffect(() => {
-    setAiAvailable(llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI));
-  }, [llmFeaturesEnabled]);
 
   // Load draft from localStorage on mount, or pre-fill from URL params (e.g., from article)
   useEffect(() => {
@@ -81,8 +82,12 @@ function NewNoteContent() {
 
     if (urlTitle || urlContent) {
       // Pre-fill from URL parameters (from "Create Note from Article" button)
-      if (urlTitle) setTitle(urlTitle);
-      if (urlContent) setContent(urlContent);
+      setInitialValues((prev) => ({
+        ...prev,
+        title: urlTitle ?? prev.title,
+        content: urlContent ?? prev.content,
+      }));
+      setFormKey((k) => k + 1);
       logger.info("Note pre-filled from URL parameters");
       return; // Don't load draft if URL params present
     }
@@ -90,12 +95,13 @@ function NewNoteContent() {
     // Otherwise, try to restore draft
     const draft = loadDraft();
     if (draft) {
-      setTitle(draft.title);
-      setContent(draft.content);
-      setTags(draft.tags);
-      if (draft.isReference !== undefined) {
-        setIsReference(draft.isReference);
-      }
+      setInitialValues((prev) => ({
+        title: draft.title,
+        content: draft.content,
+        tags: draft.tags,
+        isReference: draft.isReference ?? prev.isReference,
+      }));
+      setFormKey((k) => k + 1);
       setDraftRestored(true);
       logger.info("Draft restored from localStorage", {
         savedAt: new Date(draft.savedAt).toISOString(),
@@ -105,6 +111,9 @@ function NewNoteContent() {
 
   // Auto-save draft to localStorage (debounced)
   useEffect(() => {
+    if (!currentValues) return;
+    const { title, content, tags, isReference } = currentValues;
+
     // Don't save if all fields are empty
     if (!title && !content && !tags) return;
 
@@ -113,123 +122,26 @@ function NewNoteContent() {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [title, content, tags, isReference]);
+  }, [currentValues]);
 
-  // Load all notes for autocomplete
-  useEffect(() => {
-    async function fetchNotes() {
-      try {
-        const response = await listNotes();
-        setAllNotes(response.notes);
-      } catch (err) {
-        logger.error("Failed to load notes for autocomplete", err);
-      }
-    }
-
-    fetchNotes();
-  }, []);
-
-  // Load available templates
-  useEffect(() => {
-    async function fetchTemplates() {
-      try {
-        const response = await listTemplates();
-        setTemplates(response.templates);
-        logger.info("Loaded templates", { count: response.count });
-      } catch (err) {
-        logger.error("Failed to load templates", err);
-      }
-    }
-
-    fetchTemplates();
-  }, []);
-
-  // Apply a template to the note
-  const handleApplyTemplate = async (templateId: string) => {
-    if (!templateId) return;
-
-    setLoadingTemplate(true);
-    try {
-      const template = await getTemplate(templateId);
-      setContent(template.content);
-      // Don't override title - let user fill it in
-      setShowFirstPersonReminder(false); // Hide tip after template is applied
-      logger.info("Template applied", { templateId });
-    } catch (err) {
-      logger.error("Failed to apply template", err);
-      setError("Failed to load template");
-    } finally {
-      setLoadingTemplate(false);
-    }
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setInitialValues(EMPTY_NOTE_VALUES);
+    setCurrentValues(null);
+    setFormKey((k) => k + 1);
+    setDraftRestored(false);
   };
 
-  // Check if content has wikilinks
-  const hasWikilinks = (text: string): boolean => {
-    return /\[\[[a-z0-9-]+\]\]/i.test(text);
-  };
-
-  // Check if note appears non-atomic (covers multiple topics)
-  const checkAtomicity = (text: string): string[] => {
-    const issues: string[] = [];
-
-    // Count top-level bullet points (lines starting with - or *)
-    const bulletPoints = text.split("\n").filter((line) => /^[-*]\s/.test(line.trim()));
-    if (bulletPoints.length > 5) {
-      issues.push(`${bulletPoints.length} bullet points - might cover multiple concepts`);
-    }
-
-    // Count H2/H3 headings (## or ###)
-    const headings = text.split("\n").filter((line) => /^#{2,3}\s/.test(line.trim()));
-    if (headings.length > 3) {
-      issues.push(`${headings.length} section headings - consider splitting by topic`);
-    }
-
-    // Check for "and" in title suggesting multiple topics
-    if (title && (title.includes(" and ") || title.includes(" & "))) {
-      issues.push('Title contains "and" - might be combining multiple ideas');
-    }
-
-    return issues;
-  };
-
-  const handleSave = async (forceSave = false) => {
-    // Check authentication before saving
-    if (!isAuthenticated()) {
-      setError("You must be logged in to create notes. Changes you make will not be persisted.");
-      logger.warn("Unauthenticated user attempted to create note");
-      return;
-    }
-
-    if (!content.trim()) {
-      setError("Content cannot be empty");
-      return;
-    }
-
-    const tagArray = tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t);
-
-    // Check for zero wikilinks and show warning (unless forcing save)
-    if (!forceSave && !hasWikilinks(content)) {
-      setPendingNote({
-        content,
-        title: title.trim() || undefined,
-        tags: tagArray,
-      });
-      setShowZeroLinksWarning(true);
-      return;
-    }
-
+  const handleSave = async (values: ParsedNoteValues) => {
     try {
       setSaving(true);
       setError(null);
 
       const note = await createNote({
-        content,
-        title: title.trim() || undefined,
-        tags: tagArray.length > 0 ? tagArray : undefined,
-        is_reference: isReference,
+        content: values.content,
+        title: values.title,
+        tags: values.tags.length > 0 ? values.tags : undefined,
+        is_reference: values.isReference,
       });
 
       logger.info("Note created successfully", { id: note.id });
@@ -240,7 +152,7 @@ function NewNoteContent() {
       setDraftRestored(false);
 
       // Check atomicity and show warning if issues detected
-      const issues = checkAtomicity(content);
+      const issues = checkAtomicity(values.content, values.title ?? "");
       if (issues.length > 0) {
         setAtomicityIssues(issues);
         setShowAtomicityWarning(true);
@@ -258,16 +170,6 @@ function NewNoteContent() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleSaveAnyway = async () => {
-    setShowZeroLinksWarning(false);
-    await handleSave(true);
-  };
-
-  const handleGetAISuggestions = () => {
-    setShowZeroLinksWarning(false);
-    setAiPanelOpen(true);
   };
 
   const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
@@ -307,16 +209,7 @@ function NewNoteContent() {
     }
   };
 
-  const handleContinueToSuggestions = () => {
-    setShowAtomicityWarning(false);
-    if (settings.aiMode === "real-time") {
-      setShowPostSaveSuggestions(true);
-    } else if (savedNoteId) {
-      router.push(`/knowledge-base/notes/${savedNoteId}`);
-    }
-  };
-
-  const handleKeepAsIs = () => {
+  const handleAtomicityKeepAsIs = () => {
     setShowAtomicityWarning(false);
     if (settings.aiMode === "real-time") {
       setShowPostSaveSuggestions(true);
@@ -326,32 +219,10 @@ function NewNoteContent() {
   };
 
   const handleCancel = () => {
-    if (content.trim() && !confirm("Discard unsaved changes?")) {
+    if (currentValues?.content.trim() && !confirm("Discard unsaved changes?")) {
       return;
     }
     router.push("/knowledge-base/notes");
-  };
-
-  const handleAddTag = (tag: string) => {
-    // Add tag if not already present
-    const currentTags = tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t);
-
-    if (!currentTags.includes(tag)) {
-      const newTags = [...currentTags, tag].join(", ");
-      setTags(newTags);
-      logger.info("Tag added from AI suggestion", { tag });
-    }
-  };
-
-  const handleInsertLink = (noteId: string) => {
-    // Insert wikilink at the end of content
-    const wikilink = `[[${noteId}]]`;
-    const newContent = content.trim() + `\n\n${wikilink}`;
-    setContent(newContent);
-    logger.info("Link inserted from AI suggestion", { noteId });
   };
 
   return (
@@ -386,235 +257,23 @@ function NewNoteContent() {
               <ClockCounterClockwise size={16} aria-hidden="true" /> Draft restored from your
               previous session
             </span>
-            <button
-              onClick={() => {
-                clearDraft();
-                setTitle("");
-                setContent("");
-                setTags("");
-                setDraftRestored(false);
-              }}
-              className={styles.discardButton}
-            >
+            <button onClick={handleDiscardDraft} className={styles.discardButton}>
               Discard draft
             </button>
           </div>
         )}
 
-        {/* First-Person Voice Reminder */}
-        {showFirstPersonReminder && (
-          <div className={styles.tipBox}>
-            <div className={styles.tipHeader}>
-              <div>
-                <h4 className={styles.tipTitle}>
-                  <Lightbulb size={16} aria-hidden="true" /> Zettelkasten Tip: Write in first person
-                </h4>
-                <p className={styles.tipContent}>
-                  Capture YOUR understanding, not objective facts. This makes notes more memorable
-                  and personal.
-                </p>
-                <div className={styles.tipExamples}>
-                  <span className={styles.tipAvoid}>
-                    <X size={12} aria-hidden="true" /> Avoid:
-                  </span>{" "}
-                  &quot;DORA metrics measure deployment performance&quot;
-                  <br />
-                  <span className={styles.tipBetter}>
-                    <Check size={12} aria-hidden="true" /> Better:
-                  </span>{" "}
-                  &quot;I use DORA metrics to identify bottlenecks in my team&apos;s pipeline&quot;
-                </div>
-              </div>
-              <button
-                onClick={() => setShowFirstPersonReminder(false)}
-                className={styles.dismissButton}
-                aria-label="Dismiss"
-              >
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Error message */}
-        {error && (
-          <div className={styles.errorBox}>
-            <p className={styles.errorMessage}>{error}</p>
-          </div>
-        )}
-
-        {/* Form */}
-        <div
-          className={
-            aiSuggestionsOpen ? styles.editorGrid + " " + styles.withSidebar : styles.editorGrid
-          }
-        >
-          {/* Editor Column */}
-          <div className={styles.editorColumn}>
-            {/* Template Selector - compact button */}
-            <div className={styles.templateRow}>
-              <TemplateSelector
-                templates={templates}
-                onSelectTemplate={handleApplyTemplate}
-                disabled={loadingTemplate}
-                loading={loadingTemplate}
-              />
-            </div>
-
-            {/* Title (optional) */}
-            <div>
-              <label htmlFor="title" className={styles.formLabel}>
-                Title (optional)
-              </label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="What's the ONE idea this note captures?"
-                className={styles.formInput}
-              />
-              <p className={styles.formHint}>
-                ✓ Good: &quot;Psychological safety enables early problem detection&quot; | ✗ Bad:
-                &quot;Team Culture Concepts&quot;
-              </p>
-            </div>
-
-            {/* Tags (optional) */}
-            <div>
-              <label htmlFor="tags" className={styles.formLabel}>
-                Tags (optional)
-              </label>
-              <input
-                id="tags"
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="Comma-separated tags (e.g., idea, research, todo)"
-                className={styles.formInput}
-              />
-            </div>
-
-            {/* Reference Toggle */}
-            <div className={styles.referenceToggle}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={isReference}
-                  onChange={(e) => setIsReference(e.target.checked)}
-                  className={styles.checkbox}
-                />
-                <span className={styles.checkboxText}>Quick Reference</span>
-              </label>
-              <p className={styles.formHint}>
-                Check for checklists, frameworks, acronyms — not personal insights
-              </p>
-            </div>
-
-            {/* Content */}
-            <div>
-              <div className={styles.charCountWrapper}>
-                <label className={styles.formLabel}>Content *</label>
-                <div className={styles.charCount}>
-                  <span
-                    className={
-                      content.length >= 300 && content.length <= 500
-                        ? styles.count + " " + styles.good
-                        : styles.count
-                    }
-                  >
-                    {content.length} chars
-                  </span>
-                  {content.length > 0 && content.length < 300 && (
-                    <span className={styles.hint}>• Brief - good for atomic notes</span>
-                  )}
-                  {content.length >= 300 && content.length <= 500 && (
-                    <span className={styles.hint + " " + styles.good}>
-                      • ✓ Good length for atomic note
-                    </span>
-                  )}
-                  {content.length > 500 && content.length <= 1000 && (
-                    <span className={styles.hint + " " + styles.warning}>
-                      • Getting long - single idea?
-                    </span>
-                  )}
-                  {content.length > 1000 && (
-                    <span className={styles.hint + " " + styles.error}>
-                      • Consider splitting into multiple notes
-                    </span>
-                  )}
-                </div>
-              </div>
-              <NoteEditor
-                content={content}
-                onChange={setContent}
-                allNotes={allNotes}
-                placeholder="Capture ONE idea. Use [[note-id]] to connect related concepts..."
-                onNoteClick={(noteId) => {
-                  // Open note in new tab
-                  window.open(`/knowledge-base/notes/${noteId}`, "_blank");
-                }}
-              />
-              <p className={styles.formHint}>
-                Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
-                concepts, consider creating separate notes.
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className={styles.actions}>
-              <button
-                onClick={() => handleSave()}
-                disabled={saving || !content.trim()}
-                className={`${styles.button} ${styles.saveButton}`}
-                data-delight-sparkle
-              >
-                {saving ? "Saving..." : "Save Note"}
-              </button>
-              <button
-                onClick={handleCancel}
-                disabled={saving}
-                className={`${styles.button} ${styles.cancelButton}`}
-              >
-                Cancel
-              </button>
-              {settings.aiMode !== "off" && aiAvailable && (
-                <button
-                  onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
-                  className={`${styles.button} ${styles.aiButton}`}
-                >
-                  {aiSuggestionsOpen ? (
-                    "Hide AI Suggestions"
-                  ) : (
-                    <>
-                      <Sparkle size={16} aria-hidden="true" /> Get AI Suggestions
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* AI Suggestions Panel */}
-          {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
-            <AISuggestionsPanel
-              noteId="new-note-temp-id"
-              mode={settings.aiMode}
-              content={content}
-              isOpen={aiSuggestionsOpen}
-              onClose={() => setAiSuggestionsOpen(false)}
-              onAddTag={handleAddTag}
-              onInsertLink={handleInsertLink}
-            />
-          )}
-        </div>
+        <NoteEditorForm
+          key={formKey}
+          mode="create"
+          initialValues={initialValues}
+          saving={saving}
+          error={error}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          onOpenAIPanel={() => setAiPanelOpen(true)}
+          onValuesChange={setCurrentValues}
+        />
       </div>
 
       {/* Atomicity Warning Modal */}
@@ -639,7 +298,7 @@ function NewNoteContent() {
             </div>
             <div className={styles.modalActions}>
               <button
-                onClick={handleKeepAsIs}
+                onClick={handleAtomicityKeepAsIs}
                 className={`${styles.modalButton} ${styles.primary}`}
               >
                 Keep As-Is
@@ -654,41 +313,6 @@ function NewNoteContent() {
                 className={`${styles.modalButton} ${styles.secondary}`}
               >
                 Edit Note
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Zero Links Warning Modal */}
-      {showZeroLinksWarning && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>No connections found</h3>
-            <p className={styles.modalText}>
-              This note has no connections to other notes. Zettelkasten works best when ideas link
-              together.
-            </p>
-            <p className={styles.modalText}>Consider:</p>
-            <ul className={styles.modalList}>
-              <li>What concepts does this relate to?</li>
-              <li>What led to this idea?</li>
-              <li>Where might you apply this?</li>
-            </ul>
-            <div className={styles.modalActions}>
-              <button
-                onClick={handleGetAISuggestions}
-                className={`${styles.modalButton} ${styles.primary}`}
-              >
-                Get AI Link Suggestions
-              </button>
-              <button
-                onClick={handleSaveAnyway}
-                disabled={saving}
-                className={`${styles.modalButton} ${styles.secondary}`}
-                style={{ opacity: saving ? 0.5 : 1 }}
-              >
-                Save Anyway
               </button>
             </div>
           </div>

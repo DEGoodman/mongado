@@ -1,21 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkle } from "@phosphor-icons/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { prefetchOnce } from "@/lib/prefetch";
 import dynamic from "next/dynamic";
 
-// Heavy editor (CodeMirror) and AI panels load on demand, not in first-load JS
-const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
-  ssr: false,
-  loading: () => <div style={{ minHeight: "400px" }}>Loading editor…</div>,
-});
+// AI panels load on demand, not in first-load JS
 const AIPanel = dynamic(() => import("@/components/AIPanel"), { ssr: false });
-const AISuggestionsPanel = dynamic(() => import("@/components/AISuggestionsPanel"), {
-  ssr: false,
-});
 const PostSaveAISuggestions = dynamic(() => import("@/components/PostSaveAISuggestions"), {
   ssr: false,
 });
@@ -23,13 +15,13 @@ import AIButton from "@/components/AIButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import Badge from "@/components/Badge";
 import { TagPillList } from "@/components/TagPill";
+import NoteEditorForm, { ParsedNoteValues } from "@/components/NoteEditorForm";
 import {
   getNote,
   updateNote,
   deleteNote,
   getBacklinks,
   getOutboundLinks,
-  listNotes,
   Note,
   formatNoteDate,
 } from "@/lib/api/notes";
@@ -57,21 +49,13 @@ export default function NoteDetailPage() {
   const [note, setNote] = useState<Note | null>(null);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
   const [outboundLinks, setOutboundLinks] = useState<Note[]>([]);
-  const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Edit state
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState("");
-  const [editTitle, setEditTitle] = useState("");
-  const [editTags, setEditTags] = useState("");
-  const [editIsReference, setEditIsReference] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
-  const [showZeroLinksWarning, setShowZeroLinksWarning] = useState(false);
   const [showPostSaveSuggestions, setShowPostSaveSuggestions] = useState(false);
-  const [aiSuggestionsOpen, setAiSuggestionsOpen] = useState(false);
   const [aiPrewarming, setAiPrewarming] = useState(false);
 
   useEffect(() => {
@@ -79,25 +63,17 @@ export default function NoteDetailPage() {
       try {
         setLoading(true);
 
-        // Fetch note, backlinks, outbound links, and all notes in parallel
-        const [noteData, backlinksData, outboundData, allNotesData] = await Promise.all([
+        // Fetch note, backlinks, and outbound links in parallel
+        const [noteData, backlinksData, outboundData] = await Promise.all([
           getNote(noteId),
           getBacklinks(noteId),
           getOutboundLinks(noteId),
-          listNotes(),
         ]);
 
         setNote(noteData);
         setBacklinks(backlinksData.backlinks);
         setOutboundLinks(outboundData.links);
-        setAllNotes(allNotesData.notes);
         recordRecent({ type: "note", id: noteData.id, title: noteData.title || noteData.id });
-
-        // Initialize edit state
-        setEditContent(noteData.content);
-        setEditTitle(noteData.title || "");
-        setEditTags(noteData.tags.join(", "));
-        setEditIsReference(noteData.is_reference || false);
 
         logger.info("Note loaded", {
           id: noteData.id,
@@ -149,57 +125,32 @@ export default function NoteDetailPage() {
     // Only depend on isEditing and aiMode - don't re-run on content changes
   }, [isEditing, settings.aiMode, aiPrewarming]);
 
-  // Check if content has wikilinks
-  const hasWikilinks = (text: string): boolean => {
-    return /\[\[[a-z0-9-]+\]\]/i.test(text);
+  const refreshLinks = async () => {
+    const [backlinksData, outboundData] = await Promise.all([
+      getBacklinks(noteId),
+      getOutboundLinks(noteId),
+    ]);
+    setBacklinks(backlinksData.backlinks);
+    setOutboundLinks(outboundData.links);
   };
 
-  const handleSave = async (forceSave = false) => {
-    // Check authentication before saving
-    if (!isAuthenticated()) {
-      setError("You must be logged in to save notes. Changes you make will not be persisted.");
-      logger.warn("Unauthenticated user attempted to save note");
-      return;
-    }
-
-    if (!editContent.trim()) {
-      setError("Content cannot be empty");
-      return;
-    }
-
-    // Check for zero wikilinks and show warning (unless forcing save)
-    if (!forceSave && !hasWikilinks(editContent)) {
-      setShowZeroLinksWarning(true);
-      return;
-    }
-
+  const handleSave = async (values: ParsedNoteValues) => {
     try {
       setSaving(true);
       setError(null);
 
-      const tagArray = editTags
-        .split(",")
-        .map((t) => t.trim())
-        .filter((t) => t);
-
       const updatedNote = await updateNote(noteId, {
-        content: editContent,
-        title: editTitle.trim() || undefined,
-        tags: tagArray.length > 0 ? tagArray : undefined,
-        is_reference: editIsReference,
+        content: values.content,
+        title: values.title,
+        tags: values.tags.length > 0 ? values.tags : undefined,
+        is_reference: values.isReference,
       });
 
       setNote(updatedNote);
       setIsEditing(false);
       logger.info("Note updated successfully", { id: noteId });
 
-      // Refresh backlinks and outbound links
-      const [backlinksData, outboundData] = await Promise.all([
-        getBacklinks(noteId),
-        getOutboundLinks(noteId),
-      ]);
-      setBacklinks(backlinksData.backlinks);
-      setOutboundLinks(outboundData.links);
+      await refreshLinks();
 
       // Show AI suggestions modal after save (only if AI mode is real-time/automatic)
       if (settings.aiMode === "real-time") {
@@ -212,16 +163,6 @@ export default function NoteDetailPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleSaveAnyway = async () => {
-    setShowZeroLinksWarning(false);
-    await handleSave(true);
-  };
-
-  const handleGetAISuggestions = () => {
-    setShowZeroLinksWarning(false);
-    setAiPanelOpen(true);
   };
 
   const handleInsertLinkFromSuggestion = async (linkNoteId: string) => {
@@ -246,24 +187,12 @@ export default function NoteDetailPage() {
       });
 
       setNote(updatedNote);
-      setEditContent(updatedContent);
-
-      // Refresh links
-      const [backlinksData, outboundData] = await Promise.all([
-        getBacklinks(noteId),
-        getOutboundLinks(noteId),
-      ]);
-      setBacklinks(backlinksData.backlinks);
-      setOutboundLinks(outboundData.links);
+      await refreshLinks();
 
       logger.info("Inserted link from post-save suggestion", { linkNoteId });
     } catch (err) {
       logger.error("Failed to insert link from suggestion", err);
     }
-  };
-
-  const handleCloseSuggestions = () => {
-    setShowPostSaveSuggestions(false);
   };
 
   const handlePrewarmAndOpenSuggestions = async () => {
@@ -307,39 +236,6 @@ export default function NoteDetailPage() {
       setError(message);
       logger.error("Failed to delete note", err);
     }
-  };
-
-  const handleCancelEdit = () => {
-    if (note) {
-      setEditContent(note.content);
-      setEditTitle(note.title || "");
-      setEditTags(note.tags.join(", "));
-      setEditIsReference(note.is_reference || false);
-    }
-    setIsEditing(false);
-    setError(null);
-  };
-
-  const handleAddTag = (tag: string) => {
-    // Add tag if not already present
-    const currentTags = editTags
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t);
-
-    if (!currentTags.includes(tag)) {
-      const newTags = [...currentTags, tag].join(", ");
-      setEditTags(newTags);
-      logger.info("Tag added from AI suggestion", { tag });
-    }
-  };
-
-  const handleInsertLink = (noteId: string) => {
-    // Insert wikilink at the end of content
-    const wikilink = `[[${noteId}]]`;
-    const newContent = editContent.trim() + `\n\n${wikilink}`;
-    setEditContent(newContent);
-    logger.info("Link inserted from AI suggestion", { noteId });
   };
 
   const handleTagClick = (tag: string) => {
@@ -483,124 +379,33 @@ export default function NoteDetailPage() {
               )}
             </div>
 
-            {/* Error message */}
-            {error && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
-                <p className="text-red-600">{error}</p>
+            {/* Error message (view mode; edit mode errors render inside the form) */}
+            {error && !isEditing && (
+              <div className={styles.errorBox}>
+                <p className={styles.errorMessage}>{error}</p>
               </div>
             )}
 
             {/* Content */}
             {isEditing ? (
-              <div
-                className={`grid gap-6 ${aiSuggestionsOpen ? "lg:grid-cols-3" : "lg:grid-cols-1"}`}
-              >
-                {/* Editor Column */}
-                <div
-                  className={`space-y-4 ${aiSuggestionsOpen ? "lg:col-span-2" : "lg:col-span-1"}`}
-                >
-                  <div>
-                    <label className={styles.formLabel}>Title (optional)</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className={styles.formInput}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={styles.formLabel}>Tags (optional)</label>
-                    <input
-                      type="text"
-                      value={editTags}
-                      onChange={(e) => setEditTags(e.target.value)}
-                      placeholder="Comma-separated tags"
-                      className={styles.formInput}
-                    />
-                  </div>
-
-                  <div className={styles.referenceToggle}>
-                    <label className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={editIsReference}
-                        onChange={(e) => setEditIsReference(e.target.checked)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.checkboxText}>Quick Reference</span>
-                    </label>
-                    <p className={styles.formHint}>
-                      Check for checklists, frameworks, acronyms — not personal insights
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className={styles.formLabel}>Content *</label>
-                    <NoteEditor
-                      content={editContent}
-                      onChange={setEditContent}
-                      allNotes={allNotes}
-                      onNoteClick={(id) => window.open(`/knowledge-base/notes/${id}`, "_blank")}
-                    />
-                  </div>
-
-                  <div className={styles.saveActions}>
-                    <div className={styles.actionsLeft}>
-                      <button
-                        onClick={() => handleSave()}
-                        disabled={saving || !editContent.trim()}
-                        className={styles.saveButton}
-                        data-delight-sparkle
-                      >
-                        {saving ? "Saving..." : "Save Changes"}
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        disabled={saving}
-                        className={styles.cancelButton}
-                      >
-                        Cancel
-                      </button>
-                      {settings.aiMode !== "off" && aiAvailable && (
-                        <button
-                          onClick={() => setAiSuggestionsOpen(!aiSuggestionsOpen)}
-                          className={styles.suggestLinksButton}
-                          aria-label={
-                            aiSuggestionsOpen
-                              ? "Hide AI suggestions panel"
-                              : "Show AI suggestions for tags and links"
-                          }
-                          aria-expanded={aiSuggestionsOpen}
-                        >
-                          {aiSuggestionsOpen ? (
-                            "Hide AI Suggestions"
-                          ) : (
-                            <>
-                              <Sparkle size={16} aria-hidden="true" /> Get AI Suggestions
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Suggestions Panel */}
-                {settings.aiMode !== "off" && aiAvailable && aiSuggestionsOpen && (
-                  <div className="lg:col-span-1">
-                    <AISuggestionsPanel
-                      noteId={noteId}
-                      mode={settings.aiMode}
-                      content={editContent}
-                      isOpen={aiSuggestionsOpen}
-                      onClose={() => setAiSuggestionsOpen(false)}
-                      onAddTag={handleAddTag}
-                      onInsertLink={handleInsertLink}
-                    />
-                  </div>
-                )}
-              </div>
+              <NoteEditorForm
+                mode="edit"
+                noteId={noteId}
+                initialValues={{
+                  title: note.title || "",
+                  tags: note.tags.join(", "),
+                  content: note.content,
+                  isReference: note.is_reference || false,
+                }}
+                saving={saving}
+                error={error}
+                onSave={handleSave}
+                onCancel={() => {
+                  setIsEditing(false);
+                  setError(null);
+                }}
+                onOpenAIPanel={() => setAiPanelOpen(true)}
+              />
             ) : (
               <div>
                 {/* Server-rendered markdown (shared pipeline with articles, #233) */}
@@ -670,46 +475,12 @@ export default function NoteDetailPage() {
         </div>
       </div>
 
-      {/* Zero Links Warning Modal */}
-      {showZeroLinksWarning && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>No connections found</h3>
-            <p className={styles.modalText}>
-              This note has no connections to other notes. Zettelkasten works best when ideas link
-              together.
-            </p>
-            <p className={styles.modalSubtext}>Consider:</p>
-            <ul className={styles.modalList}>
-              <li>What concepts does this relate to?</li>
-              <li>What led to this idea?</li>
-              <li>Where might you apply this?</li>
-            </ul>
-            <div className={styles.modalActions}>
-              <button
-                onClick={handleGetAISuggestions}
-                className={`${styles.modalButton} ${styles.primary}`}
-              >
-                Get AI Link Suggestions
-              </button>
-              <button
-                onClick={handleSaveAnyway}
-                disabled={saving}
-                className={`${styles.modalButton} ${styles.secondary}`}
-              >
-                Save Anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Post-Save AI Suggestions Modal (only when LLM features enabled) */}
       {llmFeaturesEnabled && (
         <PostSaveAISuggestions
           noteId={noteId}
           isOpen={showPostSaveSuggestions}
-          onClose={handleCloseSuggestions}
+          onClose={() => setShowPostSaveSuggestions(false)}
           onInsertLink={handleInsertLinkFromSuggestion}
         />
       )}
