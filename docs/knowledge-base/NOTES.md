@@ -408,25 +408,38 @@ POST /api/search
 # - Link to full content
 ```
 
-### 🚧 Link Suggestions (Planned)
+### Link Suggestions
 
-AI-powered suggestions for related notes will be available via:
+AI-powered suggestions for related notes:
 
 ```bash
 POST /api/notes/{note_id}/suggest-links
 ```
 
-This feature is planned but not yet implemented.
+Available in the note editor via the "Get AI Suggestions" panel (tags + links with accept/reject).
 
-### 🚧 Auto-Summaries (Planned)
+### Summaries
 
-AI-generated summaries for notes are planned:
-- Will be created automatically when note is saved
-- Will be displayed as tooltip on hover in graph
-- Will help understand what a note is about without opening it
-- Will be cached in note metadata
+AI-generated summaries for notes and articles:
 
-**Current Status**: Article summaries are available via `GET /api/articles/{id}/summary`, but note summaries are not yet implemented.
+```bash
+GET /api/notes/{note_id}/summary
+GET /api/articles/{id}/summary
+```
+
+Summaries are cached after first generation.
+
+### AI Suggestion Modes
+
+AI assistance in the note editor is opt-in and controlled by a three-mode toggle in settings (originally specced in issue #15):
+
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| **Off** | No AI, pure Zettelkasten | Default, fast writing |
+| **On-demand** | Click button for suggestions | Balanced approach |
+| **Real-time** | Auto-update as you type, post-save suggestions | Power users |
+
+Real-time mode also provides wikilink autocomplete while typing and tag suggestions while writing.
 
 ## UI/UX Guidelines
 
