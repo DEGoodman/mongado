@@ -89,6 +89,7 @@ coverage/
 .pytest_cache/
 .hypothesis/
 htmlcov/
+backend/search_index.db
 test-results/
 playwright-report/
 .nyc_output/
