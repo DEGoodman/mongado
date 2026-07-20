@@ -11,6 +11,7 @@ httpx==0.28.1  # HTTP client for hosted LLM APIs (Groq/Gemini)
 neo4j==6.0.2  # Neo4j driver for graph database (notes)
 slowapi==0.1.9  # Rate limiting for FastAPI
 rapidfuzz==3.10.1  # Fuzzy string matching for search
+python-dateutil==2.9.0.post0  # Date parsing in articles router (was a phantom dep via boto3)
 
 # Markdown rendering (server-side)
 markdown-it-py==4.0.0  # Markdown parser
