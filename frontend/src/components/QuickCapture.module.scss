@@ -1,0 +1,157 @@
+/**
+ * Quick Capture modal (#154 Phase 1)
+ */
+
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  background-color: rgba($black, 0.5);
+}
+
+.modal {
+  width: 100%;
+  max-width: 34rem;
+  margin: 0 $spacing-4;
+  padding: $spacing-5;
+  border-radius: $border-radius-lg;
+  background-color: $white;
+  box-shadow: $shadow-card-lg;
+}
+
+.header {
+  @include flex-between;
+  margin-bottom: $spacing-3;
+
+  .title {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  .closeButton {
+    padding: $spacing-1;
+    border: none;
+    background: none;
+    color: $color-text-tertiary;
+    cursor: pointer;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $color-text-primary;
+    }
+  }
+}
+
+.errorBox {
+  margin-bottom: $spacing-3;
+  padding: $spacing-3;
+  border: $border-width-thin solid $color-error-border;
+  border-radius: $border-radius-md;
+  background-color: $color-error-bg;
+  color: $color-error-text;
+  font-size: $font-size-sm;
+
+  .errorHint {
+    margin-top: $spacing-1;
+
+    a {
+      color: $color-link-default;
+    }
+  }
+}
+
+.contentInput {
+  width: 100%;
+  padding: $spacing-3;
+  border: $border-default;
+  border-radius: $border-radius-md;
+  background-color: $color-bg-canvas;
+  font-family: $font-family-primary;
+  font-size: $font-size-base;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: $shadow-focus-primary;
+  }
+
+  &::placeholder {
+    color: $color-input-placeholder;
+  }
+}
+
+.metaRow {
+  display: flex;
+  gap: $spacing-2;
+  margin-top: $spacing-2;
+}
+
+.metaInput {
+  flex: 1;
+  min-width: 0;
+  padding: $spacing-2 $spacing-3;
+  border: $border-default;
+  border-radius: $border-radius-button;
+  background-color: $color-bg-canvas;
+  font-size: $font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: $shadow-focus-primary;
+  }
+
+  &::placeholder {
+    color: $color-input-placeholder;
+  }
+}
+
+.actions {
+  @include flex-between;
+  margin-top: $spacing-3;
+
+  .hint {
+    @include text-tertiary;
+    color: $color-text-tertiary;
+
+    kbd {
+      padding: 1px $spacing-1;
+      border: $border-width-thin solid $color-border;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-xs;
+      font-family: $font-family-mono;
+    }
+  }
+
+  .saveButton {
+    padding: $spacing-2 $spacing-5;
+    border: none;
+    border-radius: $border-radius-button;
+    background-color: $color-link-default;
+    color: $white;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: $color-text-secondary;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+}

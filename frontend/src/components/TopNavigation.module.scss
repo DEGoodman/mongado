@@ -92,7 +92,8 @@
 }
 
 // Global Search Button (future Phase 5c)
-.searchButton {
+.searchButton,
+.captureButton {
   @include flex-start;
   align-items: center;
   gap: $spacing-2;

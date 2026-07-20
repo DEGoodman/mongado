@@ -13,7 +13,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, Lightning } from "@phosphor-icons/react";
 import { prefetchOnce } from "@/lib/prefetch";
 
 // The graph payload (100+ notes with edges) is the slowest KB fetch; warm the
@@ -31,11 +31,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import HeaderMenu from "./HeaderMenu";
 import SearchModal from "./SearchModal";
+import QuickCapture from "./QuickCapture";
+import { isAuthenticated } from "@/lib/api/client";
 import styles from "./TopNavigation.module.scss";
 
 export default function TopNavigation() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
+  // Client-side only to avoid hydration mismatch
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    setAuthed(isAuthenticated());
+  }, []);
 
   // Determine active section
   const isArticlesSection = pathname?.startsWith("/knowledge-base/articles");
@@ -44,12 +53,24 @@ export default function TopNavigation() {
   const isToolboxSection = pathname?.startsWith("/knowledge-base/toolbox");
   const isInspireSection = pathname?.startsWith("/knowledge-base/inspire");
 
-  // Keyboard shortcut: Cmd/Ctrl+K to open search
+  // Keyboard shortcuts: Cmd/Ctrl+K opens search; plain "n" (outside inputs)
+  // opens quick capture (#154) when authenticated
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen(true);
+        return;
+      }
+
+      if (e.key === "n" && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        const target = e.target as HTMLElement;
+        const typing =
+          target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+        if (!typing && isAuthenticated()) {
+          e.preventDefault();
+          setCaptureOpen(true);
+        }
       }
     };
 
@@ -104,8 +125,21 @@ export default function TopNavigation() {
             </Link>
           </div>
 
-          {/* Right: Search + Settings + User Menu */}
+          {/* Right: Capture + Search + Settings + User Menu */}
           <div className={styles.right}>
+            {authed && (
+              <button
+                onClick={() => setCaptureOpen(true)}
+                className={styles.captureButton}
+                aria-label="Quick capture a note"
+              >
+                <span className={styles.searchIcon} aria-hidden="true">
+                  <Lightning size={16} />
+                </span>
+                <span className={styles.searchLabel}>Capture</span>
+                <kbd className={styles.searchKbd}>N</kbd>
+              </button>
+            )}
             <button
               onClick={() => setSearchOpen(true)}
               className={styles.searchButton}
@@ -124,6 +158,9 @@ export default function TopNavigation() {
 
       {/* Search Modal */}
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Quick Capture Modal */}
+      <QuickCapture isOpen={captureOpen} onClose={() => setCaptureOpen(false)} />
     </>
   );
 }
