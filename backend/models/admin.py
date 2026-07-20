@@ -122,6 +122,20 @@ class FeatureFlagUpdateResponse(BaseModel):
     )
 
 
+class ResourceUsageResponse(BaseModel):
+    """Response for server resource usage (memory/CPU/swap)."""
+
+    memory_percent: float = Field(..., description="Memory usage percent")
+    memory_available_mb: float = Field(..., description="Available memory in MB")
+    memory_total_mb: float = Field(..., description="Total memory in MB")
+    cpu_percent: float = Field(
+        ...,
+        description="CPU percent since the previous call (0.0 on the first call after startup)",
+    )
+    swap_percent: float = Field(..., description="Swap usage percent")
+    swap_used_mb: float = Field(..., description="Swap used in MB")
+
+
 class DatabaseHealthResponse(BaseModel):
     """Response for database health check."""
 

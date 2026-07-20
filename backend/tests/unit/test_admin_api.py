@@ -435,3 +435,29 @@ class TestDatabaseHealth:
 
         assert response.status_code == 200
         assert response.json()["backup_cron_healthy"] is False
+
+
+class TestResourceUsage:
+    """Tests for GET /api/admin/health/resources endpoint."""
+
+    def test_resource_usage_requires_auth(self, client: TestClient) -> None:
+        """Endpoint rejects unauthenticated requests."""
+        response = client.get("/api/admin/health/resources")
+        assert response.status_code in (401, 403)
+
+    def test_resource_usage_returns_metrics(
+        self,
+        client: TestClient,
+        admin_headers: dict[str, str],
+    ) -> None:
+        """Endpoint returns sane memory/CPU/swap numbers."""
+        response = client.get("/api/admin/health/resources", headers=admin_headers)
+        assert response.status_code == 200
+        data = response.json()
+
+        assert 0.0 <= data["memory_percent"] <= 100.0
+        assert data["memory_total_mb"] > 0
+        assert 0 <= data["memory_available_mb"] <= data["memory_total_mb"]
+        assert 0.0 <= data["cpu_percent"] <= 100.0 * 64  # per-CPU aggregate upper bound
+        assert 0.0 <= data["swap_percent"] <= 100.0
+        assert data["swap_used_mb"] >= 0

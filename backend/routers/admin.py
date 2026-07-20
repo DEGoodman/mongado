@@ -20,6 +20,7 @@ from models import (
     FeatureFlagsResponse,
     FeatureFlagUpdateRequest,
     FeatureFlagUpdateResponse,
+    ResourceUsageResponse,
     RestoreRequest,
     RestoreResponse,
 )
@@ -385,6 +386,28 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
                 description=service.definitions[flag_name].description,
             ),
             persisted=persisted,
+        )
+
+    @router.get("/health/resources", response_model=ResourceUsageResponse)
+    async def resource_usage(_admin: AdminUser) -> ResourceUsageResponse:
+        """Report server memory/CPU/swap usage (for OOM debugging, #63).
+
+        Auth-gated: resource numbers are mildly sensitive and this should
+        not be a free target. cpu_percent uses interval=None so the call
+        never blocks the event loop; the first call after startup reports
+        0.0 and subsequent calls report usage since the previous call.
+        """
+        import psutil
+
+        memory = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        return ResourceUsageResponse(
+            memory_percent=memory.percent,
+            memory_available_mb=memory.available / 1024 / 1024,
+            memory_total_mb=memory.total / 1024 / 1024,
+            cpu_percent=psutil.cpu_percent(interval=None),
+            swap_percent=swap.percent,
+            swap_used_mb=swap.used / 1024 / 1024,
         )
 
     @router.get("/health/database", response_model=DatabaseHealthResponse)
