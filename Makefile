@@ -128,6 +128,9 @@ build-frontend: ## Build frontend for production
 build-frontend-analyze: ## Build frontend with bundle analysis
 	docker compose exec frontend npm run build:analyze
 
+check-bundle-budget: ## Check first-load JS budgets (requires a prior build)
+	docker compose exec frontend npm run check-bundle-budget
+
 ##@ Combined Code Quality
 
 lint: lint-backend lint-frontend ## Run all linters
