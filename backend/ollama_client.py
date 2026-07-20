@@ -1,4 +1,9 @@
-"""Ollama integration for AI-powered features."""
+"""Ollama integration for AI-powered features.
+
+This is the local-inference backend. Routers never use it directly: they
+receive a RoutingLLMClient (see llm_client.py) that delegates each call here
+or to the hosted API chain based on the "llm_use_api" feature flag.
+"""
 
 import logging
 import time

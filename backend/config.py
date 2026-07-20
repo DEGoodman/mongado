@@ -46,9 +46,6 @@ class Settings(BaseSettings):
     neo4j_database: str = "neo4j"  # Database name (default: neo4j)
 
     # Static articles configuration
-    static_articles_source: str = "local"  # 'local' or 's3'
-    static_articles_s3_bucket: str | None = None
-    static_articles_s3_prefix: str = "articles/"
 
     # LLM feature flag seed default. Only used when the flag has never been
     # toggled via the admin UI (/api/admin/feature-flags) - the persisted
