@@ -141,6 +141,7 @@ class MockOllamaClient:
         role: str = "chat",
         num_ctx: int | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
     ) -> str | None:
         """Mock generation (same JSON payload as the raw client mock)."""
         if not self._available:

@@ -2,188 +2,284 @@
 
 Uses FastAPI dependency injection for testability. Dependencies can be
 overridden in tests using app.dependency_overrides.
+
+The analysis (graph + similarity + tag coverage) is pure and cheap enough to
+recompute, but it is cached against a KB fingerprint so that pressing Refresh
+rotates through an existing candidate pool instead of re-running an O(n^2)
+similarity sweep and a fresh LLM call every time (#259).
 """
 
 import logging
 import time
+from dataclasses import dataclass, field
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
 from core import inspire as inspire_core
-from dependencies import get_notes, get_ollama
+from dependencies import get_llm, get_notes, get_static_articles
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/inspire", tags=["inspire"])
 
 # Type aliases for cleaner signatures
-OllamaDep = Annotated[Any, Depends(get_ollama)]
+LlmDep = Annotated[Any, Depends(get_llm)]
 NotesDep = Annotated[Any, Depends(get_notes)]
+ArticlesDep = Annotated[list[dict[str, Any]], Depends(get_static_articles)]
+
+# Interactive endpoint: fall through to the backup provider fast rather than
+# making the user wait out the default 30s timeout on a hung primary.
+LLM_TIMEOUT_SECONDS = 8.0
+
+CACHE_TTL_SECONDS = 900.0
+
+
+@dataclass
+class _SuggestionCache:
+    """Per-process cache of generated suggestions, keyed by KB fingerprint."""
+
+    fingerprint: str = ""
+    generated_at: float = 0.0
+    refresh_count: int = 0
+    entries: dict[int, tuple[list[dict[str, Any]], bool]] = field(default_factory=dict)
+
+    def is_valid(self, fingerprint: str) -> bool:
+        return (
+            self.fingerprint == fingerprint
+            and time.monotonic() - self.generated_at < CACHE_TTL_SECONDS
+        )
+
+    def reset(self, fingerprint: str) -> None:
+        self.fingerprint = fingerprint
+        self.generated_at = time.monotonic()
+        self.refresh_count = 0
+        self.entries = {}
+
+
+_cache = _SuggestionCache()
+
+
+def _analyze(
+    notes_service: Any, articles: list[dict[str, Any]]
+) -> tuple[dict[str, list[dict[str, Any]]], str]:
+    """Run the full KB analysis and return candidates by type + a fingerprint.
+
+    Everything here is I/O plus calls into the pure core; no business logic.
+    """
+    notes_with_stats = notes_service.get_notes_with_stats()
+    notes_with_embeddings = notes_service.get_notes_with_embeddings()
+    all_links = notes_service.get_all_links()
+
+    note_embeddings = [
+        (note["id"], note["title"], note["embedding"]) for note in notes_with_embeddings
+    ]
+    pairs = inspire_core.find_unlinked_similar_notes(
+        note_embeddings=note_embeddings,
+        existing_links=all_links,
+        limit=30,
+    )
+
+    candidates: dict[str, list[dict[str, Any]]] = {
+        "orphan": inspire_core.find_orphan_notes(notes_with_stats),
+        "split": inspire_core.find_oversized_notes(notes_with_stats),
+        "promote": inspire_core.find_promotion_candidates(notes_with_stats),
+        "duplicate": [p for p in pairs if p["kind"] == "duplicate"],
+        "connection": [p for p in pairs if p["kind"] == "connection"],
+        "hub": inspire_core.find_hub_opportunities(pairs),
+        "article": inspire_core.find_uncovered_tag_clusters(notes_with_stats, articles),
+    }
+
+    fingerprint = inspire_core.compute_kb_fingerprint(notes_with_stats, articles)
+
+    logger.info(
+        "KB analysis: %s",
+        ", ".join(f"{k}={len(v)}" for k, v in candidates.items() if v) or "no opportunities",
+    )
+    return candidates, fingerprint
 
 
 @router.get("/suggestions", response_model=dict[str, Any])
 def get_suggestions(
     notes_service: NotesDep,
-    ollama: OllamaDep,
+    llm: LlmDep,
+    articles: ArticlesDep,
     limit: int = 5,
+    refresh: bool = False,
+    skip_llm: bool = False,
 ) -> dict[str, Any]:
-    """Get AI-powered content suggestions for knowledge base improvement.
+    """Get AI-phrased content suggestions for knowledge base improvement.
 
-    Analyzes the knowledge base to find:
-    - Knowledge gaps (underdeveloped topics)
-    - Connection opportunities (similar but unlinked notes)
+    Analyzes the knowledge base for structural opportunities: orphaned notes,
+    likely duplicates, unlinked but related notes, clusters wanting a hub,
+    notes worth promoting to articles, oversized notes worth splitting, and
+    topics with many notes but no article.
 
-    Uses Ollama to generate human-friendly suggestion descriptions.
-    Falls back to structured suggestions if Ollama is unavailable.
+    Note length is deliberately not a signal on its own - short atomic notes
+    are the goal, not a defect (#259).
+
+    Uses the LLM only to phrase the findings. Falls back to templated wording
+    if generation fails, and reports which happened via has_llm.
 
     Args:
         limit: Maximum number of suggestions to return (default: 5)
+        refresh: Rotate to a different slice of the candidate pool
+        skip_llm: Return templated wording immediately without calling the LLM.
+            Lets the page paint real suggestions first and swap in the phrased
+            ones when they arrive, without reimplementing the wording client-side.
 
     Returns:
-        Dict with suggestions, generated_at timestamp, and has_llm indicator
+        Dict with suggestions, generated_at, has_llm, and cached indicators
     """
-    # Get data for analysis
-    notes_with_stats = notes_service.get_notes_with_stats()
-    notes_with_embeddings = notes_service.get_notes_with_embeddings()
-    all_links = notes_service.get_all_links()
+    candidates, fingerprint = _analyze(notes_service, articles)
 
-    # Find underdeveloped topics
-    gap_notes = inspire_core.find_underdeveloped_topics(
-        notes=notes_with_stats,
-        min_content_length=500,
-        max_links=1,
-        limit=limit,
-    )
-    logger.info("Found %d underdeveloped topics", len(gap_notes))
+    if not _cache.is_valid(fingerprint):
+        _cache.reset(fingerprint)
+    elif refresh:
+        _cache.refresh_count += 1
 
-    # Find unlinked similar notes
-    note_embeddings = [
-        (note["id"], note["title"], note["embedding"]) for note in notes_with_embeddings
-    ]
-    connection_opportunities = inspire_core.find_unlinked_similar_notes(
-        note_embeddings=note_embeddings,
-        existing_links=all_links,
-        similarity_threshold=0.7,
-        limit=limit,
-    )
-    logger.info("Found %d connection opportunities", len(connection_opportunities))
+    offset = _cache.refresh_count
+    cache_key = hash((limit, offset))
 
-    # Try to use LLM for human-friendly suggestions
+    if skip_llm:
+        composed = inspire_core.compose_candidates(candidates, limit=limit, offset=offset)
+        return {
+            "suggestions": inspire_core.build_fallback_suggestions(composed, limit=limit),
+            "generated_at": _cache.generated_at,
+            "has_llm": False,
+            "cached": False,
+        }
+
+    if not refresh and cache_key in _cache.entries:
+        cached_suggestions, cached_has_llm = _cache.entries[cache_key]
+        return {
+            "suggestions": cached_suggestions,
+            "generated_at": _cache.generated_at,
+            "has_llm": cached_has_llm,
+            "cached": True,
+        }
+
+    composed = inspire_core.compose_candidates(candidates, limit=limit, offset=offset)
+
     suggestions: list[dict[str, Any]] = []
     has_llm = False
 
-    if ollama.is_available() and (gap_notes or connection_opportunities):
+    if composed and llm.is_available():
         try:
-            # Build prompt for LLM
-            prompt = inspire_core.build_inspiration_prompt(
-                gap_notes=gap_notes,
-                connection_opportunities=connection_opportunities,
+            prompt = inspire_core.build_inspiration_prompt(composed)
+            response_text = llm.generate(
+                prompt,
+                role="structured",
+                num_ctx=4096,
+                max_tokens=1024,
+                timeout=LLM_TIMEOUT_SECONDS,
             )
-
-            # Generate suggestions
-            response_text = ollama.generate(
-                prompt, role="structured", num_ctx=4096, max_tokens=1024
-            )
-
             if response_text:
                 parsed = inspire_core.parse_inspiration_response(response_text)
+                # Trust the LLM for wording only - IDs and types come from the analysis
+                parsed = inspire_core.sanitize_suggestions(parsed, composed)
                 if parsed:
                     suggestions = parsed[:limit]
                     has_llm = True
-                    logger.info("Generated %d AI-powered suggestions", len(suggestions))
-
+                    logger.info("Generated %d AI-phrased suggestions", len(suggestions))
+                else:
+                    logger.warning("LLM response was unparseable - using templated wording")
+            else:
+                logger.warning("LLM returned no content - using templated wording")
         except Exception as e:
             logger.error("Error generating AI suggestions: %s", e)
 
-    # Fallback to structured suggestions without LLM
     if not suggestions:
-        suggestions = inspire_core.build_fallback_suggestions(
-            gap_notes=gap_notes,
-            connection_opportunities=connection_opportunities,
-            limit=limit,
-        )
-        logger.info("Generated %d fallback suggestions (no LLM)", len(suggestions))
+        suggestions = inspire_core.build_fallback_suggestions(composed, limit=limit)
+        logger.info("Generated %d templated suggestions (no LLM)", len(suggestions))
+
+    _cache.entries[cache_key] = (suggestions, has_llm)
 
     return {
         "suggestions": suggestions,
-        "generated_at": time.time(),
+        "generated_at": _cache.generated_at,
         "has_llm": has_llm,
+        "cached": False,
     }
 
 
 @router.get("/gaps", response_model=dict[str, Any])
 def get_knowledge_gaps(
     notes_service: NotesDep,
-    min_content_length: int = 500,
-    max_links: int = 1,
+    articles: ArticlesDep,
     limit: int = 10,
 ) -> dict[str, Any]:
-    """Get underdeveloped topics without LLM (fast endpoint).
+    """Get structural gaps without an LLM (fast endpoint).
 
-    Finds notes that are short and/or have few connections.
-    These are candidates for expansion.
+    Returns orphaned notes (unreachable in the graph), oversized notes (split
+    candidates), well-referenced notes (article candidates), and tag clusters
+    with no covering article.
 
     Args:
-        min_content_length: Notes shorter than this are considered underdeveloped
-        max_links: Notes with this many or fewer total links are candidates
-        limit: Maximum results to return
+        limit: Maximum results per category
 
     Returns:
-        Dict with gaps list and count
+        Dict with orphans, oversized, promotable, uncovered_topics and counts
     """
     notes_with_stats = notes_service.get_notes_with_stats()
 
-    gaps = inspire_core.find_underdeveloped_topics(
-        notes=notes_with_stats,
-        min_content_length=min_content_length,
-        max_links=max_links,
-        limit=limit,
+    orphans = inspire_core.find_orphan_notes(notes_with_stats, limit=limit)
+    oversized = inspire_core.find_oversized_notes(notes_with_stats, limit=limit)
+    promotable = inspire_core.find_promotion_candidates(notes_with_stats, limit=limit)
+    uncovered = inspire_core.find_uncovered_tag_clusters(
+        notes_with_stats, articles, limit=limit
     )
 
     return {
-        "gaps": gaps,
-        "count": len(gaps),
-        "min_content_length": min_content_length,
-        "max_links": max_links,
+        "orphans": orphans,
+        "oversized": oversized,
+        "promotable": promotable,
+        "uncovered_topics": uncovered,
+        "count": len(orphans) + len(oversized) + len(promotable) + len(uncovered),
     }
 
 
 @router.get("/connections", response_model=dict[str, Any])
 def get_connection_opportunities(
     notes_service: NotesDep,
-    similarity_threshold: float = 0.7,
+    similarity_threshold: float = inspire_core.CONNECTION_MIN_SIMILARITY,
     limit: int = 10,
 ) -> dict[str, Any]:
-    """Get unlinked similar notes without LLM (fast endpoint).
+    """Get unlinked similar notes without an LLM (fast endpoint).
 
-    Finds pairs of notes that are semantically similar but not linked.
-    These are candidates for adding wikilinks.
+    Each pair is classified as a "duplicate" (same idea captured twice - merge)
+    or a "connection" (related but distinct - link). Clusters of three or more
+    mutually similar notes are also returned as hub-note opportunities.
 
     Args:
         similarity_threshold: Minimum cosine similarity to consider (0.0 to 1.0)
         limit: Maximum results to return
 
     Returns:
-        Dict with connections list and count
+        Dict with connections, duplicates, hubs and counts
     """
     notes_with_embeddings = notes_service.get_notes_with_embeddings()
     all_links = notes_service.get_all_links()
 
-    # Format for the pure function
     note_embeddings = [
         (note["id"], note["title"], note["embedding"]) for note in notes_with_embeddings
     ]
 
-    connections = inspire_core.find_unlinked_similar_notes(
+    pairs = inspire_core.find_unlinked_similar_notes(
         note_embeddings=note_embeddings,
         existing_links=all_links,
         similarity_threshold=similarity_threshold,
-        limit=limit,
+        limit=max(limit, 30),
     )
+
+    duplicates = [p for p in pairs if p["kind"] == "duplicate"][:limit]
+    connections = [p for p in pairs if p["kind"] == "connection"][:limit]
+    hubs = inspire_core.find_hub_opportunities(pairs, limit=limit)
 
     return {
         "connections": connections,
-        "count": len(connections),
+        "duplicates": duplicates,
+        "hubs": hubs,
+        "count": len(connections) + len(duplicates) + len(hubs),
         "similarity_threshold": similarity_threshold,
     }

@@ -110,6 +110,7 @@ class ApiLLMClient:
         role: str = "chat",
         num_ctx: int | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
     ) -> str | None:
         """Generate a completion, trying each provider in order.
 
@@ -119,6 +120,10 @@ class ApiLLMClient:
                 OllamaClient; hosted models handle both with one model)
             num_ctx: Ignored for API providers (hosted context windows are large)
             max_tokens: Response length cap (defaults to settings)
+            timeout: Per-provider timeout override. Interactive callers should
+                pass a short value: the default is sized for long generations,
+                and a hung primary provider otherwise delays the fallback by
+                the full timeout before the secondary is even tried.
 
         Returns:
             Generated text, or None if all providers failed
@@ -131,7 +136,7 @@ class ApiLLMClient:
                     f"{provider.base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {provider.api_key}"},
                     json=self._request_body(provider, prompt, max_tokens, stream=False),
-                    timeout=self.timeout,
+                    timeout=timeout or self.timeout,
                 )
                 response.raise_for_status()
                 data = response.json()

@@ -182,6 +182,7 @@ class OllamaClient:
         role: str = "chat",
         num_ctx: int | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
     ) -> str | None:
         """Generate a completion using the model configured for the role.
 
@@ -190,6 +191,8 @@ class OllamaClient:
             role: "chat" (llama) or "structured" (qwen, reliable JSON)
             num_ctx: Context window size (defaults to configured num_ctx)
             max_tokens: Response length cap (Ollama num_predict)
+            timeout: Accepted for interface parity with ApiLLMClient; local
+                inference has no per-request network timeout to apply
 
         Returns:
             Generated text, or None if unavailable or failed

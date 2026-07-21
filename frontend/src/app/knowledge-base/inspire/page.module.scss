@@ -237,7 +237,12 @@
   display: flex;
   flex-direction: column;
 
-  &.gap {
+  // Two visual families rather than one per suggestion type: colour encodes
+  // whether the card is asking you to repair something or to build something,
+  // and the badge label carries the specific kind (#259).
+
+  // Repair: orphaned, duplicated, or oversized notes
+  &.fix {
     border-left: 4px solid $color-orphan-text;
 
     .typeBadge {
@@ -254,7 +259,8 @@
     }
   }
 
-  &.connection {
+  // Build: links, hubs, articles - additive work
+  &.build {
     border-left: 4px solid $color-hub-text;
 
     .typeBadge {
@@ -399,5 +405,14 @@
       font-size: $font-size-sm;
       color: $color-text-secondary;
     }
+  }
+
+  .helpFootnote {
+    margin: $spacing-4 0 0;
+    padding-top: $spacing-3;
+    border-top: 1px solid $neutral-200;
+    font-size: $font-size-sm;
+    font-style: italic;
+    color: $color-text-tertiary;
   }
 }
