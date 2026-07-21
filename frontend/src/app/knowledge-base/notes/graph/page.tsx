@@ -15,6 +15,7 @@ import {
 import { drag as d3Drag } from "d3-drag";
 import { pointer, select, type BaseType, type Selection } from "d3-selection";
 import { logger } from "@/lib/logger";
+import { revalidatingFetch } from "@/lib/api/cache";
 import { LoadingState, ErrorState, EmptyState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
@@ -141,7 +142,7 @@ function NotesGraphContent() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(`${apiUrl}/api/notes/graph/data`, {
+        const response = await revalidatingFetch(`${apiUrl}/api/notes/graph/data`, {
           headers,
           credentials: "include",
           signal: controller.signal,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { listNotes, Note } from "@/lib/api/notes";
+import { listAllNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
 import { LoadingState, ErrorState } from "@/components/PageState";
@@ -27,20 +27,7 @@ export default function ToolboxPage() {
         setLoading(true);
         // Fetch ALL references (the API paginates; without a limit it returns
         // only the first 20 and the rest never render). Previews only for performance.
-        const all: Note[] = [];
-        let page = 1;
-        let totalPages = 1;
-        do {
-          const response = await listNotes({
-            is_reference: true,
-            include_full_content: false,
-            page,
-            limit: 100,
-          });
-          all.push(...response.notes);
-          totalPages = response.total_pages;
-          page += 1;
-        } while (page <= totalPages);
+        const all = await listAllNotes({ is_reference: true });
         setReferences(all);
         logger.info("Toolbox references loaded", { count: all.length });
       } catch (err) {

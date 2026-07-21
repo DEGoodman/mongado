@@ -12,7 +12,7 @@ const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
 import TemplateSelector from "@/components/TemplateSelector";
 import { ErrorState } from "@/components/PageState";
 import type { PanelTab } from "@/components/AIPanel";
-import { listNotes, Note } from "@/lib/api/notes";
+import { listAllNotes, Note } from "@/lib/api/notes";
 import { listTemplates, getTemplate, TemplateMetadata } from "@/lib/api/templates";
 import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/useSettings";
@@ -93,8 +93,7 @@ export default function NoteEditorForm({
   useEffect(() => {
     async function fetchNotes() {
       try {
-        const response = await listNotes();
-        setAllNotes(response.notes);
+        setAllNotes(await listAllNotes());
       } catch (err) {
         logger.error("Failed to load notes for autocomplete", err);
       }
