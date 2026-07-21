@@ -132,6 +132,10 @@ class TagSuggestionsResponse(BaseModel):
 
     suggestions: list[TagSuggestion]
     count: int
+    # True when the AI could not be reached or its output was unusable, as
+    # opposed to it running fine and finding nothing worth suggesting. Without
+    # this the two are indistinguishable to the client (#260).
+    degraded: bool = False
 
 
 class LinkSuggestion(BaseModel):
@@ -150,3 +154,5 @@ class LinkSuggestionsResponse(BaseModel):
     count: int
     cached: bool = False  # True if returned from pre-computed cache
     cached_at: float | None = None  # Unix timestamp when cached
+    # See TagSuggestionsResponse.degraded (#260)
+    degraded: bool = False

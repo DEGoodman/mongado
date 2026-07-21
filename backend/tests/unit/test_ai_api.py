@@ -8,8 +8,15 @@ Tests marked with @pytest.mark.slow hit real Ollama and can take 30-120+ seconds
 on CPU-only systems. Run with `pytest -m "not slow"` to skip them.
 """
 
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Any
+
 import pytest
 from fastapi.testclient import TestClient
+
+from dependencies import get_llm, get_notes
+from main import app
 
 # Mark for slow tests that hit real Ollama
 slow = pytest.mark.slow
@@ -140,6 +147,100 @@ class TestSuggestTags:
         """Suggest tags returns 404 for non-existent note."""
         response = client.post("/api/notes/nonexistent-note-id-12345/suggest-tags")
         assert response.status_code == 404
+
+
+class TestDegradedSignalling:
+    """The `degraded` flag must separate "AI failed" from "nothing to suggest" (#260).
+
+    Both cases return an empty suggestions list, so without this flag the
+    client cannot tell a broken LLM from a note that genuinely needs no tags.
+    """
+
+    NOTE = {
+        "id": "test-note",
+        "title": "A Note",
+        "content": "Some content about reliability.",
+        "tags": ["sre"],
+        "links": [],
+    }
+
+    class _NotesService:
+        def __init__(self, note: dict[str, Any]) -> None:
+            self._note = note
+
+        def get_note(self, note_id: str) -> dict[str, Any] | None:
+            return self._note if note_id == self._note["id"] else None
+
+        def list_notes(self) -> list[dict[str, Any]]:
+            return [self._note]
+
+    class _LLM:
+        """Stands in for the routed client, with a scriptable generate()."""
+
+        def __init__(self, available: bool = True, response: str | None = None) -> None:
+            self._available = available
+            self._response = response
+
+        def is_available(self) -> bool:
+            return self._available
+
+        def generate(self, prompt: str, **kwargs: Any) -> str | None:
+            return self._response
+
+    @contextmanager
+    def _client(self, llm: Any) -> Generator[TestClient]:
+        app.dependency_overrides[get_llm] = lambda: llm
+        app.dependency_overrides[get_notes] = lambda: self._NotesService(self.NOTE)
+        try:
+            with TestClient(app) as test_client:
+                yield test_client
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_degraded_when_llm_unavailable(self) -> None:
+        with self._client(self._LLM(available=False)) as client:
+            data = client.post("/api/notes/test-note/suggest-tags").json()
+
+        assert data["suggestions"] == []
+        assert data["degraded"] is True
+
+    def test_degraded_when_llm_returns_nothing(self) -> None:
+        with self._client(self._LLM(response=None)) as client:
+            data = client.post("/api/notes/test-note/suggest-tags").json()
+
+        assert data["degraded"] is True
+
+    def test_degraded_when_output_unparseable(self) -> None:
+        with self._client(self._LLM(response="I'm afraid I can't do that.")) as client:
+            data = client.post("/api/notes/test-note/suggest-tags").json()
+
+        assert data["degraded"] is True
+
+    def test_not_degraded_when_llm_returns_empty_array(self) -> None:
+        """A working LLM that finds no tags is NOT degraded - the key distinction."""
+        with self._client(self._LLM(response="[]")) as client:
+            data = client.post("/api/notes/test-note/suggest-tags").json()
+
+        assert data["suggestions"] == []
+        assert data["degraded"] is False
+
+    def test_not_degraded_on_success(self) -> None:
+        response = '[{"tag": "reliability", "confidence": 0.9, "reason": "core topic"}]'
+        with self._client(self._LLM(response=response)) as client:
+            data = client.post("/api/notes/test-note/suggest-tags").json()
+
+        assert data["count"] == 1
+        assert data["degraded"] is False
+
+    def test_prose_wrapped_output_is_not_degraded(self) -> None:
+        """The #260 parser fix, verified through the endpoint."""
+        response = 'Sure!\n[{"tag": "reliability", "confidence": 0.9, "reason": "core"}]\nDone.'
+        with self._client(self._LLM(response=response)) as client:
+            data = client.post("/api/notes/test-note/suggest-tags").json()
+
+        assert data["count"] == 1
+        assert data["suggestions"][0]["tag"] == "reliability"
+        assert data["degraded"] is False
 
 
 class TestSuggestLinks:

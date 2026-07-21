@@ -209,6 +209,76 @@ class TestParseJSONResponse:
         result = ai.parse_json_response("", expected_type="array")
         assert result is None
 
+    def test_recovers_array_wrapped_in_prose(self):
+        """Models often narrate around the payload (#260).
+
+        The line-by-line fallback only matched lines starting with '{', so a
+        single-line array inside prose was lost entirely.
+        """
+        response = 'Sure! Here is the JSON:\n[{"tag": "sre", "confidence": 0.9}]\nHope that helps!'
+        result = ai.parse_json_response(response, expected_type="array")
+
+        assert result is not None
+        assert isinstance(result, list)
+        assert result[0]["tag"] == "sre"
+
+    def test_recovers_fenced_array_wrapped_in_prose(self):
+        """Prose plus fences: neither stripping nor line-splitting alone suffices."""
+        response = 'Here you go:\n```json\n[{"tag": "sre"}]\n```\nLet me know!'
+        result = ai.parse_json_response(response, expected_type="array")
+
+        assert result is not None
+        assert isinstance(result, list)
+        assert result[0]["tag"] == "sre"
+
+    def test_recovers_object_wrapped_in_prose(self):
+        """Object mode gets the same treatment as array mode."""
+        response = 'Here is the result: {"summary": "A summary."} Anything else?'
+        result = ai.parse_json_response(response, expected_type="object")
+
+        assert result is not None
+        assert isinstance(result, dict)
+        assert result["summary"] == "A summary."
+
+    def test_genuine_garbage_still_returns_none(self):
+        """Hardening must not turn unparseable output into a false positive."""
+        assert ai.parse_json_response("I could not do that.", expected_type="array") is None
+
+
+class TestExtractJSONPayload:
+    """Tests for bracket-matched payload extraction."""
+
+    def test_extracts_array_from_prose(self):
+        result = ai.extract_json_payload('Here: [{"a": 1}] done', opener="[")
+        assert result == '[{"a": 1}]'
+
+    def test_extracts_object_from_prose(self):
+        result = ai.extract_json_payload('Here: {"a": 1} done', opener="{")
+        assert result == '{"a": 1}'
+
+    def test_handles_nested_structures(self):
+        result = ai.extract_json_payload('x [{"a": [1, 2], "b": {"c": 3}}] y', opener="[")
+        assert result == '[{"a": [1, 2], "b": {"c": 3}}]'
+
+    def test_ignores_brackets_inside_strings(self):
+        """Wikilink syntax in a reason field must not unbalance the scan.
+
+        This codebase's own note IDs appear as [[note-id]], so payloads
+        containing them are the normal case, not an edge case.
+        """
+        result = ai.extract_json_payload('[{"reason": "see [[note-id]] here"}]', opener="[")
+        assert result == '[{"reason": "see [[note-id]] here"}]'
+
+    def test_ignores_escaped_quotes(self):
+        result = ai.extract_json_payload(r'[{"reason": "a \"quoted\" word"}]', opener="[")
+        assert result == r'[{"reason": "a \"quoted\" word"}]'
+
+    def test_returns_none_when_absent(self):
+        assert ai.extract_json_payload("no payload here", opener="[") is None
+
+    def test_returns_none_when_unbalanced(self):
+        assert ai.extract_json_payload('[{"a": 1}', opener="[") is None
+
 
 class TestPromptBuilders:
     """Tests for specialized prompt builders."""
