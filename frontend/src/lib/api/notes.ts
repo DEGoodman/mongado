@@ -4,6 +4,7 @@
 
 import { logger } from "@/lib/logger";
 import { getAuthHeaders as getBaseAuthHeaders } from "@/lib/api/client";
+import { invalidate, revalidatingFetch } from "@/lib/api/cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -82,6 +83,7 @@ export async function createNote(request: CreateNoteRequest): Promise<Note> {
   }
 
   const note = await response.json();
+  invalidate();
   logger.info("Note created", { id: note.id });
   return note;
 }
@@ -120,7 +122,7 @@ export async function listNotes(options?: ListNotesOptions): Promise<NotesListRe
 
   const url = `${API_URL}/api/notes?${params.toString()}`;
 
-  const response = await fetch(url, {
+  const response = await revalidatingFetch(url, {
     headers: getHeaders(),
   });
 
@@ -139,10 +141,35 @@ export async function listNotes(options?: ListNotesOptions): Promise<NotesListRe
 }
 
 /**
+ * Fetch every note across all pages (previews only), for callers that need
+ * the complete set rather than a single page — e.g. wikilink autocomplete
+ * or the toolbox reference list. Paginates through `listNotes` with a
+ * limit of 100 per page until all pages have been retrieved.
+ */
+export async function listAllNotes(
+  options?: Omit<ListNotesOptions, "page" | "limit">
+): Promise<Note[]> {
+  const all: Note[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const response = await listNotes({
+      ...options,
+      page,
+      limit: 100,
+    });
+    all.push(...response.notes);
+    totalPages = response.total_pages;
+    page += 1;
+  } while (page <= totalPages);
+  return all;
+}
+
+/**
  * Get a specific note by ID
  */
 export async function getNote(noteId: string): Promise<Note> {
-  const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/${noteId}`, {
     headers: getHeaders(),
   });
 
@@ -163,7 +190,7 @@ export async function getNote(noteId: string): Promise<Note> {
  * Get a random note for serendipitous discovery
  */
 export async function getRandomNote(): Promise<Note> {
-  const response = await fetch(`${API_URL}/api/notes/random`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/random`, {
     headers: getHeaders(),
   });
 
@@ -197,6 +224,7 @@ export async function updateNote(noteId: string, request: UpdateNoteRequest): Pr
   }
 
   const note = await response.json();
+  invalidate();
   logger.info("Note updated", { id: note.id });
   return note;
 }
@@ -216,6 +244,7 @@ export async function deleteNote(noteId: string): Promise<void> {
     throw new Error(error.detail || "Failed to delete note");
   }
 
+  invalidate();
   logger.info("Note deleted", { id: noteId });
 }
 
@@ -223,7 +252,7 @@ export async function deleteNote(noteId: string): Promise<void> {
  * Get notes that link to this note (backlinks)
  */
 export async function getBacklinks(noteId: string): Promise<BacklinksResponse> {
-  const response = await fetch(`${API_URL}/api/notes/${noteId}/backlinks`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/${noteId}/backlinks`, {
     headers: getHeaders(),
   });
 
@@ -241,7 +270,7 @@ export async function getBacklinks(noteId: string): Promise<BacklinksResponse> {
  * Get notes this note links to (outbound links)
  */
 export async function getOutboundLinks(noteId: string): Promise<OutboundLinksResponse> {
-  const response = await fetch(`${API_URL}/api/notes/${noteId}/links`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/${noteId}/links`, {
     headers: getHeaders(),
   });
 
@@ -268,7 +297,7 @@ export function extractWikilinks(content: string): string[] {
  * Get orphan notes (no links and no backlinks)
  */
 export async function getOrphanNotes(): Promise<NotesListResponse> {
-  const response = await fetch(`${API_URL}/api/notes/orphans`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/orphans`, {
     headers: getHeaders(),
   });
 
@@ -286,7 +315,7 @@ export async function getOrphanNotes(): Promise<NotesListResponse> {
  * Get dead-end notes (no outbound links)
  */
 export async function getDeadEndNotes(): Promise<NotesListResponse> {
-  const response = await fetch(`${API_URL}/api/notes/dead-ends`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/dead-ends`, {
     headers: getHeaders(),
   });
 
@@ -304,7 +333,7 @@ export async function getDeadEndNotes(): Promise<NotesListResponse> {
  * Get hub notes (notes with many outbound links)
  */
 export async function getHubNotes(minLinks: number = 3): Promise<NotesListResponse> {
-  const response = await fetch(`${API_URL}/api/notes/hubs?min_links=${minLinks}`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/hubs?min_links=${minLinks}`, {
     headers: getHeaders(),
   });
 
@@ -322,9 +351,12 @@ export async function getHubNotes(minLinks: number = 3): Promise<NotesListRespon
  * Get central concept notes (notes with many backlinks)
  */
 export async function getCentralNotes(minBacklinks: number = 3): Promise<NotesListResponse> {
-  const response = await fetch(`${API_URL}/api/notes/central?min_backlinks=${minBacklinks}`, {
-    headers: getHeaders(),
-  });
+  const response = await revalidatingFetch(
+    `${API_URL}/api/notes/central?min_backlinks=${minBacklinks}`,
+    {
+      headers: getHeaders(),
+    }
+  );
 
   if (!response.ok) {
     logger.error("Failed to get central notes", { status: response.status });
@@ -349,9 +381,12 @@ export async function getStaleNotes(
   days: number = 60,
   limit: number = 50
 ): Promise<StaleNotesResponse> {
-  const response = await fetch(`${API_URL}/api/notes/stale?days=${days}&limit=${limit}`, {
-    headers: getHeaders(),
-  });
+  const response = await revalidatingFetch(
+    `${API_URL}/api/notes/stale?days=${days}&limit=${limit}`,
+    {
+      headers: getHeaders(),
+    }
+  );
 
   if (!response.ok) {
     logger.error("Failed to get stale notes", { status: response.status });
@@ -373,7 +408,7 @@ export interface NoteOfDayResponse {
  * Get note of the day (prioritizes stale notes, falls back to random)
  */
 export async function getNoteOfDay(days: number = 60): Promise<NoteOfDayResponse> {
-  const response = await fetch(`${API_URL}/api/notes/note-of-day?days=${days}`, {
+  const response = await revalidatingFetch(`${API_URL}/api/notes/note-of-day?days=${days}`, {
     headers: getHeaders(),
   });
 
@@ -409,6 +444,7 @@ export async function markNoteReviewed(noteId: string): Promise<Note> {
   }
 
   const note = await response.json();
+  invalidate();
   logger.info("Note marked as reviewed", { id: note.id });
   return note;
 }
