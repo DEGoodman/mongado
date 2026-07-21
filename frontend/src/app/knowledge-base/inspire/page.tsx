@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { NotePencil, LinkSimple, Sparkle } from "@phosphor-icons/react";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  getSuggestions,
-  getKnowledgeGaps,
-  getConnectionOpportunities,
-  Suggestion,
-  GapNote,
-  ConnectionOpportunity,
-} from "@/lib/api/inspire";
+  ArrowsMerge,
+  ArrowUpRight,
+  Article,
+  LinkSimple,
+  Path,
+  PlugsConnected,
+  Scissors,
+  Sparkle,
+  TreeStructure,
+} from "@phosphor-icons/react";
+import Link from "next/link";
+import { getSuggestions, Suggestion, SuggestionType } from "@/lib/api/inspire";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
 import { LoadingState, ErrorState } from "@/components/PageState";
@@ -18,80 +21,108 @@ import styles from "./page.module.scss";
 
 type LoadingPhase = "initial" | "fast-data" | "ai-enhancing" | "complete";
 
+/** How each suggestion type is labelled and routed. */
+const TYPE_CONFIG: Record<
+  SuggestionType,
+  { label: string; family: "fix" | "build"; href: (s: Suggestion) => string }
+> = {
+  orphan: {
+    label: "Orphan",
+    family: "fix",
+    href: (s) => `/knowledge-base/notes/${s.related_notes[0]}/edit`,
+  },
+  duplicate: {
+    label: "Duplicate",
+    family: "fix",
+    href: (s) => `/knowledge-base/notes/${s.related_notes[0]}`,
+  },
+  split: {
+    label: "Too broad",
+    family: "fix",
+    href: (s) => `/knowledge-base/notes/${s.related_notes[0]}/edit`,
+  },
+  connection: {
+    label: "Connection",
+    family: "build",
+    href: (s) => `/knowledge-base/notes/${s.related_notes[0]}/edit`,
+  },
+  hub: {
+    label: "Hub",
+    family: "build",
+    // Prefill a hub note with wikilinks to every note in the cluster
+    href: (s) =>
+      `/knowledge-base/notes/new?content=${encodeURIComponent(
+        s.related_notes.map((id) => `- [[${id}]]`).join("\n")
+      )}`,
+  },
+  promote: {
+    label: "Promote note",
+    family: "build",
+    href: (s) => `/knowledge-base/notes/${s.related_notes[0]}`,
+  },
+  article: {
+    label: "Uncovered topic",
+    family: "build",
+    href: (s) => `/knowledge-base/notes/${s.related_notes[0]}`,
+  },
+};
+
+const TYPE_ICONS: Record<SuggestionType, React.ReactNode> = {
+  orphan: <PlugsConnected size={14} aria-hidden="true" />,
+  duplicate: <ArrowsMerge size={14} aria-hidden="true" />,
+  split: <Scissors size={14} aria-hidden="true" />,
+  connection: <LinkSimple size={14} aria-hidden="true" />,
+  hub: <TreeStructure size={14} aria-hidden="true" />,
+  promote: <ArrowUpRight size={14} aria-hidden="true" />,
+  article: <Article size={14} aria-hidden="true" />,
+};
+
+const SUGGESTION_LIMIT = 6;
+
 export default function InspirePage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>("initial");
   const [error, setError] = useState<string | null>(null);
   const [hasLlm, setHasLlm] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Distinguishes "AI was asked and failed" from "AI was never asked"
+  const [llmFailed, setLlmFailed] = useState(false);
+  const hasLoaded = useRef(false);
 
-  // Convert raw data to suggestion format for quick display
-  const buildQuickSuggestions = useCallback(
-    (gaps: GapNote[], connections: ConnectionOpportunity[]): Suggestion[] => {
-      const quickSuggestions: Suggestion[] = [];
-
-      // Add gap suggestions
-      gaps.slice(0, 3).forEach((gap) => {
-        quickSuggestions.push({
-          type: "gap",
-          title: gap.title || gap.note_id,
-          description: `This note is ${gap.is_short ? "short" : ""}${gap.is_short && gap.has_few_links ? " and " : ""}${gap.has_few_links ? "has few connections" : ""}. Consider expanding it.`,
-          related_notes: [gap.note_id],
-          action_text: "Expand Note",
-        });
-      });
-
-      // Add connection suggestions
-      connections.slice(0, 3).forEach((conn) => {
-        quickSuggestions.push({
-          type: "connection",
-          title: `Link ${conn.note_a_title || conn.note_a_id} ↔ ${conn.note_b_title || conn.note_b_id}`,
-          description: `These notes are ${Math.round(conn.similarity * 100)}% similar but not linked.`,
-          related_notes: [conn.note_a_id, conn.note_b_id],
-          action_text: "View Note",
-        });
-      });
-
-      return quickSuggestions;
-    },
-    []
-  );
-
-  const fetchSuggestions = useCallback(async () => {
+  const fetchSuggestions = useCallback(async (refresh: boolean) => {
     setError(null);
+    setLlmFailed(false);
 
-    // Phase 1: Quickly fetch raw data (no LLM)
-    setLoadingPhase("fast-data");
     try {
-      const [gapsResponse, connectionsResponse] = await Promise.all([
-        getKnowledgeGaps(500, 1, 5),
-        getConnectionOpportunities(0.7, 5),
-      ]);
+      // Phase 1: templated wording, no LLM - paints immediately
+      setLoadingPhase("fast-data");
+      const fast = await getSuggestions(SUGGESTION_LIMIT, { refresh, skipLlm: true });
+      setSuggestions(fast.suggestions);
+      setHasLlm(false);
+      logger.info("Templated suggestions ready", { count: fast.suggestions.length });
 
-      // Show quick suggestions immediately
-      const quickSuggestions = buildQuickSuggestions(
-        gapsResponse.gaps,
-        connectionsResponse.connections
-      );
-      setSuggestions(quickSuggestions);
-      logger.info("Quick suggestions ready", { count: quickSuggestions.length });
-
-      // Phase 2: Fetch AI-enhanced suggestions
-      if (quickSuggestions.length > 0) {
+      // Phase 2: same findings, phrased by the LLM
+      if (fast.suggestions.length > 0) {
         setLoadingPhase("ai-enhancing");
         try {
-          const aiResponse = await getSuggestions(6);
-          if (aiResponse.suggestions.length > 0) {
-            setSuggestions(aiResponse.suggestions);
-            setHasLlm(aiResponse.has_llm);
-            logger.info("AI suggestions ready", {
-              count: aiResponse.suggestions.length,
-              hasLlm: aiResponse.has_llm,
-            });
+          const enhanced = await getSuggestions(SUGGESTION_LIMIT, { refresh });
+          if (enhanced.suggestions.length > 0) {
+            setSuggestions(enhanced.suggestions);
           }
+          // Always reflect reality - a stale "AI-powered" badge over templated
+          // output was the bug in #259
+          setHasLlm(enhanced.has_llm);
+          setLlmFailed(!enhanced.has_llm);
+          logger.info("Suggestions finalized", {
+            count: enhanced.suggestions.length,
+            hasLlm: enhanced.has_llm,
+            cached: enhanced.cached,
+          });
         } catch (aiErr) {
-          // AI failed but we still have quick suggestions, just log it
-          logger.warn("AI enhancement failed, keeping quick suggestions", aiErr);
+          // Keep the templated suggestions, but say so
+          setHasLlm(false);
+          setLlmFailed(true);
+          logger.warn("AI phrasing failed, keeping templated suggestions", aiErr);
         }
       }
 
@@ -102,15 +133,17 @@ export default function InspirePage() {
       setLoadingPhase("complete");
       logger.error("Failed to load suggestions", err);
     }
-  }, [buildQuickSuggestions]);
+  }, []);
 
   useEffect(() => {
-    fetchSuggestions();
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+    fetchSuggestions(false);
   }, [fetchSuggestions]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchSuggestions();
+    await fetchSuggestions(true);
     setRefreshing(false);
   };
 
@@ -159,18 +192,22 @@ export default function InspirePage() {
 
       <main className={styles.main}>
         {/* AI Status */}
-        <div className={styles.aiStatus}>
+        <div className={styles.aiStatus} role="status">
           {loadingPhase === "ai-enhancing" ? (
             <span className={styles.aiLoading}>
               <span className={styles.spinner}></span>
-              AI is enhancing suggestions...
+              AI is phrasing suggestions...
             </span>
           ) : hasLlm ? (
             <span className={styles.aiEnabled}>
               <Sparkle size={14} aria-hidden="true" /> AI-powered suggestions
             </span>
+          ) : llmFailed ? (
+            <span className={styles.aiDisabled}>
+              AI unavailable — showing the same findings in standard wording
+            </span>
           ) : loadingPhase === "complete" ? (
-            <span className={styles.aiDisabled}>Basic suggestions (AI unavailable)</span>
+            <span className={styles.aiDisabled}>Standard suggestions</span>
           ) : (
             <span className={styles.aiLoading}>Loading suggestions...</span>
           )}
@@ -182,7 +219,8 @@ export default function InspirePage() {
             <div className={styles.emptyIcon}>🎉</div>
             <h3 className={styles.emptyTitle}>Your knowledge base looks great!</h3>
             <p className={styles.emptyMessage}>
-              No suggestions right now. Keep adding notes and links to grow your knowledge graph.
+              No orphaned notes, duplicates, or uncovered topics right now. Keep adding notes and
+              links to grow your knowledge graph.
             </p>
             <Link href="/knowledge-base/notes/new" className={styles.createButton}>
               Create New Note
@@ -193,52 +231,53 @@ export default function InspirePage() {
         {/* Suggestions Grid */}
         {suggestions.length > 0 && (
           <div className={styles.suggestionsGrid}>
-            {suggestions.map((suggestion, index) => (
-              <div key={index} className={`${styles.suggestionCard} ${styles[suggestion.type]}`}>
-                <div className={styles.cardHeader}>
-                  <span className={styles.typeBadge}>
-                    {suggestion.type === "gap" ? "Gap" : "Connection"}
-                  </span>
-                </div>
+            {suggestions.map((suggestion, index) => {
+              const config = TYPE_CONFIG[suggestion.type];
+              // Defend against an unrecognized type from the LLM
+              if (!config) return null;
 
-                <h3 className={styles.cardTitle}>{suggestion.title}</h3>
-                <p className={styles.cardDescription}>{suggestion.description}</p>
-
-                <div className={styles.relatedNotes}>
-                  <span className={styles.relatedLabel}>Related:</span>
-                  <div className={styles.noteLinks}>
-                    {suggestion.related_notes.map((noteId) => (
-                      <Link
-                        key={noteId}
-                        href={`/knowledge-base/notes/${noteId}`}
-                        className={styles.noteLink}
-                      >
-                        {noteId}
-                      </Link>
-                    ))}
+              return (
+                <div
+                  key={`${suggestion.type}-${suggestion.related_notes.join("-")}-${index}`}
+                  className={`${styles.suggestionCard} ${styles[config.family]}`}
+                >
+                  <div className={styles.cardHeader}>
+                    <span className={styles.typeBadge}>
+                      {TYPE_ICONS[suggestion.type]}
+                      {config.label}
+                    </span>
                   </div>
-                </div>
 
-                <div className={styles.cardActions}>
-                  {suggestion.type === "gap" && suggestion.related_notes.length > 0 && (
-                    <Link
-                      href={`/knowledge-base/notes/${suggestion.related_notes[0]}/edit`}
-                      className={styles.actionButton}
-                    >
-                      {suggestion.action_text}
-                    </Link>
+                  <h3 className={styles.cardTitle}>{suggestion.title}</h3>
+                  <p className={styles.cardDescription}>{suggestion.description}</p>
+
+                  {suggestion.related_notes.length > 0 && (
+                    <div className={styles.relatedNotes}>
+                      <span className={styles.relatedLabel}>Related:</span>
+                      <div className={styles.noteLinks}>
+                        {suggestion.related_notes.map((noteId) => (
+                          <Link
+                            key={noteId}
+                            href={`/knowledge-base/notes/${noteId}`}
+                            className={styles.noteLink}
+                          >
+                            {noteId}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  {suggestion.type === "connection" && suggestion.related_notes.length > 0 && (
-                    <Link
-                      href={`/knowledge-base/notes/${suggestion.related_notes[0]}`}
-                      className={styles.actionButton}
-                    >
-                      {suggestion.action_text}
-                    </Link>
+
+                  {suggestion.related_notes.length > 0 && (
+                    <div className={styles.cardActions}>
+                      <Link href={config.href(suggestion)} className={styles.actionButton}>
+                        {suggestion.action_text}
+                      </Link>
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -248,23 +287,32 @@ export default function InspirePage() {
           <div className={styles.helpGrid}>
             <div className={styles.helpItem}>
               <span className={styles.helpIcon} aria-hidden="true">
-                <NotePencil size={20} />
+                <Path size={20} />
               </span>
               <div>
-                <strong>Gap suggestions</strong>
-                <p>Notes that are short or have few connections. Consider expanding them.</p>
+                <strong>Repairs</strong>
+                <p>
+                  Orphaned notes nothing links to, the same idea captured twice, or a note holding
+                  more than one idea.
+                </p>
               </div>
             </div>
             <div className={styles.helpItem}>
               <span className={styles.helpIcon} aria-hidden="true">
-                <LinkSimple size={20} />
+                <TreeStructure size={20} />
               </span>
               <div>
-                <strong>Connection suggestions</strong>
-                <p>Similar notes that aren&apos;t linked. Consider adding wikilinks.</p>
+                <strong>Things to build</strong>
+                <p>
+                  Wikilinks between related notes, hub notes that index a cluster, and article ideas
+                  from topics your notes already cover.
+                </p>
               </div>
             </div>
           </div>
+          <p className={styles.helpFootnote}>
+            Short notes are never flagged — an atomic note is supposed to be brief.
+          </p>
         </div>
       </main>
     </div>

@@ -7,8 +7,23 @@ import { getAuthHeaders } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/**
+ * Kinds of suggestion the knowledge base can produce.
+ *
+ * Note length is deliberately absent: a short atomic note is correct, not a
+ * defect, so suggestions describe structural problems instead (see #259).
+ */
+export type SuggestionType =
+  | "orphan" // no links in or out - unreachable in the graph
+  | "duplicate" // same idea captured twice - merge
+  | "connection" // related but unlinked - add a wikilink
+  | "hub" // cluster of related notes with no index
+  | "promote" // heavily referenced - could be a full article
+  | "split" // long enough to hold several ideas
+  | "article"; // many notes on a topic, no article covering it
+
 export interface Suggestion {
-  type: "gap" | "connection";
+  type: SuggestionType;
   title: string;
   description: string;
   related_notes: string[];
@@ -19,35 +34,64 @@ export interface InspireResponse {
   suggestions: Suggestion[];
   generated_at: number;
   has_llm: boolean;
+  cached: boolean;
 }
 
-export interface GapNote {
+export interface OrphanNote {
   note_id: string;
   title: string;
   content_length: number;
-  link_count: number;
+  tags: string[];
+}
+
+export interface OversizedNote {
+  note_id: string;
+  title: string;
+  content_length: number;
+}
+
+export interface PromotableNote {
+  note_id: string;
+  title: string;
   backlink_count: number;
-  is_short: boolean;
-  has_few_links: boolean;
+  content_length: number;
+}
+
+export interface UncoveredTopic {
+  tag: string;
+  note_count: number;
+  note_ids: string[];
+  titles: string[];
 }
 
 export interface GapsResponse {
-  gaps: GapNote[];
+  orphans: OrphanNote[];
+  oversized: OversizedNote[];
+  promotable: PromotableNote[];
+  uncovered_topics: UncoveredTopic[];
   count: number;
-  min_content_length: number;
-  max_links: number;
 }
 
-export interface ConnectionOpportunity {
+export interface NotePair {
   note_a_id: string;
   note_a_title: string;
   note_b_id: string;
   note_b_title: string;
   similarity: number;
+  title_overlap: number;
+  kind: "duplicate" | "connection";
+}
+
+export interface HubOpportunity {
+  note_ids: string[];
+  titles: string[];
+  size: number;
 }
 
 export interface ConnectionsResponse {
-  connections: ConnectionOpportunity[];
+  connections: NotePair[];
+  duplicates: NotePair[];
+  hubs: HubOpportunity[];
   count: number;
   similarity_threshold: number;
 }
@@ -59,11 +103,29 @@ function getHeaders(): HeadersInit {
   return getAuthHeaders();
 }
 
+interface SuggestionOptions {
+  /** Rotate to a different slice of the candidate pool */
+  refresh?: boolean;
+  /** Return templated wording immediately, without waiting on the LLM */
+  skipLlm?: boolean;
+}
+
 /**
- * Get AI-powered content suggestions
+ * Get content suggestions.
+ *
+ * With `skipLlm` the backend returns the same suggestions phrased from
+ * templates, which lets the page paint immediately and swap in the
+ * LLM-phrased versions when they arrive.
  */
-export async function getSuggestions(limit: number = 5): Promise<InspireResponse> {
-  const response = await fetch(`${API_URL}/api/inspire/suggestions?limit=${limit}`, {
+export async function getSuggestions(
+  limit: number = 5,
+  options: SuggestionOptions = {}
+): Promise<InspireResponse> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (options.refresh) params.set("refresh", "true");
+  if (options.skipLlm) params.set("skip_llm", "true");
+
+  const response = await fetch(`${API_URL}/api/inspire/suggestions?${params.toString()}`, {
     headers: getHeaders(),
   });
 
@@ -73,23 +135,19 @@ export async function getSuggestions(limit: number = 5): Promise<InspireResponse
   }
 
   const data = await response.json();
-  logger.info("Suggestions retrieved", { count: data.suggestions.length, hasLlm: data.has_llm });
+  logger.info("Suggestions retrieved", {
+    count: data.suggestions.length,
+    hasLlm: data.has_llm,
+    cached: data.cached,
+  });
   return data;
 }
 
 /**
- * Get knowledge gaps (underdeveloped topics)
+ * Get structural gaps: orphaned, oversized, promotable notes and uncovered topics
  */
-export async function getKnowledgeGaps(
-  minContentLength: number = 500,
-  maxLinks: number = 1,
-  limit: number = 10
-): Promise<GapsResponse> {
-  const params = new URLSearchParams({
-    min_content_length: String(minContentLength),
-    max_links: String(maxLinks),
-    limit: String(limit),
-  });
+export async function getKnowledgeGaps(limit: number = 10): Promise<GapsResponse> {
+  const params = new URLSearchParams({ limit: String(limit) });
 
   const response = await fetch(`${API_URL}/api/inspire/gaps?${params.toString()}`, {
     headers: getHeaders(),
@@ -106,7 +164,7 @@ export async function getKnowledgeGaps(
 }
 
 /**
- * Get connection opportunities (unlinked similar notes)
+ * Get connection opportunities: unlinked similar notes, duplicates, and hub clusters
  */
 export async function getConnectionOpportunities(
   similarityThreshold: number = 0.7,
