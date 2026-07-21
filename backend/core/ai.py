@@ -346,6 +346,58 @@ Example: [{{"note_id": "psychological-safety", "confidence": 0.85, "reason": "Bo
 JSON:"""
 
 
+def extract_json_payload(text: str, opener: str = "[") -> str | None:
+    """Extract the first balanced JSON array or object from surrounding text.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Small models routinely wrap their output in prose ("Sure! Here is the
+    JSON: [...] Hope that helps!"). Bracket matching recovers the payload
+    where a plain json.loads fails. Quote- and escape-aware, so brackets
+    inside string values do not throw off the depth count.
+
+    Args:
+        text: Raw text that may contain a JSON payload
+        opener: "[" for arrays, "{" for objects
+
+    Returns:
+        The JSON substring, or None if no balanced payload is found
+    """
+    closer = "]" if opener == "[" else "}"
+
+    start = text.find(opener)
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escaped = False
+
+    for index in range(start, len(text)):
+        char = text[index]
+
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+
+        if char == opener:
+            depth += 1
+        elif char == closer:
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+
+    return None
+
+
 def parse_json_response(
     raw_response: str, expected_type: str = "array"
 ) -> list[dict[str, Any]] | dict[str, Any] | None:
@@ -397,7 +449,23 @@ def parse_json_response(
                 return None
 
     except json.JSONDecodeError:
-        # Fallback: Try line-by-line parsing (some models output newline-delimited JSON)
+        # Fallback 1: the payload is embedded in prose ("Here is the JSON: [...]")
+        opener = "[" if expected_type == "array" else "{"
+        extracted = extract_json_payload(response, opener=opener)
+        if extracted is not None:
+            try:
+                data = json.loads(extracted)
+                if expected_type == "array":
+                    if isinstance(data, dict):
+                        return [data]
+                    if isinstance(data, list):
+                        return data
+                elif isinstance(data, dict):
+                    return data
+            except json.JSONDecodeError:
+                pass
+
+        # Fallback 2: newline-delimited JSON objects (some models emit these)
         if expected_type == "array":
             parsed_objects = []
             for line in response.split("\n"):

@@ -259,8 +259,8 @@ def suggest_tags(
 
     # If Ollama unavailable, return empty suggestions
     if not ollama.is_available():
-        logger.warning("Ollama not available for tag suggestions")
-        return TagSuggestionsResponse(suggestions=[], count=0)
+        logger.warning("LLM not available for tag suggestions")
+        return TagSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
     # Get all existing tags from all notes for context
     all_notes = notes_service.list_notes()
@@ -282,12 +282,14 @@ def suggest_tags(
         response = ollama.generate(prompt, role="structured", num_ctx=4096)
         if not response:
             logger.error("Empty response from LLM for tag suggestions")
-            return TagSuggestionsResponse(suggestions=[], count=0)
+            return TagSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
         # Parse JSON response using pure function
         suggestions_data = ai_core.parse_json_response(response, expected_type="array")
-        if not suggestions_data or not isinstance(suggestions_data, list):
-            return TagSuggestionsResponse(suggestions=[], count=0)
+        # None means the parse failed; [] means the model ran and found nothing
+        if suggestions_data is None or not isinstance(suggestions_data, list):
+            logger.warning("Unparseable tag suggestion response for note %s", note_id)
+            return TagSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
         # Convert to TagSuggestion models
         suggestions = [
@@ -306,7 +308,7 @@ def suggest_tags(
 
     except Exception as e:
         logger.error("Error generating tag suggestions: %s", e)
-        return TagSuggestionsResponse(suggestions=[], count=0)
+        return TagSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
 
 @router.post("/notes/{note_id}/suggest-links", response_model=LinkSuggestionsResponse)
@@ -358,8 +360,8 @@ def suggest_links(
 
     # No cache or refresh requested - generate new suggestions
     if not ollama.is_available():
-        logger.warning("Ollama not available for link suggestions")
-        return LinkSuggestionsResponse(suggestions=[], count=0)
+        logger.warning("LLM not available for link suggestions")
+        return LinkSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
     # Force regeneration
     if refresh:
@@ -411,12 +413,14 @@ def suggest_links(
         response = ollama.generate(prompt, role="structured", num_ctx=8192)
         if not response:
             logger.error("Empty response from LLM for link suggestions")
-            return LinkSuggestionsResponse(suggestions=[], count=0)
+            return LinkSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
         # Parse JSON response using pure function
         suggestions_data = ai_core.parse_json_response(response, expected_type="array")
-        if not suggestions_data or not isinstance(suggestions_data, list):
-            return LinkSuggestionsResponse(suggestions=[], count=0)
+        # None means the parse failed; [] means the model ran and found nothing
+        if suggestions_data is None or not isinstance(suggestions_data, list):
+            logger.warning("Unparseable link suggestion response for note %s", note_id)
+            return LinkSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
         # Convert to LinkSuggestion models and add titles
         suggestions = []
@@ -444,7 +448,7 @@ def suggest_links(
 
     except Exception as e:
         logger.error("Error generating link suggestions: %s", e)
-        return LinkSuggestionsResponse(suggestions=[], count=0)
+        return LinkSuggestionsResponse(suggestions=[], count=0, degraded=True)
 
 
 @router.get("/notes/{note_id}/suggest-stream")
@@ -538,7 +542,9 @@ def suggest_stream(
 
         except Exception as e:
             logger.error("Error generating tag suggestions during stream: %s", e)
-            # Continue to links even if tags fail
+            # Tell the client this phase degraded, then continue to links (#260).
+            # Silently dropping the phase is indistinguishable from "no tags fit".
+            yield format_sse({"type": "degraded", "phase": "tags"})
 
         # === PHASE 2: Generate Links ===
         yield format_sse({"type": "progress", "phase": "links"})
@@ -595,6 +601,7 @@ def suggest_stream(
 
             except Exception as e:
                 logger.error("Error generating link suggestions during stream: %s", e)
+                yield format_sse({"type": "degraded", "phase": "links"})
 
         # === COMPLETE ===
         yield format_sse({"type": "complete"})

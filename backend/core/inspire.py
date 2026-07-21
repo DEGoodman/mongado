@@ -17,7 +17,7 @@ import logging
 import re
 from typing import Any
 
-from core.ai import cosine_similarity
+from core.ai import cosine_similarity, extract_json_payload
 
 logger = logging.getLogger(__name__)
 
@@ -643,47 +643,6 @@ JSON:"""
 # --- parsing ----------------------------------------------------------------
 
 
-def _extract_json_array(text: str) -> str | None:
-    """Extract the first balanced top-level JSON array from text. Pure.
-
-    Small models routinely wrap the array in prose or fences ("Here is the
-    JSON: [...]  Hope this helps!"). Bracket matching recovers the payload
-    where a plain json.loads would fail. Quote- and escape-aware so brackets
-    inside string values don't throw off the depth count.
-    """
-    start = text.find("[")
-    if start == -1:
-        return None
-
-    depth = 0
-    in_string = False
-    escaped = False
-
-    for index in range(start, len(text)):
-        char = text[index]
-
-        if escaped:
-            escaped = False
-            continue
-        if char == "\\":
-            escaped = True
-            continue
-        if char == '"':
-            in_string = not in_string
-            continue
-        if in_string:
-            continue
-
-        if char == "[":
-            depth += 1
-        elif char == "]":
-            depth -= 1
-            if depth == 0:
-                return text[start : index + 1]
-
-    return None
-
-
 def parse_inspiration_response(raw_response: str) -> list[dict[str, Any]]:
     """Parse LLM response into structured suggestions.
 
@@ -714,7 +673,7 @@ def parse_inspiration_response(raw_response: str) -> list[dict[str, Any]]:
         data = json.loads(response)
     except json.JSONDecodeError:
         # Model wrapped the array in prose - recover it
-        extracted = _extract_json_array(response)
+        extracted = extract_json_payload(response, opener="[")
         if extracted is None:
             logger.warning("No JSON array found in inspiration response")
             logger.debug("Raw response (first 500 chars): %s", raw_response[:500])

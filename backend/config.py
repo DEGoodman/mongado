@@ -66,7 +66,11 @@ class Settings(BaseSettings):
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     gemini_model: str = "gemini-flash-latest"  # Free tier: 1,500 req/day
     gemini_embed_model: str = "gemini-embedding-001"  # Embeddings via OpenAI-compat endpoint
-    llm_api_timeout: float = 30.0  # Per-provider request timeout (seconds)
+    # Per-provider request timeout (seconds). Applies per provider, so the
+    # fallback chain can cost this twice before failing - keep it sized for an
+    # interactive request, not a worst-case generation. Callers that need a
+    # tighter bound pass timeout= explicitly (see routers/inspire.py).
+    llm_api_timeout: float = 12.0
     llm_api_max_tokens: int = 1024  # Default response cap for API generation
 
     # Which backend generates embeddings: "ollama" (default, dev) or "api"
