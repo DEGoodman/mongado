@@ -1,7 +1,11 @@
 /**
  * NoteOfDay Component
- * Homepage widget displaying a random stale note (or random note if none stale)
- * Encourages knowledge base maintenance and serendipitous rediscovery
+ * Widget surfacing a random note for serendipitous rediscovery.
+ *
+ * This used to prefer notes untouched for 60+ days and badge them "Needs
+ * Review". Removed in #262: every note was past the threshold, so the badge
+ * fired on all of them. Age is not a defect in a Zettelkasten - real problems
+ * are surfaced by Inspire and the quick lists.
  */
 
 "use client";
@@ -15,13 +19,10 @@ interface Note {
   title?: string;
   content: string;
   updated_at: number;
-  days_stale?: number;
 }
 
 interface NoteOfDayData {
   note: Note;
-  is_stale: boolean;
-  message: string;
 }
 
 export default function NoteOfDay() {
@@ -65,14 +66,13 @@ export default function NoteOfDay() {
     return null; // Don't show widget if no notes or error
   }
 
-  const { note, is_stale, message } = data;
+  const { note } = data;
   const previewContent = note.content.slice(0, 150) + (note.content.length > 150 ? "..." : "");
 
   return (
-    <div className={`${styles.noteOfDay} ${is_stale ? styles.stale : ""}`}>
+    <div className={styles.noteOfDay}>
       <div className={styles.header}>
-        <h3 className={styles.title}>{is_stale ? "Note to revisit" : "Note of the day"}</h3>
-        {is_stale && <span className={styles.staleBadge}>Needs Review</span>}
+        <h3 className={styles.title}>Note of the day</h3>
       </div>
 
       <Link href={`/knowledge-base/notes/${note.id}`} className={styles.noteCard}>
@@ -80,13 +80,8 @@ export default function NoteOfDay() {
         <p className={styles.notePreview}>{previewContent}</p>
         <div className={styles.noteMeta}>
           <code className={styles.noteId}>{note.id}</code>
-          {is_stale && note.days_stale && (
-            <span className={styles.daysStale}>{note.days_stale} days since last update</span>
-          )}
         </div>
       </Link>
-
-      <p className={styles.message}>{message}</p>
     </div>
   );
 }

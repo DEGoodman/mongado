@@ -1,13 +1,16 @@
 /**
  * QuickLists Component
- * Displays categorized note lists: Orphans, Hubs, Central Concepts
- * Part of Phase 2 - Quick Lists System
+ * Displays categorized note lists: Orphans, Hubs, Central Concepts.
+ *
+ * All three are structural signals. A "Stale Notes" list keyed on
+ * time-since-edit was removed in #262 - every note was past the threshold,
+ * so it listed arbitrary notes under a label that implied a defect.
  */
 
 "use client";
 
 import { useState, useEffect } from "react";
-import { CircleDashed, MapTrifold, Star, ClockCounterClockwise } from "@phosphor-icons/react";
+import { CircleDashed, MapTrifold, Star } from "@phosphor-icons/react";
 import Link from "next/link";
 import styles from "./QuickLists.module.scss";
 
@@ -16,19 +19,16 @@ interface Note {
   title?: string;
   link_count?: number;
   backlink_count?: number;
-  days_stale?: number;
 }
 
 interface QuickListsData {
   orphans: Note[];
   hubs: Note[];
   central_concepts: Note[];
-  stale: Note[];
   counts: {
     orphans: number;
     hubs: number;
     central_concepts: number;
-    stale: number;
   };
 }
 
@@ -41,7 +41,6 @@ interface QuickListsSectionProps {
   description: string;
   isExpanded: boolean;
   onToggle: () => void;
-  showDaysStale?: boolean;
 }
 
 function QuickListsSection({
@@ -53,7 +52,6 @@ function QuickListsSection({
   description,
   isExpanded,
   onToggle,
-  showDaysStale = false,
 }: QuickListsSectionProps) {
   return (
     <div className={`${styles.section} ${className}`}>
@@ -107,9 +105,6 @@ function QuickListsSection({
                   {note.id}
                   {note.link_count !== undefined && ` · ${note.link_count} links`}
                   {note.backlink_count !== undefined && ` · ${note.backlink_count} backlinks`}
-                  {showDaysStale && note.days_stale !== undefined && (
-                    <span className={styles.daysStale}> · {note.days_stale}d stale</span>
-                  )}
                 </div>
               </Link>
             ))}
@@ -202,18 +197,6 @@ export default function QuickLists() {
         description="No central concept notes yet - highly referenced notes will appear here."
         isExpanded={expandedSections.has("central")}
         onToggle={() => toggleSection("central")}
-      />
-
-      <QuickListsSection
-        title="Stale Notes"
-        icon={<ClockCounterClockwise size={18} />}
-        notes={data.stale}
-        count={data.counts.stale}
-        className={styles.stale}
-        description="No stale notes - your knowledge base is well maintained!"
-        isExpanded={expandedSections.has("stale")}
-        onToggle={() => toggleSection("stale")}
-        showDaysStale={true}
       />
     </div>
   );
