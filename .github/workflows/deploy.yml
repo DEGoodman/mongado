@@ -21,41 +21,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create pre-deployment backup
-        env:
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-        run: |
-          echo "📦 Creating pre-deployment backup..."
-
-          # Attempt backup via API (may fail on first deployment)
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.mongado.com/api/admin/backup \
-            -H "Authorization: Bearer $ADMIN_TOKEN" \
-            --max-time 300 2>&1 || echo -e "\n000")
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Pre-deployment backup created successfully"
-            # Only parse JSON if it's valid
-            if echo "$BODY" | jq -e . >/dev/null 2>&1; then
-              echo "$BODY" | jq '.'
-              BACKUP_FILE=$(echo "$BODY" | jq -r '.backup_file // "unknown"')
-              echo "backup_file=$BACKUP_FILE" >> $GITHUB_OUTPUT
-              echo "Backup file: $BACKUP_FILE"
-            else
-              echo "⚠️ Response is not valid JSON:"
-              echo "$BODY"
-            fi
-          else
-            echo "⚠️ Pre-deployment backup failed (HTTP $HTTP_CODE)"
-            echo "This is expected on first deployment or if API is unreachable"
-            echo "Response: $BODY"
-            echo "Continuing with deployment..."
-          fi
-        id: pre_backup
-        continue-on-error: true
-
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -65,6 +30,21 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create pre-deployment backup
+        env:
+          DO_HOST: ${{ secrets.DO_HOST }}
+          DO_USER: ${{ secrets.DO_USER }}
+        # Runs the zero-downtime JSON export inside the currently-running backend
+        # container over SSH (#267), so no admin token is needed - CI authenticates
+        # to the droplet with its SSH key. On the first deploy of this change the
+        # running container predates scripts/backup_export.py, so this is expected
+        # to no-op; continue-on-error keeps that from blocking the deploy.
+        run: |
+          echo "📦 Creating pre-deployment backup..."
+          ssh "$DO_USER@$DO_HOST" \
+            "cd /opt/mongado && docker compose -f docker-compose.prod.yml exec -T backend python -m scripts.backup_export"
+        continue-on-error: true
 
       - name: Deploy to DigitalOcean
         env:
@@ -80,29 +60,35 @@ jobs:
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           WEBAUTHN_RP_ID: ${{ secrets.WEBAUTHN_RP_ID }}
         run: |
-          # Pass secrets to remote server via SSH command arguments
+          # Pass secrets to the droplet as SSH command arguments, base64-encoded.
+          # ssh joins the args into one string that the remote LOGIN shell (zsh)
+          # re-parses before `bash -s` runs, so a raw value containing a glob char
+          # (* ? [ ] { }) makes zsh abort with "no matches found" (#267; hit live
+          # in #268). base64's alphabet has no glob chars, so the encoded args
+          # survive that re-parse; the heredoc decodes them under bash. This also
+          # keeps the plaintext secrets out of the remote process list.
           ssh $DO_USER@$DO_HOST "bash -s" \
-            "$CORS_ORIGINS" \
-            "$OP_SERVICE_ACCOUNT_TOKEN" \
-            "$ADMIN_PASSKEY" \
-            "$NEXT_PUBLIC_API_URL" \
-            "$NEO4J_PASSWORD" \
-            "$GROQ_API_KEY" \
-            "$GEMINI_API_KEY" \
-            "$SESSION_SECRET" \
-            "$WEBAUTHN_RP_ID" << 'EOF'
+            "$(printf %s "$CORS_ORIGINS" | base64 -w0)" \
+            "$(printf %s "$OP_SERVICE_ACCOUNT_TOKEN" | base64 -w0)" \
+            "$(printf %s "$ADMIN_PASSKEY" | base64 -w0)" \
+            "$(printf %s "$NEXT_PUBLIC_API_URL" | base64 -w0)" \
+            "$(printf %s "$NEO4J_PASSWORD" | base64 -w0)" \
+            "$(printf %s "$GROQ_API_KEY" | base64 -w0)" \
+            "$(printf %s "$GEMINI_API_KEY" | base64 -w0)" \
+            "$(printf %s "$SESSION_SECRET" | base64 -w0)" \
+            "$(printf %s "$WEBAUTHN_RP_ID" | base64 -w0)" << 'EOF'
             set -e
 
-            # Receive arguments
-            CORS_ORIGINS="$1"
-            OP_SERVICE_ACCOUNT_TOKEN="$2"
-            ADMIN_PASSKEY="$3"
-            NEXT_PUBLIC_API_URL="$4"
-            NEO4J_PASSWORD="$5"
-            GROQ_API_KEY="$6"
-            GEMINI_API_KEY="$7"
-            SESSION_SECRET="$8"
-            WEBAUTHN_RP_ID="$9"
+            # Receive arguments (base64-decoded; see the encoding note above)
+            CORS_ORIGINS="$(printf %s "$1" | base64 -d)"
+            OP_SERVICE_ACCOUNT_TOKEN="$(printf %s "$2" | base64 -d)"
+            ADMIN_PASSKEY="$(printf %s "$3" | base64 -d)"
+            NEXT_PUBLIC_API_URL="$(printf %s "$4" | base64 -d)"
+            NEO4J_PASSWORD="$(printf %s "$5" | base64 -d)"
+            GROQ_API_KEY="$(printf %s "$6" | base64 -d)"
+            GEMINI_API_KEY="$(printf %s "$7" | base64 -d)"
+            SESSION_SECRET="$(printf %s "$8" | base64 -d)"
+            WEBAUTHN_RP_ID="$(printf %s "$9" | base64 -d)"
 
             echo "📦 Deploying Mongado to production..."
 
@@ -229,8 +215,6 @@ jobs:
           EOF
 
       - name: Check database health
-        env:
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           echo "🏥 Checking database health (single attempt - Cloudflare may block)..."
 
@@ -257,27 +241,16 @@ jobs:
 
       - name: Create post-deployment backup
         env:
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          DO_HOST: ${{ secrets.DO_HOST }}
+          DO_USER: ${{ secrets.DO_USER }}
+        # Snapshot the freshly-deployed state via the new backend container over
+        # SSH (#267). No admin token, and no Cloudflare in the path (the old curl
+        # to the public API was frequently blocked). Nightly cron backups still
+        # run independently at 2 AM.
         run: |
-          echo "💾 Creating post-deployment backup (single attempt - Cloudflare may block)..."
-
-          # Single attempt with short timeout - backup API requires Docker access anyway
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.mongado.com/api/admin/backup \
-            -H "Authorization: Bearer $ADMIN_TOKEN" \
-            --max-time 10 2>&1 || echo -e "\n000")
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Post-deployment backup created successfully"
-            if echo "$BODY" | jq -e . >/dev/null 2>&1; then
-              echo "$BODY" | jq '.'
-            fi
-          else
-            echo "⚠️ Post-deployment backup skipped (HTTP $HTTP_CODE)"
-            echo "Note: Backups run automatically at 2 AM via cron, or manually via SSH"
-          fi
+          echo "💾 Creating post-deployment backup..."
+          ssh "$DO_USER@$DO_HOST" \
+            "cd /opt/mongado && docker compose -f docker-compose.prod.yml exec -T backend python -m scripts.backup_export"
         continue-on-error: true
 
       - name: Deployment notification
