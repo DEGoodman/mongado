@@ -77,6 +77,8 @@ jobs:
           NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          WEBAUTHN_RP_ID: ${{ secrets.WEBAUTHN_RP_ID }}
         run: |
           # Pass secrets to remote server via SSH command arguments
           ssh $DO_USER@$DO_HOST "bash -s" \
@@ -86,7 +88,9 @@ jobs:
             "$NEXT_PUBLIC_API_URL" \
             "$NEO4J_PASSWORD" \
             "$GROQ_API_KEY" \
-            "$GEMINI_API_KEY" << 'EOF'
+            "$GEMINI_API_KEY" \
+            "$SESSION_SECRET" \
+            "$WEBAUTHN_RP_ID" << 'EOF'
             set -e
 
             # Receive arguments
@@ -97,6 +101,8 @@ jobs:
             NEO4J_PASSWORD="$5"
             GROQ_API_KEY="$6"
             GEMINI_API_KEY="$7"
+            SESSION_SECRET="$8"
+            WEBAUTHN_RP_ID="$9"
 
             echo "📦 Deploying Mongado to production..."
 
@@ -121,6 +127,12 @@ jobs:
             echo "CORS_ORIGINS=$CORS_ORIGINS" >> backend/.env
             echo "OP_MONGADO_SERVICE_ACCOUNT_TOKEN=$OP_SERVICE_ACCOUNT_TOKEN" >> backend/.env
             echo "ADMIN_TOKEN=$ADMIN_PASSKEY" >> backend/.env
+            # Passkey auth (#268): sign sessions with a secret independent of
+            # ADMIN_TOKEN so a token leak cannot also forge sessions. Pin the
+            # WebAuthn RP ID (mongado.com) so it can't drift with the
+            # CORS_ORIGINS ordering and strand enrolled passkeys.
+            echo "SESSION_SECRET=$SESSION_SECRET" >> backend/.env
+            echo "WEBAUTHN_RP_ID=$WEBAUTHN_RP_ID" >> backend/.env
             # Hosted LLM API keys (#190): Groq = generation primary,
             # Gemini = generation fallback + embeddings
             echo "GROQ_API_KEY=$GROQ_API_KEY" >> backend/.env
