@@ -109,9 +109,7 @@ export default function LoginPage() {
                 >
                   {isLoading ? "Waiting for passkey..." : "Sign in with passkey"}
                 </button>
-                <p className={styles.hint}>
-                  Uses Touch ID, Windows Hello, or your security key.
-                </p>
+                <p className={styles.hint}>Uses Touch ID, Windows Hello, or your security key.</p>
               </div>
             )}
 

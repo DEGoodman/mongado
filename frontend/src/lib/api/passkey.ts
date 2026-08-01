@@ -87,9 +87,7 @@ function decodeCreationOptions(
   return decoded as unknown as PublicKeyCredentialCreationOptions;
 }
 
-function decodeRequestOptions(
-  options: Record<string, unknown>
-): PublicKeyCredentialRequestOptions {
+function decodeRequestOptions(options: Record<string, unknown>): PublicKeyCredentialRequestOptions {
   const decoded = { ...options } as Record<string, unknown>;
   decoded.challenge = base64urlToBuffer(options.challenge as string);
 

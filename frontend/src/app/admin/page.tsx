@@ -128,9 +128,7 @@ export default function AdminPage() {
     setPasskeyMessage(null);
     try {
       await deletePasskey(credential.credential_id);
-      setPasskeys((current) =>
-        current.filter((c) => c.credential_id !== credential.credential_id)
-      );
+      setPasskeys((current) => current.filter((c) => c.credential_id !== credential.credential_id));
       setPasskeyMessage(`Revoked "${credential.name}".`);
     } catch (err) {
       adminLogger.error("Passkey revocation failed:", err);
@@ -232,8 +230,8 @@ export default function AdminPage() {
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Passkeys</h2>
             <p className={styles.cardDescription}>
-              Sign in with Touch ID, Windows Hello, or a security key instead of the admin
-              token. Each device is enrolled and revoked independently.
+              Sign in with Touch ID, Windows Hello, or a security key instead of the admin token.
+              Each device is enrolled and revoked independently.
             </p>
 
             {passkeyError && <p className={styles.error}>{passkeyError}</p>}
