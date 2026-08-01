@@ -110,9 +110,40 @@
   }
 }
 
+// ===== PASSKEY =====
+.passkeySection {
+  @include stack($spacing-2);
+  margin-bottom: $spacing-4;
+
+  .hint {
+    @include text-secondary;
+    color: $color-text-tertiary;
+    text-align: center;
+  }
+}
+
+.linkButton {
+  display: block;
+  width: 100%;
+  margin-top: $spacing-4;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: $font-family-primary;
+  font-size: $font-size-sm;
+  color: $color-link-default;
+  cursor: pointer;
+  @include transition-colors;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 // ===== FORM =====
 .form {
   @include stack($spacing-6);
+  margin-top: $spacing-4;
 }
 
 .inputGroup {

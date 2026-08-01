@@ -12,6 +12,13 @@ import {
   type FeatureFlag,
   type DatabaseHealth,
 } from "@/lib/api/admin";
+import {
+  deletePasskey,
+  isPasskeySupported,
+  listPasskeys,
+  registerPasskey,
+  type PasskeyCredential,
+} from "@/lib/api/passkey";
 import { applyFeatureFlag } from "@/hooks/useFeatureFlags";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
@@ -23,6 +30,11 @@ function formatTimestamp(iso: string | null): string {
   const date = new Date(iso);
   if (isNaN(date.getTime())) return iso;
   return date.toLocaleString();
+}
+
+function formatUnixTimestamp(seconds: number | null): string {
+  if (!seconds) return "never";
+  return new Date(seconds * 1000).toLocaleString();
 }
 
 export default function AdminPage() {
@@ -37,6 +49,22 @@ export default function AdminPage() {
   const [healthError, setHealthError] = useState<string | null>(null);
   const [backingUp, setBackingUp] = useState(false);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
+
+  const [passkeys, setPasskeys] = useState<PasskeyCredential[]>([]);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
+  const [passkeyName, setPasskeyName] = useState("");
+  const [enrolling, setEnrolling] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+
+  const loadPasskeys = useCallback(() => {
+    listPasskeys()
+      .then(setPasskeys)
+      .catch((err) => {
+        adminLogger.error("Failed to load passkeys:", err);
+        setPasskeyError("Failed to load passkeys.");
+      });
+  }, []);
 
   const loadHealth = useCallback(() => {
     getDatabaseHealth()
@@ -62,7 +90,51 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
 
     loadHealth();
-  }, [router, loadHealth]);
+    setPasskeySupported(isPasskeySupported());
+    loadPasskeys();
+  }, [router, loadHealth, loadPasskeys]);
+
+  const handleEnrollPasskey = async () => {
+    setEnrolling(true);
+    setPasskeyError(null);
+    setPasskeyMessage(null);
+
+    const name = passkeyName.trim() || "Passkey";
+    try {
+      setPasskeys(await registerPasskey(name));
+      setPasskeyName("");
+      setPasskeyMessage(`Enrolled "${name}".`);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setPasskeyError("Enrollment was cancelled.");
+      } else if (err instanceof DOMException && err.name === "InvalidStateError") {
+        // The browser refuses to double-enroll an excluded authenticator
+        setPasskeyError("This device already has a passkey registered.");
+      } else {
+        adminLogger.error("Passkey enrollment failed:", err);
+        setPasskeyError(err instanceof Error ? err.message : "Enrollment failed.");
+      }
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
+  const handleRevokePasskey = async (credential: PasskeyCredential) => {
+    if (!window.confirm(`Revoke "${credential.name}"? That device will no longer sign in.`)) {
+      return;
+    }
+
+    setPasskeyError(null);
+    setPasskeyMessage(null);
+    try {
+      await deletePasskey(credential.credential_id);
+      setPasskeys((current) => current.filter((c) => c.credential_id !== credential.credential_id));
+      setPasskeyMessage(`Revoked "${credential.name}".`);
+    } catch (err) {
+      adminLogger.error("Passkey revocation failed:", err);
+      setPasskeyError("Failed to revoke passkey.");
+    }
+  };
 
   const handleToggle = async (flag: FeatureFlag) => {
     const newValue = !flag.enabled;
@@ -153,6 +225,70 @@ export default function AdminPage() {
                 </button>
               </div>
             ))}
+          </div>
+
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Passkeys</h2>
+            <p className={styles.cardDescription}>
+              Sign in with Touch ID, Windows Hello, or a security key instead of the admin token.
+              Each device is enrolled and revoked independently.
+            </p>
+
+            {passkeyError && <p className={styles.error}>{passkeyError}</p>}
+            {passkeyMessage && <p className={styles.success}>{passkeyMessage}</p>}
+
+            {passkeys.length === 0 ? (
+              <p className={styles.status}>No passkeys enrolled yet.</p>
+            ) : (
+              <ul className={styles.passkeyList}>
+                {passkeys.map((credential) => (
+                  <li key={credential.credential_id} className={styles.passkeyRow}>
+                    <div className={styles.passkeyInfo}>
+                      <span className={styles.passkeyName}>{credential.name}</span>
+                      <span className={styles.passkeyMeta}>
+                        Added {formatUnixTimestamp(credential.created_at)} · Last used{" "}
+                        {formatUnixTimestamp(credential.last_used_at)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.revokeButton}
+                      onClick={() => handleRevokePasskey(credential)}
+                    >
+                      Revoke
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {passkeySupported ? (
+              <div className={styles.passkeyEnroll}>
+                <label htmlFor="passkey-name" className={styles.srOnly}>
+                  Device name
+                </label>
+                <input
+                  id="passkey-name"
+                  type="text"
+                  className={styles.passkeyInput}
+                  placeholder="Device name (e.g. MacBook)"
+                  maxLength={64}
+                  value={passkeyName}
+                  onChange={(e) => setPasskeyName(e.target.value)}
+                  disabled={enrolling}
+                />
+                <button
+                  type="button"
+                  className={styles.backupButton}
+                  disabled={enrolling}
+                  onClick={handleEnrollPasskey}
+                >
+                  {enrolling ? "Waiting for device..." : "Add passkey"}
+                </button>
+              </div>
+            ) : (
+              <p className={styles.status}>This browser does not support passkeys.</p>
+            )}
           </div>
 
           <div className={styles.card}>

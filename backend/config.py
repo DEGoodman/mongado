@@ -3,6 +3,7 @@
 import logging
 import os
 import subprocess
+from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -97,6 +98,28 @@ class Settings(BaseSettings):
 
     # Zettelkasten authentication
     admin_token: str = ""  # Admin bearer token for creating persistent notes
+
+    # Passkey (WebAuthn) admin authentication (#229). Passkeys are the primary
+    # login for humans; admin_token remains valid for CI/automation callers
+    # (deploy backups) and gates first-time passkey enrollment.
+    session_secret: str = ""  # HMAC key for session tokens; derived from admin_token if unset
+    webauthn_rp_id: str = ""  # Relying Party ID; derived from the first CORS origin if unset
+    webauthn_rp_name: str = "Mongado"  # Shown by the OS passkey prompt
+
+    @property
+    def webauthn_rp_id_resolved(self) -> str:
+        """Relying Party ID: the frontend's registrable domain.
+
+        Defaults to the hostname of the first CORS origin, which is exactly
+        the frontend the passkey ceremony runs on ("localhost" in dev,
+        "mongado.com" in prod). Set WEBAUTHN_RP_ID to override.
+        """
+        if self.webauthn_rp_id:
+            return self.webauthn_rp_id
+        origins = self.cors_origins_list
+        if not origins:
+            return "localhost"
+        return urlparse(origins[0]).hostname or "localhost"
 
 
 class SecretManager:

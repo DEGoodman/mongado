@@ -457,6 +457,15 @@ In `backend/main.py`:
 - `GET /api/notes/{note_id}/backlinks` - Get inbound links
 - `GET /api/notes/graph/data` - Get full graph
 
+*Auth (passkeys, #229):*
+- `POST /api/auth/register/options|verify` - Enroll a passkey (admin auth required)
+- `POST /api/auth/login/options|verify` - Sign in, returns a 12h session token
+- `GET /api/auth/session` - Report auth state (200 whether or not signed in)
+- `GET|DELETE /api/auth/credentials` - List / revoke enrolled passkeys
+
+Admin endpoints accept a passkey session token **or** the static `ADMIN_TOKEN`;
+the token is retained for CI (deploy backups) and first-time enrollment.
+
 *AI Features:*
 - `POST /api/search` - Semantic search (articles + notes)
 - `POST /api/ask` - Q&A with context

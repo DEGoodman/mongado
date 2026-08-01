@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { clearAdminToken } from "@/lib/api/client";
+import { clearAdminToken, isAuthenticated as hasValidSession } from "@/lib/api/client";
 import styles from "./AuthStatusBanner.module.scss";
 
 interface AuthStatusBannerProps {
@@ -20,8 +20,9 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
 
   const checkAuth = () => {
     try {
-      const adminToken = localStorage.getItem("admin_token");
-      setIsAuthenticated(!!adminToken);
+      // Presence of a token is not enough - a passkey session expires after
+      // 12 hours, and this banner must not claim you are still signed in
+      setIsAuthenticated(hasValidSession());
     } catch (err) {
       setIsAuthenticated(false);
     } finally {
@@ -114,8 +115,7 @@ export function AuthStatusIndicator() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const adminToken = localStorage.getItem("admin_token");
-        setIsAuthenticated(!!adminToken);
+        setIsAuthenticated(hasValidSession());
       } catch (err) {
         setIsAuthenticated(false);
       } finally {
