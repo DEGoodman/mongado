@@ -133,6 +133,15 @@ class Neo4jAdapter:
                 """
             )
 
+            # ===== ADMIN CREDENTIAL SCHEMA (#229) =====
+            # Unique constraint on AdminCredential.credential_id
+            session.run(
+                """
+                CREATE CONSTRAINT admin_credential_id_unique IF NOT EXISTS
+                FOR (c:AdminCredential) REQUIRE c.credential_id IS UNIQUE
+                """
+            )
+
             logger.info("Neo4j schema initialized (Notes + Articles + embeddings support)")
 
     def is_available(self) -> bool:
@@ -702,6 +711,219 @@ class Neo4jAdapter:
                 enabled=enabled,
             )
             return True
+
+    # ===== ADMIN CREDENTIALS (passkeys, #229) =====
+
+    def list_admin_credentials(self) -> list[dict[str, Any]]:
+        """List registered passkey credentials.
+
+        Returns:
+            Credential records, newest first (empty if Neo4j unavailable).
+            `public_key` is raw COSE bytes as stored.
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (c:AdminCredential)
+                RETURN c.credential_id AS credential_id,
+                       c.public_key AS public_key,
+                       c.sign_count AS sign_count,
+                       c.name AS name,
+                       c.created_at AS created_at,
+                       c.last_used_at AS last_used_at
+                ORDER BY c.created_at DESC
+                """
+            )
+            return [
+                {
+                    "credential_id": record["credential_id"],
+                    "public_key": bytes(record["public_key"]),
+                    "sign_count": int(record["sign_count"] or 0),
+                    "name": record["name"],
+                    "created_at": record["created_at"],
+                    "last_used_at": record["last_used_at"],
+                }
+                for record in result
+            ]
+
+    def get_admin_credential(self, credential_id: str) -> dict[str, Any] | None:
+        """Get a single passkey credential by its ID.
+
+        Args:
+            credential_id: base64url credential ID from the authenticator
+
+        Returns:
+            Credential record, or None if not found / Neo4j unavailable
+        """
+        for credential in self.list_admin_credentials():
+            if credential["credential_id"] == credential_id:
+                return credential
+        return None
+
+    def create_admin_credential(
+        self,
+        credential_id: str,
+        public_key: bytes,
+        sign_count: int,
+        name: str,
+    ) -> bool:
+        """Store a newly registered passkey.
+
+        Args:
+            credential_id: base64url credential ID from the authenticator
+            public_key: Raw COSE public key bytes
+            sign_count: Signature counter at registration
+            name: Human label for the device ("MacBook", "iPhone")
+
+        Returns:
+            True if stored, False if Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                """
+                MERGE (c:AdminCredential {credential_id: $credential_id})
+                SET c.public_key = $public_key,
+                    c.sign_count = $sign_count,
+                    c.name = $name,
+                    c.created_at = $created_at,
+                    c.last_used_at = null
+                """,
+                credential_id=credential_id,
+                public_key=public_key,
+                sign_count=sign_count,
+                name=name,
+                created_at=time.time(),
+            )
+            return True
+
+    def record_admin_credential_use(self, credential_id: str, sign_count: int) -> bool:
+        """Update a credential's signature counter after a successful login.
+
+        The counter is the authenticator's replay defense: it must never go
+        backwards. Callers verify that before calling this.
+
+        Args:
+            credential_id: base64url credential ID
+            sign_count: New counter value from the assertion
+
+        Returns:
+            True if updated, False if Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                """
+                MATCH (c:AdminCredential {credential_id: $credential_id})
+                SET c.sign_count = $sign_count, c.last_used_at = $last_used_at
+                """,
+                credential_id=credential_id,
+                sign_count=sign_count,
+                last_used_at=time.time(),
+            )
+            return True
+
+    def delete_admin_credential(self, credential_id: str) -> bool:
+        """Delete (revoke) a passkey credential.
+
+        Args:
+            credential_id: base64url credential ID
+
+        Returns:
+            True if a credential was deleted, False otherwise
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (c:AdminCredential {credential_id: $credential_id})
+                DELETE c
+                RETURN count(c) AS deleted
+                """,
+                credential_id=credential_id,
+            )
+            record = result.single()
+            return bool(record and record["deleted"] > 0)
+
+    def store_webauthn_challenge(self, challenge: str, purpose: str, ttl_seconds: float) -> bool:
+        """Store a pending WebAuthn challenge.
+
+        Challenges must be shared across processes: production runs four
+        uvicorn workers, so the worker that issues a challenge is usually
+        not the one that verifies the response.
+
+        Args:
+            challenge: base64url-encoded challenge bytes
+            purpose: "registration" or "authentication"
+            ttl_seconds: How long the challenge stays valid
+
+        Returns:
+            True if stored, False if Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return False
+
+        now = time.time()
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                """
+                CREATE (c:WebAuthnChallenge {
+                    challenge: $challenge,
+                    purpose: $purpose,
+                    expires_at: $expires_at
+                })
+                """,
+                challenge=challenge,
+                purpose=purpose,
+                expires_at=now + ttl_seconds,
+            )
+            # Opportunistic sweep so abandoned ceremonies do not accumulate
+            session.run(
+                "MATCH (c:WebAuthnChallenge) WHERE c.expires_at < $now DELETE c",
+                now=now,
+            )
+            return True
+
+    def consume_webauthn_challenge(self, challenge: str, purpose: str) -> bool:
+        """Atomically claim a pending challenge, if it exists and is unexpired.
+
+        Deleting on read makes challenges single-use, which is what stops a
+        captured assertion from being replayed.
+
+        Args:
+            challenge: base64url-encoded challenge bytes
+            purpose: "registration" or "authentication"
+
+        Returns:
+            True if the challenge was ours, unexpired, and is now consumed
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (c:WebAuthnChallenge {challenge: $challenge, purpose: $purpose})
+                WHERE c.expires_at >= $now
+                WITH c LIMIT 1
+                DELETE c
+                RETURN count(c) AS consumed
+                """,
+                challenge=challenge,
+                purpose=purpose,
+                now=time.time(),
+            )
+            record = result.single()
+            return bool(record and record["consumed"] > 0)
 
     def get_all_note_ids(self) -> set[str]:
         """Get all note IDs (for collision detection).

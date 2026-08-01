@@ -26,6 +26,18 @@ from models.ai import (
     SummaryResponse,
     WarmupResponse,
 )
+from models.auth import (
+    AuthenticationOptionsResponse,
+    AuthenticationVerifyRequest,
+    CredentialDeleteResponse,
+    CredentialInfo,
+    CredentialsListResponse,
+    RegistrationOptionsRequest,
+    RegistrationOptionsResponse,
+    RegistrationVerifyRequest,
+    SessionResponse,
+    SessionStatusResponse,
+)
 from models.note import (
     BacklinksResponse,
     LinkSuggestion,
@@ -75,6 +87,17 @@ __all__ = [
     "QuestionResponse",
     "SummaryResponse",
     "WarmupResponse",
+    # Auth models (passkeys)
+    "AuthenticationOptionsResponse",
+    "AuthenticationVerifyRequest",
+    "CredentialDeleteResponse",
+    "CredentialInfo",
+    "CredentialsListResponse",
+    "RegistrationOptionsRequest",
+    "RegistrationOptionsResponse",
+    "RegistrationVerifyRequest",
+    "SessionResponse",
+    "SessionStatusResponse",
     # Note models
     "BacklinksResponse",
     "LinkSuggestion",

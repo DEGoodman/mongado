@@ -1,15 +1,28 @@
-"""Authentication middleware for Zettelkasten notes system."""
+"""Authentication middleware for Zettelkasten notes system.
+
+Two credentials share the `Authorization: Bearer` transport (#229):
+
+- **Passkey session tokens** - signed, 12-hour, minted by /api/auth/login/verify.
+  The primary path for humans, and the only one the frontend issues.
+- **The static admin token** - retained for machine callers (the deploy
+  workflow's pre/post-deploy backups) and to gate first-time passkey
+  enrollment. Long-lived and unrevokable, hence the #225 lockout below.
+
+Session tokens are checked first and are exempt from the lockout: they are
+unguessable by construction, so failed attempts carry no signal about them.
+"""
 
 import hmac
 import logging
 import threading
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config import get_settings
+from core.sessions import derive_session_secret, looks_like_session_token, verify_session_token
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -94,18 +107,50 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def _check_session_token(token: str) -> dict[str, Any] | None:
+    """Try to authenticate a bearer token as a passkey session.
+
+    Args:
+        token: The bearer token from the Authorization header
+
+    Returns:
+        Auth context if the token is a valid session, else None. None also
+        covers session-*shaped* tokens that failed verification - the caller
+        distinguishes those with looks_like_session_token.
+    """
+    secret = derive_session_secret(settings.admin_token, settings.session_secret)
+    if not secret:
+        return None
+
+    claims = verify_session_token(token, secret, time.time())
+    if claims is None:
+        return None
+
+    return {
+        "authenticated": True,
+        "kind": "passkey",
+        "credential_id": claims.credential_id,
+        "expires_at": claims.expires_at,
+    }
+
+
 def verify_admin(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> bool:
-    """Verify admin token from Authorization header.
+    """Verify admin credentials from the Authorization header.
 
-    Uses FastAPI's HTTPBearer security scheme for proper Swagger UI integration.
-    The token is stored in the environment (.env or 1Password).
+    Accepts either a passkey session token (#229) or the static admin token,
+    both over `Authorization: Bearer`. Uses FastAPI's HTTPBearer security
+    scheme for proper Swagger UI integration.
 
-    Repeated invalid tokens from one IP trigger a lockout (#225): after
-    MAX_FAILED_ATTEMPTS failures, that IP gets 429 for LOCKOUT_SECONDS -
-    even for requests that would otherwise carry the correct token.
+    Repeated invalid *static tokens* from one IP trigger a lockout (#225):
+    after MAX_FAILED_ATTEMPTS failures, that IP gets 429 for LOCKOUT_SECONDS
+    - even for requests that would otherwise carry the correct token. An
+    expired or malformed session token is reported as 401 and does not count
+    toward that budget: session tokens are HMAC-signed, so there is nothing
+    to brute-force, and counting them would let a stale browser tab lock the
+    admin out of logging back in.
 
     Args:
         request: Incoming request (for the client IP)
@@ -115,8 +160,8 @@ def verify_admin(
         True if authenticated
 
     Raises:
-        HTTPException: 401 if no auth header, 403 if invalid token,
-            429 if the client IP is locked out
+        HTTPException: 401 if no auth header or an expired session, 403 if
+            invalid token, 429 if the client IP is locked out
     """
     ip = _client_ip(request)
 
@@ -137,7 +182,20 @@ def verify_admin(
 
     token = credentials.credentials
 
-    # Get expected token from settings
+    # Passkey session first - the primary path for humans
+    if _check_session_token(token):
+        auth_tracker.record_success(ip)
+        logger.debug("Admin authenticated via passkey session")
+        return True
+
+    if looks_like_session_token(token):
+        logger.info("Rejected expired or invalid passkey session from %s", ip)
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired. Sign in again with your passkey.",
+        )
+
+    # Fall back to the static token (CI/automation, passkey enrollment)
     expected_token = settings.admin_token
 
     if not expected_token:
@@ -162,6 +220,40 @@ def verify_admin(
     auth_tracker.record_success(ip)
     logger.debug("Admin authenticated successfully")
     return True
+
+
+def verify_admin_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> dict[str, Any]:
+    """Report auth state without rejecting unauthenticated callers.
+
+    Backs GET /api/auth/session, which answers "am I signed in?" - a question
+    whose negative answer is a 200, not a 401. Does not touch the lockout
+    tracker in either direction: this endpoint is a status read, so it must
+    neither consume attempts nor clear a running lockout.
+
+    Args:
+        credentials: HTTPAuthorizationCredentials from HTTPBearer (None if missing)
+
+    Returns:
+        Dict with 'authenticated', 'kind' ('passkey'/'token'/'none'), and for
+        passkey sessions 'credential_id' and 'expires_at'
+    """
+    unauthenticated: dict[str, Any] = {"authenticated": False, "kind": "none", "expires_at": None}
+
+    if not credentials:
+        return unauthenticated
+
+    token = credentials.credentials
+
+    session = _check_session_token(token)
+    if session:
+        return session
+
+    if settings.admin_token and hmac.compare_digest(token, settings.admin_token):
+        return {"authenticated": True, "kind": "token", "expires_at": None}
+
+    return unauthenticated
 
 
 # Type alias for dependency injection

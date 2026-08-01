@@ -25,7 +25,10 @@ Mongado API comes with built-in interactive documentation powered by FastAPI:
 
 ### Authentication
 
-For admin-only endpoints (creating persistent notes, etc.):
+Admin endpoints accept either a **passkey session token** or the **static
+admin token**, both as `Authorization: Bearer <value>`. In the browser, sign
+in at `/login` with a passkey; see `docs/knowledge-base/NOTES.md` for setup.
+For Swagger and scripts, use the static admin token:
 
 1. Click the **Authorize** button (🔓) at the top right
 2. Enter your admin token in the "Value" field (without "Bearer " prefix)

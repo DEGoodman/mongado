@@ -48,80 +48,71 @@ The system:
 
 ### Admin User
 
-- Authenticate via 1Password secret (passkey/API token)
-- Create persistent notes (saved to Neo4j database)
-- Full CRUD operations on all notes
+Admin auth gates note creation, editing, and deletion. Two credentials are
+accepted, both sent as `Authorization: Bearer <value>`:
 
-### Authentication Flow
+| Credential | Who uses it | Lifetime | Revocable |
+|---|---|---|---|
+| **Passkey session** (#229) | You, in the browser | 12 hours, server-enforced | per device |
+| **Static admin token** (`ADMIN_TOKEN`) | CI/automation, first-time enrollment | none | no (rotate the env var) |
 
-**Backend (passkey approach):**
+Passkeys are the normal way in. The static token is kept because the deploy
+workflow calls `/api/admin/backup` and cannot present a passkey, and because
+something has to authorize enrolling the *first* passkey.
 
-```python
-# backend/auth.py
-from fastapi import HTTPException, Header
+### Passkey Setup
 
-def verify_admin(authorization: str = Header(None)) -> bool:
-    """Verify admin passkey from Authorization header.
+1. Sign in at `/login` with the admin token (use "Use an admin token instead")
+2. Go to `/admin`, name the device, and press **Add passkey**
+3. Approve the OS prompt (Touch ID, Windows Hello, security key)
 
-    Expects: "Bearer your-secret-passkey"
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization required")
+From then on, `/login` offers **Sign in with passkey**. Enroll additional
+devices from `/admin` while signed in; revoke any of them there individually.
+Revoking the last passkey is allowed - the admin token still works, so this
+cannot lock you out.
 
-    passkey = authorization.replace("Bearer ", "")
+### How It Works
 
-    if passkey != settings.admin_passkey:
-        raise HTTPException(status_code=403, detail="Invalid passkey")
+**Ceremonies** (`backend/routers/auth.py`, using `py_webauthn`):
 
-    return True
-
-# Usage in endpoints
-@app.post("/api/notes")
-async def create_note(
-    note: NoteCreate,
-    is_admin: bool = Depends(verify_admin)
-):
-    """Create persistent note (requires admin auth)."""
-    # Create persistent note in database
+```
+POST /api/auth/register/options   -> creation options + stored challenge
+POST /api/auth/register/verify    -> credential persisted to Neo4j
+POST /api/auth/login/options      -> request options + stored challenge
+POST /api/auth/login/verify       -> signed session token
+GET  /api/auth/session            -> "am I signed in?" (200 either way)
+GET/DELETE /api/auth/credentials  -> list / revoke enrolled devices
 ```
 
-**Frontend (localStorage approach):**
+**Sessions** (`backend/core/sessions.py`) are stateless HMAC-signed tokens,
+not stored session ids - production runs four uvicorn workers with no shared
+session store. The signing key comes from `SESSION_SECRET`, or is derived
+deterministically from `ADMIN_TOKEN` when that is unset.
 
-```typescript
-// frontend/src/lib/auth.ts
-export const login = (passkey: string) => {
-  localStorage.setItem('adminPasskey', passkey);
-};
+**Challenges** are stored in Neo4j and consumed on use, for the same
+multi-worker reason: the worker that issues a challenge is usually not the
+one that verifies the response.
 
-export const getAuthHeaders = () => {
-  const passkey = localStorage.getItem('adminPasskey');
-  if (!passkey) return {};
+**Credentials** live as `(:AdminCredential)` nodes holding the credential id,
+COSE public key, signature counter, and device name.
 
-  return {
-    'Authorization': `Bearer ${passkey}`
-  };
-};
+**Brute-force lockout** (#225) still applies to static-token guesses. Expired
+passkey sessions return 401 and are deliberately exempt, so a stale browser
+tab cannot lock you out of signing back in.
 
-// Usage in API calls
-const response = await fetch('/api/notes', {
-  method: 'POST',
-  headers: {
-    ...getAuthHeaders(),
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(note)
-});
-```
-
-**Environment Setup:**
+### Configuration
 
 ```bash
-# .env
-ADMIN_PASSKEY=your-secret-passkey-here
-
-# Or use 1Password CLI
-ADMIN_PASSKEY=$(op read "op://vault/mongado-admin/passkey")
+# backend/.env
+ADMIN_TOKEN=your-admin-token          # required (enrollment + automation)
+SESSION_SECRET=                       # optional; derived from ADMIN_TOKEN if empty
+WEBAUTHN_RP_ID=                       # optional; defaults to the first CORS origin's host
+WEBAUTHN_RP_NAME=Mongado              # shown in the OS passkey prompt
 ```
+
+The Relying Party ID must match the domain the browser is on: `localhost` in
+development, `mongado.com` in production. The default derives it from
+`CORS_ORIGINS`, so it is usually correct without being set.
 
 ## Data Storage
 

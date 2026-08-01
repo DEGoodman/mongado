@@ -137,6 +137,95 @@
   @include button-sm;
 }
 
+// ===== PASSKEYS =====
+.cardDescription {
+  @include text-secondary;
+  margin: 0 0 $spacing-4 0;
+  color: $color-text-secondary;
+}
+
+.passkeyList {
+  list-style: none;
+  margin: 0 0 $spacing-5 0;
+  padding: 0;
+}
+
+.passkeyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-4;
+  padding: $spacing-3 0;
+  border-bottom: $border-width-thin solid $color-border-subtle;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.passkeyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-1;
+  min-width: 0;
+}
+
+.passkeyName {
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.passkeyMeta {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.revokeButton {
+  @include button-secondary;
+  @include button-sm;
+  flex-shrink: 0;
+}
+
+.passkeyEnroll {
+  display: flex;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+}
+
+.passkeyInput {
+  flex: 1 1 12rem;
+  padding: $spacing-2 $spacing-3;
+  border: $border-default;
+  border-radius: $border-radius-button;
+  font-family: $font-family-primary;
+  background-color: $color-bg-canvas;
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: $shadow-focus-primary;
+  }
+
+  &:disabled {
+    background-color: $color-bg-secondary;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 .status {
   @include text-secondary;
   margin: 0;

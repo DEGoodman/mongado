@@ -3,11 +3,16 @@
 Uses slowapi for rate limiting with Redis backend (if available) or in-memory fallback.
 """
 
+import os
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-# Create rate limiter using remote IP as key
-limiter = Limiter(key_func=get_remote_address)
+# Create rate limiter using remote IP as key. Disabled under TESTING so a test
+# file's many calls to one endpoint do not trip the limit (every request in a
+# TestClient shares the key "testclient"); routers/notes.py already did this
+# for its own limiter.
+limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "1")
 
 # Rate limit presets for different endpoint types
 RATE_LIMITS = {

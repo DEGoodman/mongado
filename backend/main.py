@@ -39,6 +39,7 @@ from rate_limiter import RATE_LIMITS, limiter
 from routers.admin import create_admin_router
 from routers.ai import router as ai_router
 from routers.articles import router as articles_router
+from routers.auth import create_auth_router
 from routers.inspire import router as inspire_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
@@ -206,10 +207,16 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
 
         # API responses - respect explicit cache headers, add defaults otherwise
         elif request.url.path.startswith("/api/") and "Cache-Control" not in response.headers:
+            # Auth state is never cacheable (#229). A cached /api/auth/session
+            # or /api/auth/credentials keeps reporting the pre-login or
+            # pre-enrollment answer for a minute after it stopped being true,
+            # and a shared cache must never hold a per-credential response.
+            if request.url.path.startswith("/api/auth/"):
+                response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
             # Allow browser to cache list/read operations for 60 seconds;
             # serve stale while revalidating so refreshes never block on the
             # network for content that just changed underneath
-            if request.method == "GET":
+            elif request.method == "GET":
                 response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
             else:
                 response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -298,6 +305,10 @@ app.include_router(templates_router)
 
 admin_router = create_admin_router(neo4j_adapter=neo4j_adapter)
 app.include_router(admin_router)
+
+# Passkey authentication (#229)
+auth_router = create_auth_router(neo4j_adapter=neo4j_adapter)
+app.include_router(auth_router)
 
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
