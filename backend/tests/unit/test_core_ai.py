@@ -159,6 +159,92 @@ class TestBuildQAPrompt:
         assert "don't have enough information" in prompt.lower()
 
 
+class TestBuildSynthesisPrompt:
+    """Tests for deep-synthesis prompt construction (#166)."""
+
+    def test_includes_fixed_section_structure(self):
+        """Prompt instructs the model to use the three fixed markdown headers."""
+        docs = [{"title": "Incident Response Basics", "content": "Some content about IR."}]
+
+        prompt = ai.build_synthesis_prompt("incident response", docs)
+
+        assert "## Key Concepts" in prompt
+        assert "## Your Positions" in prompt
+        assert "## Gaps & Open Questions" in prompt
+        # Order matters: Key Concepts before Positions before Gaps
+        assert prompt.index("## Key Concepts") < prompt.index("## Your Positions")
+        assert prompt.index("## Your Positions") < prompt.index("## Gaps & Open Questions")
+
+    def test_includes_query_and_document_content(self):
+        """Prompt includes the query and document titles/content."""
+        docs = [{"title": "Incident Response Basics", "content": "Runbooks matter."}]
+
+        prompt = ai.build_synthesis_prompt("incident response", docs)
+
+        assert "incident response" in prompt
+        assert "Incident Response Basics" in prompt
+        assert "Runbooks matter." in prompt
+
+    def test_instructs_markdown_and_citation_by_title(self):
+        """Prompt asks for markdown output and inline citation by title."""
+        docs = [{"title": "Doc A", "content": "Content A"}]
+
+        prompt = ai.build_synthesis_prompt("topic", docs)
+
+        assert "markdown" in prompt.lower()
+        assert "cite" in prompt.lower() or "citing" in prompt.lower()
+
+    def test_instructs_plain_gap_disclosure(self):
+        """Prompt tells the model not to invent info and to state gaps plainly."""
+        docs = [{"title": "Doc A", "content": "Content A"}]
+
+        prompt = ai.build_synthesis_prompt("topic", docs)
+
+        assert "do not invent" in prompt.lower() or "not invent" in prompt.lower()
+
+    def test_truncates_documents_to_stay_within_budget(self):
+        """Per-document content is truncated so the combined context respects
+        max_context_chars, unlike build_context_from_documents (no truncation)."""
+        # Two documents, each far larger than half the budget.
+        big_content = "x" * 10000
+        docs = [
+            {"title": "Doc A", "content": big_content},
+            {"title": "Doc B", "content": big_content},
+        ]
+
+        prompt = ai.build_synthesis_prompt("topic", docs, max_docs=12, max_context_chars=1000)
+
+        # Each doc should be truncated to roughly max_context_chars / len(docs)
+        assert "[truncated]" in prompt
+        # The full untruncated content must not appear verbatim
+        assert big_content not in prompt
+        # But some content from each document is retained
+        assert "x" in prompt
+
+    def test_respects_max_docs_limit(self):
+        """Only the first max_docs documents are included in the prompt."""
+        docs = [{"title": f"Doc {i}", "content": f"Content {i}"} for i in range(20)]
+
+        prompt = ai.build_synthesis_prompt("topic", docs, max_docs=3)
+
+        assert "Doc 0" in prompt
+        assert "Doc 1" in prompt
+        assert "Doc 2" in prompt
+        assert "Doc 3" not in prompt
+        assert "Doc 19" not in prompt
+
+    def test_empty_context_still_has_section_structure(self):
+        """With no documents, the prompt still asks for the fixed sections and
+        plainly notes the knowledge base has no coverage rather than omitting
+        structure or inventing content."""
+        prompt = ai.build_synthesis_prompt("topic with no notes", [])
+
+        assert "## Key Concepts" in prompt
+        assert "## Your Positions" in prompt
+        assert "## Gaps & Open Questions" in prompt
+        assert "no relevant documents" in prompt.lower() or "no documents" in prompt.lower()
+
+
 class TestParseJSONResponse:
     """Tests for defensive JSON parsing."""
 

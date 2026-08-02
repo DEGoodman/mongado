@@ -24,6 +24,8 @@ from models.ai import (
     QuestionRequest,
     QuestionResponse,
     SummaryResponse,
+    SynthesisRequest,
+    SynthesisResponse,
     WarmupResponse,
 )
 from models.auth import (
@@ -86,6 +88,8 @@ __all__ = [
     "QuestionRequest",
     "QuestionResponse",
     "SummaryResponse",
+    "SynthesisRequest",
+    "SynthesisResponse",
     "WarmupResponse",
     # Auth models (passkeys)
     "AuthenticationOptionsResponse",

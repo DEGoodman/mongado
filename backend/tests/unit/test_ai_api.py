@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from dependencies import get_llm, get_notes
+from dependencies import get_llm, get_neo4j, get_notes, get_static_articles, get_user_resources
 from main import app
 
 # Mark for slow tests that hit real Ollama
@@ -342,6 +342,185 @@ class TestExtractConcepts:
             data = response.json()
             assert data["concepts"] == []
             assert data["count"] == 0
+
+
+class _SynthesisLLM:
+    """Scriptable stand-in for the routed LLM client, for synthesis tests."""
+
+    def __init__(
+        self,
+        available: bool = True,
+        generate_response: str | None = "## Key Concepts\nStuff.\n\n## Your Positions\nMore.\n\n## Gaps & Open Questions\nUnknown.",
+        stream_tokens: list[str] | None = None,
+    ) -> None:
+        self._available = available
+        self._generate_response = generate_response
+        self._stream_tokens = (
+            stream_tokens if stream_tokens is not None else ["## Key Concepts\n", "Stuff.\n"]
+        )
+
+    def is_available(self) -> bool:
+        return self._available
+
+    def embeddings_available(self) -> bool:
+        return self._available
+
+    def generate(self, prompt: str, **kwargs: Any) -> str | None:
+        return self._generate_response
+
+    def generate_stream(self, prompt: str, **kwargs: Any) -> Generator[str]:
+        yield from self._stream_tokens
+
+    def semantic_search(
+        self, query: str, documents: list[dict[str, Any]], top_k: int = 5
+    ) -> list[dict[str, Any]]:
+        results = []
+        for i, doc in enumerate(documents[:top_k]):
+            results.append({**doc, "score": 0.9 - (i * 0.1)})
+        return results
+
+
+class _UnavailableNeo4j:
+    """Stands in for the Neo4j adapter, always reporting unavailable.
+
+    This forces retrieval down to tier 3 (on-demand embedding generation via
+    ollama.semantic_search), which is enough to exercise the endpoints without
+    needing a real Neo4j instance.
+    """
+
+    def is_available(self) -> bool:
+        return False
+
+
+class _SynthesisNotesService:
+    def list_notes(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": "curious-elephant",
+                "title": "Incident Response Basics",
+                "content": "Runbooks matter a lot.",
+                "tags": ["sre"],
+            }
+        ]
+
+
+@contextmanager
+def _synthesis_client(
+    llm: Any, notes_service: Any | None = None
+) -> Generator[TestClient]:
+    app.dependency_overrides[get_llm] = lambda: llm
+    app.dependency_overrides[get_notes] = lambda: notes_service or _SynthesisNotesService()
+    app.dependency_overrides[get_neo4j] = lambda: _UnavailableNeo4j()
+    app.dependency_overrides[get_static_articles] = lambda: [
+        {"id": 1, "title": "SRE Practices", "content": "On-call and monitoring."}
+    ]
+    app.dependency_overrides[get_user_resources] = lambda: []
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
+
+
+class TestSynthesize:
+    """Tests for POST /api/synthesize."""
+
+    def test_happy_path_returns_synthesis_and_sources(self) -> None:
+        with _synthesis_client(_SynthesisLLM()) as client:
+            response = client.post(
+                "/api/synthesize", json={"query": "incident response"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "## Key Concepts" in data["synthesis"]
+        assert data["degraded"] is False
+        assert len(data["sources"]) > 0
+        # Sources use the id/type/title/content/score shape the frontend renders.
+        source = data["sources"][0]
+        assert {"id", "type", "title", "content", "score"} <= source.keys()
+
+    def test_ai_unavailable_returns_503(self) -> None:
+        with _synthesis_client(_SynthesisLLM(available=False)) as client:
+            response = client.post(
+                "/api/synthesize", json={"query": "incident response"}
+            )
+
+        assert response.status_code == 503
+
+    def test_empty_llm_response_is_degraded(self) -> None:
+        with _synthesis_client(_SynthesisLLM(generate_response=None)) as client:
+            response = client.post(
+                "/api/synthesize", json={"query": "incident response"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["degraded"] is True
+        assert data["synthesis"] == ""
+
+    def test_missing_query_rejected(self) -> None:
+        with _synthesis_client(_SynthesisLLM()) as client:
+            response = client.post("/api/synthesize", json={})
+
+        assert response.status_code == 422
+
+
+class TestSynthesizeStream:
+    """Tests for POST /api/synthesize/stream."""
+
+    def _events(self, response: Any) -> list[dict[str, Any]]:
+        import json as _json
+
+        events = []
+        for line in response.text.split("\n\n"):
+            line = line.strip()
+            if line.startswith("data: "):
+                events.append(_json.loads(line[len("data: ") :]))
+        return events
+
+    def test_stream_emits_sources_before_tokens_then_completes(self) -> None:
+        with _synthesis_client(
+            _SynthesisLLM(stream_tokens=["## Key Concepts\n", "Some ", "text."])
+        ) as client:
+            response = client.post(
+                "/api/synthesize/stream", json={"query": "incident response"}
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+
+        assert types[0] == "sources"
+        assert "token" in types
+        assert types[-1] == "complete"
+        # sources must precede every token event
+        sources_index = types.index("sources")
+        first_token_index = types.index("token")
+        assert sources_index < first_token_index
+
+    def test_stream_degrades_gracefully_when_ai_unavailable(self) -> None:
+        with _synthesis_client(_SynthesisLLM(available=False)) as client:
+            response = client.post(
+                "/api/synthesize/stream", json={"query": "incident response"}
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        assert events[0]["type"] == "error"
+
+    def test_stream_emits_error_on_empty_generation(self) -> None:
+        with _synthesis_client(_SynthesisLLM(stream_tokens=[])) as client:
+            response = client.post(
+                "/api/synthesize/stream", json={"query": "incident response"}
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+        assert "sources" in types
+        assert "error" in types
+        assert "complete" not in types
 
 
 class TestMockOllamaClientUnit:

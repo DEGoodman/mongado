@@ -21,6 +21,7 @@ RATE_LIMITS = {
     "ai_suggest": "30/minute",  # Link/tag suggestions
     "ai_warmup": "5/minute",  # Model warmup
     "ai_stream": "20/minute",  # Streaming suggestions
+    "ai_synthesis": "5/minute",  # Deep synthesis across many documents (expensive)
     # Search endpoints
     "search": "60/minute",  # Semantic search
     # Upload endpoints
