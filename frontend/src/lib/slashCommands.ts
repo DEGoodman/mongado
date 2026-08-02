@@ -6,12 +6,7 @@
  */
 
 export type SlashCommandName =
-  | "expand"
-  | "simplify"
-  | "summarize"
-  | "continue"
-  | "rephrase"
-  | "link";
+  "expand" | "simplify" | "summarize" | "continue" | "rephrase" | "link";
 
 export interface SlashCommandDef {
   name: SlashCommandName;

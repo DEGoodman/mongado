@@ -99,8 +99,7 @@ export default function NoteEditorForm({
   // endpoints require an admin passkey session (unlike /api/ask), so
   // aiAvailable here effectively also gates on isAuthenticated() - a
   // signed-out visitor never sees a palette that can only 401.
-  const slashCommandsArmed =
-    settings.slashCommands && settings.aiMode !== "off" && aiAvailable;
+  const slashCommandsArmed = settings.slashCommands && settings.aiMode !== "off" && aiAvailable;
 
   // Load all notes for wikilink autocomplete
   useEffect(() => {

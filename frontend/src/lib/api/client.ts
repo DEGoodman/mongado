@@ -15,8 +15,8 @@ const SESSION_EXPIRES_KEY = "admin_session_expires";
 /**
  * Get authorization headers if admin token is set
  */
-export function getAuthHeaders(): HeadersInit {
-  const headers: HeadersInit = {
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
 

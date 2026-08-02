@@ -241,8 +241,8 @@ export default function HeaderMenu() {
                 </div>
                 <div className={styles.modeDescription}>
                   <p>
-                    Type <code>/</code> in the note editor for AI text commands (expand,
-                    simplify, link, and more).
+                    Type <code>/</code> in the note editor for AI text commands (expand, simplify,
+                    link, and more).
                   </p>
                 </div>
               </div>
