@@ -55,6 +55,10 @@ interface NoteEditorFormProps {
   onOpenAIPanel: (tab?: PanelTab) => void;
   /** Fires on every field change; used by the create page for draft autosave */
   onValuesChange?: (values: NoteEditorValues) => void;
+  /** Saved note ID (edit mode only). Omitted in create mode - the note isn't
+   * saved yet, so /link (#146) falls back to embedding the supplied text
+   * directly instead of looking up a saved note. */
+  noteId?: string;
 }
 
 function hasWikilinks(text: string): boolean {
@@ -70,6 +74,7 @@ export default function NoteEditorForm({
   onCancel,
   onOpenAIPanel,
   onValuesChange,
+  noteId,
 }: NoteEditorFormProps) {
   const { llmFeaturesEnabled } = useFeatureFlags();
   const { settings } = useSettings();
@@ -88,6 +93,14 @@ export default function NoteEditorForm({
   useEffect(() => {
     setAiAvailable(llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI));
   }, [llmFeaturesEnabled]);
+
+  // Slash-command palette (#146) arms only when: the user setting is on,
+  // AND aiMode isn't "off", AND AI is available. The editor/assist
+  // endpoints require an admin passkey session (unlike /api/ask), so
+  // aiAvailable here effectively also gates on isAuthenticated() - a
+  // signed-out visitor never sees a palette that can only 401.
+  const slashCommandsArmed =
+    settings.slashCommands && settings.aiMode !== "off" && aiAvailable;
 
   // Load all notes for wikilink autocomplete
   useEffect(() => {
@@ -341,6 +354,9 @@ export default function NoteEditorForm({
               // Open note in new tab
               window.open(`/knowledge-base/notes/${id}`, "_blank");
             }}
+            slashCommandsArmed={slashCommandsArmed}
+            noteTitle={values.title}
+            noteId={noteId}
           />
           <p className={styles.formHint}>
             Tip: Atomic notes are easier to link and reuse. If you&apos;re listing multiple
