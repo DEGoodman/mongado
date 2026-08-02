@@ -48,17 +48,23 @@ The system:
 
 ### Admin User
 
-Admin auth gates note creation, editing, and deletion. Two credentials are
-accepted, both sent as `Authorization: Bearer <value>`:
+Admin auth gates note creation, editing, and deletion. Two credentials exist,
+both sent as `Authorization: Bearer <value>`, but they are **not**
+interchangeable since #267:
 
-| Credential | Who uses it | Lifetime | Revocable |
+| Credential | What it authorizes | Lifetime | Revocable |
 |---|---|---|---|
-| **Passkey session** (#229) | You, in the browser | 12 hours, server-enforced | per device |
-| **Static admin token** (`ADMIN_TOKEN`) | CI/automation, first-time enrollment | none | no (rotate the env var) |
+| **Passkey session** (#229) | Everything: notes, backups, credential management, feature flags | 12 hours, server-enforced | per device |
+| **Static admin token** (`ADMIN_TOKEN`) | Passkey enrollment only (`/api/auth/register/*`) | none | no (rotate the env var) |
 
-Passkeys are the normal way in. The static token is kept because the deploy
-workflow calls `/api/admin/backup` and cannot present a passkey, and because
-something has to authorize enrolling the *first* passkey.
+Passkeys are the way in for every admin operation. The static token is scoped
+down to a single job: authorizing passkey *enrollment* - the first passkey,
+before any session exists, and a break-glass path if every passkey is lost.
+Presented anywhere else it is rejected with 403. This keeps a leaked token from
+being able to read, write, back up, or revoke - only enroll.
+
+Deploy-time backups run over SSH (`scripts/backup_export.py`, #267), so CI no
+longer holds the admin token at all.
 
 ### Passkey Setup
 
@@ -68,8 +74,8 @@ something has to authorize enrolling the *first* passkey.
 
 From then on, `/login` offers **Sign in with passkey**. Enroll additional
 devices from `/admin` while signed in; revoke any of them there individually.
-Revoking the last passkey is allowed - the admin token still works, so this
-cannot lock you out.
+Revoking the last passkey is allowed - the admin token can still re-enroll one,
+so this cannot lock you out.
 
 ### How It Works
 
@@ -96,7 +102,8 @@ one that verifies the response.
 **Credentials** live as `(:AdminCredential)` nodes holding the credential id,
 COSE public key, signature counter, and device name.
 
-**Brute-force lockout** (#225) still applies to static-token guesses. Expired
+**Brute-force lockout** (#225) still applies to static-token guesses at the
+enrollment endpoints - the one place the token is checked (#267). Expired
 passkey sessions return 401 and are deliberately exempt, so a stale browser
 tab cannot lock you out of signing back in.
 
@@ -104,7 +111,7 @@ tab cannot lock you out of signing back in.
 
 ```bash
 # backend/.env
-ADMIN_TOKEN=your-admin-token          # required (enrollment + automation)
+ADMIN_TOKEN=your-admin-token          # required (passkey enrollment / break-glass)
 SESSION_SECRET=                       # optional; derived from ADMIN_TOKEN if empty
 WEBAUTHN_RP_ID=                       # optional; defaults to the first CORS origin's host
 WEBAUTHN_RP_NAME=Mongado              # shown in the OS passkey prompt

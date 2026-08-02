@@ -463,8 +463,11 @@ In `backend/main.py`:
 - `GET /api/auth/session` - Report auth state (200 whether or not signed in)
 - `GET|DELETE /api/auth/credentials` - List / revoke enrolled passkeys
 
-Admin endpoints accept a passkey session token **or** the static `ADMIN_TOKEN`;
-the token is retained for CI (deploy backups) and first-time enrollment.
+Admin endpoints require a passkey session token. The static `ADMIN_TOKEN` is
+scoped to passkey enrollment only (`/api/auth/register/*`, #267) - it bootstraps
+the first passkey and is the break-glass path, but is rejected (403) everywhere
+else. Deploy-time backups run over SSH (`backend/scripts/backup_export.py`), so
+CI no longer uses the token.
 
 *AI Features:*
 - `POST /api/search` - Semantic search (articles + notes)

@@ -37,7 +37,7 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
-from auth import AdminUser, verify_admin_optional
+from auth import AdminUser, EnrollmentUser, verify_admin_optional
 from config import Settings, get_settings
 from core.sessions import (
     DEFAULT_TTL_SECONDS,
@@ -124,14 +124,15 @@ def create_auth_router(neo4j_adapter: Any) -> APIRouter:
     async def registration_options(
         request: Request,
         body: RegistrationOptionsRequest,
-        _admin: AdminUser,
+        _admin: EnrollmentUser,
         settings: Annotated[Settings, Depends(get_settings)],
     ) -> RegistrationOptionsResponse:
         """Begin passkey enrollment.
 
-        Requires existing admin auth: the static token for the first passkey,
-        a live passkey session for every one after. There is deliberately no
-        unauthenticated enrollment path.
+        Requires existing admin auth, and is the one place the static token
+        still qualifies (#267): the token for the first passkey, a live passkey
+        session for every one after. There is deliberately no unauthenticated
+        enrollment path.
         """
         _require_neo4j()
 
@@ -164,10 +165,13 @@ def create_auth_router(neo4j_adapter: Any) -> APIRouter:
     async def registration_verify(
         request: Request,
         body: RegistrationVerifyRequest,
-        _admin: AdminUser,
+        _admin: EnrollmentUser,
         settings: Annotated[Settings, Depends(get_settings)],
     ) -> CredentialsListResponse:
-        """Complete passkey enrollment and persist the credential."""
+        """Complete passkey enrollment and persist the credential.
+
+        Enrollment-scoped auth (#267): a passkey session or the static token.
+        """
         _require_neo4j()
 
         challenge = _challenge_from_credential(body.credential)

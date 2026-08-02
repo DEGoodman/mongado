@@ -8,23 +8,15 @@ from fastapi.testclient import TestClient
 os.environ["TESTING"] = "1"
 
 from auth import MAX_FAILED_ATTEMPTS, FailedAuthTracker, auth_tracker
-from config import get_settings
 from main import app
 
-TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
+# admin_headers (a passkey-session token) comes from conftest since #267.
 
 
 @pytest.fixture
 def client() -> TestClient:
     """Test client (auth_tracker reset handled by the autouse conftest fixture)."""
     return TestClient(app)
-
-
-@pytest.fixture
-def admin_headers() -> dict[str, str]:
-    settings = get_settings()
-    token = settings.admin_token or TEST_ADMIN_TOKEN
-    return {"Authorization": f"Bearer {token}"}
 
 
 BAD_HEADERS = {"Authorization": "Bearer definitely-wrong-token"}

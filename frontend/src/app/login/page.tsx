@@ -159,6 +159,10 @@ export default function LoginPage() {
                 <button type="submit" disabled={isLoading} className={styles.submitButton}>
                   {isLoading ? "Verifying..." : "Sign in with token"}
                 </button>
+                <p className={styles.hint}>
+                  Token sign-in is for enrolling a passkey. Add one on the admin page, then use it
+                  for everything else.
+                </p>
               </form>
             )}
           </div>

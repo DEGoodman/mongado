@@ -134,30 +134,29 @@ def _check_session_token(token: str) -> dict[str, Any] | None:
     }
 
 
-def verify_admin(
+def _authenticate(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-) -> bool:
-    """Verify admin credentials from the Authorization header.
+    credentials: HTTPAuthorizationCredentials | None,
+) -> dict[str, Any]:
+    """Authenticate an admin request, returning the principal or raising.
 
-    Accepts either a passkey session token (#229) or the static admin token,
-    both over `Authorization: Bearer`. Uses FastAPI's HTTPBearer security
-    scheme for proper Swagger UI integration.
+    Shared by verify_admin (passkey sessions only) and verify_enrollment
+    (sessions or the static token). Returns a dict with 'kind' ('passkey' or
+    'token'); each caller decides whether that kind is allowed for its endpoint.
 
-    Repeated invalid *static tokens* from one IP trigger a lockout (#225):
-    after MAX_FAILED_ATTEMPTS failures, that IP gets 429 for LOCKOUT_SECONDS
-    - even for requests that would otherwise carry the correct token. An
-    expired or malformed session token is reported as 401 and does not count
-    toward that budget: session tokens are HMAC-signed, so there is nothing
-    to brute-force, and counting them would let a stale browser tab lock the
-    admin out of logging back in.
+    The #225 lockout lives here because this is where the static token is
+    checked: repeated invalid tokens from one IP trigger 429 for LOCKOUT_SECONDS,
+    even for a request that would otherwise carry the correct token. A passkey
+    session is HMAC-signed and unguessable, so an expired or malformed session is
+    reported as 401 and does not count toward that budget - counting it would let
+    a stale browser tab lock the admin out of signing back in.
 
     Args:
         request: Incoming request (for the client IP)
         credentials: HTTPAuthorizationCredentials from HTTPBearer (None if missing)
 
     Returns:
-        True if authenticated
+        Principal dict with 'kind' ('passkey' or 'token')
 
     Raises:
         HTTPException: 401 if no auth header or an expired session, 403 if
@@ -186,7 +185,7 @@ def verify_admin(
     if _check_session_token(token):
         auth_tracker.record_success(ip)
         logger.debug("Admin authenticated via passkey session")
-        return True
+        return {"kind": "passkey"}
 
     if looks_like_session_token(token):
         logger.info("Rejected expired or invalid passkey session from %s", ip)
@@ -218,7 +217,61 @@ def verify_admin(
         raise HTTPException(status_code=403, detail="Invalid token.")
 
     auth_tracker.record_success(ip)
-    logger.debug("Admin authenticated successfully")
+    logger.debug("Admin authenticated via static token")
+    return {"kind": "token"}
+
+
+def verify_admin(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> bool:
+    """Full admin access: a passkey session is required (#267).
+
+    The static token no longer grants general admin access - it is scoped to
+    passkey enrollment (see verify_enrollment). A correct static token still
+    authenticates, but is rejected here with 403 directing the caller to sign in
+    with a passkey. This is the dependency behind AdminUser, used by every admin
+    operation except enrollment.
+
+    Args:
+        request: Incoming request (for the client IP)
+        credentials: HTTPAuthorizationCredentials from HTTPBearer (None if missing)
+
+    Returns:
+        True if authenticated with a passkey session
+
+    Raises:
+        HTTPException: 401 if no auth header or an expired session, 403 if the
+            credential is an invalid or enrollment-only static token, 429 if the
+            client IP is locked out
+    """
+    principal = _authenticate(request, credentials)
+    if principal["kind"] != "passkey":
+        raise HTTPException(
+            status_code=403,
+            detail="This operation requires a passkey session. Sign in with your passkey.",
+        )
+    return True
+
+
+def verify_enrollment(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> bool:
+    """Passkey-enrollment access: a passkey session OR the static token (#267).
+
+    Enrollment is the one operation the static token still authorizes, so the
+    first passkey can be created before any session exists - and as a break-glass
+    path if every passkey is lost. Once a passkey session is available, it works
+    here too.
+
+    Returns:
+        True if authenticated with either credential
+
+    Raises:
+        HTTPException: same as _authenticate (401 / 403 / 429)
+    """
+    _authenticate(request, credentials)
     return True
 
 
@@ -256,5 +309,8 @@ def verify_admin_optional(
     return unauthenticated
 
 
-# Type alias for dependency injection
+# Type aliases for dependency injection.
+# AdminUser gates full admin access (passkey session only). EnrollmentUser gates
+# passkey enrollment, which the static token may still authorize (#267).
 AdminUser = Annotated[bool, Depends(verify_admin)]
+EnrollmentUser = Annotated[bool, Depends(verify_enrollment)]
