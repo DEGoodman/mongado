@@ -12,9 +12,12 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
+from auth import AdminUser
 from core import ai as ai_core
 from dependencies import get_llm, get_neo4j, get_notes, get_static_articles, get_user_resources
 from models import (
+    EditorAssistRequest,
+    EditorAssistResponse,
     GPUStatusResponse,
     LinkSuggestion,
     LinkSuggestionsResponse,
@@ -165,6 +168,79 @@ def _retrieve_documents_for_synthesis(
     logger.info("Synthesis: falling back to on-demand embedding generation")
     fallback: list[dict[str, Any]] = ollama.semantic_search(query, all_resources, top_k)
     return fallback
+
+
+def _build_link_command_prompt(
+    text: str,
+    title: str,
+    note_id: str | None,
+    notes_service: Any,
+) -> tuple[str, list[dict[str, Any]]]:
+    """Build the link-suggestion prompt for the `/link` editor command (#146).
+
+    Reuses filter_link_candidates + build_link_suggestion_prompt - the same
+    pure functions POST /api/notes/{note_id}/suggest-links uses - rather than
+    duplicating retrieval logic. When note_id is omitted (a note being
+    created and not yet saved), the current note is not excluded from
+    candidates by ID and there are no existing links to exclude.
+
+    Returns:
+        (prompt, candidate_notes) - candidate_notes is empty if there is
+        nothing to suggest against.
+    """
+    all_notes = notes_service.list_notes()
+
+    existing_links: list[str] = []
+    excluded_id = note_id or ""
+    if note_id:
+        note = notes_service.get_note(note_id)
+        if note:
+            existing_links = note.get("links", [])
+
+    candidate_notes = ai_core.filter_link_candidates(
+        all_notes=all_notes, current_note_id=excluded_id, existing_links=existing_links
+    )
+
+    prompt = ai_core.build_link_suggestion_prompt(
+        current_title=title or "Untitled",
+        current_content=text,
+        candidate_notes=candidate_notes,
+        max_candidates=50,
+    )
+    return prompt, candidate_notes
+
+
+def _parse_link_command_response(
+    response_text: str, candidate_notes: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Parse the LLM's link-suggestion JSON into plain suggestion dicts.
+
+    Mirrors the parsing in suggest_links; kept separate rather than shared
+    since suggest_links builds LinkSuggestion models directly while the
+    editor-assist endpoints need plain dicts for both the JSON response body
+    and the SSE `link` event payload.
+    """
+    suggestions_data = ai_core.parse_json_response(response_text, expected_type="array")
+    if suggestions_data is None or not isinstance(suggestions_data, list):
+        return []
+
+    note_map = {n["id"]: n for n in candidate_notes}
+    suggestions = []
+    for item in suggestions_data:
+        if not isinstance(item, dict):
+            continue
+        suggested_id = item.get("note_id")
+        if suggested_id and suggested_id in note_map:
+            suggestions.append(
+                {
+                    "note_id": suggested_id,
+                    "title": note_map[suggested_id].get("title", "Untitled"),
+                    "confidence": item.get("confidence", 0.5),
+                    "reason": item.get("reason", ""),
+                }
+            )
+
+    return suggestions[:5]
 
 
 # Type aliases for cleaner signatures
@@ -850,6 +926,189 @@ def synthesize_stream(
         except Exception as e:
             logger.error("Synthesis stream: generation failed: %s", e)
             yield format_sse({"type": "error", "message": "Failed to generate synthesis"})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
+
+
+# Editor slash commands (#146 Phase 1). Admin-gated (AdminUser, not the
+# open-to-all pattern used by /api/ask and /api/notes/{id}/suggest-stream):
+# only admins can edit notes, so an unauthenticated caller has no legitimate
+# use for these, and leaving them open would make the site a free LLM proxy
+# for arbitrary attacker-supplied text. The frontend uses lib/sse.ts's
+# fetch()-based SSE reader (not EventSource), which can send the
+# Authorization header these endpoints require.
+@router.post("/editor/assist", response_model=EditorAssistResponse)
+@limiter.limit(RATE_LIMITS["ai_editor"])
+def editor_assist(
+    request: Request,
+    assist_request: EditorAssistRequest,
+    ollama: OllamaDep,
+    notes_service: NotesDep,
+    _admin: AdminUser,
+) -> EditorAssistResponse:
+    """Non-streaming counterpart to /api/editor/assist/stream, for fallback.
+
+    Text-transform commands return `result`; `/link` returns `suggestions`.
+    """
+    command = assist_request.command
+
+    if command not in ai_core.EDITOR_COMMANDS:
+        raise HTTPException(status_code=400, detail=f"Unknown editor command: {command!r}")
+
+    if not ollama.is_available():
+        raise HTTPException(
+            status_code=503,
+            detail="AI editor assist feature is not available. LLM is not running or not configured.",
+        )
+
+    if command == "link":
+        prompt, candidate_notes = _build_link_command_prompt(
+            assist_request.text,
+            assist_request.note_title or "",
+            assist_request.note_id,
+            notes_service,
+        )
+        if not candidate_notes:
+            return EditorAssistResponse(command=command, suggestions=[])
+
+        response_text = ollama.generate(prompt, role="structured", num_ctx=8192)
+        if not response_text:
+            logger.error("Empty response from LLM for editor /link command")
+            return EditorAssistResponse(command=command, suggestions=[], degraded=True)
+
+        suggestions = _parse_link_command_response(response_text, candidate_notes)
+        return EditorAssistResponse(command=command, suggestions=suggestions)
+
+    try:
+        prompt = ai_core.build_editor_command_prompt(
+            command, assist_request.text, assist_request.note_title, assist_request.note_content
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    result = ollama.generate(prompt, role="chat")
+    if not result:
+        logger.error("Empty response from LLM for editor command %s", command)
+        return EditorAssistResponse(command=command, result="", degraded=True)
+
+    return EditorAssistResponse(command=command, result=result)
+
+
+@router.post("/editor/assist/stream")
+@limiter.limit(RATE_LIMITS["ai_editor"])
+def editor_assist_stream(
+    request: Request,
+    assist_request: EditorAssistRequest,
+    ollama: OllamaDep,
+    notes_service: NotesDep,
+    _admin: AdminUser,
+) -> StreamingResponse:
+    """Stream an editor slash-command result via Server-Sent Events (#146).
+
+    POST (not GET) so the frontend can send the note text/context in the
+    body and an Authorization header - not possible with EventSource, so the
+    frontend uses the fetch()-based reader in frontend/src/lib/sse.ts.
+
+    Event types:
+    - token: incremental text chunk (text-transform commands only)
+    - link: one link suggestion ({note_id, title, reason, confidence}) (`/link` only)
+    - complete: command finished
+    - error: something failed; the stream ends without raising
+
+    Never raises out of the generator - failures are reported as an `error`
+    event so the frontend can leave the document untouched.
+    """
+    _ollama = ollama
+    _notes_service = notes_service
+    _command = assist_request.command
+    _text = assist_request.text
+    _title = assist_request.note_title
+    _content = assist_request.note_content
+    _note_id = assist_request.note_id
+
+    def format_sse(data: dict[str, Any]) -> str:
+        return f"data: {json.dumps(data)}\n\n"
+
+    def event_generator() -> Generator[str]:
+        if _command not in ai_core.EDITOR_COMMANDS:
+            yield format_sse({"type": "error", "message": f"Unknown editor command: {_command!r}"})
+            return
+
+        if not _ollama.is_available():
+            yield format_sse({"type": "error", "message": "AI service unavailable"})
+            return
+
+        if _command == "link":
+            try:
+                prompt, candidate_notes = _build_link_command_prompt(
+                    _text, _title or "", _note_id, _notes_service
+                )
+            except Exception as e:
+                logger.error("Editor /link stream: failed to prepare candidates: %s", e)
+                yield format_sse({"type": "error", "message": "Failed to prepare link suggestions"})
+                return
+
+            if not candidate_notes:
+                yield format_sse({"type": "complete"})
+                return
+
+            try:
+                link_text = ""
+                for chunk in _ollama.generate_stream(prompt, role="structured", num_ctx=8192):
+                    link_text += chunk
+
+                if not link_text:
+                    logger.error("Editor /link stream: empty response from LLM")
+                    yield format_sse(
+                        {"type": "error", "message": "Failed to generate link suggestions"}
+                    )
+                    return
+
+                suggestions = _parse_link_command_response(link_text, candidate_notes)
+                for suggestion in suggestions:
+                    yield format_sse({"type": "link", **suggestion})
+
+                yield format_sse({"type": "complete"})
+
+            except Exception as e:
+                logger.error("Editor /link stream: generation failed: %s", e)
+                yield format_sse({"type": "error", "message": "Failed to generate link suggestions"})
+
+            return
+
+        try:
+            prompt = ai_core.build_editor_command_prompt(_command, _text, _title, _content)
+        except ValueError as e:
+            yield format_sse({"type": "error", "message": str(e)})
+            return
+
+        try:
+            token_count = 0
+            for text in _ollama.generate_stream(prompt, role="chat"):
+                token_count += 1
+                yield format_sse({"type": "token", "text": text})
+
+            if token_count == 0:
+                logger.warning("Editor command stream: empty response from LLM (%s)", _command)
+                yield format_sse({"type": "error", "message": "Failed to generate response"})
+                return
+
+            logger.info(
+                "Editor command stream complete: %s (%d tokens)", _command, token_count
+            )
+            yield format_sse({"type": "complete"})
+
+        except Exception as e:
+            logger.error("Editor command stream: generation failed (%s): %s", _command, e)
+            yield format_sse({"type": "error", "message": "Failed to generate response"})
 
     return StreamingResponse(
         event_generator(),

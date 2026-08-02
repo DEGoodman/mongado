@@ -32,6 +32,29 @@ class SynthesisResponse(BaseModel):
     degraded: bool = False
 
 
+class EditorAssistRequest(BaseModel):
+    """Request model for editor slash commands (#146 Phase 1)."""
+
+    command: str  # one of core.ai.EDITOR_COMMANDS
+    text: str
+    note_title: str | None = None
+    note_content: str | None = None
+    note_id: str | None = None  # omitted for a note being created and not yet saved
+
+
+class EditorAssistResponse(BaseModel):
+    """Non-streaming response model for editor slash commands (#146 Phase 1).
+
+    Text-transform commands (expand/simplify/summarize/continue/rephrase)
+    populate `result`; `/link` populates `suggestions` instead.
+    """
+
+    command: str
+    result: str | None = None
+    suggestions: list[dict[str, Any]] | None = None
+    degraded: bool = False
+
+
 class SummaryResponse(BaseModel):
     """Response model for article/note summary."""
 
