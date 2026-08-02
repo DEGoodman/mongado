@@ -682,6 +682,67 @@
   }
 }
 
+// ===== SYNTHESIS TAB (#166) =====
+
+.synthesisView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.synthesisResults {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-4;
+}
+
+.synthesisOutput {
+  @include text-secondary;
+  margin-bottom: $spacing-4;
+  padding: $spacing-4;
+  border: $border-width-thin solid $neutral-200;
+  border-radius: $border-radius-md;
+  color: $neutral-800;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+}
+
+.synthesisStreamingCursor {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: $color-interactive-primary;
+  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.synthesisActions {
+  @include flex-start;
+  gap: $spacing-2;
+  margin-bottom: $spacing-4;
+}
+
+.saveDraftButton {
+  padding: $spacing-2 $spacing-3;
+  border-radius: $border-radius-sm;
+  @include text-tertiary;
+  font-weight: $font-weight-medium;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  @include transition-default;
+
+  &:hover {
+    background-color: $color-interactive-primary-hover;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .suggestionReason {
   @include text-tertiary;
   line-height: 1.6;

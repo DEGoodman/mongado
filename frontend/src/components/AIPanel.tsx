@@ -8,6 +8,7 @@ import {
   Warning,
   Tag,
   LinkSimple,
+  Books,
 } from "@phosphor-icons/react";
 import { logger } from "@/lib/logger";
 import type { AiMode } from "@/lib/settings";
@@ -19,13 +20,15 @@ import {
   type LinkSuggestion,
   type StreamPhase,
 } from "@/lib/aiSuggestionsStream";
+import SourceList, { type Source } from "@/components/SourceList";
+import SynthesisView from "@/components/SynthesisView";
 import styles from "./AIPanel.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 const SUGGEST_DEBOUNCE_MS = 5000; // real-time mode: refetch after typing pauses
 
-export type PanelTab = "search" | "ask" | "suggest";
+export type PanelTab = "search" | "ask" | "suggest" | "synthesize";
 
 /** Note context that enables the Suggest tab (requires a saved note) */
 export interface SuggestContext {
@@ -41,13 +44,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  sources?: Array<{
-    id: number | string;
-    type?: "article" | "note";
-    title: string;
-    content: string;
-    score?: number;
-  }>;
+  sources?: Source[];
 }
 
 interface AIPanelProps {
@@ -255,8 +252,9 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
 
   const handleTabChange = (newTab: PanelTab) => {
     setTab(newTab);
-    // Clear messages when switching between search and ask for clarity
-    if (newTab !== "suggest") {
+    // Clear messages when switching between search and ask for clarity.
+    // Suggest and Synthesize keep their own state, kept mounted below.
+    if (newTab !== "suggest" && newTab !== "synthesize") {
       setMessages([]);
     }
   };
@@ -322,6 +320,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
   if (!isOpen) return null;
 
   const suggestActive = tab === "suggest" && suggest !== undefined;
+  const synthesizeActive = tab === "synthesize";
 
   return (
     <div className={styles.panel}>
@@ -417,6 +416,12 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
               <Sparkle size={14} aria-hidden="true" /> Suggest
             </button>
           )}
+          <button
+            onClick={() => handleTabChange("synthesize")}
+            className={`${styles.modeButton} ${tab === "synthesize" ? styles.active : styles.inactive}`}
+          >
+            <Books size={14} aria-hidden="true" /> Synthesize
+          </button>
         </div>
       </div>
 
@@ -427,8 +432,13 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
         </div>
       )}
 
+      {/* Synthesis view - kept mounted so results survive tab switches */}
+      <div hidden={!synthesizeActive} className={styles.suggestContainer}>
+        <SynthesisView active={synthesizeActive} />
+      </div>
+
       {/* Search / Ask view */}
-      <div hidden={suggestActive} className={styles.chatContainer}>
+      <div hidden={suggestActive || synthesizeActive} className={styles.chatContainer}>
         <div className={styles.messagesContainer} style={{ WebkitOverflowScrolling: "touch" }}>
           {messages.length === 0 && (
             <div className={styles.emptyState}>
@@ -477,53 +487,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
                 <p className={styles.messageContent}>{message.content}</p>
 
                 {/* Sources */}
-                {message.sources && message.sources.length > 0 && (
-                  <div className={styles.sources}>
-                    {message.sources.map((source, idx) => {
-                      const resourcePath =
-                        source.type === "article"
-                          ? `/knowledge-base/articles/${source.id}`
-                          : source.type === "note"
-                            ? `/knowledge-base/notes/${source.id}`
-                            : null;
-
-                      return (
-                        <div key={`${source.id}-${idx}`} className={styles.sourceCard}>
-                          <div className={styles.sourceHeader}>
-                            <div className={styles.sourceInfo}>
-                              <span className={styles.sourceTitle}>
-                                <span className={styles.sourceType} data-type={source.type}>
-                                  {source.type === "article"
-                                    ? "ART"
-                                    : source.type === "note"
-                                      ? "NOTE"
-                                      : "REF"}
-                                </span>{" "}
-                                {source.title || `Document ${source.id}`}
-                              </span>
-                              {source.score && (
-                                <span className={styles.sourceScore}>
-                                  {source.score.toFixed(3)}
-                                </span>
-                              )}
-                            </div>
-                            {resourcePath && (
-                              <a
-                                href={resourcePath}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={styles.sourceLink}
-                              >
-                                View →
-                              </a>
-                            )}
-                          </div>
-                          <div className={styles.sourceContent}>{source.content}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                {message.sources && <SourceList sources={message.sources} />}
               </div>
             </div>
           ))}
