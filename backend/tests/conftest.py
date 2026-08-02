@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures."""
 
 import os
+import time
 from collections.abc import Generator
 from typing import Any
 from unittest.mock import MagicMock
@@ -14,6 +15,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
+from config import get_settings
+from core.sessions import create_session_token, derive_session_secret
+
+TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
 
 # ============================================================================
 # Mock Classes (defined first so fixtures can use them)
@@ -510,6 +515,22 @@ def client_with_mocks(
 
     # Clear all overrides
     main.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    """Passkey-session auth headers granting full admin access.
+
+    Since #267 the static admin token is scoped to passkey enrollment only, so
+    tests exercising full admin operations must present a session token. Tests
+    that specifically exercise the static-token path build their own headers.
+    """
+    settings = get_settings()
+    secret = derive_session_secret(
+        settings.admin_token or TEST_ADMIN_TOKEN, settings.session_secret
+    )
+    token = create_session_token(secret, "test-credential", time.time())
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture

@@ -2,20 +2,10 @@
 
 from io import BytesIO
 
-import pytest
 from fastapi.testclient import TestClient
 
-from config import get_settings
-
-# Upload endpoint is admin-only (#224)
-TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
-
-
-@pytest.fixture
-def admin_headers() -> dict[str, str]:
-    settings = get_settings()
-    token = settings.admin_token or TEST_ADMIN_TOKEN
-    return {"Authorization": f"Bearer {token}"}
+# Upload endpoint is admin-only (#224). admin_headers (a passkey-session token)
+# comes from conftest since #267.
 
 
 # Minimal JPEG with valid magic bytes (SOI + APP0 + JFIF + EOI)

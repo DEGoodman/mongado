@@ -12,18 +12,10 @@ from fastapi.testclient import TestClient
 os.environ["TESTING"] = "1"
 
 import main
-from config import get_settings
 from dependencies import get_neo4j, get_notes
 from main import _find_referenced_uploads, app
 
-TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
-
-
-@pytest.fixture
-def admin_headers() -> dict[str, str]:
-    settings = get_settings()
-    token = settings.admin_token or TEST_ADMIN_TOKEN
-    return {"Authorization": f"Bearer {token}"}
+# admin_headers (a passkey-session token) comes from conftest since #267.
 
 
 @pytest.fixture

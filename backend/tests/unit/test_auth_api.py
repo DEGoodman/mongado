@@ -286,10 +286,10 @@ class TestCredentialManagement:
         self,
         client: TestClient,
         adapter: FakeNeo4jAdapter,
-        admin_headers: dict[str, str],
+        session_headers: dict[str, str],
     ) -> None:
         adapter.create_admin_credential("dGVzdC1jcmVk", b"key", 0, "Laptop")
-        response = client.get("/api/auth/credentials", headers=admin_headers)
+        response = client.get("/api/auth/credentials", headers=session_headers)
         assert response.status_code == 200
         body = response.json()
         assert body["count"] == 1
@@ -299,10 +299,10 @@ class TestCredentialManagement:
         self,
         client: TestClient,
         adapter: FakeNeo4jAdapter,
-        admin_headers: dict[str, str],
+        session_headers: dict[str, str],
     ) -> None:
         adapter.create_admin_credential("dGVzdC1jcmVk", b"secret-key-bytes", 0, "Laptop")
-        body = client.get("/api/auth/credentials", headers=admin_headers).text
+        body = client.get("/api/auth/credentials", headers=session_headers).text
         assert "public_key" not in body
 
     def test_delete_requires_auth(self, client: TestClient) -> None:
@@ -312,29 +312,30 @@ class TestCredentialManagement:
         self,
         client: TestClient,
         adapter: FakeNeo4jAdapter,
-        admin_headers: dict[str, str],
+        session_headers: dict[str, str],
     ) -> None:
         adapter.create_admin_credential("dGVzdC1jcmVk", b"key", 0, "Laptop")
-        response = client.delete("/api/auth/credentials/dGVzdC1jcmVk", headers=admin_headers)
+        response = client.delete("/api/auth/credentials/dGVzdC1jcmVk", headers=session_headers)
         assert response.status_code == 200
         assert adapter.credentials == []
 
     def test_delete_unknown_returns_404(
-        self, client: TestClient, admin_headers: dict[str, str]
+        self, client: TestClient, session_headers: dict[str, str]
     ) -> None:
-        response = client.delete("/api/auth/credentials/missing", headers=admin_headers)
+        response = client.delete("/api/auth/credentials/missing", headers=session_headers)
         assert response.status_code == 404
 
     def test_delete_last_credential_allowed(
         self,
         client: TestClient,
         adapter: FakeNeo4jAdapter,
-        admin_headers: dict[str, str],
+        session_headers: dict[str, str],
     ) -> None:
-        """The static token is still a way back in, so this cannot lock anyone out."""
+        """Deleting the last passkey is allowed: the static token can still
+        re-enroll one (#267), so this cannot lock anyone out."""
         adapter.create_admin_credential("dGVzdC1jcmVk", b"key", 0, "Only")
         assert (
-            client.delete("/api/auth/credentials/dGVzdC1jcmVk", headers=admin_headers).status_code
+            client.delete("/api/auth/credentials/dGVzdC1jcmVk", headers=session_headers).status_code
             == 200
         )
 
@@ -400,15 +401,15 @@ class TestAuthResponsesAreNotCacheable:
         response = client.get("/api/auth/session")
         assert "no-store" in response.headers["Cache-Control"]
 
-    def test_credentials_endpoint_is_no_store(self, admin_headers: dict[str, str]) -> None:
+    def test_credentials_endpoint_is_no_store(self, session_headers: dict[str, str]) -> None:
         client = TestClient(real_app)
-        response = client.get("/api/auth/credentials", headers=admin_headers)
+        response = client.get("/api/auth/credentials", headers=session_headers)
         assert "no-store" in response.headers["Cache-Control"]
 
-    def test_auth_responses_are_private(self, admin_headers: dict[str, str]) -> None:
+    def test_auth_responses_are_private(self, session_headers: dict[str, str]) -> None:
         """A shared cache must not hold one caller's credential list."""
         client = TestClient(real_app)
-        response = client.get("/api/auth/credentials", headers=admin_headers)
+        response = client.get("/api/auth/credentials", headers=session_headers)
         assert "private" in response.headers["Cache-Control"]
 
     def test_other_get_endpoints_still_cache(self) -> None:
@@ -445,10 +446,9 @@ class TestSessionTokenAcceptedByAdminEndpoints:
         for _ in range(MAX_FAILED_ATTEMPTS + 2):
             assert client.get("/api/admin/backups", headers=headers).status_code == 401
 
-        # Not locked out: a valid token still works
-        response = client.get(
-            "/api/admin/backups", headers={"Authorization": f"Bearer {_admin_token()}"}
-        )
+        # Not locked out: a fresh session still works
+        fresh = create_session_token(secret, "cred", time.time())
+        response = client.get("/api/admin/backups", headers={"Authorization": f"Bearer {fresh}"})
         assert response.status_code == 200
 
     def test_forged_session_signature_rejected(self) -> None:
@@ -458,3 +458,52 @@ class TestSessionTokenAcceptedByAdminEndpoints:
         response = client.get("/api/admin/backups", headers={"Authorization": f"Bearer {forged}"})
         # Shaped like a session but unverifiable -> 401, never authorized
         assert response.status_code == 401
+
+
+class TestStaticTokenIsEnrollmentOnly:
+    """The static admin token is scoped to passkey enrollment (#267).
+
+    It authorizes register/* and nothing else. Every other admin operation
+    requires a passkey session, and rejects the token with 403. This is what
+    shrinks the blast radius of a leaked token: it can enroll a passkey (and is
+    the break-glass path), but cannot read, write, back up, or revoke.
+    """
+
+    def test_token_rejected_on_admin_endpoint(self) -> None:
+        client = TestClient(real_app)
+        response = client.get(
+            "/api/admin/backups", headers={"Authorization": f"Bearer {_admin_token()}"}
+        )
+        assert response.status_code == 403
+        assert "passkey session" in response.json()["detail"].lower()
+
+    def test_token_rejected_on_credentials_list(self) -> None:
+        client = TestClient(real_app)
+        response = client.get(
+            "/api/auth/credentials", headers={"Authorization": f"Bearer {_admin_token()}"}
+        )
+        assert response.status_code == 403
+
+    def test_token_rejected_on_note_creation(self) -> None:
+        client = TestClient(real_app)
+        response = client.post(
+            "/api/notes",
+            json={"content": "should be blocked"},
+            headers={"Authorization": f"Bearer {_admin_token()}"},
+        )
+        assert response.status_code == 403
+
+    def test_token_still_authorizes_enrollment(self) -> None:
+        """The one thing the token can still do: begin passkey enrollment.
+
+        Auth is checked before the endpoint body, so passing the enrollment gate
+        yields any status except 403 (200 if Neo4j is up, 503 if not) - an
+        unauthorized token would be a flat 403.
+        """
+        client = TestClient(real_app)
+        response = client.post(
+            "/api/auth/register/options",
+            json={"name": "Bootstrap"},
+            headers={"Authorization": f"Bearer {_admin_token()}"},
+        )
+        assert response.status_code != 403

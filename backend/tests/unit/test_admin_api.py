@@ -16,25 +16,15 @@ from fastapi.testclient import TestClient
 # Set testing mode before importing app modules
 os.environ["TESTING"] = "1"
 
-from config import get_settings
 from main import app
 
-# Test admin token constant
-TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
+# admin_headers (a passkey-session token) comes from conftest since #267.
 
 
 @pytest.fixture
 def client() -> TestClient:
     """Get test client for API testing."""
     return TestClient(app)
-
-
-@pytest.fixture
-def admin_headers() -> dict[str, str]:
-    """Get admin authentication headers for testing."""
-    settings = get_settings()
-    token = settings.admin_token or TEST_ADMIN_TOKEN
-    return {"Authorization": f"Bearer {token}"}
 
 
 class TestListBackups:

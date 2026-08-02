@@ -11,11 +11,10 @@ from fastapi.testclient import TestClient
 os.environ["TESTING"] = "1"
 
 import feature_flags as feature_flags_module
-from config import get_settings
 from feature_flags import FeatureFlagService
 from main import app
 
-TEST_ADMIN_TOKEN = "test-admin-token-for-ci"
+# admin_headers (a passkey-session token) comes from conftest since #267.
 
 
 class MockNeo4jFlags:
@@ -55,14 +54,6 @@ def flag_service(
 def client(flag_service: FeatureFlagService) -> TestClient:
     """Test client with the mock-backed flag service installed."""
     return TestClient(app)
-
-
-@pytest.fixture
-def admin_headers() -> dict[str, str]:
-    """Admin authentication headers."""
-    settings = get_settings()
-    token = settings.admin_token or TEST_ADMIN_TOKEN
-    return {"Authorization": f"Bearer {token}"}
 
 
 class TestFeatureFlagService:
