@@ -75,14 +75,25 @@ def get_notes() -> NotesService:
 
 # For static articles and user resources, we need callables that return
 # the current state (since these are mutable lists loaded at startup)
+# _static_articles holds the FULL list (including drafts); _published_articles
+# is derived from it and holds only non-draft articles. Keeping them in sync
+# means every existing consumer of get_static_articles() (search, ask,
+# inspire, embedding sync) stays draft-free with no code changes, while new
+# admin-only consumers can opt into get_all_static_articles().
 _static_articles: list[dict[str, Any]] = []
+_published_articles: list[dict[str, Any]] = []
 _user_resources: list[dict[str, Any]] = []
 
 
 def set_static_articles(articles: list[dict[str, Any]]) -> None:
-    """Set the static articles list (called during app startup)."""
-    global _static_articles
+    """Set the static articles list (called during app startup).
+
+    Stores the full list (including drafts) and derives the published-only
+    list used by get_static_articles().
+    """
+    global _static_articles, _published_articles
     _static_articles = articles
+    _published_articles = [a for a in articles if not a.get("draft")]
 
 
 def set_user_resources(resources: list[dict[str, Any]]) -> None:
@@ -92,10 +103,26 @@ def set_user_resources(resources: list[dict[str, Any]]) -> None:
 
 
 def get_static_articles() -> list[dict[str, Any]]:
-    """Get the current static articles list.
+    """Get the current published (non-draft) static articles list.
+
+    Deliberately excludes drafts so every existing consumer (search, ask,
+    inspire, embedding sync) stays draft-free without any code changes.
 
     This dependency can be overridden in tests:
         app.dependency_overrides[get_static_articles] = lambda: mock_articles
+    """
+    return _published_articles
+
+
+def get_all_static_articles() -> list[dict[str, Any]]:
+    """Get the full static articles list, including drafts.
+
+    Only intended for admin-authenticated consumers (see
+    routers/articles.py). Do not wire this into search/ask/inspire/embedding
+    sync - that would leak draft content to anonymous users.
+
+    This dependency can be overridden in tests:
+        app.dependency_overrides[get_all_static_articles] = lambda: mock_articles
     """
     return _static_articles
 
@@ -115,9 +142,10 @@ def reset_dependencies() -> None:
     Call this in test fixtures to ensure clean state between tests.
     """
     global _llm, _neo4j_adapter, _notes_service
-    global _static_articles, _user_resources
+    global _static_articles, _published_articles, _user_resources
     _llm = None
     _neo4j_adapter = None
     _notes_service = None
     _static_articles = []
+    _published_articles = []
     _user_resources = []

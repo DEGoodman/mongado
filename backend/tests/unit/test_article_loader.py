@@ -1,20 +1,25 @@
 """Unit tests for adapters.article_loader module.
 
 These tests verify article loading logic including:
-- Draft article filtering based on environment
+- Draft articles are always loaded (filtering happens downstream, see
+  dependencies.get_static_articles vs get_all_static_articles, #184)
 - Proper loading of date fields (published_date, updated_date)
 - Cache invalidation
 """
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 from adapters import article_loader
 
 
 class TestArticleLoaderDraftFiltering:
-    """Tests for draft article filtering in different environments."""
+    """Tests for draft article loading.
+
+    The loader itself no longer filters drafts by environment (#184) - it
+    always loads every article, tagged with its `draft` field. Visibility is
+    decided by callers (dependencies.py, routers/articles.py).
+    """
 
     def create_test_article(self, article_dir: Path, filename: str, draft: bool = False) -> None:
         """Helper to create a test article with frontmatter."""
@@ -34,8 +39,8 @@ This is test content.
         article_path = article_dir / filename
         article_path.write_text(content)
 
-    def test_loads_published_articles_in_production(self):
-        """Should load non-draft articles in production mode."""
+    def test_loads_both_published_and_draft_articles(self):
+        """Should load both draft and published articles, regardless of mode."""
         with tempfile.TemporaryDirectory() as tmpdir:
             articles_dir = Path(tmpdir)
 
@@ -43,39 +48,16 @@ This is test content.
             self.create_test_article(articles_dir, "published.md", draft=False)
             self.create_test_article(articles_dir, "draft.md", draft=True)
 
-            # Mock production mode (debug=False)
-            with patch("adapters.article_loader.settings.debug", False):
-                # Clear cache before test
-                article_loader._articles_cache = None
-                article_loader._articles_hash = None
+            # Clear cache before test
+            article_loader._articles_cache = None
+            article_loader._articles_hash = None
 
-                articles = article_loader.load_static_articles_from_local(articles_dir)
+            articles = article_loader.load_static_articles_from_local(articles_dir)
 
-                # Should only load published article
-                assert len(articles) == 1
-                assert articles[0]["draft"] is False
-
-    def test_loads_all_articles_in_dev_mode(self):
-        """Should load both draft and published articles in dev mode."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            articles_dir = Path(tmpdir)
-
-            # Create published and draft articles
-            self.create_test_article(articles_dir, "published.md", draft=False)
-            self.create_test_article(articles_dir, "draft.md", draft=True)
-
-            # Mock dev mode (debug=True)
-            with patch("adapters.article_loader.settings.debug", True):
-                # Clear cache before test
-                article_loader._articles_cache = None
-                article_loader._articles_hash = None
-
-                articles = article_loader.load_static_articles_from_local(articles_dir)
-
-                # Should load both articles
-                assert len(articles) == 2
-                draft_count = sum(1 for a in articles if a.get("draft", False))
-                assert draft_count == 1
+            # Should load both articles, with draft field preserved
+            assert len(articles) == 2
+            draft_flags = {a["draft"] for a in articles}
+            assert draft_flags == {True, False}
 
     def test_loads_date_fields(self):
         """Should properly load published_date and updated_date fields."""

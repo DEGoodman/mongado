@@ -1,7 +1,14 @@
 import Link from "next/link";
 import styles from "./page.module.scss";
 
-export default function ArticleNotFound() {
+/**
+ * The "article not found" experience. Exported so DraftArticleFallback.tsx
+ * (#184) can render the identical UI for anonymous/unauthorized visitors
+ * without duplicating markup - Next's automatic not-found.tsx wiring only
+ * fires for the server-side notFound() case (published articles), not the
+ * client-side draft check.
+ */
+export function ArticleNotFoundContent() {
   return (
     <div className={styles.container}>
       <div className={styles.errorContainer}>
@@ -15,4 +22,8 @@ export default function ArticleNotFound() {
       </div>
     </div>
   );
+}
+
+export default function ArticleNotFound() {
+  return <ArticleNotFoundContent />;
 }

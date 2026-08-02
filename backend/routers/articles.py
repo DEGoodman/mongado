@@ -8,9 +8,10 @@ import json
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
-from dependencies import get_notes, get_ollama, get_static_articles
+from auth import verify_admin_optional
+from dependencies import get_all_static_articles, get_notes, get_ollama, get_static_articles
 from models import (
     ArticleMetadata,
     ArticleMetadataListResponse,
@@ -30,17 +31,45 @@ router = APIRouter(prefix="/api/articles", tags=["articles"])
 # Type aliases for cleaner signatures
 OllamaDep = Annotated[Any, Depends(get_ollama)]
 ArticlesDep = Annotated[list[dict[str, Any]], Depends(get_static_articles)]
+AllArticlesDep = Annotated[list[dict[str, Any]], Depends(get_all_static_articles)]
 NotesDep = Annotated[Any, Depends(get_notes)]
+# verify_admin_optional never raises - it reports auth state so anonymous
+# callers still get a 200 (published-only) response instead of a 401.
+AdminOptionalDep = Annotated[dict[str, Any], Depends(verify_admin_optional)]
+
+
+def _drafts_visible(auth: dict[str, Any]) -> bool:
+    """Whether this caller may see draft articles (#184).
+
+    Requires a passkey session specifically, not just "authenticated": the
+    static admin token is scoped to passkey enrollment only (#267) and must
+    not unlock anything else, including draft visibility - so
+    auth["authenticated"] alone is not sufficient here.
+    """
+    return bool(auth.get("authenticated")) and auth.get("kind") == "passkey"
 
 
 @router.get("", response_model=ArticleMetadataListResponse)
-def list_articles(static_articles: ArticlesDep) -> ArticleMetadataListResponse:
+def list_articles(
+    response: Response,
+    static_articles: ArticlesDep,
+    all_static_articles: AllArticlesDep,
+    auth: AdminOptionalDep,
+) -> ArticleMetadataListResponse:
     """Get all static articles metadata (without content), ordered by publication date descending.
 
     Returns lightweight metadata for article list views. Use GET /api/articles/{id}
-    to retrieve full article content.
+    to retrieve full article content. Admins (passkey session) additionally see
+    draft articles (#184); the response is marked non-cacheable whenever drafts
+    are included, so the shared 60s API cache never serves a draft-inclusive
+    response to a later anonymous request.
     """
     from dateutil import parser
+
+    drafts_visible = _drafts_visible(auth)
+    articles = all_static_articles if drafts_visible else static_articles
+    if drafts_visible:
+        response.headers["Cache-Control"] = "private, no-store, must-revalidate"
 
     # Sort by published_date (newer first), fallback to created_at
     def get_sort_key(resource: dict[str, Any]) -> Any:
@@ -53,7 +82,7 @@ def list_articles(static_articles: ArticlesDep) -> ArticleMetadataListResponse:
                 return parser.parse("1970-01-01")
         return parser.parse("1970-01-01")
 
-    sorted_articles = sorted(static_articles, key=get_sort_key, reverse=True)
+    sorted_articles = sorted(articles, key=get_sort_key, reverse=True)
 
     # Convert to ArticleMetadata (excludes content and html_content)
     metadata_list = [ArticleMetadata(**article) for article in sorted_articles]
@@ -62,9 +91,20 @@ def list_articles(static_articles: ArticlesDep) -> ArticleMetadataListResponse:
 
 
 @router.get("/{article_id}", response_model=ResourceResponse)
-def get_article(article_id: int, static_articles: ArticlesDep) -> ResourceResponse:
-    """Get a specific article by ID."""
-    for article in static_articles:
+def get_article(
+    article_id: int,
+    response: Response,
+    static_articles: ArticlesDep,
+    all_static_articles: AllArticlesDep,
+    auth: AdminOptionalDep,
+) -> ResourceResponse:
+    """Get a specific article by ID. Admins (passkey session) can also fetch drafts (#184)."""
+    drafts_visible = _drafts_visible(auth)
+    articles = all_static_articles if drafts_visible else static_articles
+    if drafts_visible:
+        response.headers["Cache-Control"] = "private, no-store, must-revalidate"
+
+    for article in articles:
         if article["id"] == article_id:
             return ResourceResponse(resource=Resource(**article))
     raise HTTPException(status_code=404, detail="Article not found")
