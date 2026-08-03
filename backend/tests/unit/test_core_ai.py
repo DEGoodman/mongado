@@ -305,6 +305,78 @@ class TestBuildEditorCommandPrompt:
         assert "do not repeat" in prompt.lower()
 
 
+class TestBuildWritingPartnerPrompt:
+    """Tests for the RAG-backed writing-partner prompt construction (#146 Phase 2)."""
+
+    @pytest.mark.parametrize("command", ["challenge", "gaps", "contradictions"])
+    def test_builds_prompt_for_each_partner_command(self, command):
+        docs = [{"title": "Incident Response Basics", "content": "Runbooks matter."}]
+        prompt = ai.build_writing_partner_prompt(command, "My claim.", "My Note", docs)
+
+        assert "My claim." in prompt
+        assert "Incident Response Basics" in prompt
+        assert "Runbooks matter." in prompt
+        assert "My Note" in prompt
+        assert "markdown prose" in prompt.lower()
+        assert "no code fences" in prompt.lower()
+
+    def test_each_command_has_a_distinct_instruction(self):
+        docs = [{"title": "Doc", "content": "content"}]
+        prompts = {
+            command: ai.build_writing_partner_prompt(command, "text", None, docs)
+            for command in ai.EDITOR_PARTNER_COMMANDS
+        }
+
+        assert prompts["challenge"] != prompts["gaps"]
+        assert prompts["gaps"] != prompts["contradictions"]
+        assert prompts["challenge"] != prompts["contradictions"]
+
+        assert "devil's advocate" in prompts["challenge"].lower()
+        assert "gaps in the reasoning" in prompts["gaps"].lower()
+        assert "contradictions" in prompts["contradictions"].lower()
+
+    def test_unknown_command_raises_value_error(self):
+        with pytest.raises(ValueError, match="Unknown writing-partner command"):
+            ai.build_writing_partner_prompt("frobnicate", "text", None, [])
+
+    def test_transform_commands_rejected(self):
+        """Transform commands belong to build_editor_command_prompt, not this
+        function - each must reject the other's commands."""
+        with pytest.raises(ValueError, match="Unknown writing-partner command"):
+            ai.build_writing_partner_prompt("expand", "text", None, [])
+
+    def test_empty_context_documents_handled(self):
+        prompt = ai.build_writing_partner_prompt("gaps", "My claim.", "My Note", [])
+
+        assert "My claim." in prompt
+        assert "no related notes were found" in prompt.lower()
+
+    def test_per_document_truncation_kicks_in_at_budget(self):
+        big_content = "x" * 10000
+        docs = [
+            {"title": "Doc One", "content": big_content},
+            {"title": "Doc Two", "content": big_content},
+        ]
+        prompt = ai.build_writing_partner_prompt(
+            "contradictions", "text", None, docs, max_context_chars=1000
+        )
+
+        assert "[truncated]" in prompt
+        assert big_content not in prompt
+
+    def test_no_title_omits_title_line(self):
+        prompt = ai.build_writing_partner_prompt("challenge", "text", None, [])
+        assert "Note title:" not in prompt
+
+    def test_cites_notes_by_title_instruction_present(self):
+        prompt = ai.build_writing_partner_prompt("gaps", "text", None, [])
+        assert "cite" in prompt.lower()
+
+    def test_editor_commands_include_partner_commands(self):
+        for command in ai.EDITOR_PARTNER_COMMANDS:
+            assert command in ai.EDITOR_COMMANDS
+
+
 class TestParseJSONResponse:
     """Tests for defensive JSON parsing."""
 

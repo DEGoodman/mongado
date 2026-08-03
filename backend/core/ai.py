@@ -301,8 +301,15 @@ EDITOR_CONTEXT_CHAR_BUDGET = 4000
 # deliberately excluded here and rejected by this function.
 EDITOR_TRANSFORM_COMMANDS = ("expand", "simplify", "summarize", "continue", "rephrase")
 
-# All commands the editor-assist endpoints accept, including "link".
-EDITOR_COMMANDS = (*EDITOR_TRANSFORM_COMMANDS, "link")
+# Context-aware "writing partner" commands (#146 Phase 2), handled by
+# build_writing_partner_prompt. Unlike the transforms above, these never
+# replace document text - they return advisory markdown commentary plus the
+# notes it drew on, backed by the same RAG retrieval ladder synthesis uses.
+EDITOR_PARTNER_COMMANDS = ("challenge", "gaps", "contradictions")
+
+# All commands the editor-assist endpoints accept: transforms, "link", and
+# the writing-partner commands.
+EDITOR_COMMANDS = (*EDITOR_TRANSFORM_COMMANDS, "link", *EDITOR_PARTNER_COMMANDS)
 
 _EDITOR_COMMAND_INSTRUCTIONS: dict[str, str] = {
     "expand": (
@@ -395,6 +402,129 @@ def build_editor_command_prompt(
         )
 
     return instruction
+
+
+# Character budget for the writing-partner commands (#146 Phase 2).
+#
+# Unlike EDITOR_CONTEXT_CHAR_BUDGET (a single note's own content, included
+# only for voice/tone), these commands carry multiple *retrieved* documents
+# from other notes/articles that the model must actually reason over and cite
+# - closer in shape to SYNTHESIS_CONTEXT_CHAR_BUDGET's "many full documents"
+# case than to a single-note budget. But the retrieval here is narrower
+# (top_k~6, see routers/ai.py) and focused on one passage rather than a
+# corpus-wide query, so the combined document context is smaller too. Using
+# the same ~4 chars/token estimate as SYNTHESIS_CONTEXT_CHAR_BUDGET, this
+# reserves room for the instructions + the passage under review + the
+# retrieved documents + the model's own commentary, while staying well under
+# an 8192-token context window.
+WRITING_PARTNER_CONTEXT_CHAR_BUDGET = 12000
+
+_WRITING_PARTNER_INSTRUCTIONS: dict[str, str] = {
+    "challenge": (
+        "Play devil's advocate against the following text. Argue the "
+        "strongest case against its claims - be specific to what it "
+        "actually argues, not generically contrarian. Where the retrieved "
+        "notes below support a counter-argument, cite them by title. Where "
+        "they don't, say plainly that the pushback is not grounded in the "
+        "knowledge base and is your own critical reasoning instead."
+    ),
+    "gaps": (
+        "Identify gaps in the reasoning of the following text: what it "
+        "omits, what it assumes without support, and what it leaves "
+        "unresolved. Where the retrieved notes below fill in a gap or "
+        "surface a missing consideration, cite them by title. Where the "
+        "knowledge base has nothing on a gap you raise, say so plainly "
+        "rather than inventing a source for it."
+    ),
+    "contradictions": (
+        "Check the following text against the retrieved notes below for "
+        "contradictions. For each conflict you find, name or quote the "
+        "conflicting note and explain the disagreement. If you find no "
+        "contradictions, say so plainly instead of inventing one - do not "
+        "strain to manufacture a conflict where the notes simply agree or "
+        "are silent on the point."
+    ),
+}
+
+
+def build_writing_partner_prompt(
+    command: str,
+    text: str,
+    note_title: str | None,
+    context_documents: list[dict[str, Any]],
+    max_context_chars: int = WRITING_PARTNER_CONTEXT_CHAR_BUDGET,
+) -> str:
+    """Build a prompt for a RAG-backed writing-partner command (#146 Phase 2).
+
+    Covers the three advisory commands (challenge, gaps, contradictions).
+    These are never text transforms: the model's output is commentary about
+    `text`, not replacement text, and the caller must not use the result to
+    overwrite document content.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Args:
+        command: One of EDITOR_PARTNER_COMMANDS
+        text: The passage being reviewed (selection, or the whole note)
+        note_title: Title of the note being edited, for context
+        context_documents: Retrieved notes/articles to check against, each
+            with 'title' and 'content' - already retrieved by the caller
+            (reuse the existing RAG retrieval ladder, do not fetch here)
+        max_context_chars: Character budget for the combined retrieved
+            document context; split evenly across documents actually
+            included, each truncated to its share
+
+    Returns:
+        Complete prompt string for LLM, instructing markdown prose output
+        (no fences, no preamble) that cites retrieved notes by title and
+        says plainly when the knowledge base doesn't support a point.
+
+    Raises:
+        ValueError: If command is not a recognized writing-partner command
+    """
+    if command not in EDITOR_PARTNER_COMMANDS:
+        raise ValueError(
+            f"Unknown writing-partner command: {command!r}. "
+            f"Must be one of {EDITOR_PARTNER_COMMANDS}"
+        )
+
+    instruction = _WRITING_PARTNER_INSTRUCTIONS[command]
+
+    if context_documents:
+        # Split the budget evenly across the documents actually included, so
+        # a shorter retrieval result gets more room per document instead of
+        # always truncating to a worst-case slice (mirrors
+        # build_synthesis_prompt's per-document truncation).
+        per_doc_budget = max(max_context_chars // len(context_documents), 200)
+        parts = []
+        for i, doc in enumerate(context_documents, 1):
+            title = doc.get("title", f"Document {i}")
+            content = doc.get("content", "")
+            if len(content) > per_doc_budget:
+                content = content[:per_doc_budget].rstrip() + "\n... [truncated]"
+            parts.append(f"### {title}\n{content}\n")
+        context = "\n".join(parts)
+    else:
+        context = "No related notes were found in the knowledge base."
+
+    title_line = f"Note title: {note_title}\n\n" if note_title else ""
+
+    return f"""You are a critical writing partner helping refine a personal knowledge-base note. {instruction}
+
+{title_line}Text under review:
+{text}
+
+Retrieved notes from the knowledge base (for grounding, not as the subject of the review):
+{context}
+
+Instructions:
+1. Write your response as markdown prose - no code fences, no JSON, no preamble like "Here is my analysis:".
+2. Cite retrieved notes by title, e.g. "(Incident Response Basics)", right after the claim they support.
+3. Ground every substantive claim in either the text under review or a cited retrieved note.
+4. If the knowledge base does not support a point you want to make, say so plainly instead of inventing a citation.
+5. Keep it focused and specific to the text under review - do not summarize the retrieved notes for their own sake.
+
+Response:"""
 
 
 def build_summary_prompt(content: str, content_type: str = "article") -> str:
