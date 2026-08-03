@@ -43,15 +43,22 @@ class EditorAssistRequest(BaseModel):
 
 
 class EditorAssistResponse(BaseModel):
-    """Non-streaming response model for editor slash commands (#146 Phase 1).
+    """Non-streaming response model for editor slash commands (#146).
 
     Text-transform commands (expand/simplify/summarize/continue/rephrase)
-    populate `result`; `/link` populates `suggestions` instead.
+    populate `result`; `/link` populates `suggestions` instead. Writing-
+    partner commands (challenge/gaps/contradictions, Phase 2) populate both
+    `result` (markdown commentary) and `sources` (the retrieved notes it
+    drew on, in the id/type/title/content/score shape SourceList.tsx
+    renders) - `suggestions` stays unused for these. `sources` is optional
+    and defaults to None so Phase 1 clients parsing this response are
+    unaffected.
     """
 
     command: str
     result: str | None = None
     suggestions: list[dict[str, Any]] | None = None
+    sources: list[dict[str, Any]] | None = None
     degraded: bool = False
 
 

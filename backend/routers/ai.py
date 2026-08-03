@@ -243,6 +243,42 @@ def _parse_link_command_response(
     return suggestions[:5]
 
 
+# Editor writing-partner commands (#146 Phase 2): narrower retrieval than
+# synthesis's top_k=12 - this is focused critique of one passage (the text
+# under review in the editor), not a corpus-wide summary, so a handful of the
+# most relevant notes is plenty and keeps the prompt small/fast to generate.
+# Fetch one extra so excluding the current note (see below) still leaves up
+# to WRITING_PARTNER_TOP_K results rather than quietly shrinking the pull.
+WRITING_PARTNER_TOP_K = 6
+
+
+def _retrieve_for_writing_partner(
+    text: str,
+    note_title: str | None,
+    note_id: str | None,
+    ollama: Any,
+    neo4j: Any,
+    all_resources: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Retrieve context documents for a writing-partner command (#146 Phase 2).
+
+    Reuses _retrieve_documents_for_synthesis (the same chunk -> whole-doc ->
+    on-demand retrieval ladder /api/synthesize uses) rather than writing a
+    third copy. The query is the note title plus the text under review, so
+    retrieval is anchored to what's actually being critiqued.
+
+    Excludes the current note from its own results when note_id is known -
+    a note "contradicting itself" is just noise, not a finding.
+    """
+    query = f"{note_title}\n\n{text}" if note_title else text
+    docs = _retrieve_documents_for_synthesis(
+        query, ollama, neo4j, all_resources, top_k=WRITING_PARTNER_TOP_K + (1 if note_id else 0)
+    )
+    if note_id:
+        docs = [d for d in docs if d.get("note_id") != note_id]
+    return docs[:WRITING_PARTNER_TOP_K]
+
+
 # Type aliases for cleaner signatures
 OllamaDep = Annotated[Any, Depends(get_llm)]
 NotesDep = Annotated[Any, Depends(get_notes)]
@@ -952,11 +988,16 @@ def editor_assist(
     assist_request: EditorAssistRequest,
     ollama: OllamaDep,
     notes_service: NotesDep,
+    neo4j: Neo4jDep,
+    static_articles: ArticlesDep,
+    user_resources: UserResourcesDep,
     _admin: AdminUser,
 ) -> EditorAssistResponse:
     """Non-streaming counterpart to /api/editor/assist/stream, for fallback.
 
-    Text-transform commands return `result`; `/link` returns `suggestions`.
+    Text-transform commands return `result`; `/link` returns `suggestions`;
+    writing-partner commands (challenge/gaps/contradictions, Phase 2) return
+    both `result` (markdown commentary) and `sources` (the notes it drew on).
     """
     command = assist_request.command
 
@@ -987,6 +1028,47 @@ def editor_assist(
         suggestions = _parse_link_command_response(response_text, candidate_notes)
         return EditorAssistResponse(command=command, suggestions=suggestions)
 
+    if command in ai_core.EDITOR_PARTNER_COMMANDS:
+        all_resources = _get_all_resources(static_articles, user_resources, notes_service)
+        relevant_docs = _retrieve_for_writing_partner(
+            assist_request.text,
+            assist_request.note_title,
+            assist_request.note_id,
+            ollama,
+            neo4j,
+            all_resources,
+        )
+
+        if not relevant_docs:
+            # Never call the LLM with an empty context - a clean, honest
+            # "nothing to check against" beats a hallucinated critique.
+            return EditorAssistResponse(
+                command=command,
+                result=(
+                    "There's nothing in the knowledge base yet to check this "
+                    "against."
+                ),
+                sources=[],
+                degraded=True,
+            )
+
+        prompt = ai_core.build_writing_partner_prompt(
+            command, assist_request.text, assist_request.note_title, relevant_docs
+        )
+        result = ollama.generate(prompt, role="chat")
+        if not result:
+            logger.error("Empty response from LLM for writing-partner command %s", command)
+            return EditorAssistResponse(
+                command=command, result="", sources=_format_sources(relevant_docs), degraded=True
+            )
+
+        return EditorAssistResponse(
+            command=command,
+            result=result,
+            sources=_format_sources(relevant_docs),
+            degraded=False,
+        )
+
     try:
         prompt = ai_core.build_editor_command_prompt(
             command, assist_request.text, assist_request.note_title, assist_request.note_content
@@ -1009,6 +1091,9 @@ def editor_assist_stream(
     assist_request: EditorAssistRequest,
     ollama: OllamaDep,
     notes_service: NotesDep,
+    neo4j: Neo4jDep,
+    static_articles: ArticlesDep,
+    user_resources: UserResourcesDep,
     _admin: AdminUser,
 ) -> StreamingResponse:
     """Stream an editor slash-command result via Server-Sent Events (#146).
@@ -1018,7 +1103,10 @@ def editor_assist_stream(
     frontend uses the fetch()-based reader in frontend/src/lib/sse.ts.
 
     Event types:
-    - token: incremental text chunk (text-transform commands only)
+    - sources: retrieved notes (writing-partner commands only), sent before
+      any token so citations can render before prose arrives
+    - token: incremental text chunk (text-transform and writing-partner
+      commands)
     - link: one link suggestion ({note_id, title, reason, confidence}) (`/link` only)
     - complete: command finished
     - error: something failed; the stream ends without raising
@@ -1028,6 +1116,9 @@ def editor_assist_stream(
     """
     _ollama = ollama
     _notes_service = notes_service
+    _neo4j = neo4j
+    _static_articles = static_articles
+    _user_resources = user_resources
     _command = assist_request.command
     _text = assist_request.text
     _title = assist_request.note_title
@@ -1081,6 +1172,73 @@ def editor_assist_stream(
             except Exception as e:
                 logger.error("Editor /link stream: generation failed: %s", e)
                 yield format_sse({"type": "error", "message": "Failed to generate link suggestions"})
+
+            return
+
+        if _command in ai_core.EDITOR_PARTNER_COMMANDS:
+            try:
+                all_resources = _get_all_resources(
+                    _static_articles, _user_resources, _notes_service
+                )
+                relevant_docs = _retrieve_for_writing_partner(
+                    _text, _title, _note_id, _ollama, _neo4j, all_resources
+                )
+            except Exception as e:
+                logger.error(
+                    "Editor writing-partner stream: retrieval failed (%s): %s", _command, e
+                )
+                yield format_sse({"type": "error", "message": "Failed to retrieve context"})
+                return
+
+            # Sources first, so citations render before prose arrives.
+            yield format_sse({"type": "sources", "sources": _format_sources(relevant_docs)})
+
+            if not relevant_docs:
+                # Never call the LLM with an empty context - a clean, honest
+                # "nothing to check against" beats a hallucinated critique.
+                yield format_sse(
+                    {
+                        "type": "token",
+                        "text": (
+                            "There's nothing in the knowledge base yet to check "
+                            "this against."
+                        ),
+                    }
+                )
+                yield format_sse({"type": "complete", "degraded": True})
+                return
+
+            try:
+                prompt = ai_core.build_writing_partner_prompt(
+                    _command, _text, _title, relevant_docs
+                )
+            except ValueError as e:
+                yield format_sse({"type": "error", "message": str(e)})
+                return
+
+            try:
+                token_count = 0
+                for chunk in _ollama.generate_stream(prompt, role="chat"):
+                    token_count += 1
+                    yield format_sse({"type": "token", "text": chunk})
+
+                if token_count == 0:
+                    logger.warning(
+                        "Writing-partner stream: empty response from LLM (%s)", _command
+                    )
+                    yield format_sse({"type": "error", "message": "Failed to generate response"})
+                    return
+
+                logger.info(
+                    "Writing-partner stream complete: %s (%d tokens)", _command, token_count
+                )
+                yield format_sse({"type": "complete"})
+
+            except Exception as e:
+                logger.error(
+                    "Writing-partner stream: generation failed (%s): %s", _command, e
+                )
+                yield format_sse({"type": "error", "message": "Failed to generate response"})
 
             return
 

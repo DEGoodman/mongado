@@ -29,16 +29,29 @@ export interface EditorLinkSuggestion {
   confidence?: number;
 }
 
+/** Citation shape for writing-partner commands (#146 Phase 2) - matches
+ * SourceList.tsx's `Source` prop exactly; the backend was built to this
+ * shape deliberately so the component can be reused as-is. */
+export interface EditorAssistSource {
+  id: number | string;
+  type?: "article" | "note";
+  title: string;
+  content: string;
+  score?: number;
+}
+
 export type EditorAssistEvent =
+  | { type: "sources"; sources: EditorAssistSource[] }
   | { type: "token"; text: string }
   | ({ type: "link" } & EditorLinkSuggestion)
-  | { type: "complete" }
+  | { type: "complete"; degraded?: boolean }
   | { type: "error"; message?: string };
 
 export interface EditorAssistResponse {
   command: string;
   result?: string | null;
   suggestions?: EditorLinkSuggestion[] | null;
+  sources?: EditorAssistSource[] | null;
   degraded: boolean;
 }
 

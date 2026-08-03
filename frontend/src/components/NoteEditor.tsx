@@ -9,6 +9,7 @@ import { EditorView } from "@codemirror/view";
 import { logger } from "@/lib/logger";
 import { Note } from "@/lib/api/notes";
 import EditorDropdown, { EditorDropdownItem } from "@/components/EditorDropdown";
+import WritingPartnerCard from "@/components/WritingPartnerCard";
 import {
   SlashCommandDef,
   detectSlashCommandTrigger,
@@ -16,7 +17,12 @@ import {
   getParagraphBounds,
   getPrecedingText,
 } from "@/lib/slashCommands";
-import { runEditorAssist, streamEditorAssist, EditorLinkSuggestion } from "@/lib/api/editorAssist";
+import {
+  runEditorAssist,
+  streamEditorAssist,
+  EditorLinkSuggestion,
+  EditorAssistSource,
+} from "@/lib/api/editorAssist";
 import styles from "./NoteEditor.module.scss";
 
 interface NoteEditorProps {
@@ -76,6 +82,20 @@ export default function NoteEditor({
     position: { top: number; left: number };
   } | null>(null);
 
+  // ===== Writing-partner advisory card state (#146 Phase 2) =====
+  const [partnerCard, setPartnerCard] = useState<{
+    label: string;
+    position: { top: number; left: number };
+    /** Doc position where the trigger was typed - "Insert as quote" targets
+     * this, not wherever the cursor happens to be by the time it's clicked. */
+    insertAt: number;
+    prose: string;
+    sources: EditorAssistSource[];
+    streaming: boolean;
+    degraded: boolean;
+    error: string | null;
+  } | null>(null);
+
   // Absolute doc position of the "/" that opened the palette. Kept in a ref
   // (not state) because it's read synchronously inside handleChange/keydown
   // handlers that fire between renders.
@@ -111,6 +131,16 @@ export default function NoteEditor({
     setLinkCandidates([]);
   }, []);
 
+  // Dismiss the writing-partner advisory card, aborting an in-flight stream
+  // if one is running. Palette, wikilink dropdown, and this card are
+  // mutually exclusive surfaces - call sites that open one of the others
+  // also call this.
+  const closePartnerCard = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setPartnerCard(null);
+  }, []);
+
   const getCoords = useCallback((view: EditorView, pos: number) => {
     const coords = view.coordsAtPos(pos);
     return coords ? { top: coords.bottom, left: coords.left } : { top: 0, left: 0 };
@@ -141,6 +171,7 @@ export default function NoteEditor({
 
       if (wikilinkMatch) {
         closeSlashPalette();
+        closePartnerCard();
         setAutocompleteQuery(wikilinkMatch[1]);
         setSelectedIndex(0);
         setAutocompletePosition(getCoords(view, pos));
@@ -160,6 +191,7 @@ export default function NoteEditor({
       const trigger = detectSlashCommandTrigger(lineTextBeforeCursor);
 
       if (trigger) {
+        closePartnerCard();
         slashTriggerFromRef.current = line.from + trigger.slashIndex;
         setSlashQuery(trigger.query);
         setSlashSelectedIndex(0);
@@ -170,7 +202,7 @@ export default function NoteEditor({
         closeSlashPalette();
       }
     },
-    [onChange, slashCommandsArmed, slashOpen, closeSlashPalette, getCoords]
+    [onChange, slashCommandsArmed, slashOpen, closeSlashPalette, closePartnerCard, getCoords]
   );
 
   // Insert wikilink at cursor
@@ -416,6 +448,104 @@ export default function NoteEditor({
     [noteTitle, noteId, getCoords, restoreSnapshot, finishBusy, flashError]
   );
 
+  const executePartnerCommand = useCallback(
+    async (
+      view: EditorView,
+      cmd: SlashCommandDef,
+      noteContentSnapshot: string,
+      targetText: string,
+      insertAt: number
+    ) => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      setPartnerCard({
+        label: cmd.label,
+        position: getCoords(view, insertAt),
+        insertAt,
+        prose: "",
+        sources: [],
+        streaming: true,
+        degraded: false,
+        error: null,
+      });
+
+      let receivedAny = false;
+      let sawError = false;
+      let sawDegraded = false;
+
+      const requestBody = {
+        command: cmd.name,
+        text: targetText,
+        note_title: noteTitle,
+        note_content: noteContentSnapshot,
+        note_id: noteId,
+      };
+
+      await streamEditorAssist(requestBody, {
+        signal: controller.signal,
+        onEvent: (event) => {
+          if (event.type === "sources") {
+            setPartnerCard((prev) => (prev ? { ...prev, sources: event.sources } : prev));
+          } else if (event.type === "token") {
+            receivedAny = true;
+            setPartnerCard((prev) => (prev ? { ...prev, prose: prev.prose + event.text } : prev));
+          } else if (event.type === "complete") {
+            sawDegraded = !!event.degraded;
+          } else if (event.type === "error") {
+            sawError = true;
+          }
+        },
+        onError: () => {
+          sawError = true;
+        },
+      });
+
+      if (controller.signal.aborted) {
+        // The card was dismissed (or Escape hit) mid-stream - state was
+        // already cleared by closePartnerCard, don't touch it again.
+        finishBusy();
+        return;
+      }
+
+      if (sawError || !receivedAny) {
+        try {
+          const resp = await runEditorAssist(requestBody);
+          if (resp.result) {
+            setPartnerCard((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    prose: resp.result || "",
+                    sources: resp.sources || [],
+                    degraded: resp.degraded,
+                    streaming: false,
+                    error: null,
+                  }
+                : prev
+            );
+            finishBusy();
+            return;
+          }
+        } catch (err) {
+          slashCommandLogger.error("Writing-partner fallback failed", err);
+        }
+
+        setPartnerCard((prev) =>
+          prev ? { ...prev, streaming: false, error: `/${cmd.name} failed - try again` } : prev
+        );
+        finishBusy();
+        return;
+      }
+
+      setPartnerCard((prev) =>
+        prev ? { ...prev, streaming: false, degraded: sawDegraded } : prev
+      );
+      finishBusy();
+    },
+    [noteTitle, noteId, getCoords, finishBusy]
+  );
+
   const runSlashCommand = useCallback(
     (cmd: SlashCommandDef) => {
       if (!editorView || busyRef.current) return;
@@ -430,6 +560,7 @@ export default function NoteEditor({
 
       busyRef.current = true;
       closeSlashPalette();
+      closePartnerCard();
 
       // Remove the typed "/cmd" trigger text.
       view.dispatch({ changes: { from: triggerFrom, to: cursorPos, insert: "" } });
@@ -456,10 +587,18 @@ export default function NoteEditor({
         targetText = docText.slice(targetFrom, targetTo);
       }
 
-      if (cmd.name === "link") {
+      if (cmd.kind === "link") {
         // /link never consumes the target text - it only inserts a wikilink
         // at the cursor once a candidate is chosen.
         void executeLinkCommand(view, snapshotText, targetText, triggerFrom);
+        return;
+      }
+
+      if (cmd.kind === "partner") {
+        // Advisory commands never mutate the document as part of running -
+        // the trigger text above is the only thing removed. The target text
+        // is read (not deleted) purely as the passage under review.
+        void executePartnerCommand(view, cmd, docText, targetText, triggerFrom);
         return;
       }
 
@@ -478,8 +617,32 @@ export default function NoteEditor({
         insertAt
       );
     },
-    [editorView, closeSlashPalette, executeLinkCommand, executeTransformCommand]
+    [
+      editorView,
+      closeSlashPalette,
+      closePartnerCard,
+      executeLinkCommand,
+      executePartnerCommand,
+      executeTransformCommand,
+    ]
   );
+
+  const insertPartnerResultAsQuote = useCallback(() => {
+    if (!editorView || !partnerCard) return;
+    const view = editorView;
+    const quoted = partnerCard.prose
+      .split("\n")
+      .map((line) => (line.length ? `> ${line}` : ">"))
+      .join("\n");
+    const insertAt = Math.min(partnerCard.insertAt, view.state.doc.length);
+
+    view.focus();
+    view.dispatch({
+      changes: { from: insertAt, to: insertAt, insert: quoted },
+      selection: { anchor: insertAt + quoted.length },
+    });
+    setPartnerCard(null);
+  }, [editorView, partnerCard]);
 
   const selectLinkCandidate = useCallback(
     (candidate: EditorLinkSuggestion) => {
@@ -577,14 +740,14 @@ export default function NoteEditor({
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
         setZen((prev) => !prev);
-      } else if (e.key === "Escape" && zen && !showAutocomplete && !slashOpen) {
+      } else if (e.key === "Escape" && zen && !showAutocomplete && !slashOpen && !partnerCard) {
         setZen(false);
       }
     };
 
     window.addEventListener("keydown", handleZenKeys);
     return () => window.removeEventListener("keydown", handleZenKeys);
-  }, [zen, showAutocomplete, slashOpen]);
+  }, [zen, showAutocomplete, slashOpen, partnerCard]);
 
   // Lock page scroll while zen mode is open
   useEffect(() => {
@@ -758,6 +921,21 @@ export default function NoteEditor({
           >
             {errorFlash.message}
           </div>
+        )}
+
+        {/* Writing-partner advisory card (#146 Phase 2: challenge/gaps/contradictions) */}
+        {partnerCard && (
+          <WritingPartnerCard
+            label={partnerCard.label}
+            anchor={partnerCard.position}
+            prose={partnerCard.prose}
+            streaming={partnerCard.streaming}
+            degraded={partnerCard.degraded}
+            sources={partnerCard.sources}
+            errorMessage={partnerCard.error}
+            onInsertQuote={insertPartnerResultAsQuote}
+            onDismiss={closePartnerCard}
+          />
         )}
       </div>
 

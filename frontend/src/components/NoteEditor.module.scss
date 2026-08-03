@@ -286,6 +286,140 @@
   font-weight: $font-weight-medium;
 }
 
+// ===== WRITING PARTNER ADVISORY CARD (#146 Phase 2) =====
+// Dismissible card for challenge/gaps/contradictions results - anchored near
+// the cursor like the palette, but wider and taller since it holds streamed
+// prose plus citations rather than a short list of options.
+.partnerCard {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  max-width: calc(100vw - 2 * #{$spacing-2});
+  max-height: min(28rem, calc(100vh - 2 * #{$spacing-2}));
+  overflow-y: auto;
+  border: $border-width-thin solid $neutral-200;
+  border-radius: $border-radius-md;
+  background-color: $white;
+  box-shadow: $shadow-popover;
+}
+
+.partnerCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-3 $spacing-4;
+  border-bottom: $border-width-thin solid $neutral-100;
+}
+
+.partnerCardLabel {
+  @include text-secondary;
+  font-weight: $font-weight-medium;
+  color: $neutral-900;
+}
+
+.partnerCardBody {
+  padding: $spacing-3 $spacing-4;
+}
+
+.partnerCardPending {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  @include text-tertiary;
+  color: $color-text-tertiary;
+}
+
+.partnerCardProse {
+  @include text-secondary;
+  color: $neutral-800;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+}
+
+.synthesisStreamingCursorLocal {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: $color-interactive-primary;
+  animation: partner-card-pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+// CSS Modules scope @keyframes per file, so this can't reuse
+// AIPanel.module.scss's identically-named "pulse" keyframe.
+@keyframes partner-card-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.partnerCardDegradedNote {
+  margin-top: $spacing-2;
+  @include text-tertiary;
+  color: $color-text-tertiary;
+}
+
+.partnerCardError {
+  @include text-secondary;
+  color: $color-error-text;
+}
+
+.partnerCardActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  padding: $spacing-2 $spacing-4 $spacing-3;
+  border-top: $border-width-thin solid $neutral-100;
+}
+
+.partnerCardButton {
+  padding: $spacing-1 $spacing-3;
+  border: none;
+  border-radius: $border-radius-sm;
+  @include text-tertiary;
+  @include transition-colors;
+  cursor: pointer;
+  background: transparent;
+
+  &:hover:not(:disabled) {
+    background-color: $neutral-100;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.partnerCardButtonPrimary {
+  padding: $spacing-1 $spacing-3;
+  border: none;
+  border-radius: $border-radius-sm;
+  @include text-tertiary;
+  @include transition-colors;
+  cursor: pointer;
+  background-color: $teal-600;
+  color: $white;
+  font-weight: $font-weight-medium;
+
+  &:hover:not(:disabled) {
+    background-color: $teal-700;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
 // Subtle word count anchored to the bottom of the zen screen
 .zenFooter {
   position: fixed;

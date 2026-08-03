@@ -531,21 +531,34 @@ class _EditorLLM:
         available: bool = True,
         generate_response: str | None = "Expanded version of the text.",
         stream_tokens: list[str] | None = None,
+        embeddings_available: bool = True,
     ) -> None:
         self._available = available
         self._generate_response = generate_response
         self._stream_tokens = (
             stream_tokens if stream_tokens is not None else ["Expanded ", "text."]
         )
+        self._embeddings_available = embeddings_available
 
     def is_available(self) -> bool:
         return self._available
+
+    def embeddings_available(self) -> bool:
+        return self._embeddings_available
 
     def generate(self, prompt: str, **kwargs: Any) -> str | None:
         return self._generate_response
 
     def generate_stream(self, prompt: str, **kwargs: Any) -> Generator[str]:
         yield from self._stream_tokens
+
+    def semantic_search(
+        self, query: str, documents: list[dict[str, Any]], top_k: int = 5
+    ) -> list[dict[str, Any]]:
+        results = []
+        for i, doc in enumerate(documents[:top_k]):
+            results.append({**doc, "score": 0.9 - (i * 0.1)})
+        return results
 
 
 class _EditorNotesService:
@@ -577,6 +590,14 @@ class _EditorNotesService:
 def _editor_client(llm: Any, notes_service: Any | None = None) -> Generator[TestClient]:
     app.dependency_overrides[get_llm] = lambda: llm
     app.dependency_overrides[get_notes] = lambda: notes_service or _EditorNotesService()
+    # Writing-partner commands (#146 Phase 2) also depend on neo4j/static
+    # articles/user resources for retrieval. _UnavailableNeo4j forces the
+    # retrieval ladder down to tier 3 (on-demand embeddings via
+    # llm.semantic_search), same as _synthesis_client, so these tests don't
+    # need a real Neo4j instance.
+    app.dependency_overrides[get_neo4j] = lambda: _UnavailableNeo4j()
+    app.dependency_overrides[get_static_articles] = lambda: []
+    app.dependency_overrides[get_user_resources] = lambda: []
     try:
         with TestClient(app) as test_client:
             yield test_client
@@ -752,6 +773,329 @@ class TestEditorAssistStream:
         types = [e["type"] for e in events]
         assert "error" in types
         assert "complete" not in types
+
+
+class _PartnerNotesService:
+    """Stand-in notes service for writing-partner tests: two other notes plus
+    the note currently being edited (curious-elephant), so tests can assert
+    the current note is excluded from its own retrieval results."""
+
+    def list_notes(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": "curious-elephant",
+                "title": "Current Note",
+                "content": "This is the note being edited right now.",
+                "tags": [],
+                "links": [],
+            },
+            {
+                "id": "wise-mountain",
+                "title": "Blameless Postmortems",
+                "content": "Focus on systems, not people.",
+                "tags": ["sre"],
+                "links": [],
+            },
+            {
+                "id": "brave-otter",
+                "title": "Incident Response Basics",
+                "content": "Runbooks matter a lot.",
+                "tags": ["sre"],
+                "links": [],
+            },
+        ]
+
+    def get_note(self, note_id: str) -> dict[str, Any] | None:
+        return next((n for n in self.list_notes() if n["id"] == note_id), None)
+
+
+class TestEditorAssistWritingPartner:
+    """Tests for the challenge/gaps/contradictions commands on POST /api/editor/assist (#146 Phase 2)."""
+
+    @pytest.mark.parametrize("command", ["challenge", "gaps", "contradictions"])
+    def test_happy_path_returns_result_and_sources(
+        self, command: str, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(
+            _EditorLLM(generate_response="This is my critique. (Blameless Postmortems)"),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={
+                    "command": command,
+                    "text": "Postmortems should always assign blame.",
+                    "note_title": "My Draft",
+                    "note_id": "curious-elephant",
+                },
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command"] == command
+        assert data["result"] == "This is my critique. (Blameless Postmortems)"
+        assert data["degraded"] is False
+        assert len(data["sources"]) > 0
+        source = data["sources"][0]
+        assert {"id", "type", "title", "content", "score"} <= source.keys()
+
+    def test_current_note_excluded_from_its_own_sources(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(
+            _EditorLLM(generate_response="Critique."),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={
+                    "command": "contradictions",
+                    "text": "Some claim.",
+                    "note_title": "Current Note",
+                    "note_id": "curious-elephant",
+                },
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        source_ids = {s["id"] for s in data["sources"]}
+        assert "curious-elephant" not in source_ids
+
+    def test_unauthenticated_rejected(self) -> None:
+        with _editor_client(_EditorLLM(), notes_service=_PartnerNotesService()) as client:
+            response = client.post(
+                "/api/editor/assist", json={"command": "gaps", "text": "hi"}
+            )
+
+        assert response.status_code == 401
+
+    def test_ai_unavailable_returns_503(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(
+            _EditorLLM(available=False), notes_service=_PartnerNotesService()
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "gaps", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 503
+
+    def test_empty_llm_response_is_degraded(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(
+            _EditorLLM(generate_response=None), notes_service=_PartnerNotesService()
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "gaps", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["degraded"] is True
+
+    def test_zero_retrieval_returns_degraded_without_calling_llm(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        """No embeddings available -> retrieval returns nothing -> the
+        endpoint must not call the LLM with an empty context."""
+
+        class _NoEmbeddingsLLM(_EditorLLM):
+            def generate(self, prompt: str, **kwargs: Any) -> str | None:
+                raise AssertionError("LLM must not be called when retrieval is empty")
+
+        with _editor_client(
+            _NoEmbeddingsLLM(embeddings_available=False),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "gaps", "text": "hi", "note_id": "curious-elephant"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["degraded"] is True
+        assert data["sources"] == []
+
+    def test_phase1_transform_command_unchanged(self, admin_headers: dict[str, str]) -> None:
+        """Regression: transform commands still return result/degraded only,
+        with sources absent (None), unaffected by the new deps."""
+        with _editor_client(
+            _EditorLLM(generate_response="Expanded version."),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "expand", "text": "short text"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["result"] == "Expanded version."
+        assert data.get("sources") is None
+
+    def test_phase1_link_command_unchanged(self, admin_headers: dict[str, str]) -> None:
+        """Regression: /link still returns suggestions, unaffected by the new deps."""
+        with _editor_client(
+            _EditorLLM(
+                generate_response=(
+                    '[{"note_id": "wise-mountain", "confidence": 0.8, "reason": "related"}]'
+                )
+            ),
+            notes_service=_EditorNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={
+                    "command": "link",
+                    "text": "some text about postmortems",
+                    "note_id": "curious-elephant",
+                },
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["suggestions"][0]["note_id"] == "wise-mountain"
+
+
+class TestEditorAssistStreamWritingPartner:
+    """Tests for the challenge/gaps/contradictions commands on POST /api/editor/assist/stream (#146 Phase 2)."""
+
+    def _events(self, response: Any) -> list[dict[str, Any]]:
+        import json as _json
+
+        events = []
+        for line in response.text.split("\n\n"):
+            line = line.strip()
+            if line.startswith("data: "):
+                events.append(_json.loads(line[len("data: ") :]))
+        return events
+
+    def test_stream_emits_sources_before_tokens_then_completes(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(
+            _EditorLLM(stream_tokens=["This ", "is ", "my critique."]),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={
+                    "command": "challenge",
+                    "text": "Postmortems should assign blame.",
+                    "note_title": "My Draft",
+                    "note_id": "curious-elephant",
+                },
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+
+        assert types[0] == "sources"
+        assert "token" in types
+        assert types[-1] == "complete"
+        assert types.index("sources") < types.index("token")
+
+    def test_current_note_excluded_from_stream_sources(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(
+            _EditorLLM(stream_tokens=["Critique."]),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={
+                    "command": "contradictions",
+                    "text": "Some claim.",
+                    "note_title": "Current Note",
+                    "note_id": "curious-elephant",
+                },
+                headers=admin_headers,
+            )
+
+        events = self._events(response)
+        sources_event = next(e for e in events if e["type"] == "sources")
+        source_ids = {s["id"] for s in sources_event["sources"]}
+        assert "curious-elephant" not in source_ids
+
+    def test_unauthenticated_rejected(self) -> None:
+        with _editor_client(_EditorLLM(), notes_service=_PartnerNotesService()) as client:
+            response = client.post(
+                "/api/editor/assist/stream", json={"command": "gaps", "text": "hi"}
+            )
+
+        assert response.status_code == 401
+
+    def test_stream_degrades_gracefully_when_ai_unavailable(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(
+            _EditorLLM(available=False), notes_service=_PartnerNotesService()
+        ) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "gaps", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        assert events[0]["type"] == "error"
+
+    def test_zero_retrieval_emits_sources_then_degraded_complete_without_calling_llm(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        class _NoEmbeddingsLLM(_EditorLLM):
+            def generate_stream(self, prompt: str, **kwargs: Any) -> Generator[str]:
+                raise AssertionError("LLM must not be called when retrieval is empty")
+                yield ""  # pragma: no cover - unreachable, satisfies generator typing
+
+        with _editor_client(
+            _NoEmbeddingsLLM(embeddings_available=False),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "gaps", "text": "hi", "note_id": "curious-elephant"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+        assert types[0] == "sources"
+        assert events[0]["sources"] == []
+        assert "token" in types  # the "nothing to check against" message
+        complete_event = next(e for e in events if e["type"] == "complete")
+        assert complete_event.get("degraded") is True
+
+    def test_phase1_transform_stream_unchanged(self, admin_headers: dict[str, str]) -> None:
+        """Regression: transform command streams still emit token/complete only,
+        no sources event, unaffected by the new deps."""
+        with _editor_client(
+            _EditorLLM(stream_tokens=["Ex", "pand", "ed."]),
+            notes_service=_PartnerNotesService(),
+        ) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "expand", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+        assert types == ["token", "token", "token", "complete"]
 
 
 class TestMockOllamaClientUnit:
