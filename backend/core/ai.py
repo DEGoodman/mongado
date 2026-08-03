@@ -286,6 +286,117 @@ Instructions:
 Synthesis:"""
 
 
+# Editor slash commands (#146 Phase 1).
+#
+# Character budget for the note-context portion of an editor-command prompt.
+# Mirrors SYNTHESIS_CONTEXT_CHAR_BUDGET's reasoning but scaled down: unlike
+# synthesis (many full documents), this is a single note's content used only
+# as background so the transformed text matches the note's voice - a much
+# smaller budget is plenty and keeps the prompt fast to generate.
+EDITOR_CONTEXT_CHAR_BUDGET = 4000
+
+# Text-transform commands handled by build_editor_command_prompt. "link" is a
+# valid editor command too (see routers/ai.py) but is not a text transform -
+# it runs the link-suggestion retrieval/prompt path instead, so it is
+# deliberately excluded here and rejected by this function.
+EDITOR_TRANSFORM_COMMANDS = ("expand", "simplify", "summarize", "continue", "rephrase")
+
+# All commands the editor-assist endpoints accept, including "link".
+EDITOR_COMMANDS = (*EDITOR_TRANSFORM_COMMANDS, "link")
+
+_EDITOR_COMMAND_INSTRUCTIONS: dict[str, str] = {
+    "expand": (
+        "Expand the following text with more detail, examples, or explanation, "
+        "matching the voice and tone of the surrounding note. Return ONLY the "
+        "expanded replacement text - no preamble, no markdown fences, no "
+        "commentary.\n\nText to expand:\n{selected_text}"
+    ),
+    "simplify": (
+        "Simplify the following text: use plainer language and shorter "
+        "sentences while preserving its meaning. Return ONLY the simplified "
+        "replacement text - no preamble, no markdown fences, no "
+        "commentary.\n\nText to simplify:\n{selected_text}"
+    ),
+    "summarize": (
+        "Summarize the following text concisely, preserving its key points. "
+        "Return ONLY the summary text - no preamble, no markdown fences, no "
+        "commentary.\n\nText to summarize:\n{selected_text}"
+    ),
+    "continue": (
+        "Continue writing directly from where the following text leaves off, "
+        "matching its voice, tone, and train of thought. Return ONLY the new "
+        "continuation text (do not repeat any of the input) - no preamble, no "
+        "markdown fences, no commentary.\n\nText so far:\n{selected_text}"
+    ),
+    "rephrase": (
+        "Rephrase the following text with alternative wording while "
+        "preserving its meaning and tone. Return ONLY the rephrased "
+        "replacement text - no preamble, no markdown fences, no "
+        "commentary.\n\nText to rephrase:\n{selected_text}"
+    ),
+}
+
+
+def build_editor_command_prompt(
+    command: str,
+    selected_text: str,
+    note_title: str | None = None,
+    note_content: str | None = None,
+    max_context_chars: int = EDITOR_CONTEXT_CHAR_BUDGET,
+) -> str:
+    """Build a prompt for an editor slash-command text transform (#146).
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Covers the five text-transform commands (expand, simplify, summarize,
+    continue, rephrase). "link" is a distinct retrieval-backed command
+    handled separately in routers/ai.py and is rejected here.
+
+    Args:
+        command: One of EDITOR_TRANSFORM_COMMANDS
+        selected_text: The text the command operates on (selection, current
+            paragraph, or preceding text, depending on command - decided by
+            the caller/frontend)
+        note_title: Title of the note being edited, for voice/context
+        note_content: Full content of the note being edited, for voice/context
+            (truncated to max_context_chars)
+        max_context_chars: Character budget for the note_content portion
+
+    Returns:
+        Complete prompt string for LLM, instructing it to return only the
+        replacement/continuation prose with no preamble or commentary.
+
+    Raises:
+        ValueError: If command is not a recognized text-transform command
+    """
+    if command not in EDITOR_TRANSFORM_COMMANDS:
+        raise ValueError(
+            f"Unknown editor command: {command!r}. Must be one of {EDITOR_TRANSFORM_COMMANDS}"
+        )
+
+    instruction = _EDITOR_COMMAND_INSTRUCTIONS[command].format(selected_text=selected_text)
+
+    context_parts = []
+    if note_title:
+        context_parts.append(f"Note title: {note_title}")
+    if note_content:
+        content = note_content
+        if len(content) > max_context_chars:
+            content = content[:max_context_chars].rstrip() + "\n... [truncated]"
+        context_parts.append(f"Full note content (for context/voice only):\n{content}")
+
+    if context_parts:
+        context_block = "\n\n".join(context_parts)
+        return (
+            f"You are helping write a personal knowledge-base note. Use the "
+            f"note context below only to match its voice and topic - do not "
+            f"summarize or reference the context itself in your output.\n\n"
+            f"{context_block}\n\n{instruction}"
+        )
+
+    return instruction
+
+
 def build_summary_prompt(content: str, content_type: str = "article") -> str:
     """Build prompt for content summarization.
 
