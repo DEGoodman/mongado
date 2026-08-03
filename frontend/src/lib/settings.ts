@@ -10,12 +10,16 @@ export type AiMode = "off" | "on-demand" | "real-time";
 
 export interface UserSettings {
   aiMode: AiMode;
+  /** Editor slash-command palette (#146 Phase 1). Default on; still requires
+   * aiMode !== "off" and admin auth to actually arm - see NoteEditorForm. */
+  slashCommands: boolean;
 }
 
 const SETTINGS_KEY = "mongado-settings";
 
 const DEFAULT_SETTINGS: UserSettings = {
   aiMode: "off", // Default to OFF (user opts in)
+  slashCommands: true,
 };
 
 /**
@@ -39,7 +43,8 @@ export function loadSettings(): UserSettings {
     // Migration: Convert old boolean aiSuggestionsEnabled to new aiMode
     if ("aiSuggestionsEnabled" in parsed && !("aiMode" in parsed)) {
       const aiMode: AiMode = parsed.aiSuggestionsEnabled ? "on-demand" : "off";
-      const migrated = {
+      const migrated: UserSettings = {
+        ...DEFAULT_SETTINGS,
         aiMode,
       };
       // Save migrated settings

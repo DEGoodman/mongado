@@ -20,6 +20,7 @@ import { useDelight } from "@/hooks/useDelight";
 import { sparkleBurst } from "@/lib/delight";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useSettings } from "@/hooks/useSettings";
 import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
 import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
@@ -30,6 +31,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export default function HeaderMenu() {
   const { llmFeaturesEnabled, loaded: flagsLoaded } = useFeatureFlags();
   const { preferences, updatePreferences } = useUserPreferences();
+  const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
   const { delight, setDelight } = useDelight();
   const [isOpen, setIsOpen] = useState(false);
@@ -218,6 +220,33 @@ export default function HeaderMenu() {
                 </div>
               )}
             </div>
+
+            {/* Slash Commands (#146 Phase 1) */}
+            {flagsLoaded && llmFeaturesEnabled && (
+              <div className={styles.section}>
+                <h3 className={styles.sectionLabel}>Slash Commands</h3>
+                <div className={styles.segmentedControl}>
+                  <button
+                    onClick={() => updateSettings({ slashCommands: false })}
+                    className={`${styles.segmentButton} ${!settings.slashCommands ? styles.active : styles.inactive}`}
+                  >
+                    Off
+                  </button>
+                  <button
+                    onClick={() => updateSettings({ slashCommands: true })}
+                    className={`${styles.segmentButton} ${settings.slashCommands ? styles.active : styles.inactive}`}
+                  >
+                    On
+                  </button>
+                </div>
+                <div className={styles.modeDescription}>
+                  <p>
+                    Type <code>/</code> in the note editor for AI text commands (expand, simplify,
+                    link, and more).
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

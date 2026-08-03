@@ -523,6 +523,237 @@ class TestSynthesizeStream:
         assert "complete" not in types
 
 
+class _EditorLLM:
+    """Scriptable stand-in for the routed LLM client, for editor-assist tests."""
+
+    def __init__(
+        self,
+        available: bool = True,
+        generate_response: str | None = "Expanded version of the text.",
+        stream_tokens: list[str] | None = None,
+    ) -> None:
+        self._available = available
+        self._generate_response = generate_response
+        self._stream_tokens = (
+            stream_tokens if stream_tokens is not None else ["Expanded ", "text."]
+        )
+
+    def is_available(self) -> bool:
+        return self._available
+
+    def generate(self, prompt: str, **kwargs: Any) -> str | None:
+        return self._generate_response
+
+    def generate_stream(self, prompt: str, **kwargs: Any) -> Generator[str]:
+        yield from self._stream_tokens
+
+
+class _EditorNotesService:
+    """Stand-in notes service with the two candidate notes /link can suggest."""
+
+    def list_notes(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": "curious-elephant",
+                "title": "Incident Response Basics",
+                "content": "Runbooks matter a lot.",
+                "tags": ["sre"],
+                "links": [],
+            },
+            {
+                "id": "wise-mountain",
+                "title": "Blameless Postmortems",
+                "content": "Focus on systems, not people.",
+                "tags": ["sre"],
+                "links": [],
+            },
+        ]
+
+    def get_note(self, note_id: str) -> dict[str, Any] | None:
+        return next((n for n in self.list_notes() if n["id"] == note_id), None)
+
+
+@contextmanager
+def _editor_client(llm: Any, notes_service: Any | None = None) -> Generator[TestClient]:
+    app.dependency_overrides[get_llm] = lambda: llm
+    app.dependency_overrides[get_notes] = lambda: notes_service or _EditorNotesService()
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
+
+
+class TestEditorAssist:
+    """Tests for POST /api/editor/assist (#146)."""
+
+    def test_happy_path_transform_command(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(_EditorLLM(generate_response="Expanded version.")) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "expand", "text": "short text"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command"] == "expand"
+        assert data["result"] == "Expanded version."
+        assert data["degraded"] is False
+
+    def test_link_command_returns_suggestions(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(
+            _EditorLLM(
+                generate_response=(
+                    '[{"note_id": "wise-mountain", "confidence": 0.8, "reason": "related"}]'
+                )
+            )
+        ) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={
+                    "command": "link",
+                    "text": "some text about postmortems",
+                    "note_id": "curious-elephant",
+                },
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["command"] == "link"
+        assert data["suggestions"][0]["note_id"] == "wise-mountain"
+
+    def test_unauthenticated_rejected(self) -> None:
+        with _editor_client(_EditorLLM()) as client:
+            response = client.post(
+                "/api/editor/assist", json={"command": "expand", "text": "hi"}
+            )
+
+        assert response.status_code == 401
+
+    def test_unknown_command_rejected(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(_EditorLLM()) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "frobnicate", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 400
+
+    def test_ai_unavailable_returns_503(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(_EditorLLM(available=False)) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "expand", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 503
+
+    def test_empty_llm_response_is_degraded(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(_EditorLLM(generate_response=None)) as client:
+            response = client.post(
+                "/api/editor/assist",
+                json={"command": "expand", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["degraded"] is True
+
+
+class TestEditorAssistStream:
+    """Tests for POST /api/editor/assist/stream (#146)."""
+
+    def _events(self, response: Any) -> list[dict[str, Any]]:
+        import json as _json
+
+        events = []
+        for line in response.text.split("\n\n"):
+            line = line.strip()
+            if line.startswith("data: "):
+                events.append(_json.loads(line[len("data: ") :]))
+        return events
+
+    def test_stream_emits_tokens_then_complete(self, admin_headers: dict[str, str]) -> None:
+        with _editor_client(_EditorLLM(stream_tokens=["Ex", "pand", "ed."])) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "expand", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+        assert types == ["token", "token", "token", "complete"]
+
+    def test_link_stream_emits_link_events_then_complete(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(
+            _EditorLLM(
+                stream_tokens=[
+                    '[{"note_id": "wise-mountain", "confidence": 0.8, "reason": "related"}]'
+                ]
+            )
+        ) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "link", "text": "text", "note_id": "curious-elephant"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+        assert "link" in types
+        assert types[-1] == "complete"
+        link_event = next(e for e in events if e["type"] == "link")
+        assert link_event["note_id"] == "wise-mountain"
+
+    def test_unauthenticated_rejected(self) -> None:
+        with _editor_client(_EditorLLM()) as client:
+            response = client.post(
+                "/api/editor/assist/stream", json={"command": "expand", "text": "hi"}
+            )
+
+        assert response.status_code == 401
+
+    def test_stream_degrades_gracefully_when_ai_unavailable(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(_EditorLLM(available=False)) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "expand", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        assert events[0]["type"] == "error"
+
+    def test_stream_emits_error_on_empty_generation(
+        self, admin_headers: dict[str, str]
+    ) -> None:
+        with _editor_client(_EditorLLM(stream_tokens=[])) as client:
+            response = client.post(
+                "/api/editor/assist/stream",
+                json={"command": "expand", "text": "hi"},
+                headers=admin_headers,
+            )
+
+        assert response.status_code == 200
+        events = self._events(response)
+        types = [e["type"] for e in events]
+        assert "error" in types
+        assert "complete" not in types
+
+
 class TestMockOllamaClientUnit:
     """Unit tests for the MockOllamaClient fixture to ensure it works correctly."""
 

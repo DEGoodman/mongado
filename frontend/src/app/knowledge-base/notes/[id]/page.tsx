@@ -467,6 +467,7 @@ function NoteDetailContent() {
                 onCancel={stopEditing}
                 onOpenAIPanel={(tab) => setPanel({ open: true, tab })}
                 onValuesChange={setCurrentValues}
+                noteId={noteId}
               />
             ) : (
               <div>

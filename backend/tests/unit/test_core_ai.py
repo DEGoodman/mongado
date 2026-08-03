@@ -245,6 +245,66 @@ class TestBuildSynthesisPrompt:
         assert "no relevant documents" in prompt.lower() or "no documents" in prompt.lower()
 
 
+class TestBuildEditorCommandPrompt:
+    """Tests for editor slash-command prompt construction (#146)."""
+
+    @pytest.mark.parametrize(
+        "command", ["expand", "simplify", "summarize", "continue", "rephrase"]
+    )
+    def test_builds_prompt_for_each_transform_command(self, command):
+        """Every text-transform command builds a prompt containing the text
+        and an instruction to return only the replacement/continuation prose."""
+        prompt = ai.build_editor_command_prompt(command, "Some selected text.")
+
+        assert "Some selected text." in prompt
+        assert "ONLY" in prompt
+        assert "no preamble" in prompt.lower()
+        assert "no markdown fences" in prompt.lower()
+        assert "no commentary" in prompt.lower()
+
+    def test_unknown_command_raises_value_error(self):
+        with pytest.raises(ValueError, match="Unknown editor command"):
+            ai.build_editor_command_prompt("frobnicate", "text")
+
+    def test_link_command_rejected(self):
+        """'/link' is a valid editor command overall (ai.EDITOR_COMMANDS) but
+        is not a text transform - it must be rejected by this function since
+        it's handled by a separate retrieval-backed path in routers/ai.py."""
+        assert "link" in ai.EDITOR_COMMANDS
+        with pytest.raises(ValueError, match="Unknown editor command"):
+            ai.build_editor_command_prompt("link", "text")
+
+    def test_includes_note_title_and_content_for_voice_context(self):
+        prompt = ai.build_editor_command_prompt(
+            "expand",
+            "selected bit",
+            note_title="My Note Title",
+            note_content="The rest of the note body.",
+        )
+
+        assert "My Note Title" in prompt
+        assert "The rest of the note body." in prompt
+
+    def test_omits_context_block_when_no_title_or_content(self):
+        prompt = ai.build_editor_command_prompt("expand", "selected bit")
+
+        # No note context supplied -> just the instruction, no context framing.
+        assert "Note title:" not in prompt
+
+    def test_truncates_note_content_to_budget(self):
+        big_content = "x" * 10000
+        prompt = ai.build_editor_command_prompt(
+            "expand", "selected", note_content=big_content, max_context_chars=500
+        )
+
+        assert "[truncated]" in prompt
+        assert big_content not in prompt
+
+    def test_continue_instructs_not_to_repeat_input(self):
+        prompt = ai.build_editor_command_prompt("continue", "Text so far.")
+        assert "do not repeat" in prompt.lower()
+
+
 class TestParseJSONResponse:
     """Tests for defensive JSON parsing."""
 
