@@ -205,6 +205,87 @@ Answer:"""
     return prompt
 
 
+# Character budget for synthesis context (#166).
+#
+# Synthesis pulls ~12 full documents rather than the 5 short excerpts used by
+# build_qa_prompt, so an unbounded context can blow past the model's context
+# window. Token math: local/hosted models we route to (llama3.2, qwen2.5,
+# Groq/Gemini defaults) are typically run with num_ctx in the 4096-8192 range.
+# Using the common ~4 chars/token estimate, 8192 tokens is ~32800 chars total.
+# Reserve room for the prompt template/instructions (~1000 chars) and the
+# model's own response (~2000-3000 tokens / ~10000 chars), leaving roughly
+# 20000 chars of headroom for document context. Round down for safety margin.
+SYNTHESIS_CONTEXT_CHAR_BUDGET = 18000
+
+
+def build_synthesis_prompt(
+    query: str,
+    context_documents: list[dict[str, Any]],
+    max_docs: int = 12,
+    max_context_chars: int = SYNTHESIS_CONTEXT_CHAR_BUDGET,
+) -> str:
+    """Build a deep-synthesis prompt across many documents (#166).
+
+    Unlike build_qa_prompt (short answer from a handful of excerpts), this
+    asks the model to synthesize a structured markdown summary across up to
+    `max_docs` full documents. Because whole documents (not short excerpts)
+    are included, each document is truncated to a share of
+    `max_context_chars` so the combined context stays within the model's
+    context window.
+
+    Pure function: No I/O, no side effects, deterministic.
+
+    Args:
+        query: The topic/question to synthesize knowledge about
+        context_documents: Relevant documents with 'title' and 'content'
+        max_docs: Maximum number of documents to include
+        max_context_chars: Character budget for the combined document context
+
+    Returns:
+        Complete prompt string for LLM, instructing markdown output with a
+        fixed section structure (Key Concepts / Your Positions / Gaps &
+        Open Questions) and inline citation by source title.
+    """
+    docs = context_documents[:max_docs]
+
+    if docs:
+        # Split the budget evenly across the documents actually included, so
+        # a shorter document list gets more room per document instead of
+        # always truncating to a worst-case (max_docs-sized) slice.
+        per_doc_budget = max(max_context_chars // len(docs), 200)
+        parts = []
+        for i, doc in enumerate(docs, 1):
+            title = doc.get("title", f"Document {i}")
+            content = doc.get("content", "")
+            if len(content) > per_doc_budget:
+                content = content[:per_doc_budget].rstrip() + "\n... [truncated]"
+            parts.append(f"### {title}\n{content}\n")
+        context = "\n".join(parts)
+    else:
+        context = "No relevant documents were found in the knowledge base."
+
+    return f"""You are synthesizing knowledge from a personal knowledge base to answer a broad query.
+
+Knowledge Base Documents:
+{context}
+
+Query: {query}
+
+Instructions:
+1. Write a cohesive synthesis in markdown using EXACTLY these three section headers, in this order:
+   ## Key Concepts
+   ## Your Positions
+   ## Gaps & Open Questions
+2. "Key Concepts": summarize the main ideas and themes found across the documents.
+3. "Your Positions": summarize the specific arguments, opinions, or conclusions expressed in the documents (this is the author's own knowledge base, so frame it as their thinking).
+4. "Gaps & Open Questions": call out topics related to the query that the documents do NOT cover, or where the documents are thin, contradictory, or inconclusive.
+5. Cite sources inline using the document's title in parentheses, e.g. "(Incident Response Basics)", right after the claim it supports.
+6. Do not invent information. If the knowledge base does not cover an aspect of the query, say so plainly in "Gaps & Open Questions" instead of filling the gap with general knowledge.
+7. If no documents were found at all, say so plainly and keep all three section headers with a brief note that the knowledge base has no coverage yet.
+
+Synthesis:"""
+
+
 def build_summary_prompt(content: str, content_type: str = "article") -> str:
     """Build prompt for content summarization.
 

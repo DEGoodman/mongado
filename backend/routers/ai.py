@@ -20,6 +20,8 @@ from models import (
     LinkSuggestionsResponse,
     QuestionRequest,
     QuestionResponse,
+    SynthesisRequest,
+    SynthesisResponse,
     TagSuggestion,
     TagSuggestionsResponse,
     WarmupResponse,
@@ -54,6 +56,115 @@ def _get_all_resources(
 
     result: list[dict[str, Any]] = static_articles + user_resources + normalized_notes
     return result
+
+
+def _format_sources(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Normalize retrieved documents into the id/type/title/content/score shape
+    the frontend already renders (mirrors routers/search.py's
+    _normalize_search_result, kept separate since that helper returns a
+    SearchResult model rather than a plain dict).
+    """
+    sources = []
+    for doc in docs:
+        is_note = "note_id" in doc
+        sources.append(
+            {
+                "id": doc.get("note_id") if is_note else doc.get("id"),
+                "type": "note" if is_note else "article",
+                "title": doc.get("title", "Untitled"),
+                "content": doc.get("content", ""),
+                "score": doc.get("score", 0.0),
+            }
+        )
+    return sources
+
+
+def _retrieve_documents_for_synthesis(
+    query: str,
+    ollama: Any,
+    neo4j: Any,
+    all_resources: list[dict[str, Any]],
+    top_k: int = 12,
+) -> list[dict[str, Any]]:
+    """Retrieve up to top_k documents for deep synthesis (#166).
+
+    Mirrors the chunk -> whole-doc -> on-demand fallback ladder used by
+    /api/search's semantic mode (routers/search.py:184-286), widened to
+    top_k~12 parent docs (vs. /api/ask's top_k=5 whole-doc-only retrieval).
+
+    This is intentionally its own helper rather than a shared one with
+    search.py: the two callers need different output shapes (search.py
+    builds SearchResult models with snippets; synthesis needs raw document
+    dicts to feed into the synthesis prompt) and the pull sizes/priorities
+    differ enough that trying to unify them would just add parameters to
+    thread through. The three fallback tiers below are commented to keep
+    the duplication with search.py explicit and auditable.
+    """
+    if not ollama.embeddings_available():
+        return []
+
+    if neo4j.is_available():
+        # Tier 1: chunk-level scoring (#192) - a document ranks on its
+        # best-matching section instead of one diluted whole-document vector.
+        chunk_data = neo4j.get_all_chunk_embeddings()
+        if chunk_data:
+            query_embedding = ollama.generate_embedding(query, use_cache=False)
+            if not query_embedding:
+                logger.warning("Synthesis: failed to generate query embedding")
+                return []
+
+            ranked = ai_core.rank_parents_by_chunk_similarity(query_embedding, chunk_data, top_k)
+            docs = []
+            for item in ranked:
+                full_doc = next(
+                    (
+                        doc
+                        for doc in all_resources
+                        if (item["type"] == "Article" and str(doc.get("id")) == item["id"])
+                        or (item["type"] == "Note" and doc.get("note_id") == item["id"])
+                    ),
+                    None,
+                )
+                if full_doc:
+                    docs.append({**full_doc, "score": item["score"]})
+            if docs:
+                logger.info("Synthesis: chunk-based retrieval found %d documents", len(docs))
+                return docs
+            logger.info("Synthesis: chunk embeddings present but matched no documents")
+
+        # Tier 2: whole-document precomputed embeddings.
+        embeddings_data = neo4j.get_all_embeddings()
+        if embeddings_data:
+            documents_with_embeddings = []
+            for emb_data in embeddings_data:
+                doc_id = emb_data["id"]
+                doc_type = emb_data["type"]
+                full_doc = next(
+                    (
+                        doc
+                        for doc in all_resources
+                        if (doc_type == "Article" and str(doc.get("id")) == doc_id)
+                        or (doc_type == "Note" and doc.get("note_id") == doc_id)
+                    ),
+                    None,
+                )
+                if full_doc:
+                    documents_with_embeddings.append(
+                        {**full_doc, "embedding": emb_data["embedding"]}
+                    )
+            if documents_with_embeddings:
+                docs = ollama.semantic_search_with_precomputed_embeddings(
+                    query, documents_with_embeddings, top_k
+                )
+                if docs:
+                    logger.info("Synthesis: whole-doc retrieval found %d documents", len(docs))
+                    result: list[dict[str, Any]] = docs
+                    return result
+
+    # Tier 3: generate embeddings on-demand (slow, but works without Neo4j).
+    logger.info("Synthesis: falling back to on-demand embedding generation")
+    fallback: list[dict[str, Any]] = ollama.semantic_search(query, all_resources, top_k)
+    return fallback
 
 
 # Type aliases for cleaner signatures
@@ -605,6 +716,140 @@ def suggest_stream(
 
         # === COMPLETE ===
         yield format_sse({"type": "complete"})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
+
+
+# Synthesis (#166): "deep synthesis" mode of /api/ask - wider retrieval
+# (chunk-ranked, top_k~12 parent docs) + a structured markdown prompt
+# instead of a short answer.
+SYNTHESIS_TOP_K = 12
+
+
+@router.post("/synthesize", response_model=SynthesisResponse)
+@limiter.limit(RATE_LIMITS["ai_synthesis"])
+def synthesize(
+    request: Request,
+    synthesis_request: SynthesisRequest,
+    ollama: OllamaDep,
+    notes_service: NotesDep,
+    neo4j: Neo4jDep,
+    static_articles: ArticlesDep,
+    user_resources: UserResourcesDep,
+) -> SynthesisResponse:
+    """Synthesize a structured markdown summary across the knowledge base (#166).
+
+    Non-streaming counterpart to /api/synthesize/stream. Uses the same
+    chunk-first retrieval ladder, widened to ~12 parent documents, and the
+    synthesis-specific prompt (Key Concepts / Your Positions / Gaps & Open
+    Questions) instead of the short-answer Q&A prompt.
+    """
+    if not ollama.is_available():
+        raise HTTPException(
+            status_code=503,
+            detail="AI synthesis feature is not available. LLM is not running or not configured.",
+        )
+
+    all_resources = _get_all_resources(static_articles, user_resources, notes_service)
+    relevant_docs = _retrieve_documents_for_synthesis(
+        synthesis_request.query, ollama, neo4j, all_resources, top_k=SYNTHESIS_TOP_K
+    )
+
+    prompt = ai_core.build_synthesis_prompt(synthesis_request.query, relevant_docs)
+    synthesis_text = ollama.generate(prompt, role="chat")
+
+    if not synthesis_text:
+        logger.warning("Synthesis: empty response from LLM")
+        return SynthesisResponse(
+            synthesis="", sources=_format_sources(relevant_docs), degraded=True
+        )
+
+    return SynthesisResponse(
+        synthesis=synthesis_text, sources=_format_sources(relevant_docs), degraded=False
+    )
+
+
+@router.post("/synthesize/stream")
+@limiter.limit(RATE_LIMITS["ai_synthesis"])
+def synthesize_stream(
+    request: Request,
+    synthesis_request: SynthesisRequest,
+    ollama: OllamaDep,
+    notes_service: NotesDep,
+    neo4j: Neo4jDep,
+    static_articles: ArticlesDep,
+    user_resources: UserResourcesDep,
+) -> StreamingResponse:
+    """Stream a deep-synthesis response via Server-Sent Events (#166).
+
+    POST (not GET) because the query plus a wide document pull won't fit a
+    querystring - so the browser can't use EventSource for this endpoint;
+    the frontend uses a fetch()-based SSE reader instead (frontend/src/lib/sse.ts).
+
+    Event types:
+    - sources: the retrieved documents, sent first so citations can render
+      before any prose arrives
+    - token: incremental text chunks of the synthesis
+    - complete: synthesis finished
+    - error: something failed; the stream ends without raising
+    """
+    # Capture dependencies for use in generator (it runs after the request
+    # handler returns, so dependencies must be captured now, not resolved lazily).
+    _ollama = ollama
+    _notes_service = notes_service
+    _neo4j = neo4j
+    _static_articles = static_articles
+    _user_resources = user_resources
+    _query = synthesis_request.query
+
+    def format_sse(data: dict[str, Any]) -> str:
+        return f"data: {json.dumps(data)}\n\n"
+
+    def event_generator() -> Generator[str]:
+        if not _ollama.is_available():
+            yield format_sse({"type": "error", "message": "AI service unavailable"})
+            return
+
+        try:
+            all_resources = _get_all_resources(_static_articles, _user_resources, _notes_service)
+            relevant_docs = _retrieve_documents_for_synthesis(
+                _query, _ollama, _neo4j, all_resources, top_k=SYNTHESIS_TOP_K
+            )
+        except Exception as e:
+            logger.error("Synthesis stream: retrieval failed: %s", e)
+            yield format_sse({"type": "error", "message": "Failed to retrieve documents"})
+            return
+
+        # Sources first, so citations render before prose arrives.
+        yield format_sse({"type": "sources", "sources": _format_sources(relevant_docs)})
+
+        prompt = ai_core.build_synthesis_prompt(_query, relevant_docs)
+
+        try:
+            token_count = 0
+            for text in _ollama.generate_stream(prompt, role="chat"):
+                token_count += 1
+                yield format_sse({"type": "token", "text": text})
+
+            if token_count == 0:
+                logger.warning("Synthesis stream: empty response from LLM")
+                yield format_sse({"type": "error", "message": "Failed to generate synthesis"})
+                return
+
+            logger.info("Synthesis stream complete (%d tokens)", token_count)
+            yield format_sse({"type": "complete"})
+
+        except Exception as e:
+            logger.error("Synthesis stream: generation failed: %s", e)
+            yield format_sse({"type": "error", "message": "Failed to generate synthesis"})
 
     return StreamingResponse(
         event_generator(),

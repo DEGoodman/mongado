@@ -18,6 +18,20 @@ class QuestionResponse(BaseModel):
     sources: list[dict[str, Any]]
 
 
+class SynthesisRequest(BaseModel):
+    """Request model for deep-synthesis (#166)."""
+
+    query: str
+
+
+class SynthesisResponse(BaseModel):
+    """Response model for deep-synthesis (#166)."""
+
+    synthesis: str  # Markdown-formatted synthesis
+    sources: list[dict[str, Any]]
+    degraded: bool = False
+
+
 class SummaryResponse(BaseModel):
     """Response model for article/note summary."""
 
