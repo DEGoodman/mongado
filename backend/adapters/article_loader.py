@@ -7,11 +7,9 @@ from typing import Any
 
 import frontmatter
 
-from config import get_settings
 from core.markdown_renderer import render_markdown_to_html
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 # Cache for loaded articles - cleared on restart
 _articles_cache: list[dict[str, Any]] | None = None
@@ -64,8 +62,9 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
     Articles are cached in memory and only reloaded if files change.
     This provides fast response times while allowing hot-reload in development.
 
-    Draft articles (draft: true in frontmatter) are only included in development mode.
-    In production, they are filtered out.
+    All articles are loaded, including drafts (draft: true in frontmatter). Callers
+    are responsible for filtering drafts based on authentication/authorization
+    (see backend/dependencies.py get_static_articles vs get_all_static_articles).
 
     Args:
         articles_dir: Path to directory containing markdown files
@@ -107,14 +106,6 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
     md_files = sorted(articles_dir.glob("*.md"))
     logger.info("Found %d markdown files in %s", len(md_files), articles_dir)
 
-    # Determine if we should include drafts (dev mode only)
-    is_dev_mode = settings.debug
-    logger.info(
-        "Environment mode: %s (drafts %s)",
-        "development" if is_dev_mode else "production",
-        "visible" if is_dev_mode else "hidden",
-    )
-
     for md_file in md_files:
         try:
             # Parse markdown with frontmatter
@@ -122,13 +113,6 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
 
             # Check if article is a draft
             is_draft = post.get("draft", False)
-
-            # Skip drafts in production
-            if is_draft and not is_dev_mode:
-                logger.info(
-                    "Skipping draft article in production: %s", post.get("title", md_file.stem)
-                )
-                continue
 
             # Render markdown to HTML server-side
             try:
@@ -161,7 +145,7 @@ def load_static_articles_from_local(articles_dir: Path) -> list[dict[str, Any]]:
             continue
 
     logger.info(
-        "Successfully loaded %d articles (%d drafts filtered)",
+        "Successfully loaded %d articles (%d drafts)",
         len(articles),
         len([a for a in articles if a.get("draft", False)]),
     )

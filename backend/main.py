@@ -22,7 +22,14 @@ from adapters.article_loader import load_static_articles
 from adapters.neo4j import get_neo4j_adapter
 from auth import verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
-from dependencies import get_neo4j, get_notes, get_ollama, set_static_articles, set_user_resources
+from dependencies import (
+    get_neo4j,
+    get_notes,
+    get_ollama,
+    get_static_articles,
+    set_static_articles,
+    set_user_resources,
+)
 from feature_flags import get_feature_flags, require_llm_features
 from image_optimizer import optimize_image_to_webp
 from logging_config import setup_logging
@@ -58,7 +65,11 @@ notes_service = get_notes_service()
 # LLM features are gated at runtime via feature flags (see feature_flags.py).
 # The Ollama client is created lazily on first use (dependencies.get_ollama).
 
-# Static articles (loaded from files/S3, read-only)
+# Static articles (loaded from files/S3, read-only). Holds the FULL list,
+# including drafts (#184) - the upload-cleanup scan below needs draft content
+# too, so images referenced only by a draft aren't garbage-collected. Anywhere
+# that must stay draft-free (embedding sync) uses get_static_articles() from
+# dependencies.py instead, which derives a published-only view.
 static_articles: list[dict[str, Any]] = []
 
 # User-created resources (in-memory for now, will be DB later)
@@ -76,10 +87,17 @@ async def _sync_embeddings_background() -> None:
     try:
         from embedding_sync import sync_embeddings_on_startup
 
-        # Run the sync in a thread pool (it's blocking I/O)
+        # Run the sync in a thread pool (it's blocking I/O). Uses the
+        # published-only list (get_static_articles()) - draft text must never
+        # land in Neo4j embeddings, which would leak drafts into semantic
+        # search for anonymous users.
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
-            None, sync_embeddings_on_startup, static_articles, get_ollama(), neo4j_adapter
+            None,
+            sync_embeddings_on_startup,
+            get_static_articles(),
+            get_ollama(),
+            neo4j_adapter,
         )
         _embedding_sync_ready = True
         logger.info("Background embedding sync completed - app is fully ready")
@@ -590,6 +608,8 @@ def cleanup_uploads(
             kept_recent=0,
         )
 
+    # FULL list (including drafts): a draft-only image reference must still
+    # count as "referenced" so cleanup doesn't delete it.
     texts: list[str] = []
     for article in static_articles:
         texts.append(str(article.get("content", "")))
@@ -676,8 +696,9 @@ def trigger_embedding_sync(
         # Import here to avoid circular dependency
         from embedding_sync import sync_articles_to_neo4j, sync_embeddings
 
-        # Sync articles to Neo4j first
-        created, updated, deleted = sync_articles_to_neo4j(static_articles, neo4j)
+        # Sync articles to Neo4j first. Published-only list - drafts must
+        # never be embedded/synced, or they'd leak into semantic search.
+        created, updated, deleted = sync_articles_to_neo4j(get_static_articles(), neo4j)
         logger.info(
             "Articles synced: %d created, %d updated, %d deleted", created, updated, deleted
         )

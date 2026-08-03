@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import AIAssistant from "@/components/AIAssistant";
@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/PageState";
 import { useRouter, useSearchParams } from "next/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import { TagPillList } from "@/components/TagPill";
+import { apiGet, isAuthenticated } from "@/lib/api/client";
+import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
 
 export interface ArticleMetadata {
@@ -34,8 +36,40 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showAllTags, setShowAllTags] = useState(false);
 
+  // Draft articles (#184): the server fetch that produced `resources` is
+  // anonymous/cached, so it never includes drafts. When signed in, re-fetch
+  // with auth headers and merge in any draft-only entries. Starts empty to
+  // avoid a hydration mismatch (server never renders drafts) - populated
+  // client-side only, same pattern as NoteEditorForm's aiAvailable state.
+  const [draftResources, setDraftResources] = useState<ArticleMetadata[]>([]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+
+    let cancelled = false;
+
+    async function fetchDrafts() {
+      try {
+        const data = await apiGet<{ resources: ArticleMetadata[] }>("/api/articles");
+        if (cancelled) return;
+        setDraftResources(data.resources.filter((r) => r.draft));
+      } catch (err) {
+        logger.error("Failed to load draft articles", err);
+      }
+    }
+
+    fetchDrafts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const knownIds = new Set(resources.map((r) => r.id));
+  const allResources = [...resources, ...draftResources.filter((r) => !knownIds.has(r.id))];
+
   // Calculate tag counts
-  const tagCounts = resources.reduce(
+  const tagCounts = allResources.reduce(
     (acc, resource) => {
       resource.tags.forEach((tag) => {
         acc[tag] = (acc[tag] || 0) + 1;
@@ -56,7 +90,7 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
   const otherTags = sortedTags.filter(([_, count]) => count === 1);
   const visibleTags = showAllTags ? sortedTags : topTags;
 
-  const filteredResources = resources
+  const filteredResources = allResources
     .filter((resource) => {
       // Filter by tags (OR logic - article must have at least one selected tag)
       if (selectedTags.length > 0) {
@@ -260,7 +294,8 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
                 )}
                 <div className={styles.articleCount}>
                   Showing {filteredResources.length}
-                  {filteredResources.length !== resources.length && ` of ${resources.length}`}{" "}
+                  {filteredResources.length !== allResources.length &&
+                    ` of ${allResources.length}`}{" "}
                   {filteredResources.length === 1 ? "article" : "articles"}
                 </div>
               </div>
