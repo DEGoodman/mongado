@@ -6,12 +6,34 @@
  */
 
 export type SlashCommandName =
-  "expand" | "simplify" | "summarize" | "continue" | "rephrase" | "link";
+  | "expand"
+  | "simplify"
+  | "summarize"
+  | "continue"
+  | "rephrase"
+  | "link"
+  | "challenge"
+  | "gaps"
+  | "contradictions";
+
+/**
+ * How a command's result is meant to be used, so call sites can route by
+ * kind instead of special-casing individual command names:
+ * - "transform": streams plain prose that replaces the target text
+ *   (expand/simplify/summarize/continue/rephrase).
+ * - "link": streams wikilink candidates; never consumes/replaces text.
+ * - "partner": advisory writing-partner commands (#146 Phase 2 -
+ *   challenge/gaps/contradictions). Result is commentary with citations,
+ *   rendered in a dismissible card; never inserted into the document
+ *   automatically.
+ */
+export type SlashCommandKind = "transform" | "link" | "partner";
 
 export interface SlashCommandDef {
   name: SlashCommandName;
   label: string;
   description: string;
+  kind: SlashCommandKind;
   /** Whether this command operates on the current selection specifically
    * (vs. falling back to the current paragraph/preceding text). All six
    * commands use the selection when one exists; this flags commands where a
@@ -26,45 +48,72 @@ export const SLASH_COMMANDS: readonly SlashCommandDef[] = [
     name: "expand",
     label: "Expand",
     description: "Expand the current paragraph with more detail",
+    kind: "transform",
     needsSelection: false,
   },
   {
     name: "simplify",
     label: "Simplify",
     description: "Simplify complex text",
+    kind: "transform",
     needsSelection: false,
   },
   {
     name: "summarize",
     label: "Summarize",
     description: "Summarize selected text",
+    kind: "transform",
     needsSelection: true,
   },
   {
     name: "continue",
     label: "Continue",
     description: "Continue writing from cursor position",
+    kind: "transform",
     needsSelection: false,
   },
   {
     name: "rephrase",
     label: "Rephrase",
     description: "Offer alternative phrasings",
+    kind: "transform",
     needsSelection: false,
   },
   {
     name: "link",
     label: "Link",
     description: "Find and insert relevant wikilinks",
+    kind: "link",
+    needsSelection: false,
+  },
+  {
+    name: "challenge",
+    label: "Challenge this assumption",
+    description: "Push back on an assumption, citing your notes",
+    kind: "partner",
+    needsSelection: false,
+  },
+  {
+    name: "gaps",
+    label: "What am I missing?",
+    description: "Surface gaps against what's already in your notes",
+    kind: "partner",
+    needsSelection: false,
+  },
+  {
+    name: "contradictions",
+    label: "Find contradictions",
+    description: "Check this text against your notes for contradictions",
+    kind: "partner",
     needsSelection: false,
   },
 ];
 
 /** Text-transform commands: their result streams as plain prose tokens that
- * replace the target text. "link" is excluded - it streams link candidates
- * instead of prose. */
+ * replace the target text. "link" and the writing-partner commands are
+ * excluded - they never overwrite the target text. */
 export const SLASH_TRANSFORM_COMMANDS: readonly SlashCommandName[] = SLASH_COMMANDS.filter(
-  (c) => c.name !== "link"
+  (c) => c.kind === "transform"
 ).map((c) => c.name);
 
 export function getSlashCommand(name: string): SlashCommandDef | undefined {

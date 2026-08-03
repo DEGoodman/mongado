@@ -127,9 +127,47 @@ describe("getPrecedingText", () => {
 });
 
 describe("SLASH_COMMANDS registry", () => {
-  it("contains exactly the six commands from the issue", () => {
+  it("contains the six Phase 1 commands plus the three Phase 2 writing-partner commands", () => {
     expect(SLASH_COMMANDS.map((c) => c.name).sort()).toEqual(
-      ["continue", "expand", "link", "rephrase", "simplify", "summarize"].sort()
+      [
+        "continue",
+        "expand",
+        "link",
+        "rephrase",
+        "simplify",
+        "summarize",
+        "challenge",
+        "gaps",
+        "contradictions",
+      ].sort()
     );
+  });
+
+  it("tags the three new Phase 2 commands as kind: partner", () => {
+    for (const name of ["challenge", "gaps", "contradictions"]) {
+      expect(getSlashCommand(name)?.kind).toBe("partner");
+    }
+  });
+
+  it("keeps the Phase 1 transform commands tagged as kind: transform", () => {
+    for (const name of ["expand", "simplify", "summarize", "continue", "rephrase"]) {
+      expect(getSlashCommand(name)?.kind).toBe("transform");
+    }
+  });
+
+  it("keeps /link tagged as kind: link", () => {
+    expect(getSlashCommand("link")?.kind).toBe("link");
+  });
+});
+
+describe("filterSlashCommands with the expanded registry", () => {
+  it("still filters by prefix correctly with partner commands present", () => {
+    expect(filterSlashCommands("cha").map((c) => c.name)).toEqual(["challenge"]);
+    expect(filterSlashCommands("g").map((c) => c.name)).toEqual(["gaps"]);
+    expect(
+      filterSlashCommands("con")
+        .map((c) => c.name)
+        .sort()
+    ).toEqual(["continue", "contradictions"].sort());
   });
 });
