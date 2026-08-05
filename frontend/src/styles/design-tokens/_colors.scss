@@ -57,6 +57,30 @@ $orange-700: #c2532a; // Hover state
 $orange-800: #9a4222; // Active state
 $orange-900: #73311a; // Darkest orange
 
+// === PHOSPHOR (Dark-mode Primary - CRT Amber) ===
+// The dark theme's interactive voice: amber phosphor on warm charcoal,
+// per the "Phosphor Console" direction (#278). Light mode keeps orange.
+$phosphor-50: #fbf4e6;
+$phosphor-100: #f5e6c6;
+$phosphor-200: #eed3a0;
+$phosphor-300: #e6bc7d;
+$phosphor-400: #e0a458; // Links / hover in dark mode
+$phosphor-500: #d9983f; // PRIMARY CTA fill in dark mode
+$phosphor-600: #c08432;
+$phosphor-700: #9c6a26;
+$phosphor-800: #7a521d;
+$phosphor-900: #573a14;
+
+// === PDP CONSOLE ACCENTS (Identity - address-lights strip) ===
+// From the PDP-11/70 front panel: crimson / berry / purple switch rows.
+// Decorative-identity only; never interactive.
+$pdp-crimson-400: #c25c66; // light theme lit segment
+$pdp-crimson-600: #a84a52; // dark theme lit segment
+$pdp-berry-400: #b05c8a;
+$pdp-berry-600: #a04a78;
+$pdp-purple-400: #8a6b9c;
+$pdp-purple-600: #6d4a78;
+
 // === TERRACOTTA (Secondary - Warm) ===
 // Earthy, sophisticated
 $terracotta-50: #fff5f2; // Very light terracotta

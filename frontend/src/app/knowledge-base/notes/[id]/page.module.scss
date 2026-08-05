@@ -136,23 +136,21 @@
     }
 
     .editButton {
-      background-color: $orange-600; // Warm primary action
-      color: white;
+      background-color: $color-interactive-primary; // Warm primary action
+      color: $color-interactive-primary-text;
 
       &:hover:not(:disabled) {
-        background-color: $orange-700;
+        background-color: $color-interactive-primary-hover;
       }
     }
 
     .deleteButton {
       background-color: transparent;
-      color: $red-600; // Red destructive action
-      border: 1px solid $red-600;
+      color: $color-error-text; // Destructive action, theme-aware
+      border: 1px solid $color-error-border;
 
       &:hover:not(:disabled) {
-        background-color: $red-50;
-        border-color: $red-700;
-        color: $red-700;
+        background-color: $color-error-bg;
       }
     }
 
@@ -217,12 +215,12 @@
   .backLink {
     display: inline-flex;
     margin-top: $spacing-4;
-    color: $orange-600; // Warm orange link
+    color: $color-link-default;
     text-decoration: none;
     @include text-secondary;
 
     &:hover {
-      color: $orange-700;
+      color: $color-link-hover;
       text-decoration: underline;
     }
   }
