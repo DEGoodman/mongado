@@ -183,9 +183,22 @@
   border-top: 1px solid $color-border-default;
 
   .copyright {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
     font-family: $font-family-mono;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
     margin: 0;
+  }
+
+  // The PDP-11/70 nod: a tiny front-panel outline beside the copyright
+  .pdpGlyph {
+    display: inline-flex;
+    color: $color-text-tertiary;
+
+    svg {
+      display: block;
+    }
   }
 }

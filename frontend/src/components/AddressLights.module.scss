@@ -1,0 +1,39 @@
+/**
+ * AddressLights - PDP-11/70 console strip (decorative, theme-aware).
+ */
+
+.lights {
+  display: flex;
+  gap: 5px;
+
+  @media (max-width: 480px) {
+    gap: 4px;
+  }
+}
+
+.segment {
+  flex: none;
+  width: 26px;
+  height: 6px;
+  border-radius: 2px;
+
+  @media (max-width: 480px) {
+    width: 16px;
+  }
+}
+
+.crimson {
+  background-color: var(--color-lights-crimson);
+}
+
+.berry {
+  background-color: var(--color-lights-berry);
+}
+
+.purple {
+  background-color: var(--color-lights-purple);
+}
+
+.off {
+  background-color: var(--color-lights-off);
+}

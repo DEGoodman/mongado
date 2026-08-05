@@ -73,8 +73,8 @@
   }
 
   &.active {
-    background-color: $orange-50;
-    color: $orange-700;
+    background-color: $color-interactive-primary-bg-subtle;
+    color: $color-interactive-ghost-text;
     font-weight: 600;
   }
 }

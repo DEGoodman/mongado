@@ -1,12 +1,19 @@
 # Design System
 
 Mongado's visual identity: **future-retro, grey and orange**. Warm paper-grey
-surfaces, cool grey text, a single orange interactive accent, Space Grotesk
-for prose, Space Mono as the "terminal layer" for metadata. Dark mode is a
-warm dark-grey ground where the orange reads as amber phosphor.
+surfaces, cool grey text, a single warm interactive accent, Space Grotesk
+for prose, Space Mono as the "terminal layer" for metadata.
+
+Dark mode is the **Phosphor Console**: amber phosphor (`$phosphor-*`) on a
+warm charcoal ground, with identity accents borrowed from the DEC PDP-11/70
+front panel (`$pdp-crimson/berry/purple-*`, used by the `AddressLights`
+strip and never for interaction). Light mode keeps the cream ground and
+cool blue header gradient; its resting primary is the deeper
+`$orange-700` (the old resting `$orange-600` failed AA on white).
 
 Established in [#198](https://github.com/DEGoodman/mongado/issues/198) /
-[PR #199](https://github.com/DEGoodman/mongado/pull/199).
+[PR #199](https://github.com/DEGoodman/mongado/pull/199); Phosphor Console
+direction chosen in [#278](https://github.com/DEGoodman/mongado/issues/278).
 
 ## Token architecture
 
@@ -51,10 +58,12 @@ neutrals is automatically correct in both themes.
 
 | Role | Token | Rule |
 |---|---|---|
-| Interactive accent | `$color-interactive-primary` (orange) | Orange means "interact here" — one primary CTA per view, everything else is a ghost |
-| Links | `$color-link-default` / `-hover` | Orange; never blue |
+| Interactive accent | `$color-interactive-primary` (orange light / phosphor amber dark) | The accent means "interact here" — one primary *fill* per view |
+| Secondary actions | ghost buttons | Outlined, and may carry a quiet semantic hue: slate-blue for informational (View in Graph), error-crimson for destructive (Delete), teal for technical (AI). Fills stay reserved for the primary |
+| Links | `$color-link-default` / `-hover` | Orange/amber; never blue |
 | Cool accent | slate-blue | Informational surfaces only (KB headers, info panels) |
-| States | sage = success, mustard = warning, red = error, dusty-blue = info | Semantic only, never decorative |
+| States | sage = success, mustard = warning, crimson = error, dusty-blue = info | Semantic only, never decorative |
+| Identity accents | `--color-lights-*` (PDP crimson/berry/purple) | Decorative only — the `AddressLights` strip, never interactive |
 | Category identity | typography, not hue | See mono labels below |
 
 Selected/active chips use `$orange-700` background with `#fff` text (≥4.5:1

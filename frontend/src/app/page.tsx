@@ -49,7 +49,24 @@ export default function Home() {
 
         {/* Footer note */}
         <footer className={styles.footer}>
-          <p className={styles.copyright}>© 2025 {siteConfig.author.name}</p>
+          <p className={styles.copyright}>
+            <span className={styles.pdpGlyph} title="PDP-11/70">
+              <svg
+                viewBox="0 0 44 18"
+                width="34"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.25"
+                aria-hidden="true"
+              >
+                <rect x="0.75" y="0.75" width="42.5" height="16.5" rx="2" />
+                <rect x="3.5" y="3.5" width="37" height="6" rx="1" />
+                <path d="M7 12.5v3.5M12 13.5v2.5M17 12.5v3.5M22 13.5v2.5M27 13.5v2.5M32 12.5v3.5M37 13.5v2.5" />
+              </svg>
+            </span>
+            © 2025 {siteConfig.author.name}
+          </p>
         </footer>
       </main>
     </div>

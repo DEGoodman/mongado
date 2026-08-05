@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
 import AIAssistant from "@/components/AIAssistant";
+import AddressLights from "@/components/AddressLights";
 import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -135,6 +136,7 @@ export default function KnowledgeBasePage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.title}>Knowledge Base</h1>
+          <AddressLights />
         </div>
       </header>
 
