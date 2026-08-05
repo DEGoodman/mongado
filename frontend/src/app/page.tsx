@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { siteConfig } from "@/lib/site-config";
 import ThemeToggle from "@/components/ThemeToggle";
 import styles from "./page.module.scss";
@@ -17,6 +18,20 @@ export default function Home() {
           <h1 className={styles.title}>{siteConfig.author.fullTitle}</h1>
           <div className={styles.rule} aria-hidden="true" />
           <p className={styles.bio}>{siteConfig.author.bio}</p>
+
+          <Link href="/knowledge-base" className={styles.kbButton}>
+            Explore the knowledge base
+            <svg
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
 
           <nav className={styles.socialLinks} aria-label="Social links">
             <a href={siteConfig.links.github} target="_blank" rel="noopener noreferrer">
@@ -39,19 +54,11 @@ export default function Home() {
             thoughts following a Zettelkasten approach — from technical deep-dives to frameworks
             like &quot;The 5 Dysfunctions of a Team&quot; and Daniel Pink&apos;s motivation triad.
           </p>
-          <a href="/knowledge-base" className={styles.kbButton}>
-            Explore the knowledge base
-            <svg
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
+          <nav className={styles.kbLinks} aria-label="Knowledge base sections">
+            <Link href="/knowledge-base/articles">Browse articles →</Link>
+            <Link href="/knowledge-base/notes">Browse notes →</Link>
+            <Link href="/knowledge-base/notes/graph">View the graph →</Link>
+          </nav>
         </section>
 
         {/* Other Projects Link */}

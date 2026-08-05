@@ -20,18 +20,18 @@
 .main {
   @include container;
   max-width: 52rem;
-  padding-top: $spacing-16;
+  padding-top: $spacing-12;
   padding-bottom: $spacing-8;
 
   @media (max-width: 640px) {
     // Clear the theme toggle pinned to the top-right corner
-    padding-top: $spacing-16;
+    padding-top: $spacing-12;
   }
 }
 
 // ===== HERO SECTION =====
 .hero {
-  margin-bottom: $spacing-16;
+  margin-bottom: $spacing-12;
 
   .eyebrow {
     @include text-label-mono;
@@ -42,7 +42,7 @@
   .title {
     @include heading-h1;
     color: $neutral-900;
-    font-size: clamp(2.75rem, 7vw, 4rem);
+    font-size: clamp(2.25rem, 7vw, 4rem);
     line-height: 1.05;
     margin: 0;
     text-wrap: balance;
@@ -52,7 +52,7 @@
     width: 4rem;
     height: 3px;
     background-color: $color-interactive-primary;
-    margin: $spacing-6 0;
+    margin: $spacing-4 0;
   }
 
   .bio {
@@ -61,6 +61,10 @@
     line-height: $line-height-relaxed;
     color: $color-text-secondary;
     margin: 0 0 $spacing-6;
+
+    @media (max-width: 640px) {
+      font-size: $font-size-base;
+    }
   }
 }
 
@@ -96,8 +100,8 @@
 // ===== KNOWLEDGE BASE SECTION =====
 .kbSection {
   border-top: 1px solid $color-border-default;
-  padding-top: $spacing-10;
-  margin-bottom: $spacing-12;
+  padding-top: $spacing-8;
+  margin-bottom: $spacing-10;
 
   .kbEyebrow {
     @include text-label-mono;
@@ -119,40 +123,67 @@
     margin: 0 0 $spacing-6;
   }
 
-  .kbButton {
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-2;
-    padding: $spacing-3 $spacing-6;
-    border-radius: $border-radius-button;
-    font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
-    text-decoration: none;
-    color: $color-interactive-primary-text;
-    background-color: $color-interactive-primary;
-    box-shadow: $shadow-button;
-    transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
+  .kbLinks {
+    @include cluster($spacing-6);
 
-    &:hover {
-      background-color: $color-interactive-primary-hover;
-      box-shadow: $shadow-button-hover;
-      transform: translateY(-1px);
-    }
-
-    &:focus-visible {
-      outline: 2px solid $color-interactive-primary-focus;
-      outline-offset: 3px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
+    a {
+      font-family: $font-family-mono;
+      font-size: $font-size-sm;
+      letter-spacing: $letter-spacing-wide;
+      color: $color-link-default;
+      text-decoration: none;
 
       &:hover {
-        transform: none;
+        color: $color-link-hover;
+        text-decoration: underline;
+        text-underline-offset: 3px;
       }
+
+      &:focus-visible {
+        outline: 2px solid $color-interactive-primary-focus;
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+    }
+  }
+}
+
+// Primary CTA - lives in the hero so the knowledge base is one tap
+// from landing on any viewport (#278)
+.kbButton {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
+  margin-bottom: $spacing-6;
+  padding: $spacing-3 $spacing-6;
+  border-radius: $border-radius-button;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  text-decoration: none;
+  color: $color-interactive-primary-text;
+  background-color: $color-interactive-primary;
+  box-shadow: $shadow-button;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    background-color: $color-interactive-primary-hover;
+    box-shadow: $shadow-button-hover;
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-interactive-primary-focus;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
     }
   }
 }
