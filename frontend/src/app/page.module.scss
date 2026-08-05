@@ -11,38 +11,36 @@
   background-color: $color-page-bg;
 }
 
-.themeCorner {
-  position: absolute;
-  top: $spacing-4;
-  right: $spacing-4;
-}
-
 .main {
   @include container;
   max-width: 52rem;
-  padding-top: $spacing-16;
+  padding-top: $spacing-8;
   padding-bottom: $spacing-8;
-
-  @media (max-width: 640px) {
-    // Clear the theme toggle pinned to the top-right corner
-    padding-top: $spacing-16;
-  }
 }
 
 // ===== HERO SECTION =====
 .hero {
-  margin-bottom: $spacing-16;
+  margin-bottom: $spacing-12;
+
+  // Eyebrow and theme toggle share the top line, in flow on every viewport
+  .heroTopRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-4;
+    margin-bottom: $spacing-3;
+  }
 
   .eyebrow {
     @include text-label-mono;
     color: $color-link-hover;
-    margin-bottom: $spacing-3;
+    margin: 0;
   }
 
   .title {
     @include heading-h1;
     color: $neutral-900;
-    font-size: clamp(2.75rem, 7vw, 4rem);
+    font-size: clamp(2.25rem, 7vw, 4rem);
     line-height: 1.05;
     margin: 0;
     text-wrap: balance;
@@ -52,16 +50,34 @@
     width: 4rem;
     height: 3px;
     background-color: $color-interactive-primary;
-    margin: $spacing-6 0;
+    margin: $spacing-4 0 $spacing-6;
   }
 
   .bio {
     max-width: 40rem;
-    font-size: $font-size-lg;
+    font-size: $font-size-base;
     line-height: $line-height-relaxed;
     color: $color-text-secondary;
     margin: 0 0 $spacing-6;
   }
+}
+
+// Intro column + KB card share the space under the name (#278).
+// The card column is wide and the gap modest so it tucks under the name.
+.heroGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-6;
+  align-items: start;
+
+  @media (min-width: 768px) {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: $spacing-8;
+  }
+}
+
+.heroIntro {
+  min-width: 0;
 }
 
 // ===== SOCIAL LINKS (quiet mono text links) =====
@@ -93,99 +109,83 @@
   }
 }
 
-// ===== KNOWLEDGE BASE SECTION =====
-.kbSection {
-  border-top: 1px solid $color-border-default;
-  padding-top: $spacing-10;
-  margin-bottom: $spacing-12;
+// ===== KNOWLEDGE BASE CARD =====
+// The one primary action on the page: a clickable card nestled beside
+// the intro, above the fold on every viewport (#278)
+.kbCard {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+  padding: $spacing-5;
+  border: 1px solid $color-border-default;
+  border-left: 3px solid $color-interactive-primary;
+  border-radius: $border-radius-lg;
+  background-color: $color-surface-default;
+  text-decoration: none;
+  box-shadow: $shadow-button;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 
-  .kbEyebrow {
-    @include text-label-mono;
-    margin-bottom: $spacing-3;
+  &:hover {
+    border-color: $color-interactive-primary;
+    box-shadow: $shadow-button-hover;
+    transform: translateY(-2px);
+
+    .kbCardArrow {
+      transform: translateX(3px);
+    }
   }
 
-  .kbTitle {
-    @include heading-h2;
-    color: $neutral-900;
-    margin-bottom: $spacing-4;
-    text-wrap: balance;
+  &:focus-visible {
+    outline: 2px solid $color-interactive-primary-focus;
+    outline-offset: 3px;
   }
 
-  .kbDescription {
-    max-width: 40rem;
-    font-size: $font-size-base;
-    line-height: $line-height-relaxed;
-    color: $color-text-secondary;
-    margin: 0 0 $spacing-6;
-  }
-
-  .kbButton {
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-2;
-    padding: $spacing-3 $spacing-6;
-    border-radius: $border-radius-button;
-    font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
-    text-decoration: none;
-    color: $color-interactive-primary-text;
-    background-color: $color-interactive-primary;
-    box-shadow: $shadow-button;
-    transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
 
     &:hover {
-      background-color: $color-interactive-primary-hover;
-      box-shadow: $shadow-button-hover;
-      transform: translateY(-1px);
+      transform: none;
     }
 
-    &:focus-visible {
-      outline: 2px solid $color-interactive-primary-focus;
-      outline-offset: 3px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
+    .kbCardArrow {
       transition: none;
-
-      &:hover {
-        transform: none;
-      }
     }
   }
 }
 
-// ===== OTHER SECTIONS =====
-.projectsLink {
-  margin-bottom: $spacing-8;
-
-  a {
-    @include link-default;
-    color: $color-text-secondary;
-    font-size: $font-size-sm;
-
-    &:hover {
-      color: $color-primary;
-    }
-  }
+.kbCardTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-2;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-heading;
 }
 
+.kbCardArrow {
+  color: $color-interactive-primary;
+  transition: transform 0.2s ease;
+}
+
+.kbCardDescription {
+  @include text-secondary;
+  line-height: $line-height-relaxed;
+}
+
+// ===== FOOTER =====
 .footer {
   margin-top: $spacing-8;
   padding: $spacing-6 0;
   border-top: 1px solid $color-border-default;
-  @include text-secondary;
-
-  p {
-    margin-bottom: $spacing-2;
-  }
 
   .copyright {
     font-family: $font-family-mono;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
-    margin-top: $spacing-2;
+    margin: 0;
   }
 }

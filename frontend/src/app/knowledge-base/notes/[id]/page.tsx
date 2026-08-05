@@ -370,14 +370,10 @@ function NoteDetailContent() {
                 <Breadcrumb section="notes" />
               </div>
 
-              {/* Content Type Badge */}
-              <div className={styles.badge}>
-                <Badge type="note" />
-              </div>
-
-              {/* Title and metadata */}
+              {/* Title and metadata; type badge shares the id row to keep the head compact */}
               <div className={styles.titleRow}>
                 <div className={styles.noteIdRow}>
+                  <Badge type="note" />
                   {mascotFor(note.id) && (
                     <span className="delight-mascot" aria-hidden="true">
                       {mascotFor(note.id)}

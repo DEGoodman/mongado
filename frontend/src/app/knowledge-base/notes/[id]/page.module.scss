@@ -55,10 +55,6 @@
     @include flex-between;
   }
 
-  .badge {
-    margin-bottom: $spacing-4;
-  }
-
   .titleRow {
     margin-bottom: $spacing-4;
 
@@ -128,7 +124,7 @@
     .viewGraphButton {
       background-color: transparent;
       color: $dusty-blue-600; // Cool info action
-      border: 2px solid $dusty-blue-600;
+      border: 1px solid $dusty-blue-600;
       text-decoration: none;
       display: inline-block;
 
@@ -151,7 +147,7 @@
     .deleteButton {
       background-color: transparent;
       color: $red-600; // Red destructive action
-      border: 2px solid $red-600; // Stronger outlined style
+      border: 1px solid $red-600;
 
       &:hover:not(:disabled) {
         background-color: $red-50;
@@ -161,16 +157,42 @@
     }
 
     .aiSuggestionsButton {
-      background-color: $teal-600; // Cool technical action
-      color: white;
+      background-color: transparent;
+      color: $teal-600; // Cool technical action, outlined: Edit stays the one fill
+      border: 1px solid $teal-600;
 
       &:hover:not(:disabled) {
-        background-color: $teal-700;
+        background-color: $teal-50;
+        border-color: $teal-700;
+        color: $teal-700;
       }
 
       &.prewarming {
         opacity: 0.7;
       }
+    }
+  }
+
+  // Mobile: the head matter must not fill the whole first screen (#278).
+  // Placed after the base rules so equal-specificity overrides win.
+  @media (max-width: 768px) {
+    padding: $spacing-4;
+    margin-bottom: $spacing-6;
+
+    .headerTop,
+    .titleRow,
+    .meta,
+    .tags {
+      margin-bottom: $spacing-3;
+    }
+
+    .titleRow .noteTitle {
+      font-size: $font-size-2xl;
+    }
+
+    .meta {
+      @include text-meta-mono;
+      gap: $spacing-3;
     }
   }
 }
