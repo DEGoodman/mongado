@@ -528,7 +528,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
               disabled={loading || !input.trim()}
               className={styles.submitButton}
             >
-              {loading ? "..." : tab === "ask" ? "Send" : "Search"}
+              {tab === "ask" ? "Send" : "Search"}
             </button>
           </form>
         </div>

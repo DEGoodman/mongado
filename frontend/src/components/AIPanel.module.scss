@@ -19,13 +19,18 @@
   border-left: $border-default;
   background-color: $white;
 
-  // Desktop: right-side panel (24rem = 384px)
+  // Desktop: right-side panel
   @media (min-width: 768px) {
     inset: auto;
     right: 0;
     top: 0;
     height: 100vh;
-    width: 24rem;
+    width: 26rem;
+  }
+
+  // Wide desktop: more breathing room for conversations
+  @media (min-width: 1280px) {
+    width: 30rem;
   }
 }
 
@@ -131,11 +136,13 @@
 // ===== MODE SWITCHER =====
 .modeSwitcher {
   display: flex;
+  flex-wrap: wrap;
   gap: $spacing-2;
 }
 
 .modeButton {
   flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +151,17 @@
   border-radius: $border-radius-md;
   @include text-secondary;
   font-weight: $font-weight-medium;
+  white-space: nowrap;
   @include transition-default;
+
+  // 4 tabs (with Suggest) don't fit 390px with icons; text alone does
+  @media (max-width: 480px) {
+    padding: $spacing-2;
+
+    svg {
+      display: none;
+    }
+  }
 
   &.active {
     background-color: $color-interactive-primary;
@@ -236,6 +253,11 @@
   &.userMessage {
     background-color: $color-interactive-primary;
     color: $color-interactive-primary-text;
+
+    // text mixins on children set their own color; the bubble's must win
+    .messageContent {
+      color: inherit;
+    }
   }
 
   &.assistantMessage {
@@ -374,9 +396,13 @@
 }
 
 .clearButton {
+  display: block;
+  margin-left: auto;
   margin-bottom: $spacing-2;
-  @include text-tertiary;
+  @include text-meta-mono;
   color: $neutral-500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   @include transition-colors;
 
   &:hover {
@@ -391,10 +417,14 @@
 
 .input {
   flex: 1;
+  min-width: 0;
+  min-height: 2.75rem; // 44px touch target
   padding: $spacing-2 $spacing-3;
   border: $border-width-thin solid $neutral-300;
   border-radius: $border-radius-md;
   font-size: $font-size-base;
+  background-color: $color-input-bg;
+  color: $color-input-text;
 
   &:focus {
     outline: none;
@@ -408,11 +438,12 @@
 }
 
 .submitButton {
+  min-width: 4.5rem; // keeps size stable when the label changes
   padding: $spacing-2 $spacing-4;
   border-radius: $border-radius-md;
   @include text-secondary;
   background-color: $color-interactive-primary;
-  color: $color-interactive-primary-text;
+  color: $color-interactive-primary-text; // after the mixin: it sets its own color
   @include transition-default;
 
   &:hover:not(:disabled) {
