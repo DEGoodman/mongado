@@ -6,15 +6,15 @@ import styles from "./page.module.scss";
 export default function Home() {
   return (
     <div className={styles.container}>
-      <div className={styles.themeCorner}>
-        <ThemeToggle />
-      </div>
       <main className={styles.main}>
         {/* Hero: name spans the page, the columns below share the space */}
         <header className={styles.hero}>
-          <p className={styles.eyebrow}>
-            {siteConfig.author.title} — {siteConfig.author.location}
-          </p>
+          <div className={styles.heroTopRow}>
+            <p className={styles.eyebrow}>
+              {siteConfig.author.title} — {siteConfig.author.location}
+            </p>
+            <ThemeToggle />
+          </div>
           <h1 className={styles.title}>{siteConfig.author.fullTitle}</h1>
           <div className={styles.rule} aria-hidden="true" />
 
@@ -47,19 +47,9 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Other Projects Link */}
-        <div className={styles.projectsLink}>
-          <a href={siteConfig.links.github} target="_blank" rel="noopener noreferrer">
-            View more projects on GitHub →
-          </a>
-        </div>
-
         {/* Footer note */}
         <footer className={styles.footer}>
-          <p>Built with Next.js, FastAPI, and Python</p>
-          <p className={styles.copyright}>
-            © 2025 {siteConfig.author.name} • {siteConfig.author.location}
-          </p>
+          <p className={styles.copyright}>© 2025 {siteConfig.author.name}</p>
         </footer>
       </main>
     </div>

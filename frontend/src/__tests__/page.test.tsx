@@ -18,14 +18,19 @@ describe("Home Page", () => {
     expect(screen.getAllByText(/Birmingham, AL/).length).toBeGreaterThan(0);
   });
 
-  it("shows GitHub links", () => {
+  it("shows the GitHub social link", () => {
     render(<Home />);
-    // Should have both the social button and the projects link
     const githubLinks = screen.getAllByRole("link", { name: /github/i });
-    expect(githubLinks.length).toBeGreaterThanOrEqual(2);
-    // Both should point to GitHub
+    expect(githubLinks.length).toBeGreaterThanOrEqual(1);
     githubLinks.forEach((link) => {
       expect(link).toHaveAttribute("href", "https://github.com/DEGoodman");
     });
+  });
+
+  it("links to the knowledge base via the card", () => {
+    render(<Home />);
+    const card = screen.getByRole("link", { name: /knowledge base/i });
+    expect(card).toHaveAttribute("href", "/knowledge-base");
+    expect(screen.getByText(/curated digital garden/i)).toBeInTheDocument();
   });
 });

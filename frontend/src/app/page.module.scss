@@ -11,32 +11,30 @@
   background-color: $color-page-bg;
 }
 
-.themeCorner {
-  position: absolute;
-  top: $spacing-4;
-  right: $spacing-4;
-}
-
 .main {
   @include container;
   max-width: 52rem;
-  padding-top: $spacing-12;
+  padding-top: $spacing-8;
   padding-bottom: $spacing-8;
-
-  @media (max-width: 640px) {
-    // Clear the theme toggle pinned to the top-right corner
-    padding-top: $spacing-12;
-  }
 }
 
 // ===== HERO SECTION =====
 .hero {
   margin-bottom: $spacing-12;
 
+  // Eyebrow and theme toggle share the top line, in flow on every viewport
+  .heroTopRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-4;
+    margin-bottom: $spacing-3;
+  }
+
   .eyebrow {
     @include text-label-mono;
     color: $color-link-hover;
-    margin-bottom: $spacing-3;
+    margin: 0;
   }
 
   .title {
@@ -57,18 +55,15 @@
 
   .bio {
     max-width: 40rem;
-    font-size: $font-size-lg;
+    font-size: $font-size-base;
     line-height: $line-height-relaxed;
     color: $color-text-secondary;
     margin: 0 0 $spacing-6;
-
-    @media (max-width: 640px) {
-      font-size: $font-size-base;
-    }
   }
 }
 
-// Intro column + KB card share the space under the name (#278)
+// Intro column + KB card share the space under the name (#278).
+// The card column is wide and the gap modest so it tucks under the name.
 .heroGrid {
   display: grid;
   grid-template-columns: 1fr;
@@ -76,8 +71,8 @@
   align-items: start;
 
   @media (min-width: 768px) {
-    grid-template-columns: minmax(0, 1fr) 19rem;
-    gap: $spacing-10;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: $spacing-8;
   }
 }
 
@@ -181,35 +176,16 @@
   line-height: $line-height-relaxed;
 }
 
-// ===== OTHER SECTIONS =====
-.projectsLink {
-  margin-bottom: $spacing-8;
-
-  a {
-    @include link-default;
-    color: $color-text-secondary;
-    font-size: $font-size-sm;
-
-    &:hover {
-      color: $color-primary;
-    }
-  }
-}
-
+// ===== FOOTER =====
 .footer {
   margin-top: $spacing-8;
   padding: $spacing-6 0;
   border-top: 1px solid $color-border-default;
-  @include text-secondary;
-
-  p {
-    margin-bottom: $spacing-2;
-  }
 
   .copyright {
     font-family: $font-family-mono;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
-    margin-top: $spacing-2;
+    margin: 0;
   }
 }
