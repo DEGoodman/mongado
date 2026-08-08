@@ -33,7 +33,7 @@ interface NoteEditorProps {
   onNoteClick?: (noteId: string) => void;
   /** Whether the slash-command palette ("/", #146) is armed. When false, "/"
    * is a plain character with zero interception - gated by user setting +
-   * aiMode + auth in NoteEditorForm.tsx. */
+   * auth in NoteEditorForm.tsx. */
   slashCommandsArmed?: boolean;
   /** Current note title, sent as prompt context for slash commands. */
   noteTitle?: string;

@@ -11,8 +11,6 @@ import {
   Books,
 } from "@phosphor-icons/react";
 import { logger } from "@/lib/logger";
-import type { AiMode } from "@/lib/settings";
-import Toast from "@/components/Toast";
 import {
   streamAISuggestions,
   isStreamingSupported,
@@ -26,15 +24,13 @@ import styles from "./AIPanel.module.scss";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
-const SUGGEST_DEBOUNCE_MS = 5000; // real-time mode: refetch after typing pauses
 
 export type PanelTab = "search" | "ask" | "suggest" | "synthesize";
 
 /** Note context that enables the Suggest tab (requires a saved note) */
 export interface SuggestContext {
   noteId: string;
-  aiMode: AiMode;
-  /** Current editor content, if editing — used for outdated detection and real-time refresh */
+  /** Current editor content, if editing — used for outdated detection */
   content?: string;
   onAddTag?: (tag: string) => void;
   onInsertLink: (noteId: string) => void;
@@ -557,7 +553,7 @@ function hashContent(content: string): string {
 }
 
 function SuggestView({ context, active }: { context: SuggestContext; active: boolean }) {
-  const { noteId, aiMode, content, onAddTag, onInsertLink } = context;
+  const { noteId, content, onAddTag, onInsertLink } = context;
 
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[]>([]);
   const [linkSuggestions, setLinkSuggestions] = useState<LinkSuggestion[]>([]);
@@ -568,8 +564,6 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
   const [error, setError] = useState<string | null>(null);
   const [cachedData, setCachedData] = useState<CachedSuggestions | null>(null);
   const [isOutdated, setIsOutdated] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const streamCleanupRef = useRef<(() => void) | null>(null);
   const tagsRef = useRef<TagSuggestion[]>([]);
   const linksRef = useRef<LinkSuggestion[]>([]);
@@ -635,11 +629,6 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
         setIsOutdated(false);
 
         logger.info("AI suggestions streaming complete");
-
-        // Show toast notification for automatic mode
-        if (aiMode === "real-time") {
-          setShowToast(true);
-        }
       },
       onError: (message) => {
         setError(message);
@@ -651,7 +640,7 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
     });
 
     streamCleanupRef.current = cleanup;
-  }, [noteId, content, aiMode]);
+  }, [noteId, content]);
 
   // Non-streaming fallback fetch
   const fetchSuggestionsFallback = useCallback(async () => {
@@ -697,11 +686,6 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
         tags: tagsData.count,
         links: linksData.count,
       });
-
-      // Show toast notification for automatic mode
-      if (aiMode === "real-time") {
-        setShowToast(true);
-      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load suggestions";
       setError(message);
@@ -710,7 +694,7 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
       setLoading(false);
       setLoadingStatus("");
     }
-  }, [noteId, content, aiMode]);
+  }, [noteId, content]);
 
   // Main fetch function - uses streaming if available
   const fetchSuggestions = useCallback(() => {
@@ -731,54 +715,21 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
   }, []);
 
   // Auto-fetch when the tab becomes active and nothing is cached yet.
-  // Outdated results are refreshed explicitly (Refresh button) or by the
-  // real-time debounce below - never on every keystroke.
+  // Outdated results are refreshed explicitly via the Refresh button -
+  // never on every keystroke.
   useEffect(() => {
     if (active && !loading && !error && !cachedData) {
       fetchSuggestions();
     }
   }, [active, loading, error, cachedData, fetchSuggestions]);
 
-  // Real-time mode: auto-refresh suggestions when content changes (debounced)
-  useEffect(() => {
-    if (aiMode !== "real-time" || !content || !active) {
-      return;
-    }
-
-    // Clear existing timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-
-    // Set new timer to fetch suggestions after debounce period
-    debounceTimer.current = setTimeout(() => {
-      // Only fetch if content is non-empty
-      if (content.trim().length > 10) {
-        fetchSuggestions();
-      }
-    }, SUGGEST_DEBOUNCE_MS);
-
-    // Cleanup timer on unmount or when dependencies change
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, [aiMode, content, fetchSuggestions, active]);
-
   const hasAnySuggestions = tagSuggestions.length + linkSuggestions.length > 0;
 
   return (
     <div className={styles.suggestView}>
       {/* Status row */}
-      <div className={styles.suggestStatusRow}>
-        {aiMode === "real-time" && (
-          <div className={styles.modeIndicator}>
-            {loading && <div className={styles.autoIndicatorDot}></div>}
-            <span className={styles.autoIndicatorLabel}>Automatic mode</span>
-          </div>
-        )}
-        {isOutdated && !loading && (
+      {isOutdated && !loading && (
+        <div className={styles.suggestStatusRow}>
           <button
             onClick={fetchSuggestions}
             className={styles.refreshButton}
@@ -786,8 +737,8 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
           >
             🔄 Refresh
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Streaming Progress Indicator */}
       {loading && (
@@ -899,14 +850,6 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
           </div>
         </div>
       )}
-
-      {/* Toast for automatic mode */}
-      <Toast
-        message="AI suggestions ready"
-        isVisible={showToast}
-        onClose={() => setShowToast(false)}
-        duration={4000}
-      />
     </div>
   );
 }

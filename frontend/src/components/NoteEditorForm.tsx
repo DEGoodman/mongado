@@ -94,12 +94,11 @@ export default function NoteEditorForm({
     setAiAvailable(llmFeaturesEnabled && (isAuthenticated() || config.allowUnauthenticatedAI));
   }, [llmFeaturesEnabled]);
 
-  // Slash-command palette (#146) arms only when: the user setting is on,
-  // AND aiMode isn't "off", AND AI is available. The editor/assist
-  // endpoints require an admin passkey session (unlike /api/ask), so
-  // aiAvailable here effectively also gates on isAuthenticated() - a
-  // signed-out visitor never sees a palette that can only 401.
-  const slashCommandsArmed = settings.slashCommands && settings.aiMode !== "off" && aiAvailable;
+  // Slash-command palette (#146) arms only when the user setting is on AND AI
+  // is available. The editor/assist endpoints require an admin passkey session
+  // (unlike /api/ask), so aiAvailable here effectively also gates on
+  // isAuthenticated() - a signed-out visitor never sees a palette that can only 401.
+  const slashCommandsArmed = settings.slashCommands && aiAvailable;
 
   // Load all notes for wikilink autocomplete
   useEffect(() => {
@@ -380,7 +379,7 @@ export default function NoteEditorForm({
           >
             Cancel
           </button>
-          {mode === "edit" && settings.aiMode !== "off" && aiAvailable && (
+          {mode === "edit" && aiAvailable && (
             <button
               onClick={() => onOpenAIPanel("suggest")}
               className={`${styles.button} ${styles.aiButton}`}
