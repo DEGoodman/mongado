@@ -18,7 +18,6 @@ import NoteEditorForm, {
 } from "@/components/NoteEditorForm";
 import { createNote } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
-import { useSettings } from "@/hooks/useSettings";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useHydrated } from "@/hooks/useHydrated";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft";
@@ -54,7 +53,6 @@ function NewNoteContent() {
   const llmUiReady = useHydrated() && llmFeaturesEnabled;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { settings } = useSettings();
 
   // Initial form values; changing formKey remounts the form with new values
   const [initialValues, setInitialValues] = useState<NoteEditorValues>(() => ({
@@ -168,10 +166,9 @@ function NewNoteContent() {
     }
   };
 
-  // Navigate to the saved note; in real-time AI mode, open its suggestions panel on arrival
+  // Navigate to the saved note
   const goToNote = (noteId: string) => {
-    const suffix = settings.aiMode === "real-time" ? "?suggest=1" : "";
-    router.push(`/knowledge-base/notes/${noteId}${suffix}`);
+    router.push(`/knowledge-base/notes/${noteId}`);
   };
 
   const handleAtomicityKeepAsIs = () => {

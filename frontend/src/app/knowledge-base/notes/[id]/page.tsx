@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { prefetchOnce } from "@/lib/prefetch";
 import dynamic from "next/dynamic";
@@ -28,7 +28,6 @@ import { logger } from "@/lib/logger";
 import { mascotFor } from "@/lib/delight";
 import { recordRecent } from "@/lib/recents";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { useSettings } from "@/hooks/useSettings";
 import { isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -50,9 +49,7 @@ function NoteDetailContent() {
   const llmUiReady = useHydrated() && llmFeaturesEnabled;
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const noteId = params.id as string;
-  const { settings } = useSettings();
 
   // Check if AI features should be available
   // AI is available if: LLM features enabled AND (user is authenticated OR unauthenticated AI is allowed)
@@ -110,19 +107,12 @@ function NoteDetailContent() {
     fetchData();
   }, [noteId]);
 
-  // Open the panel on Suggest when arriving from a fresh save (?suggest=1)
-  useEffect(() => {
-    if (searchParams.get("suggest") === "1") {
-      setPanel({ open: true, tab: "suggest" });
-    }
-  }, [searchParams]);
-
   // Pre-warm Ollama (lightweight) when entering edit mode
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
     async function prewarmOllama() {
-      if (!isEditing || settings.aiMode === "off" || aiPrewarming) {
+      if (!isEditing || !aiAvailable || aiPrewarming) {
         return;
       }
 
@@ -147,8 +137,8 @@ function NoteDetailContent() {
     }
 
     prewarmOllama();
-    // Only depend on isEditing and aiMode - don't re-run on content changes
-  }, [isEditing, settings.aiMode, aiPrewarming]);
+    // Only depend on isEditing and AI availability - don't re-run on content changes
+  }, [isEditing, aiAvailable, aiPrewarming]);
 
   const refreshLinks = async () => {
     const [backlinksData, outboundData] = await Promise.all([
@@ -191,11 +181,6 @@ function NoteDetailContent() {
       logger.info("Note updated successfully", { id: noteId });
 
       await refreshLinks();
-
-      // Offer suggestions for the fresh content (only if AI mode is real-time/automatic)
-      if (settings.aiMode === "real-time") {
-        setPanel({ open: true, tab: "suggest" });
-      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update note";
       setError(message);
@@ -348,7 +333,6 @@ function NoteDetailContent() {
           defaultTab={panel.tab}
           suggest={{
             noteId,
-            aiMode: settings.aiMode,
             content: isEditing ? currentValues?.content : undefined,
             onAddTag: handleAddTagFromPanel,
             onInsertLink: handleInsertLinkFromPanel,

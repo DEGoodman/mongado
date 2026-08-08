@@ -493,34 +493,6 @@
   }
 }
 
-.modeIndicator {
-  @include flex-start;
-  gap: $spacing-2;
-}
-
-.autoIndicatorDot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: $border-radius-full;
-  background-color: $color-success-border;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.autoIndicatorLabel {
-  @include text-tertiary;
-  color: $color-success-text;
-}
-
 .refreshButton {
   padding: $spacing-2 $spacing-3;
   border: $border-width-thin solid $neutral-300;
@@ -747,6 +719,16 @@
   vertical-align: text-bottom;
   background-color: $color-interactive-primary;
   animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .synthesisActions {

@@ -6,26 +6,21 @@
  * user accounts.
  */
 
-export type AiMode = "off" | "on-demand" | "real-time";
-
 export interface UserSettings {
-  aiMode: AiMode;
   /** Editor slash-command palette (#146 Phase 1). Default on; still requires
-   * aiMode !== "off" and admin auth to actually arm - see NoteEditorForm. */
+   * admin auth to actually arm - see NoteEditorForm. */
   slashCommands: boolean;
 }
 
 const SETTINGS_KEY = "mongado-settings";
 
 const DEFAULT_SETTINGS: UserSettings = {
-  aiMode: "off", // Default to OFF (user opts in)
   slashCommands: true,
 };
 
 /**
  * Load settings from localStorage.
  * Falls back to defaults if not found or invalid.
- * Migrates old boolean aiSuggestionsEnabled to new aiMode.
  */
 export function loadSettings(): UserSettings {
   if (typeof window === "undefined") {
@@ -39,18 +34,6 @@ export function loadSettings(): UserSettings {
     }
 
     const parsed = JSON.parse(stored);
-
-    // Migration: Convert old boolean aiSuggestionsEnabled to new aiMode
-    if ("aiSuggestionsEnabled" in parsed && !("aiMode" in parsed)) {
-      const aiMode: AiMode = parsed.aiSuggestionsEnabled ? "on-demand" : "off";
-      const migrated: UserSettings = {
-        ...DEFAULT_SETTINGS,
-        aiMode,
-      };
-      // Save migrated settings
-      saveSettings(migrated);
-      return migrated;
-    }
 
     return {
       ...DEFAULT_SETTINGS,

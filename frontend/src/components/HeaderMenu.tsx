@@ -4,7 +4,7 @@
  * Sections:
  * - Account: Sign In (logged out) OR name + Admin Settings + Sign Out (logged in)
  * - Appearance: Light/Dark theme segmented control
- * - AI Suggestions: Off / On-demand / Automatic (feature-flag gated)
+ * - Slash Commands: On/Off (feature-flag gated)
  *
  * Replaces the former ThemeToggle + Settings + UserMenu header cluster.
  */
@@ -18,24 +18,18 @@ import { User, GearSix } from "@phosphor-icons/react";
 import { useTheme, type Theme } from "@/hooks/useTheme";
 import { useDelight } from "@/hooks/useDelight";
 import { sparkleBurst } from "@/lib/delight";
-import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSettings } from "@/hooks/useSettings";
-import type { AiMode } from "@/lib/settings";
 import { logger } from "@/lib/logger";
 import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
 import styles from "./HeaderMenu.module.scss";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export default function HeaderMenu() {
   const { llmFeaturesEnabled, loaded: flagsLoaded } = useFeatureFlags();
-  const { preferences, updatePreferences } = useUserPreferences();
   const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
   const { delight, setDelight } = useDelight();
   const [isOpen, setIsOpen] = useState(false);
-  const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -59,36 +53,6 @@ export default function HeaderMenu() {
     }
   }, [isOpen]);
 
-  const warmupOllama = async () => {
-    setIsWarmingUp(true);
-    try {
-      const response = await fetch(`${API_URL}/api/ollama/warmup`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Warmup failed");
-      }
-
-      logger.info("Ollama warmed up successfully");
-    } catch (err) {
-      logger.error("Failed to warm up Ollama", err);
-      // Don't block the setting change - warmup will happen on first use
-    } finally {
-      setIsWarmingUp(false);
-    }
-  };
-
-  const handleModeChange = async (newMode: AiMode) => {
-    const oldMode = preferences.aiMode;
-    updatePreferences({ aiMode: newMode });
-
-    // Warmup if switching from "off" to an AI-enabled mode
-    if (oldMode === "off" && (newMode === "on-demand" || newMode === "real-time")) {
-      await warmupOllama();
-    }
-  };
-
   const handleLogout = () => {
     clearAdminToken();
     logger.info("User logged out");
@@ -100,15 +64,6 @@ export default function HeaderMenu() {
     <button
       onClick={() => setTheme(value)}
       className={`${styles.segmentButton} ${theme === value ? styles.active : styles.inactive}`}
-    >
-      {label}
-    </button>
-  );
-
-  const aiSegment = (value: AiMode, label: string) => (
-    <button
-      onClick={() => handleModeChange(value)}
-      className={`${styles.segmentButton} ${preferences.aiMode === value ? styles.active : styles.inactive}`}
     >
       {label}
     </button>
@@ -181,44 +136,6 @@ export default function HeaderMenu() {
                   On ✦
                 </button>
               </div>
-            </div>
-
-            {/* AI Suggestions */}
-            <div className={styles.section}>
-              <h3 className={styles.sectionLabel}>AI Suggestions</h3>
-              {!flagsLoaded ? null : llmFeaturesEnabled ? (
-                <>
-                  {isWarmingUp && <div className={styles.warmupIndicator}>Warming up...</div>}
-                  <div className={styles.segmentedControl}>
-                    {aiSegment("off", "Off")}
-                    {aiSegment("on-demand", "On-demand")}
-                    {aiSegment("real-time", "Automatic")}
-                  </div>
-                  <div className={styles.modeDescription}>
-                    {preferences.aiMode === "off" && (
-                      <p>
-                        No AI suggestions. Fast, minimal overhead. Pure Zettelkasten experience.
-                      </p>
-                    )}
-                    {preferences.aiMode === "on-demand" && (
-                      <p>
-                        Click &quot;Get Suggestions&quot; when you want AI help. Balanced approach
-                        with no overhead while writing.
-                      </p>
-                    )}
-                    {preferences.aiMode === "real-time" && (
-                      <p>
-                        Automatically generate suggestions in the background as you type. Panel
-                        stays collapsed until you open it.
-                      </p>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className={styles.modeDescription}>
-                  <p>AI features are not available in this environment.</p>
-                </div>
-              )}
             </div>
 
             {/* Slash Commands (#146 Phase 1) */}

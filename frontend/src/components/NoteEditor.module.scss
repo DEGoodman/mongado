@@ -55,18 +55,18 @@
   }
 
   &:hover {
-    background-color: $teal-50; // Cool teal hover (technical feature)
+    background-color: $color-surface-hover-cool; // Cool teal hover (theme-aware)
   }
 
   &.selected {
-    background-color: $teal-50;
+    background-color: $color-surface-hover-cool;
   }
 }
 
 .autocompleteNoteId {
   margin-bottom: $spacing-1;
   @include text-tertiary;
-  color: $teal-600; // Cool teal for note IDs
+  color: $color-interactive-secondary-cool; // Cool teal for note IDs (theme-aware)
   font-family: monospace;
 }
 

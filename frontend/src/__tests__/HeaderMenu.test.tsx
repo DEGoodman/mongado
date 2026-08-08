@@ -36,14 +36,6 @@ vi.mock("@/hooks/useFeatureFlags", () => ({
   useFeatureFlags: () => ({ llmFeaturesEnabled: true, loaded: true }),
 }));
 
-const mockUpdatePreferences = vi.fn();
-vi.mock("@/hooks/useUserPreferences", () => ({
-  useUserPreferences: () => ({
-    preferences: { aiMode: "off" },
-    updatePreferences: mockUpdatePreferences,
-  }),
-}));
-
 const mockSetTheme = vi.fn();
 vi.mock("@/hooks/useTheme", () => ({
   useTheme: () => ({ theme: "light", setTheme: mockSetTheme }),
@@ -106,12 +98,5 @@ describe("HeaderMenu", () => {
     openMenu();
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     expect(mockSetTheme).toHaveBeenCalledWith("dark");
-  });
-
-  it("AI mode segmented control calls updatePreferences", () => {
-    render(<HeaderMenu />);
-    openMenu();
-    fireEvent.click(screen.getByRole("button", { name: "On-demand" }));
-    expect(mockUpdatePreferences).toHaveBeenCalledWith({ aiMode: "on-demand" });
   });
 });
