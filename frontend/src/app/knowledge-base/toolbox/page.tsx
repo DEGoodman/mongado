@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listAllNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
+import PageHeader from "@/components/PageHeader";
 import { LoadingState, ErrorState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
@@ -127,27 +128,16 @@ export default function ToolboxPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerTop}>
-            <Breadcrumb section="toolbox" />
-          </div>
-          <div className={styles.titleRow}>
-            <div className={styles.titleSection}>
-              <h1 className={styles.title}>Toolbox</h1>
-              <p className={styles.subtitle}>
-                Frameworks, checklists, and mental models at your fingertips
-              </p>
-            </div>
-            <div className={styles.actions}>
-              <Link href="/knowledge-base/notes/new?ref=true" className={styles.newReferenceButton}>
-                + New Reference
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Toolbox"
+        subtitle="Frameworks, checklists, and mental models at your fingertips"
+        breadcrumb={<Breadcrumb section="toolbox" />}
+        actions={
+          <Link href="/knowledge-base/notes/new?ref=true" className={styles.newReferenceButton}>
+            + New Reference
+          </Link>
+        }
+      />
 
       <main className={styles.main}>
         <div className={styles.contentGrid}>

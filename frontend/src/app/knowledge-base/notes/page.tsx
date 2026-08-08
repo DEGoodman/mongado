@@ -23,6 +23,7 @@ import { logger } from "@/lib/logger";
 import AIAssistant from "@/components/AIAssistant";
 import { LoadingState, ErrorState, EmptyState } from "@/components/PageState";
 import Breadcrumb from "@/components/Breadcrumb";
+import PageHeader from "@/components/PageHeader";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
@@ -217,46 +218,39 @@ function NotesContent() {
     <div className={styles.container}>
       <AIAssistant />
 
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerTop}>
-            <Breadcrumb section="notes" toHub />
-          </div>
-          <div className={styles.titleRow}>
-            <div className={styles.titleSection}>
-              <h1 className={styles.title}>Notes</h1>
-              <p className={styles.subtitle}>
-                Atomic insights and knowledge building ({totalNotes} notes) &middot;{" "}
-                <Link href="/knowledge-base/toolbox" className={styles.toolboxLink}>
-                  Looking for frameworks and checklists? Check the Toolbox →
-                </Link>
-              </p>
-            </div>
-            <div className={styles.actions}>
-              <Link href="/knowledge-base/notes/graph" className={styles.graphButton}>
-                View Graph
-              </Link>
-              <button
-                onClick={handleRandomNote}
-                disabled={randomNoteLoading || notes.length === 0}
-                className={styles.randomButton}
-                title="Open a random note for serendipitous discovery"
-              >
-                {randomNoteLoading ? "Loading..." : "Random Note"}
-              </button>
-              <Link
-                href="/knowledge-base/notes/new"
-                className={styles.newNoteButton}
-                onMouseEnter={prefetchEditorChunk}
-                onFocus={prefetchEditorChunk}
-              >
-                + New Note
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Notes"
+        breadcrumb={<Breadcrumb section="notes" toHub />}
+        subtitle={
+          <>
+            {totalNotes} notes &middot;{" "}
+            <Link href="/knowledge-base/toolbox">Frameworks and checklists? Toolbox →</Link>
+          </>
+        }
+        actions={
+          <>
+            <Link href="/knowledge-base/notes/graph" className={styles.graphButton}>
+              View Graph
+            </Link>
+            <button
+              onClick={handleRandomNote}
+              disabled={randomNoteLoading || notes.length === 0}
+              className={styles.randomButton}
+              title="Open a random note for serendipitous discovery"
+            >
+              {randomNoteLoading ? "Loading..." : "Random Note"}
+            </button>
+            <Link
+              href="/knowledge-base/notes/new"
+              className={styles.newNoteButton}
+              onMouseEnter={prefetchEditorChunk}
+              onFocus={prefetchEditorChunk}
+            >
+              + New Note
+            </Link>
+          </>
+        }
+      />
 
       <div className={styles.main}>
         <div className={styles.contentGrid}>

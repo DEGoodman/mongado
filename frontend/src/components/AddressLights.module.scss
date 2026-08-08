@@ -5,8 +5,13 @@
 .lights {
   display: flex;
   gap: 5px;
+  // Decorative strip: never let its fixed-width segments push the page
+  // wider than the viewport. Trailing segments clip cleanly off-edge,
+  // like a console panel continuing past the frame.
+  max-width: 100%;
+  overflow: hidden;
 
-  @media (max-width: 480px) {
+  @media (max-width: 640px) {
     gap: 4px;
   }
 }
@@ -17,7 +22,7 @@
   height: 6px;
   border-radius: 2px;
 
-  @media (max-width: 480px) {
+  @media (max-width: 640px) {
     width: 16px;
   }
 }
