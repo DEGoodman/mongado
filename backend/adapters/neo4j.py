@@ -16,7 +16,7 @@ class Neo4jAdapter:
     """Adapter for Neo4j graph database operations."""
 
     # Valid node types to prevent Cypher injection
-    VALID_NODE_TYPES = frozenset({"Article", "Note"})
+    VALID_NODE_TYPES = frozenset({"Article", "Note", "LibraryEntry"})
 
     def _validate_node_type(self, node_type: str) -> str:
         """Validate node_type to prevent Cypher injection.
@@ -142,7 +142,24 @@ class Neo4jAdapter:
                 """
             )
 
-            logger.info("Neo4j schema initialized (Notes + Articles + embeddings support)")
+            # ===== LIBRARY ENTRY SCHEMA (#294) =====
+            # Unique constraint on LibraryEntry.id
+            session.run(
+                """
+                CREATE CONSTRAINT library_entry_id_unique IF NOT EXISTS
+                FOR (e:LibraryEntry) REQUIRE e.id IS UNIQUE
+                """
+            )
+
+            # Index on LibraryEntry.created_at for sorting
+            session.run(
+                """
+                CREATE INDEX library_entry_created_at IF NOT EXISTS
+                FOR (e:LibraryEntry) ON (e.created_at)
+                """
+            )
+
+            logger.info("Neo4j schema initialized (Notes + Articles + Library + embeddings support)")
 
     def is_available(self) -> bool:
         """Check if Neo4j is available."""
@@ -1064,6 +1081,217 @@ class Neo4jAdapter:
                 result["embedding_version"] = node["embedding_version"]
 
         return result
+
+    # ===== LIBRARY ENTRY METHODS (#294) =====
+
+    def _library_node_to_dict(self, node: Any) -> dict[str, Any]:
+        """Convert a :LibraryEntry Neo4j node to a dict."""
+        return {
+            "id": node.get("id"),
+            "title": node.get("title", ""),
+            "source_url": node.get("source_url", ""),
+            "author": node.get("author", ""),
+            "type": node.get("type", "other"),
+            "summary": node.get("summary", ""),
+            "tags": node.get("tags", []),
+            "created_at": node.get("created_at", 0.0),
+            "updated_at": node.get("updated_at", node.get("created_at", 0.0)),
+        }
+
+    def create_library_entry(
+        self,
+        entry_id: str,
+        title: str,
+        source_url: str = "",
+        author: str = "",
+        type: str = "other",
+        summary: str = "",
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Create a new Library entry (#294).
+
+        Args:
+            entry_id: Unique entry ID (adjective-noun)
+            title: Resource title
+            source_url: External link to the resource
+            author: Resource author/creator
+            type: Resource type (book/article/video/doc/paper/other)
+            summary: Erik's own markdown summary
+            tags: Optional tags
+
+        Returns:
+            Created entry as dict
+        """
+        if not self._available or not self.driver:
+            raise RuntimeError("Neo4j not available")
+
+        now = time.time()
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                CREATE (e:LibraryEntry {
+                    id: $id,
+                    title: $title,
+                    source_url: $source_url,
+                    author: $author,
+                    type: $type,
+                    summary: $summary,
+                    tags: $tags,
+                    created_at: $created_at,
+                    updated_at: $updated_at
+                })
+                RETURN e
+                """,
+                id=entry_id,
+                title=title,
+                source_url=source_url,
+                author=author,
+                type=type,
+                summary=summary,
+                tags=tags or [],
+                created_at=now,
+                updated_at=now,
+            )
+            record = result.single()
+            if not record:
+                raise RuntimeError(f"Failed to create library entry {entry_id}")
+            return self._library_node_to_dict(record["e"])
+
+    def get_library_entry(self, entry_id: str) -> dict[str, Any] | None:
+        """Get a Library entry by ID."""
+        if not self._available or not self.driver:
+            return None
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (e:LibraryEntry)
+                WHERE e.id = $id
+                RETURN e
+                """,
+                id=entry_id,
+            )
+            record = result.single()
+            if not record:
+                return None
+            return self._library_node_to_dict(record["e"])
+
+    def list_library_entries(
+        self,
+        type: str | None = None,
+        tag: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """List Library entries, newest first, optionally filtered by type/tag.
+
+        Args:
+            type: Optional resource-type filter
+            tag: Optional tag filter (entries containing this tag)
+
+        Returns:
+            List of entry dicts sorted by created_at descending
+        """
+        if not self._available or not self.driver:
+            return []
+
+        where_clauses = []
+        params: dict[str, Any] = {}
+        if type:
+            where_clauses.append("e.type = $type")
+            params["type"] = type
+        if tag:
+            where_clauses.append("$tag IN e.tags")
+            params["tag"] = tag
+        where_clause = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                f"""
+                MATCH (e:LibraryEntry)
+                {where_clause}
+                RETURN e
+                ORDER BY e.created_at DESC
+                """,
+                **params,
+            )
+            return [self._library_node_to_dict(record["e"]) for record in result]
+
+    def update_library_entry(
+        self,
+        entry_id: str,
+        title: str | None = None,
+        source_url: str | None = None,
+        author: str | None = None,
+        type: str | None = None,
+        summary: str | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """Update a Library entry. Only provided fields are changed.
+
+        Returns:
+            Updated entry dict or None if not found
+        """
+        if not self._available or not self.driver:
+            return None
+
+        set_clauses = ["e.updated_at = $updated_at"]
+        params: dict[str, Any] = {"id": entry_id, "updated_at": time.time()}
+        for field, value in (
+            ("title", title),
+            ("source_url", source_url),
+            ("author", author),
+            ("type", type),
+            ("summary", summary),
+            ("tags", tags),
+        ):
+            if value is not None:
+                set_clauses.append(f"e.{field} = ${field}")
+                params[field] = value
+        set_clause = ", ".join(set_clauses)
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                f"""
+                MATCH (e:LibraryEntry)
+                WHERE e.id = $id
+                SET {set_clause}
+                RETURN e
+                """,
+                **params,
+            )
+            record = result.single()
+            if not record:
+                return None
+            return self._library_node_to_dict(record["e"])
+
+    def delete_library_entry(self, entry_id: str) -> bool:
+        """Delete a Library entry by ID.
+
+        Returns:
+            True if deleted, False if not found
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (e:LibraryEntry)
+                WHERE e.id = $id
+                DETACH DELETE e
+                RETURN count(e) AS deleted
+                """,
+                id=entry_id,
+            )
+            record = result.single()
+            return record["deleted"] > 0 if record else False
+
+    def get_all_library_entry_ids(self) -> set[str]:
+        """Return the set of all existing Library entry IDs (for ID generation)."""
+        if not self._available or not self.driver:
+            return set()
+        with self.driver.session(database=self.database) as session:
+            result = session.run("MATCH (e:LibraryEntry) RETURN e.id AS id")
+            return {record["id"] for record in result if record["id"]}
 
     # ===== ARTICLE METHODS =====
 

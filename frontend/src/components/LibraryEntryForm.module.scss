@@ -1,0 +1,113 @@
+/**
+ * Library entry form styles (#294)
+ */
+
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+  max-width: 44rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-4;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-1;
+}
+
+.label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-heading;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  border: 1px solid $color-border-default;
+  border-radius: $border-radius-button;
+  background-color: $color-surface-default;
+  color: $color-text-primary;
+  font-size: $font-size-base;
+  font-family: inherit;
+
+  &:focus {
+    outline: 2px solid $color-interactive-primary-focus;
+    outline-offset: 1px;
+    border-color: $color-interactive-primary;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 8rem;
+  font-family: $font-family-mono;
+  line-height: $line-height-relaxed;
+}
+
+.hint {
+  @include text-secondary;
+  font-size: $font-size-xs;
+}
+
+.error {
+  padding: $spacing-3 $spacing-4;
+  border: 1px solid $color-error-border;
+  border-radius: $border-radius-button;
+  background-color: $color-error-bg;
+  color: $color-error-text;
+  font-size: $font-size-sm;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-3;
+  margin-top: $spacing-2;
+}
+
+.cancel {
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-button;
+  color: $color-text-secondary;
+  text-decoration: none;
+  font-size: $font-size-sm;
+
+  &:hover {
+    color: $color-text-primary;
+  }
+}
+
+.submit {
+  padding: $spacing-2 $spacing-5;
+  border: none;
+  border-radius: $border-radius-button;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background-color: $color-interactive-primary-hover;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

@@ -22,6 +22,8 @@ Usage in tests:
 from typing import Any
 
 from adapters.neo4j import Neo4jAdapter, get_neo4j_adapter
+from library_service import LibraryService
+from library_service import get_library_service as _get_library_service
 from llm_client import RoutingLLMClient, get_llm_client
 from notes_service import NotesService
 from notes_service import get_notes_service as _get_notes_service
@@ -31,6 +33,7 @@ from notes_service import get_notes_service as _get_notes_service
 _llm: RoutingLLMClient | None = None
 _neo4j_adapter: Neo4jAdapter | None = None
 _notes_service: NotesService | None = None
+_library_service: LibraryService | None = None
 
 
 def get_llm() -> RoutingLLMClient:
@@ -71,6 +74,18 @@ def get_notes() -> NotesService:
     if _notes_service is None:
         _notes_service = _get_notes_service()
     return _notes_service
+
+
+def get_library() -> LibraryService:
+    """Get the library service instance.
+
+    This dependency can be overridden in tests:
+        app.dependency_overrides[get_library] = lambda: mock_service
+    """
+    global _library_service
+    if _library_service is None:
+        _library_service = _get_library_service()
+    return _library_service
 
 
 # For static articles and user resources, we need callables that return
@@ -141,11 +156,12 @@ def reset_dependencies() -> None:
 
     Call this in test fixtures to ensure clean state between tests.
     """
-    global _llm, _neo4j_adapter, _notes_service
+    global _llm, _neo4j_adapter, _notes_service, _library_service
     global _static_articles, _published_articles, _user_resources
     _llm = None
     _neo4j_adapter = None
     _notes_service = None
+    _library_service = None
     _static_articles = []
     _published_articles = []
     _user_resources = []
