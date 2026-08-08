@@ -11,18 +11,20 @@ import Link from "next/link";
 import styles from "./Breadcrumb.module.scss";
 
 interface BreadcrumbProps {
-  section: "articles" | "notes" | "toolbox" | "inspire";
-  /** Set to true on list pages to link back to /knowledge-base hub */
+  section: "articles" | "notes" | "toolbox" | "inspire" | "library";
+  /** Set to true on list pages to link back to the parent hub */
   toHub?: boolean;
   className?: string;
 }
 
 export default function Breadcrumb({ section, toHub = false, className = "" }: BreadcrumbProps) {
-  // If toHub is true, link back to the KB hub page
+  // If toHub is true, link back to the parent hub. The Library is a top-level
+  // app, so its hub is the home page; everything else lives under the KB.
   if (toHub) {
+    const hubHref = section === "library" ? "/" : "/knowledge-base";
     return (
       <nav aria-label="Breadcrumb" className={`${styles.breadcrumb} ${className}`}>
-        <Link href="/knowledge-base" className={styles.link}>
+        <Link href={hubHref} className={styles.link}>
           ← Back
         </Link>
       </nav>
@@ -46,6 +48,10 @@ export default function Breadcrumb({ section, toHub = false, className = "" }: B
     inspire: {
       label: "Back",
       href: "/knowledge-base",
+    },
+    library: {
+      label: "Back",
+      href: "/library",
     },
   };
 

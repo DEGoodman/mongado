@@ -33,17 +33,31 @@ export default function Home() {
               </nav>
             </div>
 
-            <Link href="/knowledge-base" className={styles.kbCard}>
-              <span className={styles.kbCardTitle}>
-                Knowledge base
-                <span className={styles.kbCardArrow} aria-hidden="true">
-                  →
+            <div className={styles.cardStack}>
+              <Link href="/knowledge-base" className={styles.kbCard}>
+                <span className={styles.kbCardTitle}>
+                  Knowledge base
+                  <span className={styles.kbCardArrow} aria-hidden="true">
+                    →
+                  </span>
                 </span>
-              </span>
-              <span className={styles.kbCardDescription}>
-                A curated digital garden of engineering and leadership insights.
-              </span>
-            </Link>
+                <span className={styles.kbCardDescription}>
+                  A curated digital garden of engineering and leadership insights.
+                </span>
+              </Link>
+
+              <Link href="/library" className={styles.kbCard}>
+                <span className={styles.kbCardTitle}>
+                  Library
+                  <span className={styles.kbCardArrow} aria-hidden="true">
+                    →
+                  </span>
+                </span>
+                <span className={styles.kbCardDescription}>
+                  Books, articles, and resources worth reaching back to.
+                </span>
+              </Link>
+            </div>
           </div>
         </header>
 

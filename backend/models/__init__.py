@@ -42,6 +42,11 @@ from models.auth import (
     SessionResponse,
     SessionStatusResponse,
 )
+from models.library import (
+    LibraryEntryCreate,
+    LibraryEntryUpdate,
+    LibraryListResponse,
+)
 from models.note import (
     BacklinksResponse,
     LinkSuggestion,
@@ -101,6 +106,10 @@ __all__ = [
     "CredentialDeleteResponse",
     "CredentialInfo",
     "CredentialsListResponse",
+    # Library models
+    "LibraryEntryCreate",
+    "LibraryEntryUpdate",
+    "LibraryListResponse",
     "RegistrationOptionsRequest",
     "RegistrationOptionsResponse",
     "RegistrationVerifyRequest",

@@ -1,0 +1,275 @@
+/**
+ * Library Page Styles (#294)
+ * Curated catalog of external resources worth reaching back to.
+ */
+
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom right,
+    $color-page-bg-gradient-start,
+    $color-page-bg-gradient-end
+  );
+}
+
+.newButton {
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-button;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  font-weight: $font-weight-medium;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: $color-interactive-primary-hover;
+  }
+}
+
+.main {
+  @include container;
+  padding-top: $spacing-8;
+  padding-bottom: $spacing-8;
+}
+
+// ===== FILTER BAR =====
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-3;
+  margin-bottom: $spacing-5;
+}
+
+.searchInput {
+  width: 100%;
+  padding: $spacing-3 $spacing-4;
+  border: 1px solid $color-border-default;
+  border-radius: $border-radius-button;
+  background-color: $color-surface-default;
+  color: $color-text-primary;
+  font-size: $font-size-base;
+
+  &:focus {
+    outline: 2px solid $color-interactive-primary-focus;
+    outline-offset: 1px;
+    border-color: $color-interactive-primary;
+  }
+}
+
+.typeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-2;
+}
+
+.typeChip {
+  padding: $spacing-1 $spacing-3;
+  border: 1px solid $color-border-default;
+  border-radius: $border-radius-full;
+  background-color: $color-surface-default;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  font-family: $font-family-mono;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    border-color: $color-interactive-primary;
+    color: $color-text-primary;
+  }
+}
+
+.typeChipActive {
+  background-color: $color-interactive-primary;
+  border-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+
+  &:hover {
+    color: $color-interactive-primary-text;
+  }
+}
+
+// ===== RESULTS BAR =====
+.resultsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-3;
+  margin-bottom: $spacing-4;
+}
+
+.resultsCount {
+  @include text-secondary;
+  font-size: $font-size-sm;
+  font-family: $font-family-mono;
+}
+
+.clearButton {
+  padding: $spacing-1 $spacing-3;
+  border: 1px solid $color-border-default;
+  border-radius: $border-radius-button;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  cursor: pointer;
+
+  &:hover {
+    color: $color-text-primary;
+    border-color: $color-interactive-primary;
+  }
+}
+
+// ===== ENTRY GRID =====
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-4;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+  height: 100%;
+  padding: $spacing-5;
+  border: 1px solid $color-border-default;
+  border-left: 3px solid $color-interactive-primary;
+  border-radius: $border-radius-lg;
+  background-color: $color-surface-default;
+  text-decoration: none;
+  box-shadow: $shadow-button;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    border-color: $color-interactive-primary;
+    box-shadow: $shadow-button-hover;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-interactive-primary-focus;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.cardTop {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.typeBadge {
+  padding: 2px $spacing-2;
+  border-radius: $border-radius-full;
+  background-color: $color-surface-secondary;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+  font-family: $font-family-mono;
+  text-transform: lowercase;
+}
+
+.cardTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-heading;
+  line-height: $line-height-tight;
+  margin: 0;
+}
+
+.cardAuthor {
+  @include text-secondary;
+  font-size: $font-size-sm;
+  margin: 0;
+}
+
+.cardSummary {
+  @include text-secondary;
+  font-size: $font-size-sm;
+  line-height: $line-height-relaxed;
+  margin: 0;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-1;
+  margin-top: auto;
+  padding-top: $spacing-2;
+}
+
+.cardTag {
+  padding: 2px $spacing-2;
+  border-radius: $border-radius-full;
+  background-color: $color-surface-secondary;
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+  font-family: $font-family-mono;
+}
+
+// ===== EMPTY / NO RESULTS =====
+.emptyState,
+.noResults {
+  text-align: center;
+  padding: $spacing-8 $spacing-4;
+  color: $color-text-secondary;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: $spacing-3;
+}
+
+.emptyTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-heading;
+  margin: 0 0 $spacing-2;
+}
+
+.emptyMessage {
+  margin: 0 auto $spacing-4;
+  max-width: 32rem;
+}
+
+.createButton {
+  display: inline-block;
+  padding: $spacing-2 $spacing-5;
+  border-radius: $border-radius-button;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  font-weight: $font-weight-medium;
+  text-decoration: none;
+
+  &:hover {
+    background-color: $color-interactive-primary-hover;
+  }
+}

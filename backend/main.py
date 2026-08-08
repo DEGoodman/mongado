@@ -48,6 +48,7 @@ from routers.ai import router as ai_router
 from routers.articles import router as articles_router
 from routers.auth import create_auth_router
 from routers.inspire import router as inspire_router
+from routers.library import router as library_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
 from routers.templates import router as templates_router
@@ -317,6 +318,7 @@ app.add_middleware(CacheControlMiddleware)
 app.include_router(ai_router, dependencies=[Depends(require_llm_features)])
 app.include_router(inspire_router)
 app.include_router(notes_router)
+app.include_router(library_router)
 app.include_router(search_router)
 app.include_router(articles_router)
 app.include_router(templates_router)

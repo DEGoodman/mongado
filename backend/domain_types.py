@@ -107,6 +107,38 @@ class ResourceDict(TypedDict, total=False):
     content_hash: str
 
 
+class LibraryEntryDict(TypedDict, total=False):
+    """Type definition for a Library entry (#294).
+
+    A Library entry is a curated reference to an external resource (book, article,
+    video, doc) that Erik values and reaches back to. Unlike Notes, entries carry
+    a structured source link and resource type. Stored as :LibraryEntry nodes in
+    Neo4j. The only body stored is Erik's own summary (no third-party full text in
+    v1 - that is the v2 archive tier, #299).
+
+    Attributes:
+        id: Unique entry ID (adjective-noun, e.g. "curious-elephant")
+        title: Resource title
+        source_url: External link to the resource
+        author: Resource author/creator (not Erik)
+        type: Resource type ("book" | "article" | "video" | "doc" | "paper" | "other")
+        summary: Erik's own markdown summary/notes
+        tags: List of tag strings
+        created_at: Unix timestamp (float)
+        updated_at: Unix timestamp (float)
+    """
+
+    id: str
+    title: str
+    source_url: str
+    author: str
+    type: str
+    summary: str
+    tags: list[str]
+    created_at: float
+    updated_at: float
+
+
 class GraphNodeDict(TypedDict):
     """Type definition for graph visualization node.
 
