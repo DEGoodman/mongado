@@ -669,20 +669,33 @@ export default function NoteEditor({
     [editorView, keepUndo, restoreSnapshot]
   );
 
-  // Handle keyboard navigation in autocomplete + slash palette
+  // Handle keyboard navigation in autocomplete + slash palette.
+  //
+  // Registered in the CAPTURE phase so it runs before CodeMirror's own keymap:
+  // while a popup is open, Arrow/Enter/Escape belong to the popup. We
+  // preventDefault (no native caret move / line break) AND stopPropagation
+  // (CodeMirror's handler never fires), so arrows only move the highlighted
+  // item - never the editor cursor (which scrolled the editor and looked
+  // janky) - and Enter selects the item instead of inserting a newline (#146).
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const consume = () => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+
       if (showAutocomplete) {
         if (e.key === "ArrowDown") {
-          e.preventDefault();
+          consume();
           setSelectedIndex((prev) => (prev < filteredNotes.length - 1 ? prev + 1 : prev));
         } else if (e.key === "ArrowUp") {
-          e.preventDefault();
+          consume();
           setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        } else if (e.key === "Enter" && filteredNotes.length > 0) {
-          e.preventDefault();
-          insertWikilink(filteredNotes[selectedIndex].id);
+        } else if (e.key === "Enter") {
+          consume();
+          if (filteredNotes.length > 0) insertWikilink(filteredNotes[selectedIndex].id);
         } else if (e.key === "Escape") {
+          consume();
           setShowAutocomplete(false);
         }
         return;
@@ -691,26 +704,29 @@ export default function NoteEditor({
       if (slashOpen) {
         const items = slashMode === "commands" ? filteredSlashCommands : linkCandidates;
         if (e.key === "ArrowDown") {
-          e.preventDefault();
+          consume();
           setSlashSelectedIndex((prev) => (prev < items.length - 1 ? prev + 1 : prev));
         } else if (e.key === "ArrowUp") {
-          e.preventDefault();
+          consume();
           setSlashSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        } else if (e.key === "Enter" && items.length > 0) {
-          e.preventDefault();
-          if (slashMode === "commands") {
-            runSlashCommand(filteredSlashCommands[slashSelectedIndex]);
-          } else {
-            selectLinkCandidate(linkCandidates[slashSelectedIndex]);
+        } else if (e.key === "Enter") {
+          consume();
+          if (items.length > 0) {
+            if (slashMode === "commands") {
+              runSlashCommand(filteredSlashCommands[slashSelectedIndex]);
+            } else {
+              selectLinkCandidate(linkCandidates[slashSelectedIndex]);
+            }
           }
         } else if (e.key === "Escape") {
+          consume();
           closeSlashPalette();
         }
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [
     showAutocomplete,
     filteredNotes,

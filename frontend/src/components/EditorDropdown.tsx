@@ -7,10 +7,12 @@
  * styling; NoteEditor.tsx owns the keyboard handling (Arrow/Enter/Escape)
  * and guarantees only one of the two is ever open at a time.
  *
- * As the caller moves `selectedIndex`, we scroll the highlighted item to the
- * center of the visible window so it's always in view while navigating with
- * the keyboard (#285). Centering (clamped by the browser) naturally pins the
- * first item to the top and the last item to the bottom.
+ * As the caller moves `selectedIndex`, the highlight repaints first (React
+ * commit) and then the list smooth-scrolls to center the highlighted item, so
+ * it's always in view while navigating with the keyboard without the jittery
+ * scroll-then-highlight effect (#285). Centering (clamped by the browser)
+ * naturally pins the first item to the top and the last item to the bottom.
+ * Reduced-motion users get an instant jump instead of the animation.
  */
 
 import { ReactNode, useEffect, useRef } from "react";
@@ -33,7 +35,9 @@ export default function EditorDropdown({ position, items, selectedIndex }: Edito
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Keep the highlighted item centered within the scroll window (#285).
+  // Keep the highlighted item centered within the scroll window (#285). Runs
+  // after the commit that repaints the highlight, so the item moves first and
+  // the scroll follows.
   useEffect(() => {
     const container = containerRef.current;
     const item = itemRefs.current[selectedIndex];
@@ -41,7 +45,11 @@ export default function EditorDropdown({ position, items, selectedIndex }: Edito
 
     // Center the item; the browser clamps scrollTop so the first item stays
     // at the top and the last item stays at the bottom.
-    container.scrollTop = item.offsetTop - (container.clientHeight - item.offsetHeight) / 2;
+    const top = item.offsetTop - (container.clientHeight - item.offsetHeight) / 2;
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    container.scrollTo({ top, behavior: prefersReducedMotion ? "auto" : "smooth" });
   }, [selectedIndex, items.length]);
 
   if (items.length === 0) return null;
