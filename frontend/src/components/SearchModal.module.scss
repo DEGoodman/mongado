@@ -105,7 +105,7 @@
 }
 
 .error {
-  color: $red-600;
+  color: $color-error-text;
 }
 
 // Results List
@@ -142,7 +142,7 @@
     letter-spacing: $letter-spacing-wide;
 
     &[data-type="article"] {
-      color: $orange-700;
+      color: $color-badge-article-text;
     }
 
     &[data-type="note"] {

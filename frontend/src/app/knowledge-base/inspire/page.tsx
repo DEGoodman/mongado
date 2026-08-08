@@ -16,6 +16,7 @@ import Link from "next/link";
 import { getSuggestions, Suggestion, SuggestionType } from "@/lib/api/inspire";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
+import PageHeader from "@/components/PageHeader";
 import { LoadingState, ErrorState } from "@/components/PageState";
 import styles from "./page.module.scss";
 
@@ -166,29 +167,16 @@ export default function InspirePage() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerTop}>
-            <Breadcrumb section="inspire" />
-          </div>
-          <div className={styles.titleRow}>
-            <div className={styles.titleSection}>
-              <h1 className={styles.title}>Inspire Me</h1>
-              <p className={styles.subtitle}>Suggestions to improve your knowledge base</p>
-            </div>
-            <div className={styles.actions}>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className={styles.refreshButton}
-              >
-                {refreshing ? "Refreshing..." : "Refresh Suggestions"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="Inspire Me"
+        subtitle="Suggestions to improve your knowledge base"
+        breadcrumb={<Breadcrumb section="inspire" />}
+        actions={
+          <button onClick={handleRefresh} disabled={refreshing} className={styles.refreshButton}>
+            {refreshing ? "Refreshing..." : "Refresh Suggestions"}
+          </button>
+        }
+      />
 
       <main className={styles.main}>
         {/* AI Status */}

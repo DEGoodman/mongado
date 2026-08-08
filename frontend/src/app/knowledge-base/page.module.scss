@@ -289,7 +289,7 @@
     &.toolboxSecondary {
       background-color: transparent;
       color: $color-primary-dark;
-      border: $border-width-thin solid $orange-300;
+      border: $border-width-thin solid $color-link-default;
 
       &:hover {
         background-color: $color-primary-light;

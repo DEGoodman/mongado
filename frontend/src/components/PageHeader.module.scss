@@ -1,0 +1,93 @@
+/**
+ * PageHeader - shared compact header zone for KB list pages (#282).
+ *
+ * Slate-blue gradient zone, dense vertical rhythm, a Space Grotesk title,
+ * a mono "terminal readout" subtitle, a wrapping actions row, and the
+ * AddressLights strip as the one signature flourish (DESIGN.md).
+ */
+
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
+
+.header {
+  background: linear-gradient(
+    to bottom,
+    var(--color-header-bg-start) 0%,
+    var(--color-header-bg-mid) 50%,
+    var(--color-header-bg-end) 100%
+  );
+  border-bottom: 1px solid var(--color-header-border);
+  box-shadow: $shadow-card-sm;
+}
+
+.headerContent {
+  @include container;
+  padding-top: $spacing-4;
+  padding-bottom: $spacing-4;
+}
+
+.breadcrumb {
+  margin-bottom: $spacing-3;
+}
+
+.titleRow {
+  @include flex-between;
+  align-items: flex-start;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+}
+
+.titleSection {
+  min-width: 0;
+}
+
+.title {
+  font-family: $font-family-primary;
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-semibold;
+  line-height: $line-height-tight;
+  letter-spacing: $letter-spacing-wide;
+  color: $color-text-heading;
+  margin: 0;
+
+  @media (max-width: 640px) {
+    font-size: $font-size-xl;
+  }
+}
+
+.subtitle {
+  margin-top: $spacing-1;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  letter-spacing: $letter-spacing-wide;
+  color: $color-text-secondary;
+
+  @media (max-width: 640px) {
+    font-size: $font-size-xs;
+  }
+
+  a {
+    color: $color-link-default;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $color-link-hover;
+      text-decoration: underline;
+    }
+  }
+}
+
+// Compact wrapping row - actions stay pill-sized and wrap under the title
+// on narrow screens instead of stacking into full-width bars.
+.actions {
+  @include flex-start;
+  align-items: center;
+  gap: $spacing-2;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.lightsRow {
+  margin-top: $spacing-3;
+}

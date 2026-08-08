@@ -124,14 +124,14 @@
   background: none;
   border: none;
   border-radius: $border-radius-md;
-  color: $red-600;
+  color: $color-error-text;
   text-align: left;
   cursor: pointer;
   @include transition-colors;
 
   &:hover {
-    background-color: $red-50;
-    color: $red-700;
+    background-color: $color-error-bg;
+    color: $color-error-text;
   }
 }
 

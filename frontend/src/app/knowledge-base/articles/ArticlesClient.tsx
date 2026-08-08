@@ -7,6 +7,7 @@ import AIAssistant from "@/components/AIAssistant";
 import { EmptyState } from "@/components/PageState";
 import { useRouter, useSearchParams } from "next/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
+import PageHeader from "@/components/PageHeader";
 import { TagPillList } from "@/components/TagPill";
 import { apiGet, isAuthenticated } from "@/lib/api/client";
 import { logger } from "@/lib/logger";
@@ -167,15 +168,7 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
       {/* AI panel + button island (only shown when LLM features enabled) */}
       <AIAssistant />
 
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.breadcrumb}>
-            <Breadcrumb section="articles" toHub />
-          </div>
-          <h1 className={styles.title}>Articles</h1>
-        </div>
-      </header>
+      <PageHeader title="Articles" breadcrumb={<Breadcrumb section="articles" toHub />} />
 
       <main className={styles.main}>
         <div className={styles.contentGrid}>

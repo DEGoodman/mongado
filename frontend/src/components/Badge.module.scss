@@ -21,8 +21,8 @@
 
   // Article badge - orange accent
   &[data-type="article"] {
-    color: $orange-700;
-    border-color: $orange-300;
+    color: $color-badge-article-text;
+    border-color: $color-badge-article-border;
   }
 
   // Note badge - quiet grey

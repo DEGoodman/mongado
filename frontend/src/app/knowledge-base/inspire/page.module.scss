@@ -17,93 +17,26 @@
 
 // ===== LOADING STATE =====
 // ===== ERROR STATE =====
-// ===== HEADER =====
-.header {
-  background: linear-gradient(
-    to bottom,
-    var(--color-header-bg-start) 0%,
-    var(--color-header-bg-mid) 50%,
-    var(--color-header-bg-end) 100%
-  );
-  border-bottom: 1px solid var(--color-header-border);
-  box-shadow: $shadow-card-sm;
+// ===== HEADER ACTION =====
+// Header shell lives in PageHeader; only the page-specific action remains.
+.refreshButton {
+  padding: $spacing-2 $spacing-4;
+  border: none;
+  border-radius: $border-radius-button;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-  .headerContent {
-    @include container;
-    padding-top: $spacing-6;
-    padding-bottom: $spacing-6;
+  &:hover:not(:disabled) {
+    background-color: $color-interactive-primary-hover;
   }
 
-  .headerTop {
-    margin-bottom: $spacing-4;
-  }
-
-  .titleRow {
-    @include flex-between;
-    align-items: flex-start;
-
-    @media (max-width: 640px) {
-      flex-direction: column;
-      gap: $spacing-4;
-    }
-
-    .titleSection {
-      .title {
-        @include heading-h1;
-        margin: 0;
-        color: $color-text-heading;
-
-        @media (max-width: 640px) {
-          font-size: $font-size-2xl;
-        }
-      }
-
-      .subtitle {
-        margin-top: $spacing-2;
-        color: $color-text-secondary;
-        font-size: $font-size-lg;
-
-        @media (max-width: 640px) {
-          font-size: $font-size-sm;
-        }
-      }
-    }
-
-    .actions {
-      @include flex-start;
-      gap: $spacing-3;
-      flex-shrink: 0;
-
-      @media (max-width: 640px) {
-        width: 100%;
-      }
-
-      .refreshButton {
-        padding: $spacing-2 $spacing-4;
-        border: none;
-        border-radius: $border-radius-button;
-        background-color: $color-interactive-primary;
-        color: $color-interactive-primary-text;
-        font-weight: $font-weight-medium;
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        @media (max-width: 640px) {
-          width: 100%;
-          padding: $spacing-3 $spacing-4;
-          font-size: $font-size-sm;
-        }
-
-        &:hover:not(:disabled) {
-          background-color: $color-interactive-primary-hover;
-        }
-
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      }
-    }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 

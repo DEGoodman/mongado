@@ -251,7 +251,7 @@
   width: 100%;
   padding: $spacing-3 $spacing-4;
   background-color: $white;
-  border: $border-width-thin solid $orange-300;
+  border: $border-width-thin solid $color-link-default;
   border-radius: $border-radius-button;
   @include text-secondary;
   color: $color-link-default;
@@ -261,7 +261,7 @@
 
   &:hover {
     background-color: $color-surface-tertiary;
-    border-color: $orange-400;
+    border-color: $color-link-hover;
     color: $color-text-secondary;
   }
 }
@@ -296,153 +296,48 @@
   }
 }
 
-// ===== HEADER =====
-.header {
-  // Cool slate blue header zone (consistent across KB)
-  background: linear-gradient(
-    to bottom,
-    var(--color-header-bg-start) 0%,
-    var(--color-header-bg-mid) 50%,
-    var(--color-header-bg-end) 100%
-  );
-  border-bottom: 1px solid var(--color-header-border);
-  box-shadow: $shadow-card-sm;
+// ===== HEADER ACTIONS =====
+// Header shell lives in PageHeader; only the page-specific actions remain.
+// Ghost buttons share one shape; the primary (+ New Note) carries the fill.
+.graphButton,
+.randomButton {
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-button;
+  border: $border-width-thin solid $color-link-default;
+  background-color: transparent;
+  color: $color-link-default;
+  font-family: $font-family-primary;
+  font-weight: $font-weight-medium;
+  font-size: $font-size-sm;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-  .headerContent {
-    @include container;
-    max-width: 56rem;
-    padding-top: $spacing-6;
-    padding-bottom: $spacing-6;
+  &:hover:not(:disabled) {
+    background-color: $color-interactive-primary-bg-subtle;
+    border-color: $color-link-hover;
   }
+}
 
-  .headerTop {
-    margin-bottom: $spacing-6;
-    @include flex-between;
-  }
+.randomButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 
-  .titleRow {
-    @include flex-between;
-    align-items: flex-start;
+.newNoteButton {
+  padding: $spacing-2 $spacing-4;
+  border-radius: $border-radius-button;
+  background-color: $color-interactive-primary;
+  color: $color-interactive-primary-text;
+  font-weight: $font-weight-medium;
+  font-size: $font-size-sm;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 
-    @media (max-width: 640px) {
-      flex-direction: column;
-      gap: $spacing-4;
-    }
-
-    .titleSection {
-      .title {
-        @include heading-h1;
-        margin: 0;
-
-        @media (max-width: 640px) {
-          font-size: $font-size-2xl;
-        }
-      }
-
-      .subtitle {
-        margin-top: $spacing-1;
-        color: $color-text-secondary;
-
-        @media (max-width: 640px) {
-          font-size: $font-size-sm;
-        }
-
-        .toolboxLink {
-          color: $color-link-default;
-          text-decoration: none;
-          transition: color 0.2s ease;
-
-          &:hover {
-            color: $color-link-hover;
-            text-decoration: underline;
-          }
-        }
-      }
-    }
-
-    .actions {
-      @include flex-start;
-      gap: $spacing-3;
-      flex-shrink: 0;
-
-      @media (max-width: 640px) {
-        width: 100%;
-        flex-direction: column;
-        gap: $spacing-2;
-      }
-
-      .graphButton {
-        padding: $spacing-2 $spacing-4;
-        border-radius: $border-radius-button;
-        border: $border-width-thin solid $orange-300;
-        background-color: transparent;
-        color: $color-link-default;
-        font-family: $font-family-primary;
-        font-weight: $font-weight-medium;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        display: inline-block;
-
-        @media (max-width: 640px) {
-          width: 100%;
-          padding: $spacing-3 $spacing-4;
-          font-size: $font-size-sm;
-          text-align: center;
-        }
-
-        &:hover {
-          background-color: $color-interactive-primary-bg-subtle;
-        }
-      }
-
-      .randomButton {
-        padding: $spacing-2 $spacing-4;
-        border-radius: $border-radius-button;
-        border: $border-width-thin solid $orange-300;
-        background-color: transparent;
-        color: $color-link-default;
-        font-family: $font-family-primary;
-        font-weight: $font-weight-medium;
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        @media (max-width: 640px) {
-          width: 100%;
-          padding: $spacing-3 $spacing-4;
-          font-size: $font-size-sm;
-        }
-
-        &:hover:not(:disabled) {
-          background-color: $color-surface-tertiary;
-        }
-
-        &:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
-        }
-      }
-
-      .newNoteButton {
-        padding: $spacing-2 $spacing-4;
-        border-radius: $border-radius-button;
-        background-color: $color-interactive-primary;
-        color: $color-interactive-primary-text;
-        font-weight: $font-weight-medium;
-        text-decoration: none;
-        transition: all 0.2s ease;
-
-        @media (max-width: 640px) {
-          width: 100%;
-          padding: $spacing-3 $spacing-4;
-          font-size: $font-size-sm;
-          text-align: center;
-        }
-
-        &:hover {
-          background-color: $color-interactive-primary-hover;
-        }
-      }
-    }
+  &:hover {
+    background-color: $color-interactive-primary-hover;
   }
 }
 
