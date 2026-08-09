@@ -12,7 +12,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from auth import AdminUser
+from auth import require_scope
 from core import ai as ai_core
 from dependencies import get_llm, get_neo4j, get_notes, get_static_articles, get_user_resources
 from models import (
@@ -34,6 +34,9 @@ from rate_limiter import RATE_LIMITS, limiter
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["ai"])
+
+# AI editor access: a passkey session, an admin:* token, or an ai:use token (#300)
+AiUser = Annotated[dict[str, Any], Depends(require_scope("ai:use"))]
 
 
 def _get_all_resources(
@@ -991,7 +994,7 @@ def editor_assist(
     neo4j: Neo4jDep,
     static_articles: ArticlesDep,
     user_resources: UserResourcesDep,
-    _admin: AdminUser,
+    _admin: AiUser,
 ) -> EditorAssistResponse:
     """Non-streaming counterpart to /api/editor/assist/stream, for fallback.
 
@@ -1094,7 +1097,7 @@ def editor_assist_stream(
     neo4j: Neo4jDep,
     static_articles: ArticlesDep,
     user_resources: UserResourcesDep,
-    _admin: AdminUser,
+    _admin: AiUser,
 ) -> StreamingResponse:
     """Stream an editor slash-command result via Server-Sent Events (#146).
 

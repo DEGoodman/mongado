@@ -463,11 +463,32 @@ In `backend/main.py`:
 - `GET /api/auth/session` - Report auth state (200 whether or not signed in)
 - `GET|DELETE /api/auth/credentials` - List / revoke enrolled passkeys
 
-Admin endpoints require a passkey session token. The static `ADMIN_TOKEN` is
-scoped to passkey enrollment only (`/api/auth/register/*`, #267) - it bootstraps
-the first passkey and is the break-glass path, but is rejected (403) everywhere
-else. Deploy-time backups run over SSH (`backend/scripts/backup_export.py`), so
-CI no longer uses the token.
+*Scoped API tokens (#300):*
+- `GET /api/admin/tokens/scopes` - List assignable scopes (full admin)
+- `GET|POST /api/admin/tokens` - List / mint tokens (full admin; plaintext shown once)
+- `DELETE /api/admin/tokens/{token_id}` - Revoke a token (full admin)
+
+Three credentials share the `Authorization: Bearer` transport (see `backend/auth.py`):
+
+1. **Passkey session tokens** - full admin, the human login path.
+2. **Scoped API tokens** - `mgd_`-prefixed random secrets (hashed in Neo4j), each
+   carrying scopes for programmatic use. Endpoints declare a required scope via
+   `require_scope("...")`; a passkey session satisfies every scope, an API token
+   satisfies a granted scope (`admin:*` is a wildcard). Scopes: `notes:write`,
+   `library:write`, `feature_flags:write`, `ai:use`, `admin:*`. Managing tokens
+   themselves always requires full admin, so a narrow token can't self-escalate.
+3. **The static `ADMIN_TOKEN`** - scoped to passkey enrollment only
+   (`/api/auth/register/*`, #267); rejected (403) elsewhere, **except** in local
+   dev (`ENVIRONMENT=development` + `ALLOW_TOKEN_AUTH=true`, #291) where it acts as
+   full admin so a fresh dev box needs no passkey ceremony. `ENVIRONMENT` defaults
+   to `production` (fail-secure), so this can never activate in prod.
+
+**Bootstrap & rotation:** a fresh/migrated prod bootstraps via the static token
+(enroll first passkey -> session -> mint API tokens). API tokens are independent
+of `ADMIN_TOKEN`, and prod sets `SESSION_SECRET` explicitly (#268), so rotating
+`ADMIN_TOKEN` in prod is consequence-free (doesn't invalidate sessions, passkeys,
+or API tokens). A GitHub "deploy token" is a minted scoped API token, not the
+static token. Deploy-time backups run over SSH (`backend/scripts/backup_export.py`).
 
 *AI Features:*
 - `POST /api/search` - Semantic search (articles + notes)

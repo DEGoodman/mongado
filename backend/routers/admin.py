@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
-from auth import AdminUser
+from auth import AdminUser, require_scope
 from feature_flags import FeatureFlagService, get_feature_flags
 from models import (
     BackupCreateResponse,
@@ -28,6 +28,10 @@ from models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+# Feature-flag access: a passkey session, an admin:* token, or a
+# feature_flags:write token - the break-glass LLM kill-switch path (#292, #300)
+FeatureFlagUser = Annotated[dict[str, Any], Depends(require_scope("feature_flags:write"))]
 
 
 def create_admin_router(neo4j_adapter: Any) -> APIRouter:
@@ -329,7 +333,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
 
     @router.get("/feature-flags", response_model=FeatureFlagsResponse)
     async def list_feature_flags(
-        _admin: AdminUser,
+        _admin: FeatureFlagUser,
         response: Response,
         service: Annotated[FeatureFlagService, Depends(get_feature_flags)],
     ) -> FeatureFlagsResponse:
@@ -354,7 +358,7 @@ def create_admin_router(neo4j_adapter: Any) -> APIRouter:
     async def update_feature_flag(
         flag_name: str,
         update: FeatureFlagUpdateRequest,
-        _admin: AdminUser,
+        _admin: FeatureFlagUser,
         service: Annotated[FeatureFlagService, Depends(get_feature_flags)],
     ) -> FeatureFlagUpdateResponse:
         """Enable or disable a feature flag at runtime.

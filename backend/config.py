@@ -22,6 +22,23 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
+    # Deployment environment. A dedicated signal (not `debug`, which only
+    # controls logging verbosity) so security-sensitive dev conveniences can
+    # never activate in prod. Fail-secure: defaults to "production" so a
+    # misconfigured environment stays locked down. docker-compose.yml sets
+    # ENVIRONMENT=development; docker-compose.prod.yml sets it to production.
+    environment: str = "production"
+
+    @property
+    def is_development(self) -> bool:
+        """Whether we are running in a local/dev environment."""
+        return self.environment.strip().lower() == "development"
+
+    @property
+    def is_production(self) -> bool:
+        """Whether we are running in production (the fail-secure default)."""
+        return not self.is_development
+
     # Server settings
     host: str = "0.0.0.0"
     port: int = 8000
@@ -98,6 +115,12 @@ class Settings(BaseSettings):
 
     # Zettelkasten authentication
     admin_token: str = ""  # Admin bearer token for creating persistent notes
+
+    # Local-dev convenience (#291): when running in development, accept the
+    # static admin_token as a full admin session (all scopes), so a fresh dev
+    # machine can use admin features without a passkey ceremony. Double-gated
+    # with is_development, so it is unreachable in production by construction.
+    allow_token_auth: bool = False
 
     # Passkey (WebAuthn) admin authentication (#229). Passkeys are the primary
     # login for humans; admin_token remains valid for CI/automation callers

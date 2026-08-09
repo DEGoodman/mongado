@@ -19,6 +19,14 @@ import {
   registerPasskey,
   type PasskeyCredential,
 } from "@/lib/api/passkey";
+import {
+  createApiToken,
+  deleteApiToken,
+  getApiScopes,
+  listApiTokens,
+  type ApiScope,
+  type ApiTokenInfo,
+} from "@/lib/api/tokens";
 import { applyFeatureFlag } from "@/hooks/useFeatureFlags";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
@@ -57,6 +65,28 @@ export default function AdminPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
 
+  const [scopes, setScopes] = useState<ApiScope[]>([]);
+  const [tokens, setTokens] = useState<ApiTokenInfo[]>([]);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [tokenMessage, setTokenMessage] = useState<string | null>(null);
+  const [tokenName, setTokenName] = useState("");
+  const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
+  const [tokenExpiry, setTokenExpiry] = useState("30"); // days; "" = never
+  const [creatingToken, setCreatingToken] = useState(false);
+  const [newToken, setNewToken] = useState<string | null>(null);
+
+  const loadTokens = useCallback(() => {
+    listApiTokens()
+      .then(setTokens)
+      .catch((err) => {
+        adminLogger.error("Failed to load API tokens:", err);
+        setTokenError("Failed to load API tokens.");
+      });
+    getApiScopes()
+      .then(setScopes)
+      .catch((err) => adminLogger.error("Failed to load scopes:", err));
+  }, []);
+
   const loadPasskeys = useCallback(() => {
     listPasskeys()
       .then(setPasskeys)
@@ -92,7 +122,69 @@ export default function AdminPage() {
     loadHealth();
     setPasskeySupported(isPasskeySupported());
     loadPasskeys();
-  }, [router, loadHealth, loadPasskeys]);
+    loadTokens();
+  }, [router, loadHealth, loadPasskeys, loadTokens]);
+
+  const toggleScope = (name: string) => {
+    setSelectedScopes((current) =>
+      current.includes(name) ? current.filter((s) => s !== name) : [...current, name]
+    );
+  };
+
+  const handleCreateToken = async () => {
+    const name = tokenName.trim();
+    if (!name || selectedScopes.length === 0) {
+      setTokenError("A name and at least one scope are required.");
+      return;
+    }
+
+    setCreatingToken(true);
+    setTokenError(null);
+    setTokenMessage(null);
+    setNewToken(null);
+
+    const expiresInDays = tokenExpiry === "" ? null : parseInt(tokenExpiry, 10);
+    try {
+      const result = await createApiToken(name, selectedScopes, expiresInDays);
+      setNewToken(result.token);
+      setTokens((current) => [result.info, ...current]);
+      setTokenName("");
+      setSelectedScopes([]);
+      setTokenMessage(`Created "${name}".`);
+    } catch (err) {
+      adminLogger.error("Token creation failed:", err);
+      setTokenError(err instanceof Error ? err.message : "Failed to create token.");
+    } finally {
+      setCreatingToken(false);
+    }
+  };
+
+  const handleRevokeToken = async (token: ApiTokenInfo) => {
+    if (!window.confirm(`Revoke "${token.name}"? Any script using it will stop working.`)) {
+      return;
+    }
+
+    setTokenError(null);
+    setTokenMessage(null);
+    try {
+      await deleteApiToken(token.token_id);
+      setTokens((current) => current.filter((t) => t.token_id !== token.token_id));
+      setTokenMessage(`Revoked "${token.name}".`);
+    } catch (err) {
+      adminLogger.error("Token revocation failed:", err);
+      setTokenError("Failed to revoke token.");
+    }
+  };
+
+  const handleCopyToken = async () => {
+    if (!newToken) return;
+    try {
+      await navigator.clipboard.writeText(newToken);
+      setTokenMessage("Copied to clipboard.");
+    } catch {
+      setTokenMessage("Copy failed - select and copy the token manually.");
+    }
+  };
 
   const handleEnrollPasskey = async () => {
     setEnrolling(true);
@@ -289,6 +381,131 @@ export default function AdminPage() {
             ) : (
               <p className={styles.status}>This browser does not support passkeys.</p>
             )}
+          </div>
+
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>API Tokens</h2>
+            <p className={styles.cardDescription}>
+              Scoped, revocable bearer tokens for programmatic API use - the safe way to script
+              against the site without exposing the admin token. Each token can do only what its
+              scopes allow.
+            </p>
+
+            {tokenError && <p className={styles.error}>{tokenError}</p>}
+            {tokenMessage && <p className={styles.success}>{tokenMessage}</p>}
+
+            {newToken && (
+              <div className={styles.tokenReveal}>
+                <p className={styles.tokenRevealWarning}>
+                  Copy this token now - it will not be shown again.
+                </p>
+                <div className={styles.tokenRevealCode}>
+                  <code className={styles.tokenValue}>{newToken}</code>
+                  <button type="button" className={styles.copyButton} onClick={handleCopyToken}>
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tokens.length === 0 ? (
+              <p className={styles.status}>No API tokens yet.</p>
+            ) : (
+              <ul className={styles.passkeyList}>
+                {tokens.map((token) => (
+                  <li key={token.token_id} className={styles.passkeyRow}>
+                    <div className={styles.passkeyInfo}>
+                      <span className={styles.passkeyName}>{token.name}</span>
+                      <span className={styles.tokenScopes}>
+                        {token.scopes.map((scope) => (
+                          <span key={scope} className={styles.scopeTag}>
+                            {scope}
+                          </span>
+                        ))}
+                      </span>
+                      <span className={styles.passkeyMeta}>
+                        Created {formatUnixTimestamp(token.created_at)} · Expires{" "}
+                        {token.expires_at ? formatUnixTimestamp(token.expires_at) : "never"} · Last
+                        used {formatUnixTimestamp(token.last_used_at)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.revokeButton}
+                      onClick={() => handleRevokeToken(token)}
+                    >
+                      Revoke
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className={styles.tokenForm}>
+              <div className={styles.tokenField}>
+                <label htmlFor="token-name" className={styles.tokenLabel}>
+                  Name
+                </label>
+                <input
+                  id="token-name"
+                  type="text"
+                  className={styles.passkeyInput}
+                  placeholder="e.g. deploy job, importer"
+                  maxLength={64}
+                  value={tokenName}
+                  onChange={(e) => setTokenName(e.target.value)}
+                  disabled={creatingToken}
+                />
+              </div>
+
+              <div className={styles.tokenField}>
+                <span className={styles.tokenLabel}>Scopes</span>
+                <div className={styles.scopeList}>
+                  {scopes.map((scope) => (
+                    <label key={scope.name} className={styles.scopeItem}>
+                      <input
+                        type="checkbox"
+                        checked={selectedScopes.includes(scope.name)}
+                        onChange={() => toggleScope(scope.name)}
+                        disabled={creatingToken}
+                      />
+                      <span>
+                        <span className={styles.scopeName}>{scope.name}</span>
+                        <br />
+                        <span className={styles.scopeDescription}>{scope.description}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.tokenField}>
+                <label htmlFor="token-expiry" className={styles.tokenLabel}>
+                  Expires
+                </label>
+                <select
+                  id="token-expiry"
+                  className={styles.tokenSelect}
+                  value={tokenExpiry}
+                  onChange={(e) => setTokenExpiry(e.target.value)}
+                  disabled={creatingToken}
+                >
+                  <option value="7">7 days</option>
+                  <option value="30">30 days</option>
+                  <option value="90">90 days</option>
+                  <option value="">Never</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                className={styles.backupButton}
+                disabled={creatingToken}
+                onClick={handleCreateToken}
+              >
+                {creatingToken ? "Creating..." : "Create token"}
+              </button>
+            </div>
           </div>
 
           <div className={styles.card}>

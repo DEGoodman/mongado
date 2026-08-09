@@ -31,6 +31,13 @@ from models.ai import (
     WarmupResponse,
 )
 from models.auth import (
+    ApiScopeInfo,
+    ApiScopesResponse,
+    ApiTokenCreateRequest,
+    ApiTokenCreateResponse,
+    ApiTokenDeleteResponse,
+    ApiTokenInfo,
+    ApiTokensListResponse,
     AuthenticationOptionsResponse,
     AuthenticationVerifyRequest,
     CredentialDeleteResponse,
@@ -106,6 +113,14 @@ __all__ = [
     "CredentialDeleteResponse",
     "CredentialInfo",
     "CredentialsListResponse",
+    # API token models (#300)
+    "ApiScopeInfo",
+    "ApiScopesResponse",
+    "ApiTokenCreateRequest",
+    "ApiTokenCreateResponse",
+    "ApiTokenDeleteResponse",
+    "ApiTokenInfo",
+    "ApiTokensListResponse",
     # Library models
     "LibraryEntryCreate",
     "LibraryEntryUpdate",

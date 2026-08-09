@@ -12,7 +12,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from auth import AdminUser
+from auth import require_scope
 from core import notes as notes_core
 from core.markdown_renderer import render_markdown_to_html
 from dependencies import get_notes, get_ollama
@@ -34,6 +34,9 @@ limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "
 # Type aliases for cleaner signatures
 OllamaDep = Annotated[Any, Depends(get_ollama)]
 NotesDep = Annotated[Any, Depends(get_notes)]
+
+# Write access: a passkey session, an admin:* token, or a notes:write token (#300)
+NotesWriter = Annotated[dict[str, Any], Depends(require_scope("notes:write"))]
 
 
 def _with_html_content(note: dict[str, Any]) -> dict[str, Any]:
@@ -80,7 +83,7 @@ semantic search and AI features within seconds.
 async def create_note(
     request: Request,
     note: NoteCreate,
-    _admin: AdminUser,
+    _admin: NotesWriter,
     notes_service: NotesDep,
     background_tasks: BackgroundTasks,
 ) -> dict[str, Any]:
@@ -304,7 +307,7 @@ async def get_note(note_id: str, notes_service: NotesDep) -> dict[str, Any]:
 async def update_note(
     note_id: str,
     note_update: NoteUpdate,
-    _admin: AdminUser,
+    _admin: NotesWriter,
     notes_service: NotesDep,
     background_tasks: BackgroundTasks,
 ) -> dict[str, Any]:
@@ -340,7 +343,7 @@ async def update_note(
 @router.delete("/{note_id}")
 async def delete_note(
     note_id: str,
-    _admin: AdminUser,
+    _admin: NotesWriter,
     notes_service: NotesDep,
 ) -> dict[str, str]:
     """Delete a note (admin only)."""
