@@ -456,7 +456,13 @@ def ask_question(
     answer = ollama.ask_question(question_request.question, relevant_docs, allow_general_knowledge=True)
 
     if not answer:
-        raise HTTPException(status_code=500, detail="Failed to generate answer. Please try again.")
+        # The provider chain was exhausted (all hosted LLMs failed). This is a
+        # transient upstream failure, not a bug in our request handling, so
+        # surface a 503 with a user-friendly message rather than a bare 500 (#279).
+        raise HTTPException(
+            status_code=503,
+            detail="The AI service is temporarily unavailable. Please try again in a moment.",
+        )
 
     return QuestionResponse(answer=answer, sources=relevant_docs)
 
