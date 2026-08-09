@@ -1,4 +1,5 @@
-"""Pydantic models for passkey (WebAuthn) admin authentication (#229)."""
+"""Pydantic models for passkey (WebAuthn) admin authentication (#229) and
+scoped API tokens (#300)."""
 
 from typing import Any
 
@@ -77,3 +78,73 @@ class CredentialDeleteResponse(BaseModel):
 
     success: bool = Field(..., description="Whether the credential was deleted")
     message: str = Field(..., description="Human-readable outcome")
+
+
+# ===== Scoped API tokens (#300) =====
+
+
+class ApiTokenCreateRequest(BaseModel):
+    """Request to mint a new scoped API token."""
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=64,
+        description="Human label for the token (e.g. 'deploy job', 'importer')",
+    )
+    scopes: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Granted scopes (e.g. ['notes:write', 'library:write'] or ['admin:*'])",
+    )
+    expires_in_days: int | None = Field(
+        None,
+        ge=1,
+        le=365,
+        description="Days until the token expires; omit for a token that never expires",
+    )
+
+
+class ApiTokenInfo(BaseModel):
+    """A stored API token as shown in the admin UI (never the secret)."""
+
+    token_id: str = Field(..., description="Public identifier used to revoke the token")
+    name: str = Field(..., description="Human label")
+    scopes: list[str] = Field(..., description="Granted scopes")
+    created_at: float = Field(..., description="Unix timestamp of creation")
+    expires_at: float | None = Field(None, description="Unix timestamp of expiry, if any")
+    last_used_at: float | None = Field(None, description="Unix timestamp of last successful use")
+
+
+class ApiTokenCreateResponse(BaseModel):
+    """A freshly minted token. The plaintext is returned exactly once."""
+
+    token: str = Field(..., description="The plaintext bearer token - shown only now")
+    info: ApiTokenInfo = Field(..., description="Stored metadata for the new token")
+
+
+class ApiTokensListResponse(BaseModel):
+    """All stored API tokens."""
+
+    tokens: list[ApiTokenInfo] = Field(..., description="Stored tokens, newest first")
+    count: int = Field(..., description="Number of stored tokens")
+
+
+class ApiTokenDeleteResponse(BaseModel):
+    """Result of revoking an API token."""
+
+    success: bool = Field(..., description="Whether the token was deleted")
+    message: str = Field(..., description="Human-readable outcome")
+
+
+class ApiScopeInfo(BaseModel):
+    """A selectable scope, for populating the admin create form."""
+
+    name: str = Field(..., description="Scope identifier (e.g. 'notes:write')")
+    description: str = Field(..., description="What the scope grants")
+
+
+class ApiScopesResponse(BaseModel):
+    """The controlled vocabulary of assignable scopes."""
+
+    scopes: list[ApiScopeInfo] = Field(..., description="Known scopes")

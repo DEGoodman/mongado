@@ -322,3 +322,124 @@
     transform: translateX(1.25rem);
   }
 }
+
+// ===== API TOKENS (#300) =====
+.tokenForm {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+  margin-top: $spacing-4;
+  padding-top: $spacing-4;
+  border-top: $border-default;
+}
+
+.tokenField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+}
+
+.tokenLabel {
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  font-size: $font-size-sm;
+}
+
+.tokenSelect {
+  padding: $spacing-2 $spacing-3;
+  border: $border-default;
+  border-radius: $border-radius-button;
+  font-family: $font-family-primary;
+  background-color: $color-bg-canvas;
+
+  &:focus {
+    outline: none;
+    border-color: $color-input-border-focus;
+    box-shadow: $shadow-focus-primary;
+  }
+}
+
+.scopeList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+}
+
+.scopeItem {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-2;
+  cursor: pointer;
+
+  input {
+    margin-top: 0.2rem;
+  }
+}
+
+.scopeName {
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.scopeDescription {
+  @include text-secondary;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.tokenReveal {
+  margin: 0 0 $spacing-5 0;
+  padding: $spacing-4;
+  background-color: rgba(254, 243, 199, 0.5);
+  border: $border-width-thin solid rgba(217, 119, 6, 0.4);
+  border-radius: $border-radius-md;
+}
+
+.tokenRevealWarning {
+  margin: 0 0 $spacing-3 0;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.tokenRevealCode {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+}
+
+.tokenValue {
+  flex: 1 1 16rem;
+  font-family: $font-family-mono;
+  font-size: $font-size-sm;
+  word-break: break-all;
+  padding: $spacing-2 $spacing-3;
+  background-color: $color-bg-canvas;
+  border: $border-default;
+  border-radius: $border-radius-button;
+}
+
+.copyButton {
+  @include button-secondary;
+  @include button-sm;
+  flex-shrink: 0;
+}
+
+.tokenScopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-1;
+  margin-top: $spacing-1;
+}
+
+.scopeTag {
+  font-family: $font-family-mono;
+  font-size: $font-size-xs;
+  padding: 0 $spacing-2;
+  border-radius: $border-radius-md;
+  background-color: $color-bg-secondary;
+  color: $color-text-secondary;
+  border: $border-width-thin solid $color-border-subtle;
+}

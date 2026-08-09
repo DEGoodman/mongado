@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from adapters.article_loader import load_static_articles
 from adapters.neo4j import get_neo4j_adapter
-from auth import verify_admin
+from auth import require_scope, verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from dependencies import (
     get_neo4j,
@@ -52,6 +52,7 @@ from routers.library import router as library_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
 from routers.templates import router as templates_router
+from routers.tokens import create_tokens_router
 
 # Configure logging
 setup_logging(level="INFO")
@@ -330,6 +331,10 @@ app.include_router(admin_router)
 auth_router = create_auth_router(neo4j_adapter=neo4j_adapter)
 app.include_router(auth_router)
 
+# Scoped API tokens (#300)
+tokens_router = create_tokens_router(neo4j_adapter=neo4j_adapter)
+app.include_router(tokens_router)
+
 # Create uploads directory for user-uploaded images (temporary storage)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -464,7 +469,7 @@ def enforce_upload_body_size(request: Request) -> None:
 async def upload_image(
     request: Request,
     file: Annotated[UploadFile, File()],
-    _admin: Annotated[bool, Depends(verify_admin)],
+    _admin: Annotated[dict[str, Any], Depends(require_scope("notes:write"))],
 ) -> ImageUploadResponse:
     """Upload an image file, optimize to WebP, and return its URL.
 

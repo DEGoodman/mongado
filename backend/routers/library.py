@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from auth import AdminUser
+from auth import require_scope
 from core.markdown_renderer import render_markdown_to_html
 from dependencies import get_library
 from models import LibraryEntryCreate, LibraryEntryUpdate, LibraryListResponse
@@ -26,6 +26,9 @@ router = APIRouter(prefix="/api/library", tags=["library"])
 limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "1")
 
 LibraryDep = Annotated[Any, Depends(get_library)]
+
+# Write access: a passkey session, an admin:* token, or a library:write token (#300)
+LibraryWriter = Annotated[dict[str, Any], Depends(require_scope("library:write"))]
 
 
 def _with_html_summary(entry: dict[str, Any]) -> dict[str, Any]:
@@ -91,7 +94,7 @@ async def get_library_entry(entry_id: str, library: LibraryDep) -> dict[str, Any
 async def create_library_entry(
     request: Request,
     entry: LibraryEntryCreate,
-    _admin: AdminUser,
+    _admin: LibraryWriter,
     library: LibraryDep,
 ) -> dict[str, Any]:
     """Create a new Library entry (admin only)."""
@@ -110,7 +113,7 @@ async def create_library_entry(
 async def update_library_entry(
     entry_id: str,
     entry_update: LibraryEntryUpdate,
-    _admin: AdminUser,
+    _admin: LibraryWriter,
     library: LibraryDep,
 ) -> dict[str, Any]:
     """Update a Library entry (admin only). Only provided fields change."""
@@ -131,7 +134,7 @@ async def update_library_entry(
 @router.delete("/{entry_id}")
 async def delete_library_entry(
     entry_id: str,
-    _admin: AdminUser,
+    _admin: LibraryWriter,
     library: LibraryDep,
 ) -> dict[str, str]:
     """Delete a Library entry (admin only)."""

@@ -142,6 +142,23 @@ class Neo4jAdapter:
                 """
             )
 
+            # ===== API TOKEN SCHEMA (#300) =====
+            # Unique constraint on ApiToken.token_id (public identifier)
+            session.run(
+                """
+                CREATE CONSTRAINT api_token_id_unique IF NOT EXISTS
+                FOR (t:ApiToken) REQUIRE t.token_id IS UNIQUE
+                """
+            )
+
+            # Index on ApiToken.token_hash for auth lookup on every authed request
+            session.run(
+                """
+                CREATE INDEX api_token_hash IF NOT EXISTS
+                FOR (t:ApiToken) ON (t.token_hash)
+                """
+            )
+
             # ===== LIBRARY ENTRY SCHEMA (#294) =====
             # Unique constraint on LibraryEntry.id
             session.run(
@@ -941,6 +958,175 @@ class Neo4jAdapter:
             )
             record = result.single()
             return bool(record and record["consumed"] > 0)
+
+    # ===== API TOKENS (scoped bearer tokens, #300) =====
+
+    def create_api_token(
+        self,
+        token_id: str,
+        token_hash: str,
+        name: str,
+        scopes: list[str],
+        created_at: float,
+        expires_at: float | None,
+    ) -> bool:
+        """Store a newly minted API token (only its hash, never the plaintext).
+
+        Args:
+            token_id: Public identifier used to reference the token (uuid hex)
+            token_hash: SHA-256 hex of the plaintext (auth lookup key)
+            name: Human label ("deploy job", "importer")
+            scopes: Granted scopes (validated by the caller)
+            created_at: Unix timestamp of creation
+            expires_at: Unix timestamp of expiry, or None for no expiry
+
+        Returns:
+            True if stored, False if Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                """
+                CREATE (t:ApiToken {
+                    token_id: $token_id,
+                    token_hash: $token_hash,
+                    name: $name,
+                    scopes: $scopes,
+                    created_at: $created_at,
+                    expires_at: $expires_at,
+                    last_used_at: null
+                })
+                """,
+                token_id=token_id,
+                token_hash=token_hash,
+                name=name,
+                scopes=scopes,
+                created_at=created_at,
+                expires_at=expires_at,
+            )
+            return True
+
+    def list_api_tokens(self) -> list[dict[str, Any]]:
+        """List API tokens as metadata (never the hash), newest first.
+
+        Returns:
+            Token records without secrets (empty if Neo4j unavailable)
+        """
+        if not self._available or not self.driver:
+            return []
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (t:ApiToken)
+                RETURN t.token_id AS token_id,
+                       t.name AS name,
+                       t.scopes AS scopes,
+                       t.created_at AS created_at,
+                       t.expires_at AS expires_at,
+                       t.last_used_at AS last_used_at
+                ORDER BY t.created_at DESC
+                """
+            )
+            return [
+                {
+                    "token_id": record["token_id"],
+                    "name": record["name"],
+                    "scopes": list(record["scopes"] or []),
+                    "created_at": record["created_at"],
+                    "expires_at": record["expires_at"],
+                    "last_used_at": record["last_used_at"],
+                }
+                for record in result
+            ]
+
+    def get_api_token_by_hash(self, token_hash: str) -> dict[str, Any] | None:
+        """Look up an API token by its hash, for request authentication.
+
+        Args:
+            token_hash: SHA-256 hex of the presented plaintext token
+
+        Returns:
+            Token record (including scopes and expiry), or None if not found
+            / Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return None
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (t:ApiToken {token_hash: $token_hash})
+                RETURN t.token_id AS token_id,
+                       t.name AS name,
+                       t.scopes AS scopes,
+                       t.created_at AS created_at,
+                       t.expires_at AS expires_at,
+                       t.last_used_at AS last_used_at
+                """,
+                token_hash=token_hash,
+            )
+            record = result.single()
+            if not record:
+                return None
+            return {
+                "token_id": record["token_id"],
+                "name": record["name"],
+                "scopes": list(record["scopes"] or []),
+                "created_at": record["created_at"],
+                "expires_at": record["expires_at"],
+                "last_used_at": record["last_used_at"],
+            }
+
+    def record_api_token_use(self, token_id: str, now: float) -> bool:
+        """Stamp an API token's last-used time after a successful auth.
+
+        Args:
+            token_id: Public token identifier
+            now: Unix timestamp of use
+
+        Returns:
+            True if updated, False if Neo4j unavailable
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            session.run(
+                """
+                MATCH (t:ApiToken {token_id: $token_id})
+                SET t.last_used_at = $now
+                """,
+                token_id=token_id,
+                now=now,
+            )
+            return True
+
+    def delete_api_token(self, token_id: str) -> bool:
+        """Revoke (delete) an API token.
+
+        Args:
+            token_id: Public token identifier
+
+        Returns:
+            True if a token was deleted, False otherwise
+        """
+        if not self._available or not self.driver:
+            return False
+
+        with self.driver.session(database=self.database) as session:
+            result = session.run(
+                """
+                MATCH (t:ApiToken {token_id: $token_id})
+                DELETE t
+                RETURN count(t) AS deleted
+                """,
+                token_id=token_id,
+            )
+            record = result.single()
+            return bool(record and record["deleted"] > 0)
 
     def get_all_note_ids(self) -> set[str]:
         """Get all note IDs (for collision detection).
