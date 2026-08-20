@@ -8,6 +8,7 @@
 
 @use "@/styles/design-tokens" as *;
 @use "@/styles/mixins" as *;
+@use "@/styles/pygments-monokai" as *;
 
 @mixin rendered-markdown {
   @include text-secondary;
@@ -107,6 +108,10 @@
         line-height: 1.7;
       }
     }
+
+    // Pygments monokai token colors (#298). The container above is always
+    // dark, so these read in both light and dark site themes.
+    @include pygments-monokai;
   }
 
   // === TABLES ===
