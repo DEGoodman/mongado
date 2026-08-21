@@ -73,6 +73,33 @@ class TestApiLLMClient:
         assert calls[0]["json"]["model"] == GROQ.model
         assert calls[0]["json"]["messages"] == [{"role": "user", "content": "test prompt"}]
 
+    def test_extra_body_merged_only_for_provider_that_sets_it(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A provider's extra_body (Groq's reasoning_effort) is merged into the
+        request; providers without it send no such param (#304)."""
+        calls: list[dict[str, Any]] = []
+
+        def mock_post(url: str, **kwargs: Any) -> MagicMock:
+            calls.append(kwargs)
+            return _completion_response("ok")
+
+        monkeypatch.setattr("httpx.post", mock_post)
+
+        reasoning = ApiProvider(
+            name="groq",
+            base_url="https://api.groq.com/openai/v1",
+            api_key="k",
+            model="openai/gpt-oss-20b",
+            extra_body={"reasoning_effort": "low"},
+        )
+        ApiLLMClient(providers=[reasoning]).generate("p")
+        assert calls[0]["json"]["reasoning_effort"] == "low"
+
+        calls.clear()
+        ApiLLMClient(providers=[GEMINI]).generate("p")
+        assert "reasoning_effort" not in calls[0]["json"]
+
     def test_generate_falls_back_to_next_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
         def mock_post(url: str, **kwargs: Any) -> MagicMock:
             if GROQ.base_url in url:
