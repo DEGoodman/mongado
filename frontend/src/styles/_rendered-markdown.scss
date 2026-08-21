@@ -88,30 +88,41 @@
   }
 
   // === CODE BLOCKS (Pygments) ===
-  .highlight {
-    margin: $spacing-4 0;
-    border-radius: $border-radius-lg;
-    overflow-x: auto;
-
-    pre {
-      margin: 0;
-      padding: $spacing-4;
-      background-color: $neutral-900;
+  // The backend emits literal Pygments classes (.highlight, .k, .nf, …) on the
+  // server-rendered HTML. This mixin is consumed by *.module.scss, so a bare
+  // `.highlight` would be hashed to `.page_highlight__xyz` and never match the
+  // DOM. Wrap in `:global {}` so these selectors stay literal (#298).
+  :global {
+    .highlight {
+      margin: $spacing-4 0;
       border-radius: $border-radius-lg;
       overflow-x: auto;
 
-      code {
-        background-color: transparent;
-        padding: 0;
-        color: $neutral-100;
+      pre {
+        margin: 0;
+        padding: $spacing-4;
+        // Monokai's own canonical background/foreground, NOT design-system
+        // neutrals: $neutral-* are theme-aware and flip to light in dark mode,
+        // which would put the bright monokai tokens on a near-white background.
+        // A code block stays dark in both site themes (#298).
+        background-color: #272822;
+        color: #f8f8f2;
         font-size: $font-size-sm;
         line-height: 1.7;
-      }
-    }
+        border-radius: $border-radius-lg;
+        overflow-x: auto;
 
-    // Pygments monokai token colors (#298). The container above is always
-    // dark, so these read in both light and dark site themes.
-    @include pygments-monokai;
+        code {
+          background-color: transparent;
+          padding: 0;
+          color: inherit;
+        }
+      }
+
+      // Pygments monokai token colors (#298). The container above is always
+      // dark, so these read in both light and dark site themes.
+      @include pygments-monokai;
+    }
   }
 
   // === TABLES ===
@@ -136,80 +147,87 @@
   }
 
   // === WIKILINKS ===
-  .wikilink {
-    display: inline-block;
-    padding: 0 $spacing-1;
-    border-radius: $border-radius-sm;
-    background-color: $color-interactive-primary-bg-subtle;
-    color: $color-link-hover;
-    text-decoration: none;
-    font-family: $font-family-mono;
-    font-size: 0.9em;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  // === FOOTNOTES ===
-  // Reference numbers in body text (superscript)
-  .footnote-ref {
-    a {
-      color: $orange-600;
-      font-weight: $font-weight-medium;
-      text-decoration: none;
-      font-size: 0.75em;
-      vertical-align: super;
-      line-height: 0;
+  // Literal `.wikilink` class from the backend renderer — keep global (#298).
+  :global {
+    .wikilink {
+      display: inline-block;
       padding: 0 $spacing-1;
+      border-radius: $border-radius-sm;
+      background-color: $color-interactive-primary-bg-subtle;
+      color: $color-link-hover;
+      text-decoration: none;
+      font-family: $font-family-mono;
+      font-size: 0.9em;
 
       &:hover {
-        color: $orange-700;
         text-decoration: underline;
       }
     }
   }
 
-  // Horizontal rule separator before footnotes
-  .footnotes-sep {
-    margin: $spacing-8 0 $spacing-6;
-    border: none;
-    border-top: $border-width-thin solid $color-border-default;
-  }
+  // === FOOTNOTES ===
+  // Literal footnote classes emitted by the backend footnote plugin
+  // (.footnote-ref, .footnotes-sep, .footnotes, …) — keep global (#298).
+  :global {
+    // Reference numbers in body text (superscript)
+    .footnote-ref {
+      a {
+        color: $orange-600;
+        font-weight: $font-weight-medium;
+        text-decoration: none;
+        font-size: 0.75em;
+        vertical-align: super;
+        line-height: 0;
+        padding: 0 $spacing-1;
 
-  // Footnotes section container
-  .footnotes {
-    margin-top: $spacing-6;
-    padding-top: $spacing-4;
-    font-size: $font-size-sm;
-    color: $color-text-secondary;
-
-    // Footnotes ordered list
-    .footnotes-list {
-      margin: 0;
-      padding-left: $spacing-6;
-      list-style-type: decimal;
-
-      // Individual footnote item
-      .footnote-item {
-        margin-bottom: $spacing-3;
-        padding-left: $spacing-2;
-
-        p {
-          margin: 0;
-          display: inline;
+        &:hover {
+          color: $orange-700;
+          text-decoration: underline;
         }
+      }
+    }
 
-        // Back-reference link (↩)
-        .footnote-backref {
-          margin-left: $spacing-2;
-          color: $orange-600;
-          text-decoration: none;
-          font-size: 0.85em;
+    // Horizontal rule separator before footnotes
+    .footnotes-sep {
+      margin: $spacing-8 0 $spacing-6;
+      border: none;
+      border-top: $border-width-thin solid $color-border-default;
+    }
 
-          &:hover {
-            color: $orange-700;
+    // Footnotes section container
+    .footnotes {
+      margin-top: $spacing-6;
+      padding-top: $spacing-4;
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+
+      // Footnotes ordered list
+      .footnotes-list {
+        margin: 0;
+        padding-left: $spacing-6;
+        list-style-type: decimal;
+
+        // Individual footnote item
+        .footnote-item {
+          margin-bottom: $spacing-3;
+          padding-left: $spacing-2;
+
+          p {
+            margin: 0;
+            display: inline;
+          }
+
+          // Back-reference link (↩)
+          .footnote-backref {
+            margin-left: $spacing-2;
+            color: $orange-600;
             text-decoration: none;
+            font-size: 0.85em;
+
+            &:hover {
+              color: $orange-700;
+              text-decoration: none;
+            }
           }
         }
       }
