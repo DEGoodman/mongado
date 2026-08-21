@@ -20,7 +20,7 @@ Architecture:
 import json
 import logging
 from collections.abc import Generator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from config import get_settings
@@ -39,6 +39,10 @@ class ApiProvider:
     base_url: str
     api_key: str
     model: str
+    # Provider-specific params merged into every chat-completions request body.
+    # Used to pass reasoning_effort to Groq's gpt-oss reasoning model; must not
+    # leak to providers (e.g. Gemini) that reject unknown params.
+    extra_body: dict[str, Any] = field(default_factory=dict)
 
 
 def _build_providers() -> list[ApiProvider]:
@@ -52,6 +56,10 @@ def _build_providers() -> list[ApiProvider]:
                 base_url=settings.groq_base_url,
                 api_key=settings.groq_api_key,
                 model=settings.groq_model,
+                # gpt-oss is a reasoning model: at low effort it spends fewer
+                # tokens "thinking" before answering, trimming latency and the
+                # risk of exhausting max_tokens on reasoning alone (#304).
+                extra_body={"reasoning_effort": "low"},
             )
         )
     if settings.gemini_api_key:
@@ -101,6 +109,7 @@ class ApiLLMClient:
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": max_tokens or self.default_max_tokens,
             "stream": stream,
+            **provider.extra_body,
         }
 
     def generate(

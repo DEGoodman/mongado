@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     # Hosted API providers (OpenAI-compatible chat completions)
     groq_api_key: str | None = None
     groq_base_url: str = "https://api.groq.com/openai/v1"
-    groq_model: str = "llama-3.1-8b-instant"  # Free tier: 14,400 req/day
+    groq_model: str = "openai/gpt-oss-20b"  # Reasoning model; llama-3.1-8b-instant decommissioned 2026-08-16 (#304)
     gemini_api_key: str | None = None
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     gemini_model: str = "gemini-flash-latest"  # Free tier: 1,500 req/day

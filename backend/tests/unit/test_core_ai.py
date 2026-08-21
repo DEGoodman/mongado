@@ -127,6 +127,24 @@ class TestBuildContextFromDocuments:
         context = ai.build_context_from_documents(docs)
         assert "### Document 1" in context
 
+    def test_truncates_documents_to_stay_within_budget(self):
+        """Per-document content is truncated so the combined context respects
+        max_context_chars, keeping /api/ask requests within provider size caps (#279)."""
+        big_content = "x" * 10000
+        docs = [
+            {"title": "Doc A", "content": big_content},
+            {"title": "Doc B", "content": big_content},
+        ]
+
+        context = ai.build_context_from_documents(docs, max_context_chars=1000)
+
+        assert "[truncated]" in context
+        # The full untruncated content must not appear verbatim.
+        assert big_content not in context
+        # Both document titles are still present.
+        assert "### Doc A" in context
+        assert "### Doc B" in context
+
 
 class TestBuildQAPrompt:
     """Tests for Q&A prompt construction."""
@@ -204,7 +222,7 @@ class TestBuildSynthesisPrompt:
 
     def test_truncates_documents_to_stay_within_budget(self):
         """Per-document content is truncated so the combined context respects
-        max_context_chars, unlike build_context_from_documents (no truncation)."""
+        max_context_chars (the wider synthesis budget vs. the Q&A one in #279)."""
         # Two documents, each far larger than half the budget.
         big_content = "x" * 10000
         docs = [

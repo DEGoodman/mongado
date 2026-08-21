@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 from dependencies import get_llm, get_neo4j, get_notes, get_static_articles, get_user_resources
 from main import app
+from tests.conftest import MockOllamaClient
 
 # Mark for slow tests that hit real Ollama
 slow = pytest.mark.slow
@@ -115,6 +116,20 @@ class TestAskQuestion:
         response = client.post("/api/ask", json={})
 
         assert response.status_code == 422
+
+    def test_ask_question_provider_chain_exhausted_returns_503(
+        self, client: TestClient, mock_ollama_available: MockOllamaClient
+    ) -> None:
+        """When the LLM provider chain is exhausted (ask_question returns None),
+        the endpoint returns a graceful 503, not a bare 500 (#279)."""
+        # The client fixture injects this same instance as the ollama dependency,
+        # so patching it here makes generation fail while the service stays "up".
+        mock_ollama_available.ask_question = lambda *args, **kwargs: None  # type: ignore[assignment,method-assign]
+
+        response = client.post("/api/ask", json={"question": "What is SRE?"})
+
+        assert response.status_code == 503
+        assert "temporarily unavailable" in response.json()["detail"].lower()
 
 
 class TestSuggestTags:

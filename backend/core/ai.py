@@ -133,14 +133,34 @@ def rank_parents_by_chunk_similarity(
     ]
 
 
-def build_context_from_documents(documents: list[dict[str, Any]], max_docs: int = 5) -> str:
+# Character budget for Q&A context (#279).
+#
+# build_qa_prompt embeds whole retrieved documents (up to max_docs). With long
+# articles the combined prompt exceeded hosted providers' per-request size caps:
+# Groq returned 413 Payload Too Large, Gemini then timed out on the oversized
+# prompt, the chain was exhausted, and /api/ask surfaced a bare 500. Truncating
+# each document to a share of this budget keeps the request well within those
+# caps. Smaller than SYNTHESIS_CONTEXT_CHAR_BUDGET because Q&A wants a short
+# answer from a few excerpts, not a wide synthesis across many documents.
+QA_CONTEXT_CHAR_BUDGET = 12000
+
+
+def build_context_from_documents(
+    documents: list[dict[str, Any]],
+    max_docs: int = 5,
+    max_context_chars: int = QA_CONTEXT_CHAR_BUDGET,
+) -> str:
     """Build context string from documents for AI prompts.
 
     Pure function: No I/O, no side effects, deterministic.
 
+    Each included document is truncated to a share of `max_context_chars` so the
+    combined context stays within hosted providers' per-request size caps (#279).
+
     Args:
         documents: List of documents with 'title' and 'content' fields
         max_docs: Maximum number of documents to include
+        max_context_chars: Character budget for the combined document context
 
     Returns:
         Formatted context string
@@ -148,10 +168,15 @@ def build_context_from_documents(documents: list[dict[str, Any]], max_docs: int 
     if not documents:
         return "No relevant documents found."
 
+    docs = documents[:max_docs]
+    # Split the budget evenly across the documents actually included.
+    per_doc_budget = max(max_context_chars // len(docs), 200)
     context_parts = []
-    for i, doc in enumerate(documents[:max_docs], 1):
+    for i, doc in enumerate(docs, 1):
         title = doc.get("title", f"Document {i}")
         content = doc.get("content", "")
+        if len(content) > per_doc_budget:
+            content = content[:per_doc_budget].rstrip() + "\n... [truncated]"
         context_parts.append(f"### {title}\n{content}\n")
 
     return "\n".join(context_parts)
