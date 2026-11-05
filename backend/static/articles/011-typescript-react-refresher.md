@@ -7,9 +7,10 @@ tags: ["typescript", "react", "reference", "webdev"]
 draft: false
 published_date: "2025-11-12T10:00:00"
 created_at: "2025-11-12T10:00:00"
+updated_date: "2026-11-04T00:00:00"
 ---
 
-**Purpose**: Quick reference guide to refresh TypeScript and React fundamentals
+A condensed reference for getting back up to speed on TypeScript and React (function components and hooks). Each section is code first, with short notes on when to use what. Exercises at the end.
 
 ---
 
@@ -284,6 +285,7 @@ interface ListProps<T> {
 function List<T>({ items, renderItem }: ListProps<T>) {
   return (
     <ul>
+      {/* index keys are OK only for static lists; otherwise add a getKey prop */}
       {items.map((item, index) => (
         <li key={index}>{renderItem(item)}</li>
       ))}
@@ -508,7 +510,7 @@ function Greeting({ name, age }: GreetingProps) {
   return (
     <div>
       <h1>Hello, {name}!</h1>
-      {age && <p>Age: {age}</p>}
+      {age !== undefined && <p>Age: {age}</p>}
     </div>
   );
 }
@@ -518,7 +520,7 @@ const Greeting: React.FC<GreetingProps> = ({ name, age }) => {
   return (
     <div>
       <h1>Hello, {name}!</h1>
-      {age && <p>Age: {age}</p>}
+      {age !== undefined && <p>Age: {age}</p>}
     </div>
   );
 };
@@ -713,13 +715,18 @@ function ProductDetails({ productId }: { productId: string }) {
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
+    let ignore = false; // guards against out-of-order responses
+
     async function fetchProduct() {
       const response = await fetch(`/api/products/${productId}`);
       const data = await response.json();
-      setProduct(data);
+      if (!ignore) setProduct(data);
     }
 
     fetchProduct();
+    return () => {
+      ignore = true; // productId changed or unmounted: drop the stale response
+    };
   }, [productId]); // Re-run when productId changes
 
   return <div>{product?.name}</div>;
@@ -795,7 +802,7 @@ function BuggyComponent({ userId }: { userId: string }) {
 
 ### useCallback
 
-**Memoizes a function to prevent unnecessary re-creation.**
+**Returns the same function reference between renders until a dependency changes.** The function is still created each render; `useCallback` just hands back the previous one. This only matters when something compares references: a `React.memo` child or a hook dependency array.
 
 ```typescript
 import { useCallback, useState } from "react";
@@ -815,7 +822,7 @@ function ProductList() {
         <ProductCard
           key={product.id}
           product={product}
-          onAddToCart={handleAddToCart} // New function = ProductCard re-renders
+          onAddToCart={handleAddToCart} // New reference each render, so a React.memo'd ProductCard can't skip re-rendering
         />
       ))}
     </div>
@@ -871,7 +878,6 @@ const handleClick: Callback = useCallback((id: string) => {
 **When to use useCallback?**
 - Passing callbacks to optimized child components (wrapped in `React.memo`)
 - Dependency of `useEffect` or other hooks
-- Expensive function creation
 
 **When NOT to use?**
 - Simple inline functions
@@ -963,7 +969,7 @@ const expensiveValue: number = useMemo(() => {
 **When to use useMemo?**
 - Expensive calculations (filtering large arrays, complex math)
 - Creating objects/arrays passed to child components
-- Preventing unnecessary re-renders
+- Keeping a stable reference for a `React.memo` child or a hook dependency
 
 **When NOT to use?**
 - Simple calculations (addition, string concatenation)
@@ -1205,20 +1211,25 @@ function useFetch<T>(url: string) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(url);
-        const json = await response.json();
-        setData(json);
+        setError(null);
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setData((await response.json()) as T);
       } catch (err) {
-        setError(err as Error);
+        if (controller.signal.aborted) return; // superseded by a newer request
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchData();
+    return () => controller.abort();
   }, [url]);
 
   return { data, loading, error };

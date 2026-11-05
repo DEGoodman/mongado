@@ -1,7 +1,7 @@
 ---
 id: 1
 title: "44 Engineering Management Lessons"
-summary: "Concise lessons on transitioning to engineering management, covering team building, motivation, process, hiring, and organizational dynamics. Practical advice on what to do, what to avoid, and how to lead effectively."
+summary: "Slava Akhmechet's 44 short lessons for new engineering managers: what the job is, what it isn't, and how to handle decisions, conflict, and hard conversations."
 url: "https://www.defmacro.org/2014/10/03/engman.html"
 tags: ["engineering-management", "leadership"]
 draft: false
@@ -9,12 +9,11 @@ published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"
 ---
 
-
-### 44 engineering management lessons
+> Reproduced from [Slava Akhmechet's "44 engineering management lessons"](https://www.defmacro.org/2014/10/03/engman.html) (October 2014) for my own reference. All of the writing below is his.
 
 Welcome to engineering management. It’s fun, it’s exhausting, it’s rewarding — but most importantly it’s new! What worked for you before won’t work now. You’ll have to acquire a new set of skills, and shed some bad habits in the process. Here is a short guide to get you started.
 
-# Do
+## Do
 
 1. Attract, nurture, coach, and retain talent. Talk to engineers to tease out concerns early, then fix them if you can.
 2. Communicate to every engineer the next most important issue for them to work on.
@@ -23,12 +22,12 @@ Welcome to engineering management. It’s fun, it’s exhausting, it’s rewardi
 5. Provide administrative support. Schedule issues, coordinate releases, and make sure the bureaucratic machine keeps ticking.
 6. Enforce behavioral and performance standards. Fire bullies and underperformers.
 
-# Don’t
+## Don’t
 
 1. Personally fix bugs and ship features. You have to write code to remain an effective tiebreaker, but that’s where your coding responsibilities end.
 2. Supervise the quality and volume of people’s work. Software engineering isn’t an assembly line. If you find yourself supervising too often, you haven’t attracted the right people or given them the right incentives.
 
-# Motivation and culture
+## Motivation and culture
 
 1. You’re the one who makes hiring and firing decisions. Everything that happens on your team is your responsibility.
 2. Engineering is a seller’s market: people work for you because they believe in you. Access to their talent is a privilege.
@@ -38,7 +37,7 @@ Welcome to engineering management. It’s fun, it’s exhausting, it’s rewardi
 6. Don’t shoot down ideas until it’s necessary. Create an environment where everyone feels safe to share and explore ideas. The folks writing the code have a lot of information you don’t. Rely on your team and you’ll make better decisions.
 7. Building intuition on how to make good decisions and cultivating a great relationship with your team will get you 95% of the way there. The [plethora](http://randsinrepose.com/archives/the-update-the-vent-and-the-disaster/) [of](http://en.wikipedia.org/wiki/Scrum_(software_development)) [conceptual](http://en.wikipedia.org/wiki/OKR) [frameworks](http://en.wikipedia.org/wiki/Kanban) for organizing engineering teams won’t make much difference. They make good managers slightly better and bad managers slightly worse.
 
-# Emotions and people
+## Emotions and people
 
 1. Management happens to be prestigious in our culture, but it’s a skill like any other. Prestige is a distraction — it’s fickle and arbitrary. Guard against believing you’re any better than anyone else. The sooner you get over prestige, the sooner you can focus on doing your job well.
 2. Management also attracts scorn. Ignore it — the people who believe managers are useless don’t understand the dynamics of building a winning human organization.
@@ -50,7 +49,7 @@ Welcome to engineering management. It’s fun, it’s exhausting, it’s rewardi
 8. Hire great people, then trust them completely. Evaluate performance on monthly or quarterly basis, then fire if you have to. Don’t evaluate people daily, it will drive everyone (including you) insane.
 9. Most intellectual arguments have strong emotional undercurrents. You’ll be dramatically more efficient once you learn to figure out what those are.
 
-# Tiebreaking and conflict
+## Tiebreaking and conflict
 
 1. Don’t judge too quickly; you’re right less often than you think. Even if you’re sure you’re right in any given case, wait until everyone’s opinion is heard.
 2. Once everyone is heard, summarize all points of view so clearly that people say “Thanks, I wish I’d thought of putting it that way.” List any points of agreement with each view, and state what you’ve learned from everyone. Then make your decision.
@@ -60,7 +59,7 @@ Welcome to engineering management. It’s fun, it’s exhausting, it’s rewardi
 6. Most conflict happens because people don’t feel heard. Sit down with each person and ask them how they feel. Listen carefully. Then ask again. And again. Then summarize what they said back to them. Most of the time that will solve the problem.
 7. If the conflict persists after you’ve gone to reasonable lengths to hear everyone out and fix problems, it’s time for a difficult conversation.
 
-# Difficult conversations
+## Difficult conversations
 
 1. Have difficult conversations as soon as possible. Waiting will only make a bad situation worse.
 2. Never assume or jump to conclusions. Never demonize people in your mind. Never blame, yell or vilify.
@@ -68,7 +67,7 @@ Welcome to engineering management. It’s fun, it’s exhausting, it’s rewardi
 4. Have the courage to state how you feel and what you need. People are drawn to each other’s vulnerability but repelled by their own. Vulnerability isn’t weakness.
 5. Expect people to extend you the same courtesy. If someone makes you feel bad for stating your needs and feelings, it tells you more about them than about yourself.
 
-# Rough edge
+## Rough edge
 
 1. People will push and prod to discover your boundaries. Knowing when to stand back and when to stand firm is half the battle.
 2. Occasionally someone will push too far. When they do, you have to show a rough edge or you’ll lose authority with your team.
@@ -78,7 +77,3 @@ Welcome to engineering management. It’s fun, it’s exhausting, it’s rewardi
 6. Unless you’re a sociopath, firing people is so hard you’ll invent excuses not to do it. If you’re consistently wondering if someone’s a good fit for too long, have the courage to do what you know is right.
 7. Don’t let people pressure you into decisions you don’t believe in. They’ll hold *you* responsible for them later, and they’ll be right. Decisions are your responsibility.
 8. Believe in yourself. You can’t lead a cavalry charge if you think you look funny on a horse.
-
-
----
-Note: I'm not sure who the original author of this article is. If you know, please let me know so I can give proper credit. I discovered a link to the article here, but the website itself is suspicious: https://www.defmacro.org/2014/10/03/engman.html

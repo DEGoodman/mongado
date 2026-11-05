@@ -1,87 +1,66 @@
 ---
 id: 9
 title: "Multi-LLM Integration: Choosing the Right Model for Each Task"
-summary: "Why Mongado uses 3 specialized Ollama models instead of one general-purpose model. Covers embeddings, chat/Q&A, and structured output with real performance data and lessons learned building AI features."
-description: "Why Mongado uses 3 specialized Ollama models instead of one general-purpose model, and what we learned building AI features for a knowledge base."
+summary: "Why Mongado's AI features used three small Ollama models (embeddings, chat, structured JSON) instead of one, what broke with a single model, and how splitting by task made the later move to hosted APIs a config change."
+description: "Why Mongado used three specialized models instead of one, and what that bought when production moved to hosted APIs."
 tags: ["ai", "llm", "architecture", "ollama"]
 draft: false
 published_date: "2025-10-25T00:00:00"
-updated_date: "2025-10-25T00:00:00"
+updated_date: "2026-11-04T00:00:00"
 created_at: "2025-10-25T00:00:00"
 ---
 
+> **Update (July 2026):** Production now uses hosted APIs instead of Ollama: Groq for generation with Gemini as fallback, and Gemini for embeddings ([#190](https://github.com/DEGoodman/mongado/issues/190)). Ollama is still the local dev default. The task split described here is what made that switch a config change. See [the postscript](#postscript-hosted-apis).
+
 ## Intro
 
-Building AI features with local LLMs isn't about picking one model for everything. Different tasks need different models.
+Mongado's knowledge base has three kinds of AI work: semantic search, Q&A over articles and notes, and suggestions (tags, related notes) returned as JSON. I started with one small model for all of it. Chat was fine; the JSON was unusable.
 
-This article documents the multi-LLM strategy I built for Mongado's knowledge base: what models I chose, why, and what I learned building AI-powered tag suggestions, semantic search, and link recommendations.
+Each task has its own model now. The rule I settled on: **use the smallest model that does the task reliably, and pick it per task.**
 
-**Key insight:** Use the smallest, fastest model that does the job well. Specialized models beat general-purpose models.
+## Definitions
 
-## The Multi-Model Architecture
+- **Embedding model**: turns text into a vector for similarity search. Doesn't generate text.
+- **Chat model**: generates free-form answers from a prompt and retrieved context.
+- **Structured output**: generation that must parse, here a JSON array of suggestions.
 
-I'm using three Ollama models, each optimized for specific tasks:
+## The Three Models
 
-| Task | Model | Size | Why This Model |
-|------|-------|------|----------------|
-| **Embeddings** | `nomic-embed-text` | 274 MB | Fast, high-quality semantic vectors |
-| **Chat/Q&A** | `llama3.2:1b` | 1.3 GB | Good reasoning, handles long context |
-| **Structured Output** | `qwen2.5:1.5b` | 986 MB | Reliable JSON instruction-following |
+| Task | Model | Size | Why |
+|------|-------|------|-----|
+| Embeddings | `nomic-embed-text` | 274 MB | 768 dimensions, built for retrieval |
+| Chat / Q&A | `llama3.2:1b` | 1.3 GB | Readable answers, fits in memory |
+| Structured output | `qwen2.5:1.5b` | 986 MB | Returns valid JSON consistently |
 
-Total disk space: ~2.5 GB. All running locally on Ollama.
-
-## Model Selection by Task
+~2.5 GB on disk. On the 4GB production droplet, only one model fit in memory at a time (see [Self-Hosted LLM Optimization](/knowledge-base/articles/6)).
 
 ### Embeddings: `nomic-embed-text`
 
-**Use case:** Generate semantic vectors for search and similarity matching.
-
-**Why this model:**
-- 768-dimensional embeddings (good balance of quality and storage)
-- Fast generation (~3-5s for typical note)
-- Optimized specifically for semantic search
-
-**Alternatives considered:**
-- `all-minilm:384` - Faster but lower quality
-- `mxbai-embed-large:1024` - Higher quality but 3x slower, larger embeddings
-
-**Decision:** nomic-embed-text hits the sweet spot for a knowledge base of <1000 documents.
+The middle option on speed and quality. `all-minilm` (384 dims) is faster but noticeably worse at matching. `mxbai-embed-large` (1024 dims) is better but about 3x slower. For a corpus under 1,000 documents, nomic was enough.
 
 ### Chat: `llama3.2:1b`
 
-**Use case:** Answer questions using knowledge base context.
+`llama3.2:3b` gave better answers but was about 3x slower, and on CPU the 1b model already took 40+ seconds per answer. Quality was acceptable for Q&A grounded in retrieved context, where the model mostly summarizes what it's given.
 
-**Why this model:**
-- Good reasoning capabilities for Q&A
-- Wide context window (handles long articles)
-- Fast enough for interactive chat while maintaining quality
+### Structured output: `qwen2.5:1.5b`
 
-**Alternatives I considered:**
-- `llama3.2:3b` - Better quality but 3x slower
-- `qwen2.5:1.5b` - Fast but less natural conversational ability
+This is where one model stopped working.
 
-**Decision:** The 1b model provides sufficient quality for Q&A while keeping response times under 10 seconds.
+Prompt:
 
-### Structured Output: `qwen2.5:1.5b`
+```
+Suggest tags for this note. Return JSON: [{"tag": "...", "confidence": 0-1, "reason": "..."}]
+```
 
-**Use case:** Generate JSON responses for tag suggestions, link recommendations, and concept extraction.
+`llama3.2:1b` returned separate objects, one per line, not an array, and the format varied between requests:
 
-**The problem I hit:** I initially tried using llama3.2:1b for everything, including structured output. Chat worked great. JSON was a mess.
-
-**Example failure with llama3.2:1b:**
-
-Prompt: `Suggest tags for this note. Return JSON: [{"tag": "...", "confidence": 0-1, "reason": "..."}]`
-
-Response (broken):
 ```
 {"tag": "culture", "confidence": 0.8, "reason": "..."}
 {"tag": "teams", "confidence": 0.7, "reason": "..."}
 ```
-Multiple separate JSON objects instead of an array. Inconsistent formatting across requests.
 
-**Solution: Switch to qwen2.5:1.5b**
+`qwen2.5:1.5b`, same prompt:
 
-Same prompt, consistent response:
 ```json
 [
   {"tag": "culture", "confidence": 0.8, "reason": "Discusses team culture"},
@@ -89,331 +68,85 @@ Same prompt, consistent response:
 ]
 ```
 
-**Decision:** qwen2.5 is purpose-built for instruction-following and structured output. The extra 500 MB is worth reliable JSON.
+500 MB more disk for JSON that parses was an easy trade.
 
 ## Implementation Patterns
 
-### Pattern 1: Separate Client Calls
+### 1. One call path per task
 
-Don't create one "call LLM" function. Each task has different needs:
+Don't build a single `call_llm()`. The tasks need different settings:
 
-```python
-# Embeddings (cached, batch-friendly)
-ollama_client.generate_embedding(text, use_cache=True)
+- **Embeddings**: cached by content hash, batched during sync
+- **Chat**: streamed, so the user sees tokens as they arrive
+- **Structured**: not streamed, since you need the full response before parsing
 
-# Chat (streaming for better UX)
-ollama_client.client.generate(
-    model="llama3.2:1b",
-    prompt=chat_prompt,
-    stream=True  # Stream tokens as they're generated
-)
+### 2. Parse defensively
 
-# Structured output (non-streaming, need complete response to parse)
-ollama_client.client.generate(
-    model="qwen2.5:1.5b",
-    prompt=json_prompt,
-    stream=False
-)
-```
-
-### Pattern 2: Defensive JSON Parsing
-
-Even with qwen2.5, handle edge cases. The model occasionally wraps JSON in markdown code blocks or returns slightly malformed output:
+Even qwen sometimes wraps JSON in a markdown code fence or returns a single object instead of an array.
 
 ```python
-# Strip markdown wrappers
-response = response.strip()
-if response.startswith("```json"):
-    response = response[7:]
-if response.startswith("```"):
-    response = response[3:]
-if response.endswith("```"):
-    response = response[:-3]
-
-# Try array parse first
-try:
-    data = json.loads(response)
-    if isinstance(data, dict):
-        data = [data]  # Single object -> array
-except json.JSONDecodeError:
-    # Fallback: parse line-by-line for multiple objects
-    data = []
-    for line in response.split('\n'):
-        if line.strip().startswith('{'):
+def parse_suggestions(raw: str) -> list[dict[str, Any]]:
+    text = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```")
+    try:
+        data = json.loads(text)
+        return data if isinstance(data, list) else [data]
+    except json.JSONDecodeError:
+        pass
+    # Fallback: one JSON object per line
+    items = []
+    for line in text.splitlines():
+        if line.strip().startswith("{"):
             try:
-                data.append(json.loads(line))
-            except:
+                items.append(json.loads(line))
+            except json.JSONDecodeError:
                 continue
+    return items
 ```
 
-This handles markdown wrapping, single objects vs arrays, line-separated objects, and gracefully degrades on malformed responses.
+Log every fallback. A parser that quietly returns `[]` makes a broken model look like a model with no suggestions.
 
-### Pattern 3: Model-Specific Prompts
+### 3. Different prompts per model
 
-Don't reuse prompts across models. Each has different strengths:
+The structured model got terse prompts that end with the expected format and `JSON:`. The chat model got a role, the retrieved context, then the question. A prompt tuned for one model doesn't transfer well to another.
 
-**qwen2.5 (structured output):** Terse, example-heavy
-```
-Suggest 2-4 tags. Return JSON: [{"tag": "...", "confidence": 0-1, "reason": "..."}]
+### 4. Degrade in tiers
 
-JSON:
-```
+Search tries the cheapest path that works:
 
-**llama3.2 (conversational):** Natural language framing
-```
-You are a helpful assistant with expertise in software engineering.
+1. Stored embeddings: embed only the query (5–10s on CPU)
+2. If the stored embeddings are missing: embed on demand (15–30s)
+3. If the model is down: plain text search (<100ms)
 
-Based on these articles: [...]
+Every AI endpoint returns an empty result, not an error, when the model is unavailable. The site works without AI; it just has fewer suggestions.
 
-Answer this question: [...]
-```
+### 5. Rate-limit every AI endpoint
 
-Notice qwen gets straight to the point with clear examples, while llama gets conversational context.
+On CPU, a single generation request held the machine for a minute or more, so a handful of repeated requests could take the site down. Every AI endpoint gets its own per-client rate limit (e.g. 20/minute for Q&A, 5/minute for multi-document synthesis), and the editor tools require an authenticated session.
 
-### Pattern 4: Hybrid Search Strategy
+## Pitfalls
 
-**Problem:** Embedding generation is expensive. Need fast search even when embeddings aren't available.
+- **Assuming "general-purpose" covers structured output.** Test the exact format you need. Small chat models are especially bad at it.
+- **Undocumented model dependencies.** My first production deploy failed because `qwen2.5:1.5b` wasn't pulled. List every required model and check for them at startup.
+- **Adding a model when a prompt fix would do.** A new model costs memory and a deploy step. Try the prompt first.
 
-**Solution:** Multi-tier search with graceful fallback.
+## Postscript: Hosted APIs
 
-```python
-# Fast path: Use precomputed embeddings from Neo4j
-try:
-    results = await semantic_search_with_precomputed_embeddings(query)
-    if results:
-        return results  # 5-10s response time
-except Exception:
-    pass  # Neo4j unavailable
+In mid-2026, production generation moved to Groq (primary) and Gemini (fallback), and embeddings to Gemini, behind an OpenAI-compatible provider interface. Ollama stays as the local dev default.
 
-# Fallback path: Generate embeddings on-demand
-try:
-    results = await semantic_search(query)
-    return results  # 15-30s response time
-except Exception:
-    pass  # Ollama unavailable
+Because each task already had its own call path and model setting, the move was mostly configuration:
 
-# Final fallback: Text search (no AI)
-return fuzzy_text_search(query)  # <100ms response time
-```
+- **Embeddings** switched to `gemini-embedding-001`. Each stored embedding records its model, so the next sync knew to re-embed everything.
+- **Chat and structured output** now share one larger hosted model. The JSON reliability problem largely went away at that size, but the defensive parser stayed.
+- **Groq's model changed under us** when `llama-3.1-8b-instant` was decommissioned ([#304](https://github.com/DEGoodman/mongado/issues/304)). One setting changed.
 
-**Performance impact:**
-- Neo4j path: 5-10 seconds (only query embedding needed)
-- On-demand path: 15-30 seconds (full corpus embedding)
-- Text fallback: instant
-
-**Why this works:**
-- Gracefully handles Neo4j unavailability without breaking features
-- Maintains good UX even during database restarts
-- Text search provides immediate results when AI unavailable
-- Each tier independently optimized
-
-## Production Safeguards
-
-### AI Kill Switch for Anonymous Users
-
-**Problem:** AI features use compute resources. Need control over who can access them.
-
-**Solution:** Unauthenticated users see AI features but with safeguards:
-- Tag/link suggestions visible but gated
-- Requires authentication to use
-- Prevents abuse while showcasing capabilities
-
-**Implementation:** Backend checks session authentication before processing AI requests.
-
-```python
-# Backend enforcement
-if not is_authenticated(request):
-    raise HTTPException(
-        status_code=401,
-        detail="Authentication required for AI features"
-    )
-```
-
-**Why this matters:**
-- AI operations are expensive (60-120s on CPU)
-- Prevent denial-of-service via repeated AI requests
-- Demonstrate features to visitors without giving full access
-- Clear upgrade path: anonymous → authenticated for AI features
-
-### Cold Start Optimization
-
-**Warmup endpoint:** `POST /api/ollama/warmup`
-- Pre-loads llama3.2:1b model into memory
-- Takes 15-20 seconds (one-time cost)
-- Subsequent requests skip model loading phase
-- Reduces first-request latency from 60s+ to 2-5s
-
-**When to use:** After deployment or Ollama restart.
-
-**How it works:**
-```python
-# Frontend pre-warms when entering edit mode
-if isEditing and settings.aiMode !== "off":
-    await fetch(`${API_URL}/api/ollama/warmup`, { method: "POST" })
-```
-
-**Production pattern:**
-- User enters edit mode → warmup triggers in background
-- By the time they click "Get AI Suggestions," model is ready
-- Eliminates frustrating wait on first AI request
-
-## Deployment Considerations
-
-### Model Installation
-
-**Development:**
-```bash
-docker compose up  # Auto-pulls nomic-embed-text and llama3.2:1b
-```
-
-**Production:**
-qwen2.5:1.5b requires manual pull (~1 GB download, don't want to block startup):
-```bash
-docker compose exec ollama ollama pull qwen2.5:1.5b
-```
-
-### Graceful Degradation
-
-All AI features return empty/fallback responses if Ollama is unavailable:
-
-```python
-if not ollama.is_available():
-    logger.warning("Ollama unavailable, returning empty suggestions")
-    return TagSuggestionsResponse(suggestions=[], count=0)
-```
-
-This means core features work without AI, Ollama can restart without breaking the app, and good developer experience (don't need Ollama running for all work).
-
-### Performance Characteristics
-
-From production monitoring:
-
-**GPU-accelerated (optimal):**
-
-| Task | Model | Avg Time | P95 Time |
-|------|-------|----------|----------|
-| Generate embedding | nomic-embed-text | 2-5s | 8s |
-| Answer question | llama3.2:1b | 2-5s | 10s |
-| Suggest tags | qwen2.5:1.5b | 2-5s | 8s |
-
-**CPU-only (Docker default):**
-
-| Task | Model | Avg Time | P95 Time |
-|------|-------|----------|----------|
-| Generate embedding | nomic-embed-text | 30-60s | 90s |
-| Answer question | llama3.2:1b | 60-120s | 180s |
-| Suggest tags | qwen2.5:1.5b | 60-120s | 180s |
-
-**Key insights:**
-- GPU provides 10-30x speedup
-- Docker deployments default to CPU-only unless configured with GPU passthrough
-- CPU-only is usable but requires patience and aggressive caching
-- Embeddings cached in Neo4j, so repeated searches remain fast even on CPU
-
-## Lessons Learned
-
-### 1. Don't Assume General-Purpose Works
-
-I started with llama3.2:1b for everything. Chat worked great. JSON was a mess.
-
-Lesson: Test your specific use case. "General-purpose" doesn't mean "good at everything."
-
-### 2. Smaller Models Often Suffice
-
-qwen2.5:1.5b beats larger models at JSON tasks. llama3.2:1b handles Q&A well enough for my needs.
-
-Lesson: Start with the smallest viable model. Upgrade only when quality isn't good enough.
-
-### 3. JSON Parsing Must Be Robust
-
-Even qwen2.5 occasionally wraps JSON in markdown or returns slightly malformed output.
-
-Lesson: Add defensive parsing. Log failures. Degrade gracefully. Don't assume perfect output.
-
-### 4. Document Model Requirements
-
-My initial production deploy failed because qwen2.5:1.5b wasn't pulled. Lost time debugging.
-
-Lesson: README must list all required models. Consider startup health checks.
-
-### 5. Separate Models = Flexibility
-
-Using 3 models seems complex but enables independent optimization:
-- Swap embedding model without touching chat
-- Upgrade chat model without breaking tag suggestions
-- Test new models on one task at a time
-
-Lesson: Loose coupling between AI tasks pays off long-term.
-
-## When to Add More Models
-
-**Add a model when:**
-- Existing model can't handle task well (we added qwen for JSON)
-- Performance bottleneck on specific task (could add faster embedding model)
-- New capability needed (image analysis, code generation)
-
-**Don't add a model when:**
-- Existing model "mostly works" (improve prompts first)
-- Trying to optimize prematurely (measure first)
-- Following trends (use what solves your problem)
-
-My current setup (3 models) handles semantic search, Q&A, tag suggestions, link recommendations, and concept extraction. That covers all planned AI features for now.
-
-## Future Considerations
-
-### Potential Additions
-
-**Specialized code model:**
-- Use case: Extract code examples from articles, suggest related repos
-- Candidate: `codellama:7b` or `deepseek-coder:1.3b`
-- When: If I add code-heavy content
-
-**Larger reasoning model:**
-- Use case: Complex multi-step analysis, clustering notes
-- Candidate: `llama3.2:3b` or `qwen2.5:7b`
-- When: If Q&A quality drops (haven't hit this yet, but keeping an eye on it)
-
-**Multimodal model:**
-- Use case: Analyze diagrams in articles
-- Candidate: `llava:7b`
-- When: If I start adding visual content (would be cool for architecture diagrams)
-
-### Model Versioning Strategy
-
-Track which model version generated each embedding/output:
-```python
-{
-  "embedding": [...],
-  "model": "nomic-embed-text",
-  "model_version": "v1.5"
-}
-```
-
-This enables detecting drift when models update, selective re-generation after upgrades, and A/B testing model changes. Not implemented yet but planned before scaling to 10k+ notes.
+Hosted APIs fail differently from local models. Instead of crashes from running out of memory, you get rate limits, payload-size rejections, and failures that look like empty answers ([#260](https://github.com/DEGoodman/mongado/issues/260), [#279](https://github.com/DEGoodman/mongado/issues/279)). Tiered degradation and loud logging mattered more after the move, not less.
 
 ## Conclusion
 
-The multi-LLM approach isn't over-engineering—it's about picking the right tool for each job:
-
-- **nomic-embed-text:** Fast, high-quality embeddings (274 MB)
-- **llama3.2:1b:** Natural chat and Q&A (1.3 GB)
-- **qwen2.5:1.5b:** Reliable structured output (986 MB)
-
-Total cost: 2.5 GB disk, all running locally on Ollama.
-
-Key principles:
-1. Specialize models by task
-2. Start with smallest viable model
-3. Add defensive parsing for structured output
-4. Gracefully degrade when models unavailable
-5. Document requirements clearly
-
-This foundation supports current features and scales to planned additions like real-time suggestions and graph analysis.
-
----
+Pick a model per task, start with the smallest one that works, and assume structured output will sometimes come back malformed. Keeping the tasks separate is what made the move from local models to hosted APIs mostly a config change.
 
 ## References
 
-- [LLM Performance Optimization](./006-llm-performance-optimization.md) - Caching strategies
-- [Ollama Model Library](https://ollama.ai/library) - Model specs
-- [Qwen2.5 announcement](https://qwenlm.github.io/blog/qwen2.5/) - Structured output excellence
+- [Self-Hosted LLM Optimization](/knowledge-base/articles/6): caching and memory tuning for the same setup
+- [Ollama model library](https://ollama.com/library)
+- [`docs/AI_OPTIMIZATION.md`](https://github.com/DEGoodman/mongado/blob/main/docs/AI_OPTIMIZATION.md): the hosted-API decision

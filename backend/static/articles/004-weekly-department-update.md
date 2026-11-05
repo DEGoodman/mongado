@@ -1,59 +1,73 @@
 ---
 id: 4
 title: "Weekly Department Update Template"
-summary: "A structured template for weekly department updates covering project progress, challenges, next steps, team metrics, and cross-department coordination. Ensures consistent communication across engineering teams."
+summary: "A short weekly update template for engineering departments: headline, per-project status, risks, asks, and metrics. Built to be skimmed in two minutes and written in fifteen."
 url: ""
 tags: ["operations"]
 draft: false
 published_date: "2025-10-14T10:00:00"
 created_at: "2025-10-14T10:00:00"
+updated_date: "2026-11-04T00:00:00"
 ---
 
-**Introduction:**
+## Intro
 
-<high-level update>
+A weekly update keeps leadership, peers, and your own teams on the same page without a status meeting. Most updates fail by being long: readers skim, miss the one thing that needed their attention, and stop opening them.
 
-**Team A Updates:**
+This template puts the decisions and risks first and everything else after.
 
-**Project 1 - [Project Name]**:
+## Template
 
-- **Progress**: Provide a brief overview of the project's progress during the past week, including any milestones achieved.
-- **Challenges**: Mention any obstacles or challenges the team encountered and their plans to address them.
-- **Next Steps**: Outline the immediate priorities and goals for the upcoming week.
+```markdown
+# Engineering Update: Week of <date>
 
-**Project 2 - [Project Name]**:
+## TL;DR
+<2–3 sentences. What changed this week, and anything the reader needs to act on.>
 
-- **Progress**: Share updates on Project 2, highlighting key achievements and progress made.
-- **Challenges**: Discuss any issues or challenges the team faced and their strategies for mitigation.
-- **Next Steps**: Specify the team's next steps and objectives for Project 2 in the coming week.
+## Asks
+- <Decision or help needed> — from <person/team>, by <date>
+- (or "None this week")
 
-**Project 3 - [Project Name]**:
+## Projects
 
-- **Progress**: Provide a summary of Project 3's developments and accomplishments from the past week.
-- **Challenges**: Mention any notable challenges and the team's plans to overcome them.
-- **Next Steps**: Detail the team's planned actions and objectives for Project 3 in the upcoming week.
+| Project | Status | Change since last week | Next milestone |
+|---------|--------|------------------------|----------------|
+| <name>  | 🟢 / 🟡 / 🔴 | <one line> | <milestone> — <date> |
 
-**Team B Updates:**
+### <Project needing explanation (🟡 or 🔴 only)>
+- **What happened:** <one or two lines>
+- **Impact:** <dates, scope, customers>
+- **Plan:** <what we're doing, owner>
 
-(Repeat the same format as above for Team B's three projects: Progress, Challenges, and Next Steps)
+## Risks
+- <Risk> — likelihood <low/med/high>, impact <low/med/high>, mitigation <...>
 
-**Overall Departmental Highlights:**
+## Metrics
+| Metric | This week | Last week | Target |
+|--------|-----------|-----------|--------|
+| Deploys / day | | | |
+| Lead time (commit → prod) | | | |
+| Change fail rate | | | |
+| Open incidents (Sev 1–2) | | | |
 
-- **Collaborative Efforts**: Describe any cross-team collaborations or synergy that occurred during the week.
-- **Resource Allocation**: Briefly mention any resource allocation adjustments, if necessary, to support project progress.
-- **KPIs and Metrics**: Share relevant key performance indicators (KPIs) and metrics, providing insights into the department's overall performance.
+## People & Coordination
+- <Hires, departures, on-call changes, cross-team dependencies>
 
-**Upcoming Milestones and Events:**
+## Coming Up
+- <Milestones, launches, or meetings next week that affect other teams>
+```
 
-- Highlight any important milestones, meetings, or events in the coming week that may impact the department's work.
+## Guidelines
 
-**Questions and Feedback:**
-We value your input and feedback. Please feel free to reach out with any questions, concerns, or suggestions related to our department's operations or projects.
+- **Lead with asks.** If you need a decision, put it in the second section with a name and a date. Asks buried at the bottom don't get answered.
+- **Explain only 🟡 and 🔴.** Green projects get one line in the table. Readers trust the color if it's used honestly.
+- **Report changes, not activity.** "Shipped payment retries; failed checkouts down from 2.1% to 0.4%" beats "Worked on payments."
+- **Keep the metrics fixed.** Track the same 3–5 every week so trends are visible. The [delivery metrics](/knowledge-base/articles/5) are a good default.
+- **Keep it short.** If it takes more than two minutes to read, cut it. Link to detail instead of pasting it in.
+- **Send it at the same time every week.** Readers start to rely on it, and a late update gets noticed.
 
-**Conclusion:**
-Thank you for your continued support and interest in our department's work. We remain committed to delivering results and look forward to another productive week ahead.
+## Pitfalls
 
-Best regards,
-[Your Name]
-[Your Title]
-[Your Contact Information]
+- **Everything is green.** If nothing is ever yellow, readers stop believing the colors. Mark a project yellow as soon as it's at risk.
+- **Copy-paste drift.** Last week's text carried forward unchanged. If a line didn't change, delete it.
+- **Writing for your own team.** They already know the details. Write for someone two levels up or one team over.
