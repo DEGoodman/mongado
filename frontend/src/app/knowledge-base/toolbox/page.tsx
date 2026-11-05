@@ -8,6 +8,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import PageHeader from "@/components/PageHeader";
 import { LoadingState, ErrorState } from "@/components/PageState";
 import styles from "./page.module.scss";
+import { markdownToPlainPreview } from "@/lib/markdownPreview";
 
 type CategoryFilter = "all" | string;
 
@@ -269,7 +270,9 @@ export default function ToolboxPage() {
                           {ref.title && <h3 className={styles.cardTitle}>{ref.title}</h3>}
 
                           {/* Content preview */}
-                          <p className={styles.cardPreview}>{ref.content_preview || ref.content}</p>
+                          <p className={styles.cardPreview}>
+                            {markdownToPlainPreview(ref.content_preview || ref.content, 200)}
+                          </p>
 
                           {/* Tags (skip first tag as it's the category) */}
                           {ref.tags.length > 1 && (

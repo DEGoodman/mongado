@@ -10,6 +10,9 @@ from unittest.mock import MagicMock
 os.environ["TESTING"] = "1"
 # Enable LLM features in tests so AI endpoints are registered
 os.environ["LLM_FEATURES_ENABLED"] = "true"
+# Keep the suite hermetic: the dev container sets ALLOW_TOKEN_AUTH=true
+# (#291 local bypass), which would make static-token tests pass/fail by host.
+os.environ["ALLOW_TOKEN_AUTH"] = "false"
 
 import pytest
 from fastapi.testclient import TestClient

@@ -89,7 +89,7 @@ export default function LoginPage() {
         <header className={styles.header}>
           <div className={styles.headerContent}>
             <button onClick={() => router.back()} className={styles.backButton}>
-              ← Back
+              ←&nbsp;Back
             </button>
             <h1 className={styles.title}>Admin Login</h1>
             <p className={styles.subtitle}>Sign in to create and edit persistent notes</p>

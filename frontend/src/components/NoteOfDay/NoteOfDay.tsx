@@ -13,6 +13,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "./NoteOfDay.module.scss";
+import { markdownToPlainPreview } from "@/lib/markdownPreview";
 
 interface Note {
   id: string;
@@ -67,7 +68,7 @@ export default function NoteOfDay() {
   }
 
   const { note } = data;
-  const previewContent = note.content.slice(0, 150) + (note.content.length > 150 ? "..." : "");
+  const previewContent = markdownToPlainPreview(note.content, 150);
 
   return (
     <div className={styles.noteOfDay}>

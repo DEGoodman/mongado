@@ -144,7 +144,7 @@ export default function ArticleView({ article }: { article: Article }) {
 
             {/* Back to articles */}
             <Link href="/knowledge-base/articles" className={styles.backLink}>
-              ← Back to all articles
+              ←&nbsp;Back to all articles
             </Link>
           </div>
 

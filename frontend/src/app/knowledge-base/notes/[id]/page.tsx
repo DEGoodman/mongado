@@ -315,7 +315,7 @@ function NoteDetailContent() {
           message={error}
           width="wide"
           backHref="/knowledge-base/notes"
-          backLabel="← Back to notes"
+          backLabel={"←\u00a0Back to notes"}
         />
       </div>
     );

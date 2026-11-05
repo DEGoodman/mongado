@@ -205,7 +205,7 @@ function NewNoteContent() {
           <div className={styles.headerTop}>
             <div className={styles.breadcrumbs}>
               <Link href="/knowledge-base" className={styles.breadcrumbLink}>
-                ← Knowledge Base
+                ←&nbsp;Knowledge Base
               </Link>
               <Link href="/knowledge-base/notes" className={styles.breadcrumbLink}>
                 All notes

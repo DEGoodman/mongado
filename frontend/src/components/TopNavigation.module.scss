@@ -117,8 +117,11 @@
   color: $color-text-tertiary;
 }
 
+// Tablet and below: Capture/Search collapse to icon-only buttons (each keeps
+// its aria-label). With labels + kbd hints, the authenticated right cluster
+// is ~340px and pushed the nav 120px past the viewport at 820px wide.
 .searchLabel {
-  @media (max-width: 640px) {
+  @media (max-width: 1023px) {
     display: none;
   }
 }
@@ -132,7 +135,7 @@
   color: $neutral-600;
   font-family: var(--font-space-mono);
 
-  @media (max-width: 768px) {
+  @media (max-width: 1023px) {
     display: none;
   }
 }

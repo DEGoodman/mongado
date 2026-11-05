@@ -186,6 +186,7 @@
 
   .showMoreButton {
     margin-top: $spacing-3;
+    min-height: 2.75rem; // 44px touch target (was 24px on phones)
     @include text-secondary;
     color: $color-link-default;
     cursor: pointer;

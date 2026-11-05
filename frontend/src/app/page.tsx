@@ -79,7 +79,7 @@ export default function Home() {
                 <path d="M7 12.5v3.5M12 13.5v2.5M17 12.5v3.5M22 13.5v2.5M27 13.5v2.5M32 12.5v3.5M37 13.5v2.5" />
               </svg>
             </span>
-            © 2025 {siteConfig.author.name}
+            © {new Date().getFullYear()} {siteConfig.author.name}
           </p>
         </footer>
       </main>

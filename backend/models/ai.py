@@ -2,13 +2,14 @@
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class QuestionRequest(BaseModel):
     """Request model for Q&A."""
 
-    question: str
+    # Bounded: the question goes into a hosted-LLM prompt (cost + 413s, #279)
+    question: str = Field(min_length=1, max_length=2000)
 
 
 class QuestionResponse(BaseModel):
@@ -21,7 +22,7 @@ class QuestionResponse(BaseModel):
 class SynthesisRequest(BaseModel):
     """Request model for deep-synthesis (#166)."""
 
-    query: str
+    query: str = Field(min_length=1, max_length=1000)
 
 
 class SynthesisResponse(BaseModel):
@@ -36,9 +37,9 @@ class EditorAssistRequest(BaseModel):
     """Request model for editor slash commands (#146 Phase 1)."""
 
     command: str  # one of core.ai.EDITOR_COMMANDS
-    text: str
-    note_title: str | None = None
-    note_content: str | None = None
+    text: str = Field(max_length=20_000)
+    note_title: str | None = Field(default=None, max_length=500)
+    note_content: str | None = Field(default=None, max_length=200_000)
     note_id: str | None = None  # omitted for a note being created and not yet saved
 
 

@@ -10,7 +10,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
-from auth import verify_admin_optional
+from auth import require_scope, verify_admin_optional
 from dependencies import get_all_static_articles, get_notes, get_ollama, get_static_articles
 from models import (
     ArticleMetadata,
@@ -36,6 +36,9 @@ NotesDep = Annotated[Any, Depends(get_notes)]
 # verify_admin_optional never raises - it reports auth state so anonymous
 # callers still get a 200 (published-only) response instead of a 401.
 AdminOptionalDep = Annotated[dict[str, Any], Depends(verify_admin_optional)]
+# LLM-backed endpoints spend hosted-API quota; anonymous callers must not be
+# able to trigger generation (no frontend caller uses these).
+AiUser = Annotated[dict[str, Any], Depends(require_scope("ai:use"))]
 
 
 def _drafts_visible(auth: dict[str, Any]) -> bool:
@@ -112,7 +115,11 @@ def get_article(
 
 @router.get("/{article_id}/summary", response_model=SummaryResponse)
 def get_article_summary(
-    article_id: int, static_articles: ArticlesDep, ollama: OllamaDep, refresh: bool = False
+    article_id: int,
+    static_articles: ArticlesDep,
+    ollama: OllamaDep,
+    _ai_user: AiUser,
+    refresh: bool = False,
 ) -> SummaryResponse:
     """Get AI summary of an article (returns cached if available).
 
@@ -250,7 +257,7 @@ def get_related_notes(
 
 @router.post("/{article_id}/extract-concepts", response_model=ConceptExtractionResponse)
 def extract_article_concepts(
-    article_id: int, static_articles: ArticlesDep, ollama: OllamaDep
+    article_id: int, static_articles: ArticlesDep, ollama: OllamaDep, _ai_user: AiUser
 ) -> ConceptExtractionResponse:
     """Extract key concepts from an article that could become Zettelkasten notes.
 
@@ -387,7 +394,7 @@ JSON:"""
 
 @router.post("/extract-all-concepts", response_model=BatchConceptExtractionResponse)
 def extract_all_article_concepts(
-    static_articles: ArticlesDep, ollama: OllamaDep
+    static_articles: ArticlesDep, ollama: OllamaDep, _ai_user: AiUser
 ) -> BatchConceptExtractionResponse:
     """Extract and deduplicate concepts from all articles.
 
@@ -418,7 +425,7 @@ def extract_all_article_concepts(
         article_title = article.get("title", "Untitled")
 
         # Extract concepts for this article (calls the endpoint function directly)
-        result = extract_article_concepts(article_id, static_articles, ollama)
+        result = extract_article_concepts(article_id, static_articles, ollama, _ai_user)
 
         # Aggregate concepts
         for concept_obj in result.concepts:

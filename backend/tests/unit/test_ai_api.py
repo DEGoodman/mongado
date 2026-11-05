@@ -292,7 +292,9 @@ class TestArticleSummary:
     """Tests for GET /api/articles/{article_id}/summary endpoint."""
 
     @slow
-    def test_article_summary_valid_response(self, client: TestClient) -> None:
+    def test_article_summary_valid_response(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Article summary returns valid response for existing article."""
         # Get first article ID
         articles_response = client.get("/api/articles")
@@ -304,7 +306,7 @@ class TestArticleSummary:
             pytest.skip("No articles available for testing")
 
         article_id = articles[0]["id"]
-        response = client.get(f"/api/articles/{article_id}/summary")
+        response = client.get(f"/api/articles/{article_id}/summary", headers=admin_headers)
 
         # Either success or 503 if Ollama unavailable
         assert response.status_code in [200, 503]
@@ -315,9 +317,16 @@ class TestArticleSummary:
             assert isinstance(data["summary"], str)
             assert len(data["summary"]) > 0
 
-    def test_article_summary_not_found(self, client: TestClient) -> None:
+    def test_article_summary_requires_auth(self, client: TestClient) -> None:
+        """Anonymous callers can't trigger LLM generation (spends hosted-API quota)."""
+        response = client.get("/api/articles/1/summary")
+        assert response.status_code == 401
+
+    def test_article_summary_not_found(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Article summary returns 404 for non-existent article (or 503 if Ollama unavailable)."""
-        response = client.get("/api/articles/99999/summary")
+        response = client.get("/api/articles/99999/summary", headers=admin_headers)
         # 404 if Ollama available and article not found
         # 503 if Ollama unavailable (checked first in endpoint)
         assert response.status_code in [404, 503]
@@ -327,7 +336,9 @@ class TestExtractConcepts:
     """Tests for POST /api/articles/{article_id}/extract-concepts endpoint."""
 
     @slow
-    def test_extract_concepts_valid_response(self, client: TestClient) -> None:
+    def test_extract_concepts_valid_response(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Extract concepts returns valid response structure."""
         articles_response = client.get("/api/articles")
         if articles_response.status_code != 200:
@@ -338,7 +349,9 @@ class TestExtractConcepts:
             pytest.skip("No articles available for testing")
 
         article_id = articles[0]["id"]
-        response = client.post(f"/api/articles/{article_id}/extract-concepts")
+        response = client.post(
+            f"/api/articles/{article_id}/extract-concepts", headers=admin_headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -347,9 +360,20 @@ class TestExtractConcepts:
         assert isinstance(data["concepts"], list)
         assert isinstance(data["count"], int)
 
-    def test_extract_concepts_not_found(self, client: TestClient) -> None:
+    def test_extract_concepts_requires_auth(self, client: TestClient) -> None:
+        """Anonymous callers can't trigger concept extraction."""
+        assert client.post("/api/articles/1/extract-concepts").status_code == 401
+        assert client.post("/api/articles/extract-all-concepts").status_code == 401
+
+    def test_note_summary_requires_auth(self, client: TestClient) -> None:
+        """Anonymous callers can't trigger (or force-refresh) note summaries."""
+        assert client.get("/api/notes/any-note/summary?refresh=true").status_code == 401
+
+    def test_extract_concepts_not_found(
+        self, client: TestClient, admin_headers: dict[str, str]
+    ) -> None:
         """Extract concepts returns 404 for non-existent article (or empty if Ollama unavailable)."""
-        response = client.post("/api/articles/99999/extract-concepts")
+        response = client.post("/api/articles/99999/extract-concepts", headers=admin_headers)
         # 404 if Ollama available and article not found
         # 200 with empty concepts if Ollama unavailable (graceful degradation)
         assert response.status_code in [200, 404]
@@ -365,7 +389,8 @@ class _SynthesisLLM:
     def __init__(
         self,
         available: bool = True,
-        generate_response: str | None = "## Key Concepts\nStuff.\n\n## Your Positions\nMore.\n\n## Gaps & Open Questions\nUnknown.",
+        generate_response: str
+        | None = "## Key Concepts\nStuff.\n\n## Your Positions\nMore.\n\n## Gaps & Open Questions\nUnknown.",
         stream_tokens: list[str] | None = None,
     ) -> None:
         self._available = available
@@ -420,9 +445,7 @@ class _SynthesisNotesService:
 
 
 @contextmanager
-def _synthesis_client(
-    llm: Any, notes_service: Any | None = None
-) -> Generator[TestClient]:
+def _synthesis_client(llm: Any, notes_service: Any | None = None) -> Generator[TestClient]:
     app.dependency_overrides[get_llm] = lambda: llm
     app.dependency_overrides[get_notes] = lambda: notes_service or _SynthesisNotesService()
     app.dependency_overrides[get_neo4j] = lambda: _UnavailableNeo4j()
@@ -442,9 +465,7 @@ class TestSynthesize:
 
     def test_happy_path_returns_synthesis_and_sources(self) -> None:
         with _synthesis_client(_SynthesisLLM()) as client:
-            response = client.post(
-                "/api/synthesize", json={"query": "incident response"}
-            )
+            response = client.post("/api/synthesize", json={"query": "incident response"})
 
         assert response.status_code == 200
         data = response.json()
@@ -457,17 +478,13 @@ class TestSynthesize:
 
     def test_ai_unavailable_returns_503(self) -> None:
         with _synthesis_client(_SynthesisLLM(available=False)) as client:
-            response = client.post(
-                "/api/synthesize", json={"query": "incident response"}
-            )
+            response = client.post("/api/synthesize", json={"query": "incident response"})
 
         assert response.status_code == 503
 
     def test_empty_llm_response_is_degraded(self) -> None:
         with _synthesis_client(_SynthesisLLM(generate_response=None)) as client:
-            response = client.post(
-                "/api/synthesize", json={"query": "incident response"}
-            )
+            response = client.post("/api/synthesize", json={"query": "incident response"})
 
         assert response.status_code == 200
         data = response.json()
@@ -498,9 +515,7 @@ class TestSynthesizeStream:
         with _synthesis_client(
             _SynthesisLLM(stream_tokens=["## Key Concepts\n", "Some ", "text."])
         ) as client:
-            response = client.post(
-                "/api/synthesize/stream", json={"query": "incident response"}
-            )
+            response = client.post("/api/synthesize/stream", json={"query": "incident response"})
 
         assert response.status_code == 200
         events = self._events(response)
@@ -516,9 +531,7 @@ class TestSynthesizeStream:
 
     def test_stream_degrades_gracefully_when_ai_unavailable(self) -> None:
         with _synthesis_client(_SynthesisLLM(available=False)) as client:
-            response = client.post(
-                "/api/synthesize/stream", json={"query": "incident response"}
-            )
+            response = client.post("/api/synthesize/stream", json={"query": "incident response"})
 
         assert response.status_code == 200
         events = self._events(response)
@@ -526,9 +539,7 @@ class TestSynthesizeStream:
 
     def test_stream_emits_error_on_empty_generation(self) -> None:
         with _synthesis_client(_SynthesisLLM(stream_tokens=[])) as client:
-            response = client.post(
-                "/api/synthesize/stream", json={"query": "incident response"}
-            )
+            response = client.post("/api/synthesize/stream", json={"query": "incident response"})
 
         assert response.status_code == 200
         events = self._events(response)
@@ -550,9 +561,7 @@ class _EditorLLM:
     ) -> None:
         self._available = available
         self._generate_response = generate_response
-        self._stream_tokens = (
-            stream_tokens if stream_tokens is not None else ["Expanded ", "text."]
-        )
+        self._stream_tokens = stream_tokens if stream_tokens is not None else ["Expanded ", "text."]
         self._embeddings_available = embeddings_available
 
     def is_available(self) -> bool:
@@ -662,9 +671,7 @@ class TestEditorAssist:
 
     def test_unauthenticated_rejected(self) -> None:
         with _editor_client(_EditorLLM()) as client:
-            response = client.post(
-                "/api/editor/assist", json={"command": "expand", "text": "hi"}
-            )
+            response = client.post("/api/editor/assist", json={"command": "expand", "text": "hi"})
 
         assert response.status_code == 401
 
@@ -773,9 +780,7 @@ class TestEditorAssistStream:
         events = self._events(response)
         assert events[0]["type"] == "error"
 
-    def test_stream_emits_error_on_empty_generation(
-        self, admin_headers: dict[str, str]
-    ) -> None:
+    def test_stream_emits_error_on_empty_generation(self, admin_headers: dict[str, str]) -> None:
         with _editor_client(_EditorLLM(stream_tokens=[])) as client:
             response = client.post(
                 "/api/editor/assist/stream",
@@ -880,9 +885,7 @@ class TestEditorAssistWritingPartner:
 
     def test_unauthenticated_rejected(self) -> None:
         with _editor_client(_EditorLLM(), notes_service=_PartnerNotesService()) as client:
-            response = client.post(
-                "/api/editor/assist", json={"command": "gaps", "text": "hi"}
-            )
+            response = client.post("/api/editor/assist", json={"command": "gaps", "text": "hi"})
 
         assert response.status_code == 401
 
@@ -1020,9 +1023,7 @@ class TestEditorAssistStreamWritingPartner:
         assert types[-1] == "complete"
         assert types.index("sources") < types.index("token")
 
-    def test_current_note_excluded_from_stream_sources(
-        self, admin_headers: dict[str, str]
-    ) -> None:
+    def test_current_note_excluded_from_stream_sources(self, admin_headers: dict[str, str]) -> None:
         with _editor_client(
             _EditorLLM(stream_tokens=["Critique."]),
             notes_service=_PartnerNotesService(),

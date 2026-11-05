@@ -929,7 +929,11 @@ function NotesGraphContent() {
   if (error) {
     return (
       <div className={styles.container}>
-        <ErrorState message={error} backHref="/knowledge-base/notes" backLabel="← Back to notes" />
+        <ErrorState
+          message={error}
+          backHref="/knowledge-base/notes"
+          backLabel={"←\u00a0Back to notes"}
+        />
       </div>
     );
   }
@@ -942,7 +946,7 @@ function NotesGraphContent() {
           actionLabel="Create your first note"
           actionHref="/knowledge-base/notes/new"
           backHref="/knowledge-base/notes"
-          backLabel="← Back to notes"
+          backLabel={"←\u00a0Back to notes"}
         />
       </div>
     );
@@ -956,7 +960,7 @@ function NotesGraphContent() {
           <div className={styles.headerTop}>
             <div className={styles.breadcrumbs}>
               <Link href="/knowledge-base" className={styles.breadcrumbLink}>
-                ← Knowledge Base
+                ←&nbsp;Knowledge Base
               </Link>
               <Link href="/knowledge-base/notes" className={styles.breadcrumbLink}>
                 All notes

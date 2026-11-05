@@ -37,6 +37,7 @@ NotesDep = Annotated[Any, Depends(get_notes)]
 
 # Write access: a passkey session, an admin:* token, or a notes:write token (#300)
 NotesWriter = Annotated[dict[str, Any], Depends(require_scope("notes:write"))]
+AiUser = Annotated[dict[str, Any], Depends(require_scope("ai:use"))]
 
 
 def _with_html_content(note: dict[str, Any]) -> dict[str, Any]:
@@ -392,7 +393,11 @@ async def get_graph_data(notes_service: NotesDep) -> dict[str, Any]:
 
 @router.get("/{note_id}/summary", response_model=SummaryResponse)
 async def get_note_summary(
-    note_id: str, notes_service: NotesDep, ollama: OllamaDep, refresh: bool = False
+    note_id: str,
+    notes_service: NotesDep,
+    ollama: OllamaDep,
+    _ai_user: AiUser,
+    refresh: bool = False,
 ) -> SummaryResponse:
     """Get AI summary of a note (returns cached if available).
 

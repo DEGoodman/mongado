@@ -1,13 +1,13 @@
 """Search-related Pydantic models."""
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class SearchRequest(BaseModel):
     """Request model for search."""
 
-    query: str
-    top_k: int = 5
+    query: str = Field(max_length=500)
+    top_k: int = Field(default=5, ge=1, le=50)
     semantic: bool = False  # Use AI semantic search (slower, opt-in)
 
     @field_validator("query")

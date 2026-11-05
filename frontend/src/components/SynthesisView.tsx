@@ -270,6 +270,7 @@ export default function SynthesisView({ active }: SynthesisViewProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Synthesize everything I know about..."
+            maxLength={1000}
             className={styles.input}
             disabled={loading}
           />

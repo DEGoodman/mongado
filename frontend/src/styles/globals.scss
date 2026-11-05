@@ -89,8 +89,29 @@ small {
 }
 
 // ===== LINKS =====
-a {
-  @include link-default;
+// Plain-link defaults at zero specificity (:where). The previous
+// `a { @include link-default }` emitted a:visited / a:hover / a:focus at
+// (0,1,1), which beat every single-class component style (0,1,0): visited
+// button-links (+ New Note, View Graph) and nav links took the visited color
+// - unreadable on the primary button in both themes - and hover leaked an
+// underline into link-buttons. Any component class now wins outright.
+:where(a) {
+  color: $color-primary;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+:where(a:hover) {
+  color: $color-primary-hover;
+  text-decoration: underline;
+}
+
+:where(a:active, a:focus) {
+  color: $color-primary-active;
+}
+
+:where(a:visited) {
+  color: $color-secondary;
 }
 
 // ===== LISTS =====
