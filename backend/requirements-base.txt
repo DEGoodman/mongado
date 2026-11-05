@@ -1,9 +1,10 @@
 # Core production dependencies
-fastapi==0.119.0
+fastapi==0.156.4
+starlette==1.9.0  # Pinned explicitly: transitive via fastapi, carries security fixes
 uvicorn[standard]==0.37.0  # Include standard with performance deps
 pydantic==2.12.0
 pydantic-settings==2.11.0
-python-multipart==0.0.20
+python-multipart==0.0.32
 onepassword-sdk==0.3.1  # Official 1Password SDK for service accounts
 python-frontmatter==1.1.0  # Parse markdown with YAML frontmatter
 ollama==0.6.0  # Ollama Python client for AI features
@@ -19,7 +20,7 @@ python-dateutil==2.9.0.post0  # Date parsing in articles router (was a phantom d
 markdown-it-py==4.0.0  # Markdown parser
 mdit-py-plugins==0.5.0  # Plugins for footnotes, front matter, etc.
 linkify-it-py==2.1.0  # Required by the gfm-like preset (linkify); render fails without it
-Pygments==2.19.2  # Syntax highlighting for code blocks
+Pygments==2.21.0  # Syntax highlighting for code blocks
 
 # Production optimizations
 uvloop==0.21.0  # Fast event loop

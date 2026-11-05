@@ -40,7 +40,8 @@ def _flag_definitions() -> dict[str, FlagDefinition]:
             description=(
                 "Route AI generation to hosted APIs (Groq primary, Gemini fallback) "
                 "instead of local Ollama. Requires GROQ_API_KEY/GEMINI_API_KEY; "
-                "without keys this flag has no effect. Embeddings stay on Ollama."
+                "without keys this flag has no effect. Embeddings are set separately "
+                "via EMBEDDING_PROVIDER (Gemini in prod)."
             ),
             default=settings.llm_use_api,
         ),

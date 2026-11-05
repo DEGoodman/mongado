@@ -51,7 +51,7 @@ export default function SourceList({ sources }: { sources: Source[] }) {
                   rel="noopener noreferrer"
                   className={styles.sourceLink}
                 >
-                  View →
+                  View&nbsp;→
                 </a>
               )}
             </div>

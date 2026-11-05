@@ -29,6 +29,7 @@ import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
 import { mascotFor } from "@/lib/delight";
 import styles from "./page.module.scss";
+import { markdownToPlainPreview } from "@/lib/markdownPreview";
 
 type SortOption = "newest" | "oldest" | "alphabetical";
 
@@ -224,7 +225,7 @@ function NotesContent() {
         subtitle={
           <>
             {totalNotes} notes &middot;{" "}
-            <Link href="/knowledge-base/toolbox">Frameworks and checklists? Toolbox →</Link>
+            <Link href="/knowledge-base/toolbox">Frameworks and checklists? Toolbox&nbsp;→</Link>
           </>
         }
         actions={
@@ -434,7 +435,7 @@ function NotesContent() {
 
                           {/* Content preview */}
                           <p className={styles.notePreview}>
-                            {note.content_preview || note.content}
+                            {markdownToPlainPreview(note.content_preview || note.content, 200)}
                           </p>
 
                           {/* Metadata */}
@@ -489,7 +490,7 @@ function NotesContent() {
                         onClick={() => goToPage(currentPage - 1)}
                         disabled={currentPage === 1}
                       >
-                        ← Previous
+                        ←&nbsp;Previous
                       </button>
 
                       <div className={styles.pageNumbers}>
@@ -523,7 +524,7 @@ function NotesContent() {
                         onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
                       >
-                        Next →
+                        Next&nbsp;→
                       </button>
                     </div>
                   </div>

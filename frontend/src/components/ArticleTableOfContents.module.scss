@@ -29,6 +29,11 @@
 .list {
   @include stack($spacing-2);
   @include text-secondary;
+  // Nesting is shown by per-item padding-left; bullets would stay pinned to
+  // the left edge while the text indents, so drop them.
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .listItem {

@@ -16,7 +16,7 @@ export function ArticleNotFoundContent() {
           <h2 className={styles.errorTitle}>Error</h2>
           <p className={styles.errorMessage}>Article not found</p>
           <Link href="/knowledge-base/articles" className={styles.backLink}>
-            ← Back to articles
+            ←&nbsp;Back to articles
           </Link>
         </div>
       </div>

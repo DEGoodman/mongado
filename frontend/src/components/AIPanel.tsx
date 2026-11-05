@@ -516,6 +516,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={tab === "ask" ? "Ask a question..." : "Search query..."}
+              maxLength={tab === "ask" ? 2000 : 500}
               className={styles.input}
               disabled={loading}
             />

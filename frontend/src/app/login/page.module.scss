@@ -46,7 +46,8 @@
 
     .backButton {
       display: block;
-      margin-bottom: $spacing-4;
+      min-height: 2.75rem; // 44px touch target
+      margin-bottom: $spacing-2;
       padding: 0;
       background: none;
       border: none;
@@ -125,7 +126,8 @@
 .linkButton {
   display: block;
   width: 100%;
-  margin-top: $spacing-4;
+  min-height: 2.75rem; // 44px touch target
+  margin-top: $spacing-2;
   padding: 0;
   background: none;
   border: none;

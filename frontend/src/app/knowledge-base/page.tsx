@@ -152,6 +152,7 @@ export default function KnowledgeBasePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search articles and notes..."
+                maxLength={500}
                 className={styles.searchInput}
                 autoFocus
                 aria-label="Search all articles and notes"
@@ -235,7 +236,7 @@ export default function KnowledgeBasePage() {
                 href="/knowledge-base/articles"
                 className={`${styles.cardButton} ${styles.primary}`}
               >
-                Browse Articles →
+                Browse Articles&nbsp;→
               </Link>
             </div>
           </div>
@@ -255,13 +256,13 @@ export default function KnowledgeBasePage() {
                 href="/knowledge-base/notes"
                 className={`${styles.cardButton} ${styles.notePrimary}`}
               >
-                Browse Notes →
+                Browse Notes&nbsp;→
               </Link>
               <Link
                 href="/knowledge-base/notes/graph"
                 className={`${styles.cardButton} ${styles.noteSecondary}`}
               >
-                View Graph →
+                View Graph&nbsp;→
               </Link>
             </div>
           </div>
@@ -281,7 +282,7 @@ export default function KnowledgeBasePage() {
                 href="/knowledge-base/toolbox"
                 className={`${styles.cardButton} ${styles.toolboxPrimary}`}
               >
-                Open Toolbox →
+                Open Toolbox&nbsp;→
               </Link>
             </div>
           </div>

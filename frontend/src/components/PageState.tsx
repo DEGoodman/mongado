@@ -85,7 +85,7 @@ export function ErrorState({
   message,
   title,
   backHref,
-  backLabel = "← Back",
+  backLabel = "←\u00a0Back",
   width,
   inline = false,
 }: ErrorStateProps) {
@@ -132,7 +132,7 @@ export function EmptyState({
   actionHref,
   onAction,
   backHref,
-  backLabel = "← Back",
+  backLabel = "←\u00a0Back",
   width,
   inline = false,
 }: EmptyStateProps) {

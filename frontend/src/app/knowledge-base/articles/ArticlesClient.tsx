@@ -355,7 +355,7 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
                       )}
 
                       {/* Read more indicator */}
-                      <div className={styles.readMore}>Read more →</div>
+                      <div className={styles.readMore}>Read more&nbsp;→</div>
                     </Link>
                   );
                 })

@@ -28,16 +28,26 @@
     }
 
     .dismissButton {
-      margin-left: $spacing-4;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      margin-left: $spacing-2;
       color: $color-text-tertiary;
       cursor: pointer;
       background: none;
       border: none;
+      border-radius: $border-radius-md;
       padding: 0;
-      transition: color 0.2s ease;
+      transition:
+        color 0.2s ease,
+        background-color 0.2s ease;
 
       &:hover {
         color: $color-link-default;
+        background-color: $color-interactive-ghost-hover;
       }
     }
   }

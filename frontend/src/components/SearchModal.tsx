@@ -367,6 +367,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search, or jump to an action..."
+            maxLength={500}
             className={styles.searchInput}
             autoComplete="off"
             role="combobox"

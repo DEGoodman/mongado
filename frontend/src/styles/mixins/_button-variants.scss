@@ -96,12 +96,13 @@
 @mixin button-tertiary {
   @include button-base;
   background-color: $color-interactive-tertiary-bg;
-  color: $color-interactive-tertiary;
+  // -tertiary / -tertiary-hover are *background* tokens (neutral-100/200);
+  // using them as text made labels the same color as the fill (invisible).
+  color: $color-interactive-tertiary-text;
   border: $border-default;
 
   &:hover:not(:disabled) {
-    background-color: $color-surface-hover;
-    color: $color-interactive-tertiary-hover;
+    background-color: $color-interactive-tertiary-hover;
   }
 }
 

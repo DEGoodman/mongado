@@ -25,7 +25,7 @@ export default function Breadcrumb({ section, toHub = false, className = "" }: B
     return (
       <nav aria-label="Breadcrumb" className={`${styles.breadcrumb} ${className}`}>
         <Link href={hubHref} className={styles.link}>
-          ← Back
+          ←&nbsp;Back
         </Link>
       </nav>
     );
