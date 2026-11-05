@@ -16,7 +16,7 @@ Technical debt and infrastructure problems rarely make it onto roadmaps. Teams s
 
 If your team is a pirate ship navigating to treasure island, certain factors propel you forward while others slow you down or threaten to sink you entirely.
 
-**Barnacles**: Problems that gradually slow the team down day after day, creating drag and reducing velocity.
+**Barnacles**: Problems that slow the team down a little every day. No single one is urgent; together they're a constant drag.
 
 Examples: long build times, daily-only deployments, flaky tests, manual processes, poor documentation, difficult local setup
 
@@ -66,7 +66,7 @@ Timebox: ~10 minutes per item. Capture unknowns. Don't commit to solutions yet.
 
 Manager responsibilities:
 
-1. Document all items, create GitHub issues for top 3
+1. Document all items, file tickets for the top 3
 2. Present to Product Manager with business case
 3. Negotiate roadmap space
 4. Report back to team within 1-2 weeks
@@ -138,7 +138,7 @@ Fix: During share-out ask "Can you quantify that?" Get numbers.
 
 **Ownership**: Team identified and voted on problems, creating buy-in when solutions ship.
 
-## Example: Real Session Output
+## Example Output
 
 **Top Barnacles (by votes):**
 
@@ -162,11 +162,11 @@ Fix: During share-out ask "Can you quantify that?" Get numbers.
 
 ## Measuring Success
 
-- Team morale improves (retro feedback, surveys)
-- Concrete items get addressed (track completion rate)
-- Velocity increases (sprint velocity trends up)
-- Incident rate decreases (fewer rocky shoal collisions)
-- Team proactively raises issues (culture shift)
+- Items get fixed: track how many of each session's top 3 ship before the next session
+- The barnacle's own number moves: CI time, setup time, deploy wait
+- Fewer incidents trace back to a rocky shoal the team already named
+- Morale improves (retro feedback, surveys)
+- People raise new barnacles in 1-on-1s without being asked
 
 ## Integration with Existing Processes
 
@@ -196,4 +196,4 @@ Run this twice a year before planning cycles. Reserve roadmap capacity for the o
 
 ## References
 
-Based on practices from high-performing engineering teams and concepts from lean manufacturing (reducing WIP, continuous improvement) adapted for software delivery.
+Draws on lean manufacturing ideas (reducing WIP, continuous improvement) and the metrics in [Software Delivery Performance Framework](/knowledge-base/articles/5).

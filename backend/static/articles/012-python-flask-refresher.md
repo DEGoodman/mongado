@@ -7,9 +7,12 @@ tags: ["python", "flask", "webdev", "reference", "backend"]
 draft: false
 published_date: "2025-11-13T10:00:00"
 created_at: "2025-11-13T10:00:00"
+updated_date: "2026-11-04T00:00:00"
 ---
 
-**Purpose**: Quick reference guide to refresh Python 3.13+ and Flask fundamentals
+A condensed reference for getting back up to speed on modern Python (3.12+) and Flask. Each section is code first, with short notes where the right choice isn't obvious. Exercises at the end.
+
+The SQLAlchemy examples use Flask-SQLAlchemy's legacy `Model.query` interface because it's short and still common in existing codebases. New code should prefer `db.session.execute(db.select(...))` and `db.get_or_404(Model, id)`.
 
 ---
 
@@ -27,13 +30,12 @@ created_at: "2025-11-13T10:00:00"
 
 ## Python Fundamentals
 
-### Modern Type Hints (Python 3.13)
+### Modern Type Hints
 
 ```python
-# Modern Python 3.13 syntax - no imports needed
+# Built-in generics (3.9+) and `X | None` unions (3.10+) - no imports needed
 def greet(name: str, age: int | None = None) -> str:
-    """Type hints built into Python 3.13."""
-    if age:
+    if age is not None:
         return f"Hello {name}, age {age}"
     return f"Hello {name}"
 
@@ -43,7 +45,7 @@ from typing import Optional, Union, List, Dict
 def old_style(value: Optional[int]) -> Union[str, int]:
     pass
 
-# Modern style (3.13+) - use this
+# Modern style (3.10+) - use this
 def modern_style(value: int | None) -> str | int:
     pass
 
@@ -74,18 +76,14 @@ class Drawable(Protocol):
 def render(obj: Drawable) -> None:
     obj.draw()
 
-# Generic types
-from typing import TypeVar
-
-T = TypeVar('T')
-
-def get_first(items: list[T]) -> T | None:
+# Generic functions (3.12+ syntax; older code uses T = TypeVar('T'))
+def get_first[T](items: list[T]) -> T | None:
     return items[0] if items else None
 
-# Type aliases
-ProductID = str
-Price = float
-Product = dict[str, Any]
+# Type aliases (3.12+ `type` statement)
+type ProductID = str
+type Price = float
+type Product = dict[str, Any]
 
 def get_product(product_id: ProductID) -> Product:
     return {"id": product_id, "name": "Laptop", "price": 999.99}
@@ -498,6 +496,8 @@ users = asyncio.run(fetch_multiple_users(["1", "2", "3"]))
 # All 3 requests run concurrently (1 second total, not 3)
 
 # Error handling in async
+import httpx
+
 async def safe_fetch(url: str) -> str | None:
     try:
         async with httpx.AsyncClient() as client:
@@ -532,7 +532,8 @@ async def process_stream():
     async for item in AsyncDataStream():
         print(item)
 
-# Flask with async (Flask 2.0+)
+# Flask with async (Flask 2.0+, requires `pip install "flask[async]"`)
+# Each async view runs in its own event loop per request; for heavy async I/O, use Quart or FastAPI.
 from flask import Flask
 
 app = Flask(__name__)
@@ -1051,7 +1052,7 @@ def get_products():
 
 @api_bp.route('/products/<int:product_id>', methods=['GET'])
 def get_product(product_id: int):
-    product = Product.query.get_or_404(product_id)
+    product = db.get_or_404(Product, product_id)
     return jsonify(product.to_dict())
 
 @api_bp.route('/products', methods=['POST'])
@@ -1071,7 +1072,7 @@ def create_product():
 
 @api_bp.route('/products/<int:product_id>', methods=['PUT'])
 def update_product(product_id: int):
-    product = Product.query.get_or_404(product_id)
+    product = db.get_or_404(Product, product_id)
     data = request.get_json()
 
     product.name = data.get('name', product.name)
@@ -1084,7 +1085,7 @@ def update_product(product_id: int):
 
 @api_bp.route('/products/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id: int):
-    product = Product.query.get_or_404(product_id)
+    product = db.get_or_404(Product, product_id)
     db.session.delete(product)
     db.session.commit()
 
@@ -1099,7 +1100,7 @@ def delete_product(product_id: int):
 
 ```python
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import UTC, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
@@ -1112,7 +1113,7 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict:
         return {
@@ -1134,7 +1135,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     # One-to-many relationship
     orders = db.relationship('Order', backref='user', lazy='dynamic')
@@ -1152,7 +1153,7 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     total = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(20), default='pending')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     # Many-to-many relationship
     products = db.relationship('Product', secondary='order_products', backref='orders')
@@ -1181,16 +1182,16 @@ def database_examples():
     product = Product.query.filter_by(name="Laptop").first()
 
     # Get by ID
-    product = Product.query.get(1)
-    product = Product.query.get_or_404(1)  # Auto 404 if not found
+    product = db.session.get(Product, 1)  # None if missing (Query.get is deprecated)
+    product = db.get_or_404(Product, 1)   # Auto 404 if not found
 
     # Update
-    product = Product.query.get(1)
+    product = db.session.get(Product, 1)
     product.price = 899.99
     db.session.commit()
 
     # Delete
-    product = Product.query.get(1)
+    product = db.session.get(Product, 1)
     db.session.delete(product)
     db.session.commit()
 
@@ -1205,10 +1206,10 @@ def database_examples():
     ).order_by(Product.price.desc()).limit(10).all()
 
     # Relationships
-    user = User.query.get(1)
+    user = db.session.get(User, 1)
     user_orders = user.orders.all()
 
-    order = Order.query.get(1)
+    order = db.session.get(Order, 1)
     order_user = order.user
     order_products = order.products
 
@@ -1244,7 +1245,7 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id: str):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Login route
 @app.route('/login', methods=['POST'])
@@ -1443,7 +1444,7 @@ abort(404)
 abort(403, description="Forbidden")
 
 # Database operations
-product = Product.query.get(id)
+product = db.session.get(Product, id)
 products = Product.query.all()
 product = Product.query.filter_by(name='Laptop').first()
 products = Product.query.filter(Product.price > 100).all()
