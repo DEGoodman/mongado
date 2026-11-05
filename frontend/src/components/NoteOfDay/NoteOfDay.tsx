@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "./NoteOfDay.module.scss";
 import { markdownToPlainPreview } from "@/lib/markdownPreview";
+import { apiFetch } from "@/lib/api/client";
 
 interface Note {
   id: string;
@@ -34,7 +35,7 @@ export default function NoteOfDay() {
   useEffect(() => {
     async function fetchNoteOfDay() {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notes/note-of-day`);
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notes/note-of-day`);
         if (!response.ok) {
           if (response.status === 404) {
             // No notes yet - this is fine

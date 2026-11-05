@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 os.environ["TESTING"] = "1"
 
-from auth import MAX_FAILED_ATTEMPTS
+from auth import MAX_FAILED_ATTEMPTS, SESSION_COOKIE
 from config import get_settings
 from core.sessions import create_session_token, derive_session_secret
 from main import app as real_app
@@ -418,6 +418,23 @@ class TestAuthResponsesAreNotCacheable:
         response = client.get("/api/notes?limit=1")
         assert "max-age=60" in response.headers["Cache-Control"]
 
+    def test_anonymous_cache_varies_on_credentials(self) -> None:
+        """A cached anonymous copy must not answer a signed-in request."""
+        client = TestClient(real_app)
+        vary = client.get("/api/notes?limit=1").headers["Vary"].lower()
+        assert "authorization" in vary
+        assert "cookie" in vary
+
+    def test_signed_in_reads_are_not_cached(self, session_headers: dict[str, str]) -> None:
+        """Admin-visible content must not outlive logout in the browser cache (#311)."""
+        client = TestClient(real_app)
+        by_header = client.get("/api/notes?limit=1", headers=session_headers)
+        assert by_header.headers["Cache-Control"] == "private, no-store"
+
+        client.cookies.set(SESSION_COOKIE, session_headers["Authorization"].split()[1])
+        by_cookie = client.get("/api/notes?limit=1")
+        assert by_cookie.headers["Cache-Control"] == "private, no-store"
+
 
 class TestSessionTokenAcceptedByAdminEndpoints:
     """Session tokens must work everywhere the static token did."""
@@ -507,3 +524,77 @@ class TestStaticTokenIsEnrollmentOnly:
             headers={"Authorization": f"Bearer {_admin_token()}"},
         )
         assert response.status_code != 403
+
+
+class TestSessionCookie:
+    """Browsers carry the credential in an HttpOnly cookie, not localStorage (#311)."""
+
+    @staticmethod
+    def _session_token() -> str:
+        secret = derive_session_secret(_admin_token(), get_settings().session_secret)
+        return create_session_token(secret, "test-credential", time.time())
+
+    def test_cookie_session_authorizes_admin_endpoint(self) -> None:
+        client = TestClient(real_app)
+        client.cookies.set(SESSION_COOKIE, self._session_token())
+        assert client.get("/api/admin/backups").status_code == 200
+
+    def test_cookie_session_reported_by_session_endpoint(self, client: TestClient) -> None:
+        client.cookies.set(SESSION_COOKIE, self._session_token())
+        body = client.get("/api/auth/session").json()
+        assert body["authenticated"] is True
+        assert body["kind"] == "passkey"
+
+    def test_bearer_header_takes_precedence_over_cookie(self) -> None:
+        client = TestClient(real_app)
+        client.cookies.set(SESSION_COOKIE, self._session_token())
+        response = client.get(
+            "/api/admin/backups", headers={"Authorization": f"Bearer {_admin_token()}"}
+        )
+        # The static token in the header wins, and it is enrollment-only
+        assert response.status_code == 403
+
+    def test_token_login_sets_httponly_strict_cookie(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/auth/token-login", headers={"Authorization": f"Bearer {_admin_token()}"}
+        )
+        assert response.status_code == 200
+        assert response.json()["kind"] == "token"
+        cookie = response.headers["set-cookie"].lower()
+        assert cookie.startswith(f"{SESSION_COOKIE}=")
+        assert "httponly" in cookie
+        assert "samesite=strict" in cookie
+        # Secure everywhere but plain-http local dev
+        assert ("secure" in cookie) == get_settings().is_production
+        assert "max-age=" in cookie
+
+    def test_token_login_body_never_echoes_token(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/auth/token-login", headers={"Authorization": f"Bearer {_admin_token()}"}
+        )
+        assert _admin_token() not in response.text
+
+    def test_token_login_rejects_bad_token(self, client: TestClient) -> None:
+        response = client.post("/api/auth/token-login", headers={"Authorization": "Bearer nope"})
+        assert response.status_code == 403
+        assert "set-cookie" not in response.headers
+
+    def test_token_login_requires_token(self, client: TestClient) -> None:
+        assert client.post("/api/auth/token-login").status_code == 401
+
+    def test_cookie_static_token_stays_enrollment_only(self) -> None:
+        """Moving the static token into a cookie must not widen what it can do."""
+        client = TestClient(real_app)
+        client.cookies.set(SESSION_COOKIE, _admin_token())
+        assert client.get("/api/admin/backups").status_code == 403
+
+    def test_logout_expires_cookie(self, client: TestClient) -> None:
+        response = client.post("/api/auth/logout")
+        assert response.status_code == 200
+        cookie = response.headers["set-cookie"].lower()
+        assert cookie.startswith(f'{SESSION_COOKIE}=""') or "max-age=0" in cookie
+
+    def test_login_response_model_has_no_token_field(self) -> None:
+        from models import SessionResponse
+
+        assert "token" not in SessionResponse.model_fields

@@ -26,10 +26,10 @@ vi.mock("next/link", () => ({
 }));
 
 const mockIsAuthenticated = vi.fn();
-const mockClearAdminToken = vi.fn();
+const mockClearAdminSession = vi.fn();
 vi.mock("@/lib/api/client", () => ({
   isAuthenticated: () => mockIsAuthenticated(),
-  clearAdminToken: () => mockClearAdminToken(),
+  clearAdminSession: () => mockClearAdminSession(),
 }));
 
 vi.mock("@/hooks/useFeatureFlags", () => ({
@@ -89,7 +89,7 @@ describe("HeaderMenu", () => {
     render(<HeaderMenu />);
     openMenu();
     fireEvent.click(screen.getByRole("button", { name: "Sign Out" }));
-    expect(mockClearAdminToken).toHaveBeenCalled();
+    expect(mockClearAdminSession).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith("/login");
   });
 

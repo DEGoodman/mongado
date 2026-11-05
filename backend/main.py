@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from adapters.article_loader import load_static_articles
 from adapters.neo4j import get_neo4j_adapter
-from auth import require_scope, verify_admin
+from auth import SESSION_COOKIE, require_scope, verify_admin
 from config import SecretManager, Settings, get_secret_manager, get_settings
 from dependencies import (
     get_neo4j,
@@ -233,11 +233,21 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
             # and a shared cache must never hold a per-credential response.
             if request.url.path.startswith("/api/auth/"):
                 response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
-            # Allow browser to cache list/read operations for 60 seconds;
+            # A signed-in read can include admin-only content (drafts, private
+            # notes). Never cache it: the browser would otherwise keep serving
+            # it after logout (#311)
+            elif request.method == "GET" and (
+                "authorization" in request.headers or SESSION_COOKIE in request.cookies
+            ):
+                response.headers["Cache-Control"] = "private, no-store"
+            # Allow browser to cache anonymous list/read operations for 60s;
             # serve stale while revalidating so refreshes never block on the
-            # network for content that just changed underneath
+            # network for content that just changed underneath. Vary keeps an
+            # anonymous copy from answering a signed-in request
             elif request.method == "GET":
                 response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+                response.headers.add_vary_header("Authorization")
+                response.headers.add_vary_header("Cookie")
             else:
                 response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
 

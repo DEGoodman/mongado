@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { config } from "@/lib/config";
 import { logger } from "@/lib/logger";
+import { apiFetch } from "@/lib/api/client";
 
 const flagsLogger = logger.withContext("FeatureFlags");
 
@@ -36,7 +37,7 @@ function setFlags(next: FeatureFlags): void {
 
 async function fetchFlags(): Promise<void> {
   try {
-    const response = await fetch(`${config.apiUrl}/`, { cache: "no-store" });
+    const response = await apiFetch(`${config.apiUrl}/`, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Status endpoint returned ${response.status}`);
     }

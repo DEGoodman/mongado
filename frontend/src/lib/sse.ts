@@ -14,6 +14,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { apiFetch } from "@/lib/api/client";
 
 const sseLogger = logger.withContext("SSE");
 
@@ -69,7 +70,7 @@ export async function streamSSE<T = unknown>(
 
   let response: Response;
   try {
-    response = await fetch(url, { method, headers, body, signal });
+    response = await apiFetch(url, { method, headers, body, signal });
   } catch (err) {
     if (signal?.aborted) return;
     onError?.(err instanceof Error ? err : new Error(String(err)));

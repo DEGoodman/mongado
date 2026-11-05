@@ -519,9 +519,7 @@ class TestFindUncoveredTagClusters:
     def test_respects_limit(self) -> None:
         notes: list[dict[str, Any]] = []
         for tag_num in range(5):
-            notes.extend(
-                _note(f"note-{tag_num}-{i}", tags=[f"tag-{tag_num}"]) for i in range(4)
-            )
+            notes.extend(_note(f"note-{tag_num}-{i}", tags=[f"tag-{tag_num}"]) for i in range(4))
         result = inspire_core.find_uncovered_tag_clusters(notes, [], min_notes=4, limit=2)
 
         assert len(result) == 2
@@ -967,9 +965,7 @@ class TestSuggestionsEndpoint:
         assert first.json()["cached"] is False
         assert second.json()["cached"] is True
 
-    def test_llm_exception_falls_back_to_templated_suggestions(
-        self, client: TestClient
-    ) -> None:
+    def test_llm_exception_falls_back_to_templated_suggestions(self, client: TestClient) -> None:
         notes = [_note("orphan-1", content_length=100)]
         _override_dependencies(
             notes_service=FakeNotesService(notes_with_stats=notes),

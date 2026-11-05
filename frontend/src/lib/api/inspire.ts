@@ -4,6 +4,7 @@
 
 import { logger } from "@/lib/logger";
 import { getAuthHeaders } from "@/lib/api/client";
+import { apiFetch } from "./client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -125,7 +126,7 @@ export async function getSuggestions(
   if (options.refresh) params.set("refresh", "true");
   if (options.skipLlm) params.set("skip_llm", "true");
 
-  const response = await fetch(`${API_URL}/api/inspire/suggestions?${params.toString()}`, {
+  const response = await apiFetch(`${API_URL}/api/inspire/suggestions?${params.toString()}`, {
     headers: getHeaders(),
   });
 
@@ -149,7 +150,7 @@ export async function getSuggestions(
 export async function getKnowledgeGaps(limit: number = 10): Promise<GapsResponse> {
   const params = new URLSearchParams({ limit: String(limit) });
 
-  const response = await fetch(`${API_URL}/api/inspire/gaps?${params.toString()}`, {
+  const response = await apiFetch(`${API_URL}/api/inspire/gaps?${params.toString()}`, {
     headers: getHeaders(),
   });
 
@@ -175,7 +176,7 @@ export async function getConnectionOpportunities(
     limit: String(limit),
   });
 
-  const response = await fetch(`${API_URL}/api/inspire/connections?${params.toString()}`, {
+  const response = await apiFetch(`${API_URL}/api/inspire/connections?${params.toString()}`, {
     headers: getHeaders(),
   });
 

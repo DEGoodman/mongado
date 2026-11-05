@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { clearAdminToken, isAuthenticated as hasValidSession } from "@/lib/api/client";
+import { clearAdminSession, isAuthenticated as hasValidSession } from "@/lib/api/client";
 import styles from "./AuthStatusBanner.module.scss";
 
 interface AuthStatusBannerProps {
@@ -35,7 +35,7 @@ export default function AuthStatusBanner({ mode = "auto" }: AuthStatusBannerProp
   }, []);
 
   const handleLogout = () => {
-    clearAdminToken();
+    clearAdminSession();
     setIsAuthenticated(false);
     router.push("/knowledge-base/notes");
   };

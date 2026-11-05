@@ -21,6 +21,7 @@ import {
 import SourceList, { type Source } from "@/components/SourceList";
 import SynthesisView from "@/components/SynthesisView";
 import styles from "./AIPanel.module.scss";
+import { apiFetch } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
@@ -133,7 +134,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout (CPU can be slow)
 
-        const response = await fetch(`${API_URL}/api/ask`, {
+        const response = await apiFetch(`${API_URL}/api/ask`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -164,7 +165,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
 
-        const response = await fetch(`${API_URL}/api/search`, {
+        const response = await apiFetch(`${API_URL}/api/search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -269,7 +270,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
           return;
         }
 
-        const response = await fetch(`${API_URL}/api/ollama/gpu-status`);
+        const response = await apiFetch(`${API_URL}/api/ollama/gpu-status`);
         if (response.ok) {
           const data = await response.json();
           setHasGPU(data.has_gpu);
@@ -288,7 +289,7 @@ export default function AIPanel({ isOpen, onClose, defaultTab, suggest }: AIPane
       const warmupOllama = async () => {
         try {
           logger.info("Starting Ollama warmup (AI Assistant opened)");
-          const response = await fetch(`${API_URL}/api/ollama/warmup`, {
+          const response = await apiFetch(`${API_URL}/api/ollama/warmup`, {
             method: "POST",
           });
 
@@ -652,7 +653,7 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
     try {
       // Fetch tags first
       setLoadingStatus("Finding relevant tags...");
-      const tagsResponse = await fetch(`${API_URL}/api/notes/${noteId}/suggest-tags`, {
+      const tagsResponse = await apiFetch(`${API_URL}/api/notes/${noteId}/suggest-tags`, {
         method: "POST",
       });
 
@@ -665,7 +666,7 @@ function SuggestView({ context, active }: { context: SuggestContext; active: boo
       setLoadingStatus("Analyzing related notes...");
 
       // Then fetch links
-      const linksResponse = await fetch(`${API_URL}/api/notes/${noteId}/suggest-links`, {
+      const linksResponse = await apiFetch(`${API_URL}/api/notes/${noteId}/suggest-links`, {
         method: "POST",
       });
 

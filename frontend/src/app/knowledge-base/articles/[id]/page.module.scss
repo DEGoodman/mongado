@@ -264,6 +264,8 @@
       .linkUrl {
         color: $color-primary;
         text-decoration: none;
+        // Source URLs have no break points; let them wrap on phones
+        overflow-wrap: anywhere;
 
         &:hover {
           text-decoration: underline;

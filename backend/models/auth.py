@@ -44,9 +44,14 @@ class AuthenticationVerifyRequest(BaseModel):
 class SessionResponse(BaseModel):
     """An issued admin session."""
 
-    token: str = Field(..., description="Bearer token for subsequent admin requests")
     expires_at: int = Field(..., description="Unix timestamp when the session expires")
     credential_name: str = Field(..., description="Name of the passkey that authenticated")
+
+
+class LogoutResponse(BaseModel):
+    """Result of clearing the session cookie."""
+
+    logged_out: bool
 
 
 class SessionStatusResponse(BaseModel):

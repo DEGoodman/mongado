@@ -459,7 +459,9 @@ In `backend/main.py`:
 
 *Auth (passkeys, #229):*
 - `POST /api/auth/register/options|verify` - Enroll a passkey (admin auth required)
-- `POST /api/auth/login/options|verify` - Sign in, returns a 12h session token
+- `POST /api/auth/login/options|verify` - Sign in; sets a 12h session as an HttpOnly cookie
+- `POST /api/auth/token-login` - Move a typed-in token into that cookie (login form)
+- `POST /api/auth/logout` - Clear the session cookie
 - `GET /api/auth/session` - Report auth state (200 whether or not signed in)
 - `GET|DELETE /api/auth/credentials` - List / revoke enrolled passkeys
 
@@ -468,7 +470,10 @@ In `backend/main.py`:
 - `GET|POST /api/admin/tokens` - List / mint tokens (full admin; plaintext shown once)
 - `DELETE /api/admin/tokens/{token_id}` - Revoke a token (full admin)
 
-Three credentials share the `Authorization: Bearer` transport (see `backend/auth.py`):
+Three credentials share the `Authorization: Bearer` transport (see `backend/auth.py`).
+Browsers instead carry the credential in the HttpOnly `mongado_session` cookie
+(#311), so no admin secret is ever readable from page JavaScript; frontend calls go
+through `apiFetch` (`credentials: "include"`), and a Bearer header beats the cookie.
 
 1. **Passkey session tokens** - full admin, the human login path.
 2. **Scoped API tokens** - `mgd_`-prefixed random secrets (hashed in Neo4j), each

@@ -134,17 +134,9 @@ function NotesGraphContent() {
         ilog("fetching graph data");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-        const token = localStorage.getItem("admin_token");
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
+        // revalidatingFetch goes through apiFetch, which sends the session cookie
         const response = await revalidatingFetch(`${apiUrl}/api/notes/graph/data`, {
-          headers,
-          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           signal: controller.signal,
         });
 

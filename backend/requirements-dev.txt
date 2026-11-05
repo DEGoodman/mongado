@@ -9,6 +9,8 @@ pytest-mock==3.15.1
 pytest-xdist==3.8.0  # Parallel test execution
 pytest-benchmark==5.1.0  # Performance benchmarking
 httpx==0.28.1  # For testing FastAPI (compatible with ollama)
+httpx2==2.15.1  # starlette.testclient transport (Starlette 1.x deprecates httpx for it)
+httpcore2==2.15.1  # pinned with httpx2 (2.16 is newer than the 2-week rule)
 
 # Type checking
 mypy==1.18.2

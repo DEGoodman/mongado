@@ -53,7 +53,10 @@ $shadow-popover: 0 8px 32px $shadow-color-charcoal-lg;
 // ===== FOCUS SHADOWS =====
 // For keyboard navigation
 $shadow-focus: 0 0 0 2px $shadow-color-warm-lg;
-$shadow-focus-primary: 0 0 0 2px rgba(217, 109, 50, 0.3); // Orange focus ring (matches primary color)
+// Theme-aware focus ring: the input focus color (orange in light, phosphor
+// amber in dark) at 30%. Light mode is unchanged from the old literal
+// rgba(217, 109, 50, 0.3), i.e. $orange-600 (#284)
+$shadow-focus-primary: 0 0 0 2px color-mix(in srgb, var(--color-input-border-focus) 30%, transparent);
 
 // ===== INSET SHADOWS =====
 // For inputs and pressed states

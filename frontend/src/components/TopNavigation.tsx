@@ -21,10 +21,9 @@ import { prefetchOnce } from "@/lib/prefetch";
 function prefetchGraphData(): void {
   prefetchOnce("graph:data", () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const token = localStorage.getItem("admin_token");
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    return fetch(`${apiUrl}/api/notes/graph/data`, { headers, credentials: "include" });
+    return apiFetch(`${apiUrl}/api/notes/graph/data`, {
+      headers: { "Content-Type": "application/json" },
+    });
   });
 }
 import Link from "next/link";
@@ -32,7 +31,7 @@ import { usePathname } from "next/navigation";
 import HeaderMenu from "./HeaderMenu";
 import SearchModal from "./SearchModal";
 import QuickCapture from "./QuickCapture";
-import { isAuthenticated } from "@/lib/api/client";
+import { apiFetch, isAuthenticated } from "@/lib/api/client";
 import styles from "./TopNavigation.module.scss";
 
 export default function TopNavigation() {

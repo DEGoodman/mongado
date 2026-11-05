@@ -1,6 +1,9 @@
 """Authentication middleware for Zettelkasten notes system.
 
-Three credentials share the `Authorization: Bearer` transport:
+Three credentials share the `Authorization: Bearer` transport. Browsers send
+the same credential in an HttpOnly session cookie instead (#311), so no admin
+secret is ever readable from page JavaScript; a Bearer header, when present,
+takes precedence over the cookie.
 
 - **Passkey session tokens** (#229) - signed, 12-hour, minted by
   /api/auth/login/verify. The primary path for humans, full admin, and the
@@ -27,7 +30,7 @@ import time
 from collections.abc import Callable
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from adapters.neo4j import get_neo4j_adapter
@@ -51,6 +54,51 @@ Principal = dict[str, Any]
 # HTTPBearer security scheme - enables "Authorize" button in Swagger UI
 # auto_error=False so we can return custom 401 message for missing auth
 security = HTTPBearer(auto_error=False)
+
+# Browser session cookie (#311). HttpOnly keeps the credential away from any
+# XSS; SameSite=Strict keeps it off cross-site requests (CSRF). The frontend
+# (mongado.com) and API (api.mongado.com) are the same *site*, so the cookie
+# still rides on the frontend's credentialed fetches. Host-only (no Domain).
+SESSION_COOKIE = "mongado_session"
+
+
+def get_credentials(
+    request: Request,
+    bearer: HTTPAuthorizationCredentials | None = Depends(security),
+) -> HTTPAuthorizationCredentials | None:
+    """Resolve the caller's credential: Bearer header first, then session cookie."""
+    if bearer:
+        return bearer
+    cookie = request.cookies.get(SESSION_COOKIE)
+    if cookie:
+        return HTTPAuthorizationCredentials(scheme="Bearer", credentials=cookie)
+    return None
+
+
+def set_session_cookie(response: Response, token: str, max_age: int) -> None:
+    """Hand the browser a credential as an HttpOnly cookie."""
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=max_age,
+        httponly=True,
+        # Plain-http localhost in dev; Secure everywhere else (fail-secure)
+        secure=settings.is_production,
+        samesite="strict",
+        path="/",
+    )
+
+
+def clear_session_cookie(response: Response) -> None:
+    """Remove the session cookie (logout)."""
+    response.delete_cookie(
+        SESSION_COOKIE,
+        httponly=True,
+        secure=settings.is_production,
+        samesite="strict",
+        path="/",
+    )
+
 
 # Lockout policy for failed token attempts (#225). The admin token is a single
 # static secret, so unlimited guessing must not be possible. Only *invalid*
@@ -374,7 +422,7 @@ def require_scope(
 
     def dependency(
         request: Request,
-        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+        credentials: HTTPAuthorizationCredentials | None = Depends(get_credentials),
     ) -> Principal:
         principal = _authenticate(request, credentials)
         _authorize(principal, required_scopes)
@@ -385,7 +433,7 @@ def require_scope(
 
 def verify_admin(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(get_credentials),
 ) -> bool:
     """Full admin access: a passkey session, an `admin:*` API token, or (in
     local dev) the static token.
@@ -412,7 +460,7 @@ def verify_admin(
 
 def verify_enrollment(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(get_credentials),
 ) -> bool:
     """Passkey-enrollment access: a passkey session OR the static token (#267).
 
@@ -432,7 +480,7 @@ def verify_enrollment(
 
 
 def verify_admin_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(get_credentials),
 ) -> dict[str, Any]:
     """Report auth state without rejecting unauthenticated callers.
 

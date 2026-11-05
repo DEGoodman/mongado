@@ -226,9 +226,7 @@ def get_knowledge_gaps(
     orphans = inspire_core.find_orphan_notes(notes_with_stats, limit=limit)
     oversized = inspire_core.find_oversized_notes(notes_with_stats, limit=limit)
     promotable = inspire_core.find_promotion_candidates(notes_with_stats, limit=limit)
-    uncovered = inspire_core.find_uncovered_tag_clusters(
-        notes_with_stats, articles, limit=limit
-    )
+    uncovered = inspire_core.find_uncovered_tag_clusters(notes_with_stats, articles, limit=limit)
 
     return {
         "orphans": orphans,

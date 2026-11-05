@@ -1,3 +1,5 @@
+import { apiFetch } from "./client";
+
 /**
  * Mutation-driven revalidation for the browser's HTTP cache.
  *
@@ -48,7 +50,7 @@ export async function revalidatingFetch(url: string, init?: RequestInit): Promis
   const lastGeneration = lastFetchedGeneration.get(url);
   const needsReload = lastGeneration !== undefined && lastGeneration < generation;
 
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     ...init,
     cache: needsReload ? "reload" : init?.cache,
   });

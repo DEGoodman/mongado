@@ -8,7 +8,12 @@ Ceremony flow:
     1. POST /api/auth/register/options    -> creation options + stored challenge
     2. POST /api/auth/register/verify     -> credential persisted to Neo4j
     3. POST /api/auth/login/options       -> request options + stored challenge
-    4. POST /api/auth/login/verify        -> signed session token
+    4. POST /api/auth/login/verify        -> signed session token, set as an
+                                             HttpOnly cookie (#311)
+
+POST /api/auth/token-login moves a static/API token typed into the login form
+into that same cookie, and POST /api/auth/logout clears it, so the browser
+never keeps an admin credential where page JavaScript can read it.
 
 Challenges live in Neo4j rather than memory because production runs four
 uvicorn workers; the worker that issues a challenge is usually not the one
@@ -20,7 +25,8 @@ import logging
 import time
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.security import HTTPAuthorizationCredentials
 from webauthn import (
     generate_authentication_options,
     generate_registration_options,
@@ -37,7 +43,15 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
 )
 
-from auth import AdminUser, EnrollmentUser, verify_admin_optional
+from auth import (
+    AdminUser,
+    EnrollmentUser,
+    _authenticate,
+    clear_session_cookie,
+    security,
+    set_session_cookie,
+    verify_admin_optional,
+)
 from config import Settings, get_settings
 from core.sessions import (
     DEFAULT_TTL_SECONDS,
@@ -50,6 +64,7 @@ from models import (
     CredentialDeleteResponse,
     CredentialInfo,
     CredentialsListResponse,
+    LogoutResponse,
     RegistrationOptionsRequest,
     RegistrationOptionsResponse,
     RegistrationVerifyRequest,
@@ -234,6 +249,7 @@ def create_auth_router(neo4j_adapter: Any) -> APIRouter:
     @limiter.limit(RATE_LIMITS["admin"])
     async def authentication_verify(
         request: Request,
+        response: Response,
         body: AuthenticationVerifyRequest,
         settings: Annotated[Settings, Depends(get_settings)],
     ) -> SessionResponse:
@@ -276,11 +292,42 @@ def create_auth_router(neo4j_adapter: Any) -> APIRouter:
             ttl_seconds=DEFAULT_TTL_SECONDS,
         )
         logger.info("Passkey login succeeded for '%s'", stored["name"])
+        # The token travels only in the HttpOnly cookie, never the body (#311)
+        set_session_cookie(response, token, DEFAULT_TTL_SECONDS)
         return SessionResponse(
-            token=token,
             expires_at=int(now) + DEFAULT_TTL_SECONDS,
             credential_name=stored["name"],
         )
+
+    @router.post("/token-login", response_model=SessionStatusResponse)
+    @limiter.limit(RATE_LIMITS["admin"])
+    async def token_login(
+        request: Request,
+        response: Response,
+        credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+    ) -> SessionStatusResponse:
+        """Exchange a token typed into the login form for the session cookie.
+
+        Validates the Bearer header exactly like any other call (same #225
+        lockout), then stores it HttpOnly so the browser holds no readable
+        copy. What the token may *do* is unchanged: the static token is still
+        enrollment-only outside local dev.
+        """
+        principal = _authenticate(request, credentials)
+        assert credentials is not None  # _authenticate raises 401 without one
+        set_session_cookie(response, credentials.credentials, DEFAULT_TTL_SECONDS)
+        logger.info("Token login (%s) - session cookie issued", principal["kind"])
+        return SessionStatusResponse(
+            authenticated=True,
+            kind=principal["kind"],
+            expires_at=int(time.time()) + DEFAULT_TTL_SECONDS,
+        )
+
+    @router.post("/logout", response_model=LogoutResponse)
+    async def logout(response: Response) -> LogoutResponse:
+        """Clear the session cookie. Safe to call when not signed in."""
+        clear_session_cookie(response)
+        return LogoutResponse(logged_out=True)
 
     @router.get("/session", response_model=SessionStatusResponse)
     async def session_status(

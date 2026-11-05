@@ -5,6 +5,7 @@
 import { logger } from "@/lib/logger";
 import { getAuthHeaders as getBaseAuthHeaders } from "@/lib/api/client";
 import { invalidate, revalidatingFetch } from "@/lib/api/cache";
+import { apiFetch } from "./client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -70,7 +71,7 @@ function getHeaders(): HeadersInit {
  * Create a new note (requires admin authentication)
  */
 export async function createNote(request: CreateNoteRequest): Promise<Note> {
-  const response = await fetch(`${API_URL}/api/notes`, {
+  const response = await apiFetch(`${API_URL}/api/notes`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(request),
@@ -211,7 +212,7 @@ export async function getRandomNote(): Promise<Note> {
  * Update a note
  */
 export async function updateNote(noteId: string, request: UpdateNoteRequest): Promise<Note> {
-  const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
+  const response = await apiFetch(`${API_URL}/api/notes/${noteId}`, {
     method: "PUT",
     headers: getHeaders(),
     body: JSON.stringify(request),
@@ -233,7 +234,7 @@ export async function updateNote(noteId: string, request: UpdateNoteRequest): Pr
  * Delete a note
  */
 export async function deleteNote(noteId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
+  const response = await apiFetch(`${API_URL}/api/notes/${noteId}`, {
     method: "DELETE",
     headers: getHeaders(),
   });

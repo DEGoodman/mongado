@@ -28,7 +28,7 @@ import { logger } from "@/lib/logger";
 import { mascotFor } from "@/lib/delight";
 import { recordRecent } from "@/lib/recents";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { isAuthenticated } from "@/lib/api/client";
+import { apiFetch, isAuthenticated } from "@/lib/api/client";
 import { config } from "@/lib/config";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -121,7 +121,7 @@ function NoteDetailContent() {
 
       try {
         // Just warm up the model (lightweight) - don't generate suggestions yet
-        const response = await fetch(`${API_URL}/api/ollama/warmup`, {
+        const response = await apiFetch(`${API_URL}/api/ollama/warmup`, {
           method: "POST",
         });
 

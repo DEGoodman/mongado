@@ -9,6 +9,7 @@ import Badge from "@/components/Badge";
 import { logger } from "@/lib/logger";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import styles from "./page.module.scss";
+import { apiFetch } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -62,7 +63,7 @@ export default function KnowledgeBasePage() {
     setHasSearched(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/search`, {
+      const response = await apiFetch(`${API_URL}/api/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -80,9 +80,7 @@ class TestCreateLibraryEntry:
         )
         assert response.status_code == 422
 
-    def test_create_requires_title(
-        self, client: TestClient, admin_headers: dict[str, str]
-    ) -> None:
+    def test_create_requires_title(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         response = client.post("/api/library", json={"author": "x"}, headers=admin_headers)
         assert response.status_code == 422
 
@@ -184,9 +182,7 @@ class TestUpdateLibraryEntry:
         self, client: TestClient, admin_headers: dict[str, str]
     ) -> None:
         _skip_if_no_neo4j()
-        response = client.put(
-            "/api/library/nope", json={"title": "x"}, headers=admin_headers
-        )
+        response = client.put("/api/library/nope", json={"title": "x"}, headers=admin_headers)
         assert response.status_code == 404
 
 

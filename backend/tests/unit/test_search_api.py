@@ -266,9 +266,24 @@ class TestChunkedSemanticSearch:
         self._client_with_chunk_neo4j(
             client,
             [
-                {"parent_type": "Article", "parent_id": other_id, "seq": 0, "embedding": orthogonal},
-                {"parent_type": "Article", "parent_id": target_id, "seq": 0, "embedding": orthogonal},
-                {"parent_type": "Article", "parent_id": target_id, "seq": 1, "embedding": query_embedding},
+                {
+                    "parent_type": "Article",
+                    "parent_id": other_id,
+                    "seq": 0,
+                    "embedding": orthogonal,
+                },
+                {
+                    "parent_type": "Article",
+                    "parent_id": target_id,
+                    "seq": 0,
+                    "embedding": orthogonal,
+                },
+                {
+                    "parent_type": "Article",
+                    "parent_id": target_id,
+                    "seq": 1,
+                    "embedding": query_embedding,
+                },
             ],
         )
 
@@ -295,11 +310,19 @@ class TestChunkedSemanticSearch:
         neo4j.is_available.return_value = True
         neo4j.get_all_chunk_embeddings.return_value = []
         neo4j.get_all_embeddings.return_value = [
-            {"id": target_id, "type": "Article", "embedding": [0.1] * 768, "model": "m", "version": 2}
+            {
+                "id": target_id,
+                "type": "Article",
+                "embedding": [0.1] * 768,
+                "model": "m",
+                "version": 2,
+            }
         ]
         main.app.dependency_overrides[get_neo4j] = lambda: neo4j
 
-        response = client.post("/api/search", json={"query": "anything", "semantic": True, "top_k": 5})
+        response = client.post(
+            "/api/search", json={"query": "anything", "semantic": True, "top_k": 5}
+        )
         assert response.status_code == 200
         results = response.json()["results"]
         assert len(results) == 1

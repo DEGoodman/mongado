@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { setAdminToken } from "@/lib/api/client";
+import { apiFetch, setAdminSession } from "@/lib/api/client";
 import { isPasskeySupported, loginWithPasskey } from "@/lib/api/passkey";
 import { hasDraft } from "@/lib/draft";
 import { logger } from "@/lib/logger";
@@ -60,16 +60,20 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Validate against the session endpoint, which exists to answer exactly
-      // this question - no throwaway note round-trip needed.
-      const response = await fetch(`${API_URL}/api/auth/session`, {
+      // The backend validates the token and moves it into an HttpOnly
+      // cookie (#311), so it never sits in browser storage.
+      const response = await apiFetch(`${API_URL}/api/auth/token-login`, {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const status = await response.json();
 
-      if (status.authenticated) {
-        setAdminToken(token);
+      if (response.ok) {
+        const status = await response.json();
+        setToken("");
+        setAdminSession(status.expires_at);
         goToDestination();
+      } else if (response.status === 429) {
+        setError("Too many failed attempts. Try again later.");
       } else {
         setError("Invalid token");
       }

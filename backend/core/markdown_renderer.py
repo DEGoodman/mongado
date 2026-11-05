@@ -7,6 +7,7 @@ Converts markdown to HTML with:
 - Heading anchors for table of contents
 """
 
+import html as html_lib
 import re
 from typing import Any
 
@@ -35,7 +36,7 @@ def _highlight_code(code: str, lang: str, **_kwargs: Any) -> str:
         lexer = get_lexer_by_name(lang, stripall=True) if lang else guess_lexer(code)
     except ClassNotFound:
         # Fallback to plain text if language not found
-        return f"<pre><code>{code}</code></pre>"
+        return f"<pre><code>{html_lib.escape(code)}</code></pre>"
 
     formatter = HtmlFormatter(
         style="monokai",  # Dark theme similar to oneDark
@@ -46,8 +47,32 @@ def _highlight_code(code: str, lang: str, **_kwargs: Any) -> str:
     return str(highlight(code, lexer, formatter))
 
 
+# Code spans and blocks in rendered HTML (Pygments output nests its <pre> in a
+# div, so matching <pre> covers fenced blocks). Wikilinks inside these are
+# example syntax and must stay literal (#308).
+_CODE_REGION = re.compile(r"(<pre\b.*?</pre>|<code\b.*?</code>)", re.DOTALL | re.IGNORECASE)
+
+_ARTICLE_LINK = re.compile(r"\[\[article:(\d+)\]\]")
+_NOTE_LINK = re.compile(r"\[\[([a-z0-9-]+)\]\]")
+
+
+def _replace_article_link(match: re.Match[str]) -> str:
+    article_id = match.group(1)
+    return (
+        f'<a href="/knowledge-base/articles/{article_id}" '
+        f'class="wikilink wikilink-article">📄 Article {article_id}</a>'
+    )
+
+
+def _replace_note_link(match: re.Match[str]) -> str:
+    note_id = match.group(1)
+    return f'<a href="/knowledge-base/notes/{note_id}" class="wikilink">{match.group(0)}</a>'
+
+
 def _convert_wikilinks(html: str) -> str:
     """Convert [[note-id]] and [[article:id]] wikilinks to HTML links.
+
+    Text inside <code> and <pre> is left untouched.
 
     Args:
         html: HTML content with potential wikilinks
@@ -55,26 +80,12 @@ def _convert_wikilinks(html: str) -> str:
     Returns:
         HTML with wikilinks converted to anchor tags
     """
-    # First, handle article links [[article:id]]
-    article_pattern = r"\[\[article:(\d+)\]\]"
-
-    def replace_article_link(match: re.Match[str]) -> str:
-        article_id = match.group(1)
-        return (
-            f'<a href="/knowledge-base/articles/{article_id}" '
-            f'class="wikilink wikilink-article">📄 Article {article_id}</a>'
-        )
-
-    html = re.sub(article_pattern, replace_article_link, html)
-
-    # Then, handle note links [[note-id]]
-    note_pattern = r"\[\[([a-z0-9-]+)\]\]"
-
-    def replace_note_link(match: re.Match[str]) -> str:
-        note_id = match.group(1)
-        return f'<a href="/knowledge-base/notes/{note_id}" class="wikilink">{match.group(0)}</a>'
-
-    return re.sub(note_pattern, replace_note_link, html)
+    # re.split with a capture group alternates prose (even) / code (odd)
+    parts = _CODE_REGION.split(html)
+    for i in range(0, len(parts), 2):
+        prose = _ARTICLE_LINK.sub(_replace_article_link, parts[i])
+        parts[i] = _NOTE_LINK.sub(_replace_note_link, prose)
+    return "".join(parts)
 
 
 def _slugify_heading(title: str) -> str:
@@ -118,7 +129,7 @@ def render_markdown_to_html(markdown_content: str) -> str:
             return _highlight_code(code, lang)
         else:
             # Plain code block without language
-            return f"<pre><code>{code}</code></pre>"
+            return f"<pre><code>{html_lib.escape(code)}</code></pre>"
 
     # Replace the default fence renderer
     md.renderer.rules["fence"] = custom_fence  # type: ignore[attr-defined]
