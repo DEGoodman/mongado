@@ -304,23 +304,6 @@ function NotesGraphContent() {
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-    // Add drop shadow filter for labels
-    const textShadow = defs
-      .append("filter")
-      .attr("id", "textShadow")
-      .attr("x", "-50%")
-      .attr("y", "-50%")
-      .attr("width", "200%")
-      .attr("height", "200%");
-
-    textShadow
-      .append("feDropShadow")
-      .attr("dx", 0)
-      .attr("dy", 1)
-      .attr("stdDeviation", 2)
-      .attr("flood-color", "#000")
-      .attr("flood-opacity", 0.3);
-
     const nodes = graphData.nodes;
     const edges = graphData.edges;
 
@@ -406,13 +389,16 @@ function NotesGraphContent() {
       .attr("stroke-width", 1)
       .attr("cursor", "pointer");
 
-    // Create labels (hidden by default)
+    // Create labels (hidden by default). Legibility comes from the
+    // paint-order halo stroke, not an SVG filter: WebKit rasterizes SVG
+    // filters on the CPU, and a feDropShadow on every label (hidden ones
+    // included) re-rendered each frame dropped Safari to ~10fps on hover
+    // and drag while Chrome stayed at 60
     const labelElements = labelGroup
       .selectAll("text")
       .data(nodes)
       .join("text")
       .attr("text-anchor", "start")
-      .attr("filter", "url(#textShadow)")
       .style("font-size", "13px")
       .style("font-weight", "500")
       .style("fill", "var(--color-text-primary)")
