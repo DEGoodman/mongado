@@ -6,7 +6,7 @@
  * ceremony calls, so the pages stay free of buffer juggling.
  */
 
-import { apiDelete, apiGet, apiPost, setAdminToken } from "./client";
+import { apiFetch, apiDelete, apiGet, apiPost, setAdminSession } from "./client";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -29,7 +29,6 @@ export interface SessionStatus {
 }
 
 interface SessionResponse {
-  token: string;
   expires_at: number;
   credential_name: string;
 }
@@ -159,14 +158,14 @@ export async function registerPasskey(name: string): Promise<PasskeyCredential[]
 }
 
 /**
- * Sign in with a passkey and store the resulting session.
+ * Sign in with a passkey. The backend sets the session as an HttpOnly
+ * cookie (#311); we only record its expiry for the UI.
  *
- * Deliberately not routed through apiPost: these two calls must not carry a
- * stale Authorization header, and their errors need to reach the UI with the
+ * Not routed through apiPost: errors need to reach the UI with the
  * backend's own wording (e.g. "No passkeys registered").
  */
 export async function loginWithPasskey(): Promise<{ expiresAt: number; credentialName: string }> {
-  const optionsResponse = await fetch(`${API_BASE_URL}/api/auth/login/options`, {
+  const optionsResponse = await apiFetch(`${API_BASE_URL}/api/auth/login/options`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -184,7 +183,7 @@ export async function loginWithPasskey(): Promise<{ expiresAt: number; credentia
     throw new Error("Passkey login was cancelled.");
   }
 
-  const verifyResponse = await fetch(`${API_BASE_URL}/api/auth/login/verify`, {
+  const verifyResponse = await apiFetch(`${API_BASE_URL}/api/auth/login/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ credential: encodeAuthenticationCredential(credential) }),
@@ -195,7 +194,7 @@ export async function loginWithPasskey(): Promise<{ expiresAt: number; credentia
   }
 
   const session: SessionResponse = await verifyResponse.json();
-  setAdminToken(session.token, session.expires_at);
+  setAdminSession(session.expires_at);
   return { expiresAt: session.expires_at, credentialName: session.credential_name };
 }
 

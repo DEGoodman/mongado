@@ -38,6 +38,27 @@ class TestRenderMarkdownToHtml:
         html = render_markdown_to_html("See [[article:3]]")
         assert '<a href="/knowledge-base/articles/3" class="wikilink wikilink-article">' in html
 
+    def test_wikilink_in_inline_code_stays_literal(self) -> None:
+        """#308: example syntax in `code` must not become a live link."""
+        html = render_markdown_to_html("Write `[[note-id]]` to link, e.g. [[wise-mountain]]")
+        assert "<code>[[note-id]]</code>" in html
+        assert 'href="/knowledge-base/notes/note-id"' not in html
+        assert 'href="/knowledge-base/notes/wise-mountain"' in html
+
+    def test_wikilink_in_fenced_block_stays_literal(self) -> None:
+        for fence in ("```markdown\nSee [[swift-river]]\n```", "```\nSee [[swift-river]]\n```"):
+            html = render_markdown_to_html(fence)
+            assert "wikilink" not in html, fence
+            assert "swift-river" in html
+
+    def test_article_wikilink_in_code_stays_literal(self) -> None:
+        html = render_markdown_to_html("Use `[[article:3]]`")
+        assert "wikilink" not in html
+
+    def test_plain_code_block_is_escaped(self) -> None:
+        html = render_markdown_to_html("```\n<b>x</b>\n```")
+        assert "&lt;b&gt;x&lt;/b&gt;" in html
+
     def test_table_renders(self) -> None:
         html = render_markdown_to_html("| a | b |\n|---|---|\n| 1 | 2 |")
         assert "<table>" in html

@@ -6,6 +6,18 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Fenced blocks and inline code spans. Wikilinks inside them are example
+# syntax, not references, so they must not become graph edges (#308).
+_FENCED_CODE = re.compile(
+    r"^ {0,3}(`{3,}|~{3,}).*?(?:^ {0,3}\1[^\S\n]*$|\Z)", re.MULTILINE | re.DOTALL
+)
+_INLINE_CODE = re.compile(r"(`+)[^`\n].*?\1")
+
+
+def strip_code(content: str) -> str:
+    """Remove fenced code blocks and inline code spans from markdown."""
+    return _INLINE_CODE.sub(" ", _FENCED_CODE.sub(" ", content))
+
 
 class WikilinkParser:
     """Parse [[note-id]] and [[article:id]] wikilinks from markdown content."""
@@ -28,7 +40,7 @@ class WikilinkParser:
         Returns:
             List of unique note IDs
         """
-        links = self.WIKILINK_PATTERN.findall(content)
+        links = self.WIKILINK_PATTERN.findall(strip_code(content))
         unique_links = list(dict.fromkeys(links))  # Preserve order, remove duplicates
         logger.debug("Extracted %d note wikilinks from content", len(unique_links))
         return unique_links
@@ -42,7 +54,7 @@ class WikilinkParser:
         Returns:
             List of unique article IDs (integers)
         """
-        links = self.ARTICLE_LINK_PATTERN.findall(content)
+        links = self.ARTICLE_LINK_PATTERN.findall(strip_code(content))
         unique_ids = list(dict.fromkeys(int(lid) for lid in links))
         logger.debug("Extracted %d article wikilinks from content", len(unique_ids))
         return unique_ids
@@ -121,7 +133,9 @@ class WikilinkParser:
                 note = notes_map[note_id]
                 title = note.get("title", note_id)
                 url = f"/knowledge-base/notes/{note_id}"
-                return f'<a href="{url}" class="wikilink wikilink-note" title="{title}">{note_id}</a>'
+                return (
+                    f'<a href="{url}" class="wikilink wikilink-note" title="{title}">{note_id}</a>'
+                )
             else:
                 # Broken link
                 return f'<span class="wikilink-broken" title="Note not found">[[{note_id}]]</span>'

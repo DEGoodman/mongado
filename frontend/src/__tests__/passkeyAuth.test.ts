@@ -9,7 +9,13 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { isPasskeySupported } from "@/lib/api/passkey";
-import { setAdminToken, clearAdminToken, isAuthenticated, getAuthHeaders } from "@/lib/api/client";
+import {
+  apiFetch,
+  clearAdminSession,
+  getAuthHeaders,
+  isAuthenticated,
+  setAdminSession,
+} from "@/lib/api/client";
 
 describe("isPasskeySupported", () => {
   const originalPublicKeyCredential = window.PublicKeyCredential;
@@ -35,66 +41,68 @@ describe("isPasskeySupported", () => {
   });
 });
 
-describe("session storage", () => {
+describe("session bookkeeping (#311: credential lives in an HttpOnly cookie)", () => {
+  const fetchMock = vi.fn(() => Promise.resolve(new Response("{}")));
+
   beforeEach(() => {
     localStorage.clear();
+    fetchMock.mockClear();
+    vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("treats a passkey session as valid before its expiry", () => {
-    const inOneHour = Math.floor(Date.now() / 1000) + 3600;
-    setAdminToken("session-token", inOneHour);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const inOneHour = () => Math.floor(Date.now() / 1000) + 3600;
+
+  it("treats a session as valid before its expiry", () => {
+    setAdminSession(inOneHour());
     expect(isAuthenticated()).toBe(true);
   });
 
-  it("treats a passkey session as invalid at its expiry", () => {
-    const anHourAgo = Math.floor(Date.now() / 1000) - 3600;
-    setAdminToken("session-token", anHourAgo);
+  it("treats a session as invalid at its expiry and clears the hint", () => {
+    setAdminSession(Math.floor(Date.now() / 1000) - 1);
+    expect(isAuthenticated()).toBe(false);
+    expect(localStorage.getItem("admin_session_expires")).toBeNull();
+  });
+
+  it("is signed out with no session hint", () => {
     expect(isAuthenticated()).toBe(false);
   });
 
-  it("clears the stored token once the session has expired", () => {
-    setAdminToken("session-token", Math.floor(Date.now() / 1000) - 1);
-    isAuthenticated();
-    expect(localStorage.getItem("admin_token")).toBeNull();
-    expect(localStorage.getItem("admin_session_expires")).toBeNull();
+  it("stores no credential in localStorage, only the expiry", () => {
+    setAdminSession(inOneHour());
+    expect(Object.keys(localStorage)).toEqual(["admin_session_expires"]);
   });
 
-  it("falls back to the client-side TTL for static tokens", () => {
-    setAdminToken("static-admin-token");
-    expect(localStorage.getItem("admin_session_expires")).toBeNull();
-    expect(isAuthenticated()).toBe(true);
-  });
-
-  it("expires a static token older than the 7-day TTL", () => {
-    setAdminToken("static-admin-token");
-    const eightDaysAgo = Date.now() - 8 * 24 * 60 * 60 * 1000;
-    localStorage.setItem("admin_token_timestamp", eightDaysAgo.toString());
+  it("purges a pre-#311 bearer token and its now-stale session hint", () => {
+    localStorage.setItem("admin_token", "legacy-token");
+    localStorage.setItem("admin_token_timestamp", "123");
+    localStorage.setItem("admin_session_expires", String((inOneHour() + 0) * 1000));
     expect(isAuthenticated()).toBe(false);
+    expect(localStorage.length).toBe(0);
   });
 
-  it("drops a stale session expiry when a static token replaces a session", () => {
-    setAdminToken("session-token", Math.floor(Date.now() / 1000) + 3600);
-    setAdminToken("static-admin-token");
+  it("never sends an Authorization header", () => {
+    setAdminSession(inOneHour());
+    expect(getAuthHeaders()["Authorization"]).toBeUndefined();
+  });
+
+  it("apiFetch sends the session cookie", async () => {
+    await apiFetch("http://api.test/x", { method: "POST" });
+    expect(fetchMock).toHaveBeenCalledWith("http://api.test/x", {
+      credentials: "include",
+      method: "POST",
+    });
+  });
+
+  it("logout clears the hint and asks the server to drop the cookie", () => {
+    setAdminSession(inOneHour());
+    clearAdminSession();
     expect(localStorage.getItem("admin_session_expires")).toBeNull();
-  });
-
-  it("sends the stored token as a bearer credential", () => {
-    setAdminToken("session-token", Math.floor(Date.now() / 1000) + 3600);
-    const headers = getAuthHeaders() as Record<string, string>;
-    expect(headers["Authorization"]).toBe("Bearer session-token");
-  });
-
-  it("sends no Authorization header when signed out", () => {
-    clearAdminToken();
-    const headers = getAuthHeaders() as Record<string, string>;
-    expect(headers["Authorization"]).toBeUndefined();
-  });
-
-  it("clears every auth key on logout", () => {
-    setAdminToken("session-token", Math.floor(Date.now() / 1000) + 3600);
-    clearAdminToken();
-    expect(localStorage.getItem("admin_token")).toBeNull();
-    expect(localStorage.getItem("admin_token_timestamp")).toBeNull();
-    expect(localStorage.getItem("admin_session_expires")).toBeNull();
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toMatch(/\/api\/auth\/logout$/);
+    expect(init).toMatchObject({ method: "POST", credentials: "include" });
   });
 });

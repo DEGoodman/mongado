@@ -172,7 +172,7 @@
     // Reference numbers in body text (superscript)
     .footnote-ref {
       a {
-        color: $orange-600;
+        color: $color-link-default;
         font-weight: $font-weight-medium;
         text-decoration: none;
         font-size: 0.75em;
@@ -181,7 +181,7 @@
         padding: 0 $spacing-1;
 
         &:hover {
-          color: $orange-700;
+          color: $color-link-hover;
           text-decoration: underline;
         }
       }
@@ -220,12 +220,12 @@
           // Back-reference link (↩)
           .footnote-backref {
             margin-left: $spacing-2;
-            color: $orange-600;
+            color: $color-link-default;
             text-decoration: none;
             font-size: 0.85em;
 
             &:hover {
-              color: $orange-700;
+              color: $color-link-hover;
               text-decoration: none;
             }
           }

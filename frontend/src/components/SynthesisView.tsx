@@ -18,6 +18,7 @@ import { streamSSE } from "@/lib/sse";
 import { saveDraft } from "@/lib/draft";
 import SourceList, { type Source } from "@/components/SourceList";
 import styles from "./AIPanel.module.scss";
+import { apiFetch } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const REQUEST_TIMEOUT_MS = 120000; // CPU inference can be slow, same budget as Ask
@@ -49,7 +50,7 @@ export default function SynthesisView({ active }: SynthesisViewProps) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-      const response = await fetch(`${API_URL}/api/synthesize`, {
+      const response = await apiFetch(`${API_URL}/api/synthesize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: submittedQueryValue }),

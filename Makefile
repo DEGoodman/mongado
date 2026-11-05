@@ -98,8 +98,9 @@ test-all: ## Run full test suite with coverage
 
 ##@ Backend Code Quality
 
-lint-backend: ## Run backend linter (ruff)
+lint-backend: ## Run backend linter + format check (ruff)
 	docker compose exec backend ruff check .
+	docker compose exec backend ruff format --check .
 
 format-backend: ## Format backend code (ruff)
 	docker compose exec backend ruff format .
@@ -144,6 +145,7 @@ typecheck: typecheck-backend typecheck-frontend ## Run all type checkers
 ci: ## Run full CI pipeline (lint, typecheck, security, tests)
 	@echo "=== Backend CI ==="
 	docker compose exec backend ruff check .
+	docker compose exec backend ruff format --check .
 	docker compose exec backend mypy .
 	docker compose exec backend bandit -r . -c pyproject.toml
 	docker compose exec backend pytest tests/ --cov

@@ -1,7 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
- * End-to-end passkey enrollment and login (#229).
+ * End-to-end passkey enrollment and login (#229), with the session carried
+ * in an HttpOnly cookie (#311).
  *
  * Uses Chrome's WebAuthn virtual authenticator over CDP, so the full ceremony
  * runs for real - challenge, attestation, assertion, signature verification -
@@ -86,20 +87,30 @@ test.describe("Passkey authentication", () => {
     await expect(enrolledRow).toBeVisible({ timeout: 15000 });
 
     // Sign out, then sign back in using only the passkey
+    await page.context().clearCookies();
     await page.evaluate(() => localStorage.clear());
     await page.goto("/login");
     await page.getByRole("button", { name: /sign in with passkey/i }).click();
     await expect(page).toHaveURL(/\/knowledge-base\/notes/, { timeout: 15000 });
 
-    // The stored credential must be a session token carrying a server expiry,
-    // not the static admin token
-    const session = await page.evaluate(() => ({
-      token: localStorage.getItem("admin_token"),
+    // The credential is a session token in an HttpOnly cookie (#311) - not
+    // the static admin token, and nothing page JavaScript can read
+    const cookie = (await page.context().cookies(API_URL)).find(
+      (c) => c.name === "mongado_session"
+    );
+    expect(cookie).toBeDefined();
+    expect(cookie!.httpOnly).toBe(true);
+    expect(cookie!.sameSite).toBe("Strict");
+    expect(cookie!.value).not.toBe(ADMIN_TOKEN);
+
+    const stored = await page.evaluate(() => ({
+      keys: Object.keys(localStorage),
       expires: localStorage.getItem("admin_session_expires"),
+      documentCookie: document.cookie,
     }));
-    expect(session.token).not.toBe(process.env.E2E_ADMIN_TOKEN);
-    expect(session.expires).toBeTruthy();
-    expect(Number(session.expires)).toBeGreaterThan(Date.now());
+    expect(stored.keys).not.toContain("admin_token");
+    expect(stored.documentCookie).not.toContain("mongado_session");
+    expect(Number(stored.expires)).toBeGreaterThan(Date.now());
 
     // Revoking removes it from the list
     await page.goto("/admin");

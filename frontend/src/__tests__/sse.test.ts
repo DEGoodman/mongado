@@ -145,7 +145,7 @@ describe("streamSSE", () => {
     expect(errorFn).not.toHaveBeenCalled();
   });
 
-  it("passes method, headers, body, and signal through to fetch", async () => {
+  it("passes method, headers, body, and signal through to fetch, with the session cookie", async () => {
     const fetchMock = vi.fn().mockResolvedValue(streamingResponse([]));
     vi.stubGlobal("fetch", fetchMock);
     const controller = new AbortController();
@@ -159,6 +159,7 @@ describe("streamSSE", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/thing", {
+      credentials: "include",
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: "x" }),

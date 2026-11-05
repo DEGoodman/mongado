@@ -235,3 +235,27 @@ class TestGetLinkContext:
         context = self.parser.get_link_context(content, "missing-link")
 
         assert context is None
+
+
+class TestCodeIsNotALink:
+    """#308: wikilinks inside code are example syntax, not graph edges."""
+
+    def setup_method(self) -> None:
+        self.parser = WikilinkParser()
+
+    def test_inline_code_ignored(self) -> None:
+        content = "Write `[[note-id]]` to link, like [[wise-mountain]]"
+        assert self.parser.extract_links(content) == ["wise-mountain"]
+
+    def test_fenced_block_ignored(self) -> None:
+        content = (
+            "Before [[real-one]]\n\n```markdown\nSee [[swift-river]]\n```\n\nAfter [[real-two]]"
+        )
+        assert self.parser.extract_links(content) == ["real-one", "real-two"]
+
+    def test_tilde_fence_and_unclosed_fence(self) -> None:
+        assert self.parser.extract_links("~~~\n[[a-b]]\n~~~\n[[c-d]]") == ["c-d"]
+        assert self.parser.extract_links("[[c-d]]\n```\n[[a-b]]") == ["c-d"]
+
+    def test_article_links_in_code_ignored(self) -> None:
+        assert self.parser.extract_article_links("`[[article:3]]` vs [[article:4]]") == [4]

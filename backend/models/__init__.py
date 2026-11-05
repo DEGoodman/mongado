@@ -43,6 +43,7 @@ from models.auth import (
     CredentialDeleteResponse,
     CredentialInfo,
     CredentialsListResponse,
+    LogoutResponse,
     RegistrationOptionsRequest,
     RegistrationOptionsResponse,
     RegistrationVerifyRequest,
@@ -128,6 +129,7 @@ __all__ = [
     "RegistrationOptionsRequest",
     "RegistrationOptionsResponse",
     "RegistrationVerifyRequest",
+    "LogoutResponse",
     "SessionResponse",
     "SessionStatusResponse",
     # Note models

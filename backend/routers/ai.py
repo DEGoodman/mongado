@@ -292,9 +292,7 @@ UserResourcesDep = Annotated[list[dict[str, Any]], Depends(get_user_resources)]
 
 @router.post("/ollama/warmup", response_model=WarmupResponse)
 @limiter.limit(RATE_LIMITS["ai_warmup"])
-def warmup_ollama(
-    request: Request, ollama: OllamaDep, context: str = "chat"
-) -> WarmupResponse:
+def warmup_ollama(request: Request, ollama: OllamaDep, context: str = "chat") -> WarmupResponse:
     """Warm up an Ollama model by starting the llama runner.
 
     This endpoint takes ~15-20 seconds to complete, but makes subsequent
@@ -453,7 +451,9 @@ def ask_question(
         relevant_docs = ollama.semantic_search(question_request.question, all_resources, top_k=5)
 
     # Generate answer with hybrid mode (KB + general knowledge)
-    answer = ollama.ask_question(question_request.question, relevant_docs, allow_general_knowledge=True)
+    answer = ollama.ask_question(
+        question_request.question, relevant_docs, allow_general_knowledge=True
+    )
 
     if not answer:
         # The provider chain was exhausted (all hosted LLMs failed). This is a
@@ -676,7 +676,9 @@ def suggest_links(
         suggestions = suggestions[:5]
 
         logger.info("Generated %d link suggestions for note %s", len(suggestions), note_id)
-        return LinkSuggestionsResponse(suggestions=suggestions, count=len(suggestions), cached=False)
+        return LinkSuggestionsResponse(
+            suggestions=suggestions, count=len(suggestions), cached=False
+        )
 
     except Exception as e:
         logger.error("Error generating link suggestions: %s", e)
@@ -754,9 +756,7 @@ def suggest_stream(
                 token_count += 1
                 # Send heartbeat every 10 tokens to show activity
                 if token_count % 10 == 0:
-                    yield format_sse(
-                        {"type": "generating", "phase": "tags", "tokens": token_count}
-                    )
+                    yield format_sse({"type": "generating", "phase": "tags", "tokens": token_count})
 
             if tag_text:
                 tags_data = ai_core.parse_json_response(tag_text, expected_type="array")
@@ -800,9 +800,7 @@ def suggest_stream(
                 # Generate links with token streaming for real-time progress
                 link_text = ""
                 token_count = 0
-                for text in _ollama.generate_stream(
-                    link_prompt, role="structured", num_ctx=8192
-                ):
+                for text in _ollama.generate_stream(link_prompt, role="structured", num_ctx=8192):
                     link_text += text
                     token_count += 1
                     # Send heartbeat every 10 tokens to show activity
@@ -1053,10 +1051,7 @@ def editor_assist(
             # "nothing to check against" beats a hallucinated critique.
             return EditorAssistResponse(
                 command=command,
-                result=(
-                    "There's nothing in the knowledge base yet to check this "
-                    "against."
-                ),
+                result=("There's nothing in the knowledge base yet to check this against."),
                 sources=[],
                 degraded=True,
             )
@@ -1180,7 +1175,9 @@ def editor_assist_stream(
 
             except Exception as e:
                 logger.error("Editor /link stream: generation failed: %s", e)
-                yield format_sse({"type": "error", "message": "Failed to generate link suggestions"})
+                yield format_sse(
+                    {"type": "error", "message": "Failed to generate link suggestions"}
+                )
 
             return
 
@@ -1209,8 +1206,7 @@ def editor_assist_stream(
                     {
                         "type": "token",
                         "text": (
-                            "There's nothing in the knowledge base yet to check "
-                            "this against."
+                            "There's nothing in the knowledge base yet to check this against."
                         ),
                     }
                 )
@@ -1232,9 +1228,7 @@ def editor_assist_stream(
                     yield format_sse({"type": "token", "text": chunk})
 
                 if token_count == 0:
-                    logger.warning(
-                        "Writing-partner stream: empty response from LLM (%s)", _command
-                    )
+                    logger.warning("Writing-partner stream: empty response from LLM (%s)", _command)
                     yield format_sse({"type": "error", "message": "Failed to generate response"})
                     return
 
@@ -1244,9 +1238,7 @@ def editor_assist_stream(
                 yield format_sse({"type": "complete"})
 
             except Exception as e:
-                logger.error(
-                    "Writing-partner stream: generation failed (%s): %s", _command, e
-                )
+                logger.error("Writing-partner stream: generation failed (%s): %s", _command, e)
                 yield format_sse({"type": "error", "message": "Failed to generate response"})
 
             return
@@ -1268,9 +1260,7 @@ def editor_assist_stream(
                 yield format_sse({"type": "error", "message": "Failed to generate response"})
                 return
 
-            logger.info(
-                "Editor command stream complete: %s (%d tokens)", _command, token_count
-            )
+            logger.info("Editor command stream complete: %s (%d tokens)", _command, token_count)
             yield format_sse({"type": "complete"})
 
         except Exception as e:

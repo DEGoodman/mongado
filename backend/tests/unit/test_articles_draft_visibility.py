@@ -92,9 +92,7 @@ class TestGetArticleDraftVisibility:
         response = client.get(f"/api/articles/{_DRAFT_ARTICLE['id']}")
         assert response.status_code == 404
 
-    def test_admin_can_fetch_draft(
-        self, client: TestClient, admin_headers: dict[str, str]
-    ) -> None:
+    def test_admin_can_fetch_draft(self, client: TestClient, admin_headers: dict[str, str]) -> None:
         _set_mixed_articles()
         response = client.get(f"/api/articles/{_DRAFT_ARTICLE['id']}", headers=admin_headers)
         assert response.status_code == 200
@@ -133,9 +131,7 @@ class TestArticlesCacheControl:
         self, client: TestClient, admin_headers: dict[str, str]
     ) -> None:
         _set_mixed_articles()
-        response = client.get(
-            f"/api/articles/{_PUBLISHED_ARTICLE['id']}", headers=admin_headers
-        )
+        response = client.get(f"/api/articles/{_PUBLISHED_ARTICLE['id']}", headers=admin_headers)
         assert response.status_code == 200
         cache_control = response.headers["cache-control"]
         assert "private" in cache_control

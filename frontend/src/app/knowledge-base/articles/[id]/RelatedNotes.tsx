@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
 import styles from "./page.module.scss";
+import { apiFetch } from "@/lib/api/client";
 
 interface RelatedNote {
   id: string;
@@ -25,7 +26,9 @@ export default function RelatedNotes({ articleId }: { articleId: number }) {
   useEffect(() => {
     async function fetchRelatedNotes() {
       try {
-        const response = await fetch(`${API_URL}/api/articles/${articleId}/related-notes?limit=5`);
+        const response = await apiFetch(
+          `${API_URL}/api/articles/${articleId}/related-notes?limit=5`
+        );
 
         if (response.ok) {
           const data = await response.json();

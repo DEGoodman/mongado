@@ -207,9 +207,7 @@ class TestTokenManagement:
 
 
 class TestScopeEnforcement:
-    def _mint(
-        self, client: TestClient, session_headers: dict[str, str], scopes: list[str]
-    ) -> str:
+    def _mint(self, client: TestClient, session_headers: dict[str, str], scopes: list[str]) -> str:
         body = client.post(
             "/api/admin/tokens",
             json={"name": "t", "scopes": scopes},

@@ -55,9 +55,19 @@ ARTICLE_GAP_MIN_NOTES = 4
 
 # Number words, so "5 Dysfunctions" and "Five Dysfunctions" normalize alike.
 _NUMBER_WORDS = {
-    "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
-    "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
-    "10": "ten", "11": "eleven", "12": "twelve",
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+    "10": "ten",
+    "11": "eleven",
+    "12": "twelve",
 }
 
 _STOPWORDS = frozenset({"a", "an", "the", "of", "for", "and", "to", "in", "on"})
@@ -341,9 +351,7 @@ def find_uncovered_tag_clusters(
     Returns:
         List of uncovered topic dicts, largest cluster first
     """
-    covered = {
-        normalize_tag(tag) for article in articles for tag in (article.get("tags") or [])
-    }
+    covered = {normalize_tag(tag) for article in articles for tag in (article.get("tags") or [])}
 
     by_tag: dict[str, list[dict[str, str]]] = {}
     for note in notes:
@@ -432,9 +440,7 @@ def compose_candidates(
     return composed
 
 
-def compute_kb_fingerprint(
-    notes: list[dict[str, Any]], articles: list[dict[str, Any]]
-) -> str:
+def compute_kb_fingerprint(notes: list[dict[str, Any]], articles: list[dict[str, Any]]) -> str:
     """Compute a stable fingerprint of KB state, for cache invalidation.
 
     Pure function: No I/O, no side effects, deterministic.
@@ -499,15 +505,15 @@ def _describe_candidate(suggestion_type: str, data: dict[str, Any]) -> str:
         return (
             f'- "{data["note_a_title"]}" (id: {data["note_a_id"]}) and '
             f'"{data["note_b_title"]}" (id: {data["note_b_id"]}) '
-            f'- {data["similarity"]:.0%} similar'
+            f"- {data['similarity']:.0%} similar"
         )
     if suggestion_type == "hub":
         listed = ", ".join(f'"{t}"' for t in data["titles"])
-        return f'- {data["size"]} related notes: {listed} (ids: {", ".join(data["note_ids"])})'
+        return f"- {data['size']} related notes: {listed} (ids: {', '.join(data['note_ids'])})"
     if suggestion_type == "promote":
         return (
             f'- "{data["title"]}" (id: {data["note_id"]}, '
-            f'{data["backlink_count"]} notes reference it)'
+            f"{data['backlink_count']} notes reference it)"
         )
     if suggestion_type == "split":
         return f'- "{data["title"]}" (id: {data["note_id"]}, {data["content_length"]} chars)'
@@ -515,7 +521,7 @@ def _describe_candidate(suggestion_type: str, data: dict[str, Any]) -> str:
         listed = ", ".join(f'"{t}"' for t in data["titles"])
         return (
             f'- tag "{data["tag"]}": {data["note_count"]} notes ({listed}) but no article '
-            f'(ids: {", ".join(data["note_ids"])})'
+            f"(ids: {', '.join(data['note_ids'])})"
         )
     return ""
 
@@ -732,7 +738,7 @@ def _fallback_for(suggestion_type: str, data: dict[str, Any]) -> dict[str, Any] 
             "type": "duplicate",
             "title": f"Merge: {data['note_a_title']}",
             "description": (
-                f"\"{data['note_a_title']}\" and \"{data['note_b_title']}\" are "
+                f'"{data["note_a_title"]}" and "{data["note_b_title"]}" are '
                 f"{data['similarity']:.0%} similar with nearly the same title. "
                 "They look like the same idea captured twice - merge them."
             ),
@@ -744,7 +750,7 @@ def _fallback_for(suggestion_type: str, data: dict[str, Any]) -> dict[str, Any] 
             "type": "connection",
             "title": f"Link: {data['note_a_title']}",
             "description": (
-                f"\"{data['note_a_title']}\" and \"{data['note_b_title']}\" cover related "
+                f'"{data["note_a_title"]}" and "{data["note_b_title"]}" cover related '
                 f"ground ({data['similarity']:.0%} similar) but aren't linked. Add a wikilink."
             ),
             "related_notes": [data["note_a_id"], data["note_b_id"]],
@@ -790,7 +796,7 @@ def _fallback_for(suggestion_type: str, data: dict[str, Any]) -> dict[str, Any] 
             "type": "article",
             "title": f"Article idea: {data['tag']}",
             "description": (
-                f"You have {data['note_count']} notes tagged \"{data['tag']}\" but no "
+                f'You have {data["note_count"]} notes tagged "{data["tag"]}" but no '
                 "article covering it. Those notes are the raw material for one."
             ),
             "related_notes": data["note_ids"],

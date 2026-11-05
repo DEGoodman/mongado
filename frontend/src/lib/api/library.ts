@@ -5,6 +5,7 @@
 import { logger } from "@/lib/logger";
 import { getAuthHeaders } from "@/lib/api/client";
 import { invalidate, revalidatingFetch } from "@/lib/api/cache";
+import { apiFetch } from "./client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -125,7 +126,7 @@ export async function getLibraryEntry(entryId: string): Promise<LibraryEntry> {
 export async function createLibraryEntry(
   request: CreateLibraryEntryRequest
 ): Promise<LibraryEntry> {
-  const response = await fetch(`${API_URL}/api/library`, {
+  const response = await apiFetch(`${API_URL}/api/library`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -150,7 +151,7 @@ export async function updateLibraryEntry(
   entryId: string,
   request: UpdateLibraryEntryRequest
 ): Promise<LibraryEntry> {
-  const response = await fetch(`${API_URL}/api/library/${entryId}`, {
+  const response = await apiFetch(`${API_URL}/api/library/${entryId}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -172,7 +173,7 @@ export async function updateLibraryEntry(
  * Delete a library entry (requires admin authentication).
  */
 export async function deleteLibraryEntry(entryId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/library/${entryId}`, {
+  const response = await apiFetch(`${API_URL}/api/library/${entryId}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

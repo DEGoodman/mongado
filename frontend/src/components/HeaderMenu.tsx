@@ -21,7 +21,7 @@ import { sparkleBurst } from "@/lib/delight";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSettings } from "@/hooks/useSettings";
 import { logger } from "@/lib/logger";
-import { isAuthenticated, clearAdminToken } from "@/lib/api/client";
+import { isAuthenticated, clearAdminSession } from "@/lib/api/client";
 import styles from "./HeaderMenu.module.scss";
 
 export default function HeaderMenu() {
@@ -54,7 +54,7 @@ export default function HeaderMenu() {
   }, [isOpen]);
 
   const handleLogout = () => {
-    clearAdminToken();
+    clearAdminSession();
     logger.info("User logged out");
     setIsOpen(false);
     router.push("/login");

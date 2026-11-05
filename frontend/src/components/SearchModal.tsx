@@ -19,6 +19,7 @@ import { mascotFor } from "@/lib/delight";
 import { getRecents, recordRecent, type RecentItem } from "@/lib/recents";
 import { MagnifyingGlass, NotePencil, Graph, Shuffle } from "@phosphor-icons/react";
 import styles from "./SearchModal.module.scss";
+import { apiFetch } from "@/lib/api/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -125,7 +126,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     setHasSearched(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/search`, {
+      const response = await apiFetch(`${API_URL}/api/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -217,7 +218,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       if (item.kind === "action") {
         if (item.action.special === "random") {
           try {
-            const res = await fetch(`${API_URL}/api/notes/random`);
+            const res = await apiFetch(`${API_URL}/api/notes/random`);
             if (res.ok) {
               const note = await res.json();
               if (note?.id) {

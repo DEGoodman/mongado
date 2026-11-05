@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { CircleDashed, MapTrifold, Star } from "@phosphor-icons/react";
 import Link from "next/link";
 import styles from "./QuickLists.module.scss";
+import { apiFetch } from "@/lib/api/client";
 
 interface Note {
   id: string;
@@ -124,7 +125,7 @@ export default function QuickLists() {
   useEffect(() => {
     async function fetchQuickLists() {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notes/quick-lists`);
+        const response = await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notes/quick-lists`);
         if (!response.ok) {
           throw new Error("Failed to fetch quick lists");
         }

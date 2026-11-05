@@ -266,9 +266,7 @@ class TestBuildSynthesisPrompt:
 class TestBuildEditorCommandPrompt:
     """Tests for editor slash-command prompt construction (#146)."""
 
-    @pytest.mark.parametrize(
-        "command", ["expand", "simplify", "summarize", "continue", "rephrase"]
-    )
+    @pytest.mark.parametrize("command", ["expand", "simplify", "summarize", "continue", "rephrase"])
     def test_builds_prompt_for_each_transform_command(self, command):
         """Every text-transform command builds a prompt containing the text
         and an instruction to return only the replacement/continuation prose."""
