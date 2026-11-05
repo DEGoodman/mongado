@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 class Neo4jAdapter:
     """Adapter for Neo4j graph database operations."""
 
+    # Minimum seconds between reconnect attempts while Neo4j is unavailable (#314)
+    RECONNECT_COOLDOWN_SECONDS = 5.0
+
     # Valid node types to prevent Cypher injection
     VALID_NODE_TYPES = frozenset({"Article", "Note", "LibraryEntry"})
 
@@ -45,12 +48,18 @@ class Neo4jAdapter:
         self.database = settings.neo4j_database
         self.driver: Driver | None = None
         self._available = False
+        self._last_connect_attempt = 0.0
 
         # Try to connect
         self._connect()
 
     def _connect(self) -> None:
         """Establish connection to Neo4j."""
+        self._last_connect_attempt = time.monotonic()
+        if self.driver is not None:
+            # Retrying after a failed attempt: drop the old driver's pool
+            self.driver.close()
+            self.driver = None
         try:
             # Set connection timeout to 0.5 seconds to avoid blocking startup
             self.driver = GraphDatabase.driver(
@@ -79,7 +88,7 @@ class Neo4jAdapter:
 
     def _initialize_schema(self) -> None:
         """Create indexes and constraints for optimal performance."""
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return
 
         with self.driver.session(database=self.database) as session:
@@ -176,10 +185,23 @@ class Neo4jAdapter:
                 """
             )
 
-            logger.info("Neo4j schema initialized (Notes + Articles + Library + embeddings support)")
+            logger.info(
+                "Neo4j schema initialized (Notes + Articles + Library + embeddings support)"
+            )
 
     def is_available(self) -> bool:
-        """Check if Neo4j is available."""
+        """Check if Neo4j is available, reconnecting if the last attempt failed.
+
+        The backend can boot before Neo4j is ready (after a droplet reboot,
+        Docker restarts every container at once and ignores depends_on
+        health gates). Rather than staying unavailable for the life of the
+        process, retry the connection at most once per cooldown window (#314).
+        """
+        if not self._available:
+            elapsed = time.monotonic() - self._last_connect_attempt
+            if elapsed >= self.RECONNECT_COOLDOWN_SECONDS:
+                logger.info("Neo4j unavailable - retrying connection to %s", self.uri)
+                self._connect()
         return self._available
 
     def close(self) -> None:
@@ -212,7 +234,7 @@ class Neo4jAdapter:
         Returns:
             Created note as dict
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             raise RuntimeError("Neo4j not available")
 
         with self.driver.session(database=self.database) as session:
@@ -266,7 +288,7 @@ class Neo4jAdapter:
         Returns:
             Note dict or None if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         with self.driver.session(database=self.database) as session:
@@ -319,7 +341,7 @@ class Neo4jAdapter:
         Returns:
             List of note dicts sorted by created_at descending
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -399,7 +421,7 @@ class Neo4jAdapter:
         Returns:
             Updated note dict or None if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         with self.driver.session(database=self.database) as session:
@@ -457,7 +479,7 @@ class Neo4jAdapter:
         Returns:
             True if deleted, False if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -484,7 +506,7 @@ class Neo4jAdapter:
         Returns:
             List of notes with links to this note
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -516,7 +538,7 @@ class Neo4jAdapter:
         Returns:
             List of linked notes
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -545,7 +567,7 @@ class Neo4jAdapter:
         Returns:
             Random note dict or None if no notes exist
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         with self.driver.session(database=self.database) as session:
@@ -575,7 +597,7 @@ class Neo4jAdapter:
         Returns:
             List of orphan notes
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -603,7 +625,7 @@ class Neo4jAdapter:
         Returns:
             List of dead-end notes
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -634,7 +656,7 @@ class Neo4jAdapter:
         Returns:
             List of hub notes with link counts
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -667,7 +689,7 @@ class Neo4jAdapter:
         Returns:
             List of central notes with backlink counts
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -699,7 +721,7 @@ class Neo4jAdapter:
         Returns:
             Number of notes, or 0 if unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return 0
 
         with self.driver.session(database=self.database) as session:
@@ -713,7 +735,7 @@ class Neo4jAdapter:
         Returns:
             Mapping of flag name to enabled state (empty if unavailable)
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return {}
 
         with self.driver.session(database=self.database) as session:
@@ -732,7 +754,7 @@ class Neo4jAdapter:
         Returns:
             True if persisted, False if Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -755,7 +777,7 @@ class Neo4jAdapter:
             Credential records, newest first (empty if Neo4j unavailable).
             `public_key` is raw COSE bytes as stored.
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -815,7 +837,7 @@ class Neo4jAdapter:
         Returns:
             True if stored, False if Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -849,7 +871,7 @@ class Neo4jAdapter:
         Returns:
             True if updated, False if Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -873,7 +895,7 @@ class Neo4jAdapter:
         Returns:
             True if a credential was deleted, False otherwise
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -903,7 +925,7 @@ class Neo4jAdapter:
         Returns:
             True if stored, False if Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         now = time.time()
@@ -940,7 +962,7 @@ class Neo4jAdapter:
         Returns:
             True if the challenge was ours, unexpired, and is now consumed
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -983,7 +1005,7 @@ class Neo4jAdapter:
         Returns:
             True if stored, False if Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -1014,7 +1036,7 @@ class Neo4jAdapter:
         Returns:
             Token records without secrets (empty if Neo4j unavailable)
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -1052,7 +1074,7 @@ class Neo4jAdapter:
             Token record (including scopes and expiry), or None if not found
             / Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         with self.driver.session(database=self.database) as session:
@@ -1090,7 +1112,7 @@ class Neo4jAdapter:
         Returns:
             True if updated, False if Neo4j unavailable
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -1113,7 +1135,7 @@ class Neo4jAdapter:
         Returns:
             True if a token was deleted, False otherwise
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -1134,7 +1156,7 @@ class Neo4jAdapter:
         Returns:
             Set of all note IDs
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return set()
 
         with self.driver.session(database=self.database) as session:
@@ -1151,7 +1173,7 @@ class Neo4jAdapter:
         Returns:
             List of note dicts
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -1308,7 +1330,7 @@ class Neo4jAdapter:
         Returns:
             Created entry as dict
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             raise RuntimeError("Neo4j not available")
 
         now = time.time()
@@ -1345,7 +1367,7 @@ class Neo4jAdapter:
 
     def get_library_entry(self, entry_id: str) -> dict[str, Any] | None:
         """Get a Library entry by ID."""
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         with self.driver.session(database=self.database) as session:
@@ -1376,7 +1398,7 @@ class Neo4jAdapter:
         Returns:
             List of entry dicts sorted by created_at descending
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         where_clauses = []
@@ -1416,7 +1438,7 @@ class Neo4jAdapter:
         Returns:
             Updated entry dict or None if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         set_clauses = ["e.updated_at = $updated_at"]
@@ -1455,7 +1477,7 @@ class Neo4jAdapter:
         Returns:
             True if deleted, False if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         with self.driver.session(database=self.database) as session:
@@ -1473,7 +1495,7 @@ class Neo4jAdapter:
 
     def get_all_library_entry_ids(self) -> set[str]:
         """Return the set of all existing Library entry IDs (for ID generation)."""
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return set()
         with self.driver.session(database=self.database) as session:
             result = session.run("MATCH (e:LibraryEntry) RETURN e.id AS id")
@@ -1503,7 +1525,7 @@ class Neo4jAdapter:
         Returns:
             Article dict with id, title, content, etc.
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             raise RuntimeError("Neo4j not available")
 
         with self.driver.session(database=self.database) as session:
@@ -1539,7 +1561,7 @@ class Neo4jAdapter:
         Returns:
             Article dict or None if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         with self.driver.session(database=self.database) as session:
@@ -1565,7 +1587,7 @@ class Neo4jAdapter:
         Returns:
             List of article dicts
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -1588,7 +1610,7 @@ class Neo4jAdapter:
         Returns:
             IDs of the deleted stale Article nodes
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -1617,7 +1639,7 @@ class Neo4jAdapter:
         Returns:
             Number of chunks deleted
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return 0
 
         with self.driver.session(database=self.database) as session:
@@ -1657,7 +1679,7 @@ class Neo4jAdapter:
         Returns:
             True if successful
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         # Validate node_type to prevent Cypher injection
@@ -1690,7 +1712,7 @@ class Neo4jAdapter:
         Returns:
             Dict with embedding, model, version or None if not found
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         # Validate node_type to prevent Cypher injection
@@ -1727,7 +1749,7 @@ class Neo4jAdapter:
         Returns:
             List of dicts with id, type, embedding, model, version
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -1790,7 +1812,7 @@ class Neo4jAdapter:
         Returns:
             True if successful
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         validated_type = self._validate_node_type(node_type)
@@ -1827,7 +1849,7 @@ class Neo4jAdapter:
         Returns:
             List of dicts with parent_id, parent_type, seq, embedding
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -1874,7 +1896,7 @@ class Neo4jAdapter:
         Returns:
             True if successful
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         # Validate node_type to prevent Cypher injection
@@ -1922,7 +1944,7 @@ class Neo4jAdapter:
         Returns:
             Dict with ai_summary, ai_link_suggestions, and timestamps, or None
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return None
 
         # Validate node_type to prevent Cypher injection
@@ -1970,7 +1992,7 @@ class Neo4jAdapter:
         Returns:
             True if successful
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return False
 
         # Validate node_type to prevent Cypher injection
@@ -1997,7 +2019,7 @@ class Neo4jAdapter:
         Returns:
             List of notes with stats fields
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -2035,7 +2057,7 @@ class Neo4jAdapter:
         Returns:
             List of dicts with id, title, embedding
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return []
 
         with self.driver.session(database=self.database) as session:
@@ -2067,7 +2089,7 @@ class Neo4jAdapter:
         Returns:
             Dict mapping note_id -> set of linked note_ids
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             return {}
 
         with self.driver.session(database=self.database) as session:
@@ -2105,7 +2127,7 @@ class Neo4jAdapter:
         Returns:
             Dict with 'notes', 'relationships', and 'metadata'
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             raise RuntimeError("Neo4j not available")
 
         with self.driver.session(database=self.database) as session:
@@ -2163,7 +2185,7 @@ class Neo4jAdapter:
         Returns:
             Dict with import statistics
         """
-        if not self._available or not self.driver:
+        if not self.is_available() or not self.driver:
             raise RuntimeError("Neo4j not available")
 
         notes = data.get("notes", [])
