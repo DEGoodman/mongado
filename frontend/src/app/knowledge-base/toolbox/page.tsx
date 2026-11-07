@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Plus } from "@phosphor-icons/react";
 import Link from "next/link";
 import { listAllNotes, Note } from "@/lib/api/notes";
 import { logger } from "@/lib/logger";
 import Breadcrumb from "@/components/Breadcrumb";
 import PageHeader from "@/components/PageHeader";
+import FilterSheet, { FilterButton, FilterSearchRow } from "@/components/FilterSheet";
 import { LoadingState, ErrorState } from "@/components/PageState";
 import styles from "./page.module.scss";
 import { markdownToPlainPreview } from "@/lib/markdownPreview";
@@ -22,6 +24,9 @@ export default function ToolboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
 
   useEffect(() => {
     async function fetchReferences() {
@@ -110,6 +115,7 @@ export default function ToolboxPage() {
   };
 
   const hasActiveFilters = searchQuery || categoryFilter !== "all";
+  const activeFilterCount = categoryFilter !== "all" ? 1 : 0;
 
   if (loading) {
     return (
@@ -133,6 +139,12 @@ export default function ToolboxPage() {
         title="Toolbox"
         subtitle="Frameworks, checklists, and mental models at your fingertips"
         breadcrumb={<Breadcrumb section="toolbox" />}
+        count={references.length}
+        primaryAction={{
+          label: "New Reference",
+          href: "/knowledge-base/notes/new?ref=true",
+          icon: <Plus size={20} weight="bold" aria-hidden="true" />,
+        }}
         actions={
           <Link href="/knowledge-base/notes/new?ref=true" className={styles.newReferenceButton}>
             + New Reference
@@ -145,58 +157,75 @@ export default function ToolboxPage() {
           {/* Sidebar - Filters */}
           <aside className={styles.sidebar}>
             {/* Search */}
-            <div className={styles.searchBar}>
-              <input
-                type="text"
-                placeholder="Search references..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-              />
-            </div>
-
-            {/* Category Filter Section */}
-            {categories.length > 0 && (
-              <div className={styles.categoryFilterSection}>
-                <div className={styles.categoryFilterHeader}>
-                  <span className={styles.categoryFilterLabel}>Filter by category:</span>
-                </div>
-                <div className={styles.categoryBadges} role="group" aria-label="Category filters">
-                  <button
-                    type="button"
-                    onClick={() => setCategoryFilter("all")}
-                    className={`${styles.categoryBadge} ${categoryFilter === "all" ? styles.categoryBadgeActive : ""}`}
-                    aria-label="Show all categories"
-                    aria-pressed={categoryFilter === "all"}
-                  >
-                    All ({references.length})
-                  </button>
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategoryFilter(cat)}
-                      className={`${styles.categoryBadge} ${categoryFilter === cat ? styles.categoryBadgeActive : ""}`}
-                      aria-label={`Filter by category: ${cat}`}
-                      aria-pressed={categoryFilter === cat}
-                    >
-                      {cat} ({references.filter((r) => r.tags.includes(cat)).length})
-                    </button>
-                  ))}
-                </div>
+            <FilterSearchRow>
+              <div className={styles.searchBar}>
+                <input
+                  type="text"
+                  placeholder="Search references..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={styles.searchInput}
+                  aria-label="Search references"
+                />
               </div>
-            )}
+              <FilterButton
+                ref={filterButtonRef}
+                activeCount={activeFilterCount}
+                open={filtersOpen}
+                onClick={() => setFiltersOpen(true)}
+              />
+            </FilterSearchRow>
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className={styles.clearAllButtonSidebar}
-                aria-label="Clear category filter"
-              >
-                Clear all filters
-              </button>
-            )}
+            <FilterSheet
+              open={filtersOpen}
+              onClose={closeFilters}
+              activeCount={activeFilterCount}
+              onClearAll={clearFilters}
+              triggerRef={filterButtonRef}
+            >
+              {/* Category Filter Section */}
+              {categories.length > 0 && (
+                <div className={styles.categoryFilterSection}>
+                  <div className={styles.categoryFilterHeader}>
+                    <span className={styles.categoryFilterLabel}>Filter by category:</span>
+                  </div>
+                  <div className={styles.categoryBadges} role="group" aria-label="Category filters">
+                    <button
+                      type="button"
+                      onClick={() => setCategoryFilter("all")}
+                      className={`${styles.categoryBadge} ${categoryFilter === "all" ? styles.categoryBadgeActive : ""}`}
+                      aria-label="Show all categories"
+                      aria-pressed={categoryFilter === "all"}
+                    >
+                      All ({references.length})
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategoryFilter(cat)}
+                        className={`${styles.categoryBadge} ${categoryFilter === cat ? styles.categoryBadgeActive : ""}`}
+                        aria-label={`Filter by category: ${cat}`}
+                        aria-pressed={categoryFilter === cat}
+                      >
+                        {cat} ({references.filter((r) => r.tags.includes(cat)).length})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className={styles.clearAllButtonSidebar}
+                  aria-label="Clear category filter"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </FilterSheet>
           </aside>
 
           {/* Main Content - References */}

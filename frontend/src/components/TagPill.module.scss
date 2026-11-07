@@ -84,3 +84,40 @@
   @include text-secondary;
   color: $neutral-500;
 }
+
+// Phones (≤640px): tags past `collapseAfter` fold into a "+N" chip (#296).
+.collapsedCount {
+  display: none;
+  @include text-meta-mono;
+}
+
+@media (max-width: 640px) {
+  // Smaller pills on phones so a card's tags fit one row
+  .tagPillList {
+    gap: $spacing-1;
+
+    .tagPill {
+      max-width: 100%;
+      padding: 0 $spacing-2;
+      font-size: $font-size-xs;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .collapsible {
+    display: none;
+  }
+
+  .collapsedCount {
+    @include flex-center;
+    flex-shrink: 0;
+  }
+
+  // A collapsing list stays on one line; long pills ellipsize instead of wrapping
+  .collapsing {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+}

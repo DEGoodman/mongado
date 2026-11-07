@@ -39,6 +39,11 @@
   @include container;
   padding-top: $spacing-8;
   padding-bottom: $spacing-8;
+
+  @media (max-width: 640px) {
+    padding-top: $spacing-4;
+    padding-bottom: $spacing-6;
+  }
 }
 
 // ===== CONTENT GRID =====
@@ -49,6 +54,7 @@
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+    gap: 0;
   }
 }
 
@@ -63,7 +69,7 @@
 
   @media (max-width: 1024px) {
     position: static;
-    margin-bottom: $spacing-6;
+    margin-bottom: $spacing-4;
     max-height: none;
     overflow-y: visible;
   }
@@ -151,6 +157,11 @@
 
 // Clear All Button (Sidebar)
 .clearAllButtonSidebar {
+  // The mobile sheet header carries its own "Clear all" (#296)
+  @media (max-width: 1024px) {
+    display: none;
+  }
+
   width: 100%;
   padding: $spacing-3 $spacing-4;
   background-color: $white;
@@ -399,5 +410,72 @@
 
   &:hover .cardArrow {
     transform: translateX(4px);
+  }
+}
+
+// ===== Compact on phones (#296) =====
+@media (max-width: 640px) {
+  .categorySection {
+    margin-bottom: $spacing-5;
+
+    .categoryTitle {
+      font-size: $font-size-base;
+      margin-bottom: $spacing-3;
+      padding-bottom: $spacing-1;
+    }
+  }
+
+  .referenceGrid {
+    gap: $spacing-3;
+  }
+
+  .referenceCard {
+    padding: 0;
+
+    .cardContent {
+      padding: $spacing-3;
+
+      .cardInfo {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 $spacing-2;
+
+        .cardTitle {
+          order: 1;
+          flex-basis: 100%;
+          font-size: $font-size-base;
+          margin-bottom: 2px;
+        }
+
+        .cardPreview {
+          order: 2;
+          flex-basis: 100%;
+          margin-bottom: $spacing-2;
+          -webkit-line-clamp: 2;
+        }
+
+        // Id chip + tags share the last row
+        .cardIdRow {
+          display: contents;
+
+          > * {
+            order: 3;
+          }
+
+          .referenceBadge {
+            display: none;
+          }
+        }
+
+        .cardTags {
+          order: 4;
+        }
+      }
+
+      .cardArrow {
+        display: none;
+      }
+    }
   }
 }

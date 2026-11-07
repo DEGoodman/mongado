@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import AIAssistant from "@/components/AIAssistant";
@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/PageState";
 import { useRouter, useSearchParams } from "next/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import PageHeader from "@/components/PageHeader";
+import FilterSheet, { FilterButton, FilterSearchRow } from "@/components/FilterSheet";
 import { TagPillList } from "@/components/TagPill";
 import { apiGet, isAuthenticated } from "@/lib/api/client";
 import { logger } from "@/lib/logger";
@@ -25,6 +26,20 @@ export interface ArticleMetadata {
   created_at?: string; // Legacy fallback
 }
 
+/** "Updated November 4, 2026" (long) or bare "Nov 4, 2026" (short, phones). */
+function formatArticleDate(resource: ArticleMetadata, month: "long" | "short"): string {
+  const format = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { year: "numeric", month, day: "numeric" });
+  const updated = Boolean(
+    resource.updated_date && resource.updated_date !== resource.published_date
+  );
+  const date = format(
+    (updated ? resource.updated_date : resource.published_date || resource.created_at) || ""
+  );
+  if (month === "short") return date;
+  return `${updated ? "Updated" : "Published"} ${date}`;
+}
+
 type SortOption = "newest" | "oldest" | "recently-updated" | "alphabetical";
 
 export default function ArticlesClient({ resources }: { resources: ArticleMetadata[] }) {
@@ -36,6 +51,9 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showAllTags, setShowAllTags] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
 
   // Draft articles (#184): the server fetch that produced `resources` is
   // anonymous/cached, so it never includes drafts. When signed in, re-fetch
@@ -162,111 +180,132 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
   };
 
   const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery);
+  const activeFilterCount = selectedTags.length + (sortBy !== "newest" ? 1 : 0);
 
   return (
     <div className={styles.container}>
       {/* AI panel + button island (only shown when LLM features enabled) */}
       <AIAssistant />
 
-      <PageHeader title="Articles" breadcrumb={<Breadcrumb section="articles" toHub />} />
+      <PageHeader
+        title="Articles"
+        breadcrumb={<Breadcrumb section="articles" toHub />}
+        count={allResources.length}
+      />
 
       <main className={styles.main}>
         <div className={styles.contentGrid}>
           {/* Sidebar - Filters */}
           <aside className={styles.sidebar}>
             {/* Search */}
-            <div className={styles.searchBar}>
-              <input
-                type="text"
-                placeholder="Search articles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-                aria-label="Search articles by title, summary, or tags"
-              />
-            </div>
-
-            {/* Sort */}
-            <div className={styles.sortSection}>
-              <label htmlFor="sort-select" className={styles.sortLabel}>
-                Sort by:
-              </label>
-              <select
-                id="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className={styles.sortSelect}
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="recently-updated">Recently Updated</option>
-                <option value="alphabetical">Alphabetical</option>
-              </select>
-            </div>
-
-            {/* Tag Filter Section */}
-            {sortedTags.length > 0 && (
-              <div className={styles.tagFilterSection}>
-                <div className={styles.tagFilterHeader}>
-                  <span className={styles.tagFilterLabel}>Filter by tag:</span>
-                </div>
-                <div className={styles.tagBadges}>
-                  {visibleTags.map(([tag, count]) => {
-                    const isActive = selectedTags.includes(tag);
-                    // Determine tag size class based on count
-                    let sizeClass = styles.tagLow;
-                    if (count >= 3) sizeClass = styles.tagHigh;
-                    else if (count === 2) sizeClass = styles.tagMedium;
-
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() => handleTagClick(tag)}
-                        className={`${styles.tagBadge} ${sizeClass} ${isActive ? styles.tagBadgeActive : ""}`}
-                        type="button"
-                        aria-label={`Filter by tag: ${tag}, ${count} articles`}
-                        aria-pressed={isActive}
-                      >
-                        #{tag} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-                {otherTags.length > 0 && !showAllTags && (
-                  <button
-                    onClick={() => setShowAllTags(true)}
-                    className={styles.showMoreButton}
-                    type="button"
-                    aria-label={`Show ${otherTags.length} more tags`}
-                    aria-expanded="false"
-                  >
-                    + Show {otherTags.length} more
-                  </button>
-                )}
-                {showAllTags && otherTags.length > 0 && (
-                  <button
-                    onClick={() => setShowAllTags(false)}
-                    className={styles.showMoreButton}
-                    type="button"
-                    aria-label="Show fewer tags"
-                    aria-expanded="true"
-                  >
-                    − Show fewer
-                  </button>
-                )}
+            <FilterSearchRow>
+              <div className={styles.searchBar}>
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={styles.searchInput}
+                  aria-label="Search articles by title, summary, or tags"
+                />
               </div>
-            )}
+              <FilterButton
+                ref={filterButtonRef}
+                activeCount={activeFilterCount}
+                open={filtersOpen}
+                onClick={() => setFiltersOpen(true)}
+              />
+            </FilterSearchRow>
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className={styles.clearAllButtonSidebar}
-                aria-label="Clear all active filters"
-              >
-                Clear all filters
-              </button>
-            )}
+            <FilterSheet
+              open={filtersOpen}
+              onClose={closeFilters}
+              activeCount={activeFilterCount}
+              onClearAll={clearAllFilters}
+              triggerRef={filterButtonRef}
+            >
+              {/* Sort */}
+              <div className={styles.sortSection}>
+                <label htmlFor="sort-select" className={styles.sortLabel}>
+                  Sort by:
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className={styles.sortSelect}
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="recently-updated">Recently Updated</option>
+                  <option value="alphabetical">Alphabetical</option>
+                </select>
+              </div>
+
+              {/* Tag Filter Section */}
+              {sortedTags.length > 0 && (
+                <div className={styles.tagFilterSection}>
+                  <div className={styles.tagFilterHeader}>
+                    <span className={styles.tagFilterLabel}>Filter by tag:</span>
+                  </div>
+                  <div className={styles.tagBadges}>
+                    {visibleTags.map(([tag, count]) => {
+                      const isActive = selectedTags.includes(tag);
+                      // Determine tag size class based on count
+                      let sizeClass = styles.tagLow;
+                      if (count >= 3) sizeClass = styles.tagHigh;
+                      else if (count === 2) sizeClass = styles.tagMedium;
+
+                      return (
+                        <button
+                          key={tag}
+                          onClick={() => handleTagClick(tag)}
+                          className={`${styles.tagBadge} ${sizeClass} ${isActive ? styles.tagBadgeActive : ""}`}
+                          type="button"
+                          aria-label={`Filter by tag: ${tag}, ${count} articles`}
+                          aria-pressed={isActive}
+                        >
+                          #{tag} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {otherTags.length > 0 && !showAllTags && (
+                    <button
+                      onClick={() => setShowAllTags(true)}
+                      className={styles.showMoreButton}
+                      type="button"
+                      aria-label={`Show ${otherTags.length} more tags`}
+                      aria-expanded="false"
+                    >
+                      + Show {otherTags.length} more
+                    </button>
+                  )}
+                  {showAllTags && otherTags.length > 0 && (
+                    <button
+                      onClick={() => setShowAllTags(false)}
+                      className={styles.showMoreButton}
+                      type="button"
+                      aria-label="Show fewer tags"
+                      aria-expanded="true"
+                    >
+                      − Show fewer
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className={styles.clearAllButtonSidebar}
+                  aria-label="Clear all active filters"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </FilterSheet>
           </aside>
 
           {/* Main Content - Articles */}
@@ -317,28 +356,12 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
                           {resource.draft && <span className={styles.draftBadge}>Draft</span>}
                         </div>
                         <div className={styles.articleMeta}>
-                          {resource.updated_date &&
-                          resource.updated_date !== resource.published_date ? (
-                            <>
-                              Updated{" "}
-                              {new Date(resource.updated_date).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })}
-                            </>
-                          ) : (
-                            <>
-                              Published{" "}
-                              {new Date(
-                                resource.published_date || resource.created_at || ""
-                              ).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })}
-                            </>
-                          )}
+                          <span className={styles.dateLong}>
+                            {formatArticleDate(resource, "long")}
+                          </span>
+                          <span className={styles.dateShort}>
+                            {formatArticleDate(resource, "short")}
+                          </span>
                         </div>
                       </div>
 
@@ -350,7 +373,12 @@ export default function ArticlesClient({ resources }: { resources: ArticleMetada
                       {/* Tags */}
                       {resource.tags.length > 0 && (
                         <div className={styles.articleTags}>
-                          <TagPillList tags={resource.tags} showHash onClick={handleTagClick} />
+                          <TagPillList
+                            tags={resource.tags}
+                            showHash
+                            collapseAfter={2}
+                            onClick={handleTagClick}
+                          />
                         </div>
                       )}
 
