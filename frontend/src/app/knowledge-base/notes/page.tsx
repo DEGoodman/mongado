@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Plus } from "@phosphor-icons/react";
 import { prefetchOnce } from "@/lib/prefetch";
 import { getNote, getBacklinks, getOutboundLinks } from "@/lib/api/notes";
 import Link from "next/link";
@@ -24,6 +25,7 @@ import AIAssistant from "@/components/AIAssistant";
 import { LoadingState, ErrorState, EmptyState } from "@/components/PageState";
 import Breadcrumb from "@/components/Breadcrumb";
 import PageHeader from "@/components/PageHeader";
+import FilterSheet, { FilterButton, FilterSearchRow } from "@/components/FilterSheet";
 import { TagPillList } from "@/components/TagPill";
 import QuickLists from "@/components/QuickLists/QuickLists";
 import NoteOfDay from "@/components/NoteOfDay/NoteOfDay";
@@ -54,6 +56,9 @@ function NotesContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalNotes, setTotalNotes] = useState(0);
   const itemsPerPage = 20;
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
 
   // Sync URL page param with state
   useEffect(() => {
@@ -192,6 +197,7 @@ function NotesContent() {
   };
 
   const hasActiveFilters = Boolean(selectedTags.length > 0 || searchQuery);
+  const activeFilterCount = selectedTags.length + (sortBy !== "newest" ? 1 : 0);
 
   const handleRandomNote = async () => {
     try {
@@ -222,6 +228,21 @@ function NotesContent() {
       <PageHeader
         title="Notes"
         breadcrumb={<Breadcrumb section="notes" toHub />}
+        count={totalNotes}
+        primaryAction={{
+          label: "New Note",
+          href: "/knowledge-base/notes/new",
+          icon: <Plus size={20} weight="bold" aria-hidden="true" />,
+        }}
+        menuActions={[
+          { label: "View Graph", href: "/knowledge-base/notes/graph" },
+          {
+            label: randomNoteLoading ? "Loading..." : "Random Note",
+            onClick: handleRandomNote,
+            disabled: randomNoteLoading || notes.length === 0,
+          },
+          { label: "Toolbox", href: "/knowledge-base/toolbox" },
+        ]}
         subtitle={
           <>
             {totalNotes} notes &middot;{" "}
@@ -258,103 +279,121 @@ function NotesContent() {
           {/* Sidebar - Filters */}
           <aside className={styles.sidebar}>
             {/* Search */}
-            <div className={styles.searchBar}>
-              <input
-                type="text"
-                placeholder="Search notes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-                aria-label="Search notes by title, content, or tags"
-              />
-            </div>
-
-            {/* Sort */}
-            <div className={styles.sortSection}>
-              <label htmlFor="sort-select" className={styles.sortLabel}>
-                Sort by:
-              </label>
-              <select
-                id="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className={styles.sortSelect}
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="alphabetical">Alphabetical</option>
-              </select>
-            </div>
-
-            {/* Tag Filter Section */}
-            {sortedTags.length > 0 && (
-              <div className={styles.tagFilterSection}>
-                <div className={styles.tagFilterHeader}>
-                  <span className={styles.tagFilterLabel}>Filter by tag:</span>
-                </div>
-                <div className={styles.tagBadges}>
-                  {visibleTags.map(([tag, count]) => {
-                    const isActive = selectedTags.includes(tag);
-                    let sizeClass = styles.tagLow;
-                    if (count >= 3) sizeClass = styles.tagHigh;
-                    else if (count === 2) sizeClass = styles.tagMedium;
-
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() => handleTagClick(tag)}
-                        className={`${styles.tagBadge} ${sizeClass} ${isActive ? styles.tagBadgeActive : ""}`}
-                        type="button"
-                        aria-label={`Filter by tag: ${tag}, ${count} notes`}
-                        aria-pressed={isActive}
-                      >
-                        #{tag} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-                {otherTags.length > 0 && !showAllTags && (
-                  <button
-                    onClick={() => setShowAllTags(true)}
-                    className={styles.showMoreButton}
-                    type="button"
-                    aria-label={`Show ${otherTags.length} more tags`}
-                    aria-expanded="false"
-                  >
-                    + Show {otherTags.length} more
-                  </button>
-                )}
-                {showAllTags && otherTags.length > 0 && (
-                  <button
-                    onClick={() => setShowAllTags(false)}
-                    className={styles.showMoreButton}
-                    type="button"
-                    aria-label="Show fewer tags"
-                    aria-expanded="true"
-                  >
-                    − Show fewer
-                  </button>
-                )}
+            <FilterSearchRow>
+              <div className={styles.searchBar}>
+                <input
+                  type="text"
+                  placeholder="Search notes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={styles.searchInput}
+                  aria-label="Search notes by title, content, or tags"
+                />
               </div>
-            )}
+              <FilterButton
+                ref={filterButtonRef}
+                activeCount={activeFilterCount}
+                open={filtersOpen}
+                onClick={() => setFiltersOpen(true)}
+              />
+            </FilterSearchRow>
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className={styles.clearAllButtonSidebar}
-                aria-label="Clear all active filters"
-              >
-                Clear all filters
-              </button>
-            )}
+            <FilterSheet
+              open={filtersOpen}
+              onClose={closeFilters}
+              activeCount={activeFilterCount}
+              onClearAll={clearAllFilters}
+              triggerRef={filterButtonRef}
+            >
+              {/* Sort */}
+              <div className={styles.sortSection}>
+                <label htmlFor="sort-select" className={styles.sortLabel}>
+                  Sort by:
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className={styles.sortSelect}
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="alphabetical">Alphabetical</option>
+                </select>
+              </div>
 
-            {/* Note of the Day - shown when no filters active */}
-            {!hasActiveFilters && <NoteOfDay />}
+              {/* Tag Filter Section */}
+              {sortedTags.length > 0 && (
+                <div className={styles.tagFilterSection}>
+                  <div className={styles.tagFilterHeader}>
+                    <span className={styles.tagFilterLabel}>Filter by tag:</span>
+                  </div>
+                  <div className={styles.tagBadges}>
+                    {visibleTags.map(([tag, count]) => {
+                      const isActive = selectedTags.includes(tag);
+                      let sizeClass = styles.tagLow;
+                      if (count >= 3) sizeClass = styles.tagHigh;
+                      else if (count === 2) sizeClass = styles.tagMedium;
 
-            {/* Quick Lists */}
-            {!hasActiveFilters && <QuickLists />}
+                      return (
+                        <button
+                          key={tag}
+                          onClick={() => handleTagClick(tag)}
+                          className={`${styles.tagBadge} ${sizeClass} ${isActive ? styles.tagBadgeActive : ""}`}
+                          type="button"
+                          aria-label={`Filter by tag: ${tag}, ${count} notes`}
+                          aria-pressed={isActive}
+                        >
+                          #{tag} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {otherTags.length > 0 && !showAllTags && (
+                    <button
+                      onClick={() => setShowAllTags(true)}
+                      className={styles.showMoreButton}
+                      type="button"
+                      aria-label={`Show ${otherTags.length} more tags`}
+                      aria-expanded="false"
+                    >
+                      + Show {otherTags.length} more
+                    </button>
+                  )}
+                  {showAllTags && otherTags.length > 0 && (
+                    <button
+                      onClick={() => setShowAllTags(false)}
+                      className={styles.showMoreButton}
+                      type="button"
+                      aria-label="Show fewer tags"
+                      aria-expanded="true"
+                    >
+                      − Show fewer
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className={styles.clearAllButtonSidebar}
+                  aria-label="Clear all active filters"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </FilterSheet>
           </aside>
+
+          {/* Extras: beside the filters on desktop, after the list on mobile */}
+          {!hasActiveFilters && (
+            <aside className={styles.extras}>
+              <NoteOfDay />
+              <QuickLists />
+            </aside>
+          )}
 
           {/* Main Content - Notes */}
           <div className={styles.notesContent}>

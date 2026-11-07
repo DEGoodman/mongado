@@ -11,7 +11,9 @@
  * --color-header-bg-* tokens, so it isn't built on this component.
  */
 
+import Link from "next/link";
 import AddressLights from "./AddressLights";
+import OverflowMenu, { type OverflowMenuItem } from "./OverflowMenu";
 import styles from "./PageHeader.module.scss";
 
 interface PageHeaderProps {
@@ -23,6 +25,17 @@ interface PageHeaderProps {
   breadcrumb?: React.ReactNode;
   /** Right-aligned action controls (buttons/links). */
   actions?: React.ReactNode;
+  /** Short inline count shown next to the title on phones ("Notes · 90"). */
+  count?: React.ReactNode;
+  /** Phones: compact square icon button in the title row (the page's primary action). */
+  primaryAction?: {
+    label: string;
+    href?: string;
+    onClick?: () => void;
+    icon: React.ReactNode;
+  };
+  /** Phones: secondary actions tucked into a "⋯" overflow menu. */
+  menuActions?: OverflowMenuItem[];
   /** Show the decorative AddressLights strip. Default true. */
   showLights?: boolean;
 }
@@ -32,18 +45,63 @@ export default function PageHeader({
   subtitle,
   breadcrumb,
   actions,
+  count,
+  primaryAction,
+  menuActions,
   showLights = true,
 }: PageHeaderProps) {
+  // Opting in to any mobile prop switches ≤640px to the one-row compact
+  // header (#296). Pages that pass none (Inspire) keep the full header.
+  const compact = count !== undefined || Boolean(primaryAction) || Boolean(menuActions?.length);
+  const hasMobileActions = Boolean(primaryAction) || Boolean(menuActions?.length);
+
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-compact={compact || undefined}>
       <div className={styles.headerContent}>
         {breadcrumb && <div className={styles.breadcrumb}>{breadcrumb}</div>}
         <div className={styles.titleRow}>
           <div className={styles.titleSection}>
-            <h1 className={styles.title}>{title}</h1>
+            <h1 className={styles.title}>
+              {title}
+              {count !== undefined && (
+                <span className={styles.count}>
+                  <span aria-hidden="true"> &middot; </span>
+                  {count}
+                </span>
+              )}
+            </h1>
             {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
           </div>
-          {actions && <div className={styles.actions}>{actions}</div>}
+          {actions && (
+            <div className={styles.actions} data-replaced={hasMobileActions || undefined}>
+              {actions}
+            </div>
+          )}
+          {hasMobileActions && (
+            <div className={styles.mobileActions}>
+              {primaryAction &&
+                (primaryAction.href ? (
+                  <Link
+                    href={primaryAction.href}
+                    className={styles.primaryIcon}
+                    aria-label={primaryAction.label}
+                    onClick={primaryAction.onClick}
+                  >
+                    {primaryAction.icon}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.primaryIcon}
+                    aria-label={primaryAction.label}
+                    onClick={primaryAction.onClick}
+                  >
+                    {primaryAction.icon}
+                  </button>
+                ))}
+              {menuActions && menuActions.length > 0 && <OverflowMenu items={menuActions} />}
+            </div>
+          )}
         </div>
         {showLights && (
           <div className={styles.lightsRow}>

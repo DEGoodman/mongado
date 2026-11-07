@@ -22,21 +22,40 @@
   @include container;
   padding-top: $spacing-8;
   padding-bottom: $spacing-8;
+
+  @media (max-width: 640px) {
+    padding-top: $spacing-4;
+    padding-bottom: $spacing-6;
+  }
 }
 
 // ===== CONTENT GRID =====
 .contentGrid {
   display: grid;
   grid-template-columns: 300px 1fr;
-  gap: $spacing-8;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "filters list"
+    "extras list";
+  column-gap: $spacing-8;
+  row-gap: $spacing-4;
 
+  // Stacked: filters, then the list, then the Note of the Day / Quick Lists
+  // extras below it (#296).
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas:
+      "filters"
+      "list"
+      "extras";
+    row-gap: 0;
   }
 }
 
 // ===== SIDEBAR =====
 .sidebar {
+  grid-area: filters;
   @include stack($spacing-4);
   position: sticky;
   top: 4rem; // ~64px - doubled spacing to prevent search bar cutoff
@@ -46,9 +65,21 @@
 
   @media (max-width: 1024px) {
     position: static;
-    margin-bottom: $spacing-6;
+    margin-bottom: $spacing-4;
     max-height: none;
     overflow-y: visible;
+  }
+}
+
+// Note of the Day + Quick Lists: left column on desktop, after the list on
+// mobile.
+.extras {
+  grid-area: extras;
+  @include stack($spacing-4);
+  min-width: 0;
+
+  @media (max-width: 1024px) {
+    margin-top: $spacing-8;
   }
 }
 
@@ -248,6 +279,11 @@
 
 // Clear All Button (Sidebar)
 .clearAllButtonSidebar {
+  // The mobile sheet header carries its own "Clear all" (#296)
+  @media (max-width: 1024px) {
+    display: none;
+  }
+
   width: 100%;
   padding: $spacing-3 $spacing-4;
   background-color: $white;
@@ -268,6 +304,7 @@
 
 // ===== NOTES CONTENT =====
 .notesContent {
+  grid-area: list;
   min-width: 0;
 }
 
@@ -390,6 +427,14 @@
 .notesList {
   margin-top: $spacing-8;
   @include stack($spacing-4);
+
+  @media (max-width: 1024px) {
+    margin-top: $spacing-4;
+  }
+
+  @media (max-width: 640px) {
+    gap: $spacing-3;
+  }
 }
 
 .noteCard {
@@ -477,6 +522,71 @@
       height: 1.25rem;
       color: $color-text-tertiary;
       transition: transform 0.2s ease;
+    }
+  }
+}
+
+// Compact cards on phones (#296): id chip moves into the meta row.
+@media (max-width: 640px) {
+  .noteCard {
+    padding: $spacing-3;
+
+    .noteCardContent .noteInfo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 $spacing-2;
+
+      .noteTitle {
+        order: 1;
+        flex-basis: 100%;
+        font-size: $font-size-base;
+        margin-bottom: 2px;
+      }
+
+      .notePreview {
+        order: 2;
+        flex-basis: 100%;
+        margin-bottom: $spacing-2;
+        font-size: $font-size-sm;
+      }
+
+      // Row wrapper dissolves; the id chip is re-ordered into the meta line.
+      .noteIdRow {
+        display: contents;
+
+        > * {
+          order: 3;
+        }
+
+        .noteId {
+          padding: 0 $spacing-1;
+          font-size: $font-size-xs;
+        }
+
+        .referenceBadge {
+          display: none;
+        }
+      }
+
+      .noteMeta {
+        order: 4;
+        flex: 1;
+        min-width: 0;
+        margin-bottom: 0;
+        flex-wrap: wrap;
+        gap: $spacing-1 $spacing-3;
+      }
+
+      .noteTags {
+        order: 5;
+        flex-basis: 100%;
+        margin-top: $spacing-2;
+      }
+    }
+
+    .noteArrow {
+      display: none;
     }
   }
 }

@@ -1,0 +1,164 @@
+/**
+ * FilterSheet - desktop: invisible wrapper; ≤1024px: bottom sheet (#296).
+ */
+
+@use "@/styles/design-tokens" as *;
+@use "@/styles/mixins" as *;
+
+// ===== Desktop: wrapper disappears, children join the sidebar stack =====
+.panel,
+.body {
+  display: contents;
+}
+
+.backdrop,
+.sheetHeader,
+.filterButton {
+  display: none;
+}
+
+.searchRow {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-2;
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .filterButton {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 0 $spacing-3;
+    border: $border-width-thin solid $color-border-default;
+    border-radius: $border-radius-button;
+    background-color: $white;
+    color: $color-text-primary;
+    font-family: $font-family-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover,
+    &[aria-expanded="true"] {
+      background-color: $color-surface-hover;
+      border-color: $color-border-hover;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-interactive-primary-focus;
+      outline-offset: 2px;
+    }
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.2s ease,
+      visibility 0.2s ease;
+
+    &[data-open="true"] {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    max-height: 75vh;
+    overflow: hidden;
+    background-color: $color-surface-elevated;
+    border-top: $border-width-thin solid $color-border-default;
+    border-radius: $border-radius-lg $border-radius-lg 0 0;
+    box-shadow: $shadow-card-lg;
+    transform: translateY(100%);
+    visibility: hidden;
+    transition:
+      transform 0.25s ease,
+      visibility 0.25s ease;
+
+    &:focus {
+      outline: none;
+    }
+
+    &[data-open="true"] {
+      transform: translateY(0);
+      visibility: visible;
+    }
+  }
+
+  .sheetHeader {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-shrink: 0;
+    padding: $spacing-2 $spacing-4;
+    border-bottom: $border-width-thin solid $color-border-default;
+  }
+
+  .sheetTitle {
+    flex: 1;
+    margin: 0;
+    font-family: $font-family-primary;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-heading;
+  }
+
+  .clearAll,
+  .done {
+    min-height: 44px;
+    padding: 0 $spacing-2;
+    border: none;
+    background: transparent;
+    font-family: $font-family-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+  }
+
+  .clearAll {
+    color: $color-text-secondary;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .done {
+    color: $color-link-hover;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+    padding: $spacing-4;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
