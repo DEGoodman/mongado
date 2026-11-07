@@ -20,6 +20,11 @@
   @include container;
   padding-top: $spacing-8;
   padding-bottom: $spacing-8;
+
+  @media (max-width: 640px) {
+    padding-top: $spacing-4;
+    padding-bottom: $spacing-6;
+  }
 }
 
 // ===== CONTENT GRID =====
@@ -30,6 +35,7 @@
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+    gap: 0;
   }
 }
 
@@ -45,7 +51,7 @@
   // On mobile, don't sticky (let it scroll naturally)
   @media (max-width: 1024px) {
     position: static;
-    margin-bottom: $spacing-6;
+    margin-bottom: $spacing-4;
     max-height: none;
     overflow-y: visible;
   }
@@ -202,6 +208,11 @@
 
 // Clear All Button (Sidebar)
 .clearAllButtonSidebar {
+  // The mobile sheet header carries its own "Clear all" (#296)
+  @media (max-width: 1024px) {
+    display: none;
+  }
+
   width: 100%;
   padding: $spacing-3 $spacing-4;
   background-color: $white;
@@ -282,6 +293,10 @@
 
     .articleMeta {
       @include text-meta-mono;
+
+      .dateShort {
+        display: none;
+      }
     }
   }
 
@@ -301,6 +316,70 @@
     @include text-secondary;
     font-weight: $font-weight-medium;
     color: $color-link-default;
+  }
+}
+
+// Compact cards on phones (#296): date + tags share one meta row, no
+// "Read more" (the whole card is the link).
+@media (max-width: 640px) {
+  .articlesList {
+    gap: $spacing-3;
+  }
+
+  .articleCard {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-2 $spacing-3;
+    padding: $spacing-3 $spacing-4;
+
+    // Dissolve the header so the date can sit in the meta row with the tags
+    .articleHeader {
+      display: contents;
+
+      .titleRow {
+        order: 1;
+        flex-basis: 100%;
+        margin-bottom: 0;
+      }
+
+      .articleTitle {
+        font-size: 1.125rem;
+        line-height: $line-height-tight;
+      }
+
+      .articleMeta {
+        order: 3;
+        white-space: nowrap;
+
+        .dateLong {
+          display: none;
+        }
+
+        .dateShort {
+          display: inline;
+        }
+      }
+    }
+
+    .articlePreview {
+      order: 2;
+      flex-basis: 100%;
+      margin-bottom: 0;
+      font-size: $font-size-sm;
+      @include line-clamp(2);
+    }
+
+    .articleTags {
+      order: 4;
+      flex: 1;
+      min-width: 0;
+      margin-top: 0;
+    }
+
+    .readMore {
+      display: none;
+    }
   }
 }
 

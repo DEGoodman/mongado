@@ -45,6 +45,7 @@ interface TagPillListProps {
   tags: string[];
   showHash?: boolean;
   maxVisible?: number; // Limit number of tags shown (with "+N more")
+  collapseAfter?: number; // Phones only (≤640px): hide tags past N, show a "+N" chip
   onClick?: (tag: string) => void; // Optional click handler for filtering
   variant?: "article" | "note"; // Color variant for warm-cool theme
   className?: string;
@@ -54,6 +55,7 @@ export function TagPillList({
   tags,
   showHash = false,
   maxVisible,
+  collapseAfter,
   onClick,
   variant,
   className = "",
@@ -62,10 +64,24 @@ export function TagPillList({
   const remainingCount = maxVisible && tags.length > maxVisible ? tags.length - maxVisible : 0;
 
   return (
-    <div className={`${styles.tagPillList} ${className}`}>
-      {visibleTags.map((tag) => (
-        <TagPill key={tag} tag={tag} showHash={showHash} onClick={onClick} variant={variant} />
+    <div
+      className={`${styles.tagPillList} ${collapseAfter !== undefined ? styles.collapsing : ""} ${className}`}
+    >
+      {visibleTags.map((tag, index) => (
+        <TagPill
+          key={tag}
+          tag={tag}
+          showHash={showHash}
+          onClick={onClick}
+          variant={variant}
+          className={
+            collapseAfter !== undefined && index >= collapseAfter ? styles.collapsible : ""
+          }
+        />
       ))}
+      {collapseAfter !== undefined && visibleTags.length > collapseAfter && (
+        <span className={styles.collapsedCount}>+{visibleTags.length - collapseAfter}</span>
+      )}
       {remainingCount > 0 && <span className={styles.remainingCount}>+{remainingCount} more</span>}
     </div>
   );
