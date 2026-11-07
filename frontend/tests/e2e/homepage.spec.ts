@@ -1,38 +1,34 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Homepage", () => {
-  test("should display the main heading", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Knowledge Base" })).toBeVisible();
   });
 
-  test("should have Add Resource button", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.getByRole("button", { name: /add resource/i })).toBeVisible();
+  test("shows the name heading and page title", async ({ page }) => {
+    await expect(page).toHaveTitle(/Mongado/);
+    await expect(page.getByRole("heading", { level: 1, name: "D. Erik Goodman" })).toBeVisible();
   });
 
-  test("should show form when Add Resource is clicked", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: /add resource/i }).click();
-    await expect(page.getByText("Add New Resource")).toBeVisible();
+  test("links into the Knowledge Base", async ({ page }) => {
+    await page.getByRole("link", { name: /Knowledge base/ }).click();
+    await expect(page).toHaveURL(/\/knowledge-base$/);
   });
 
-  test("should create a new resource", async ({ page }) => {
-    await page.goto("/");
+  test("links into the Library", async ({ page }) => {
+    await page.getByRole("link", { name: /Library/ }).click();
+    await expect(page).toHaveURL(/\/library$/);
+  });
 
-    // Click Add Resource
-    await page.getByRole("button", { name: /add resource/i }).click();
+  test("theme toggle flips the theme", async ({ page }) => {
+    const html = page.locator("html");
+    const toggle = page.getByRole("button", { name: /Switch to (light|dark) theme/ });
 
-    // Fill in the form
-    await page.getByLabel("Title").fill("Test Resource");
-    await page.getByLabel("Content").fill("This is a test resource");
-    await page.getByLabel("URL (optional)").fill("https://example.com");
-    await page.getByLabel("Tags (comma-separated)").fill("test, example");
+    // The label names the theme the click switches *to*
+    const label = await toggle.getAttribute("aria-label");
+    const target = label?.includes("dark") ? "dark" : "light";
+    await toggle.click();
 
-    // Submit the form
-    await page.getByRole("button", { name: "Create Resource" }).click();
-
-    // Verify the resource appears
-    await expect(page.getByText("Test Resource")).toBeVisible();
+    await expect(html).toHaveAttribute("data-theme", target);
   });
 });
